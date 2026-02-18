@@ -26,7 +26,7 @@ const openDialog = () => {
           fontWeight: '500'
         }"
       >
-        Open Demo Dialog
+        GitHub Login
       </button>
     </div>
     

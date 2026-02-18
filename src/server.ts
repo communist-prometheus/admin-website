@@ -4,7 +4,10 @@ import { dirname, resolve } from 'node:path'
 import Fastify from 'fastify'
 import fastifyStatic from '@fastify/static'
 import middie from '@fastify/middie'
+import fastifyCookie from '@fastify/cookie'
+import fastifySession from '@fastify/session'
 import type { ViteDevServer } from 'vite'
+import 'dotenv/config'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isProduction = process.env.NODE_ENV === 'production'
@@ -13,6 +16,15 @@ const fastify = Fastify({
   logger: true
 })
 
+await fastify.register(fastifyCookie)
+await fastify.register(fastifySession, {
+  secret: process.env.SESSION_SECRET || 'a-very-secret-key-change-in-production',
+  cookie: {
+    secure: false, // Set to true in production with HTTPS
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+  }
+})
 await fastify.register(middie)
 
 const resolveDistPath = (path: string): string => 
@@ -119,6 +131,86 @@ const renderPage = async (url: string): Promise<string> => {
 
   return finalHtml
 }
+
+// GitHub OAuth routes
+fastify.get('/api/auth/github', async (_request, reply) => {
+  const clientId = process.env.GITHUB_CLIENT_ID
+  if (!clientId) {
+    return reply.status(500).send({ error: 'GitHub client ID not configured' })
+  }
+
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=read:user`
+  return reply.redirect(githubAuthUrl)
+})
+
+fastify.get('/auth/github/callback', async (request, reply) => {
+  const { code } = request.query as { code?: string }
+
+  if (!code) {
+    return reply.status(400).send({ error: 'No code provided' })
+  }
+
+  try {
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code
+      })
+    })
+
+    const tokenData = await tokenResponse.json() as { access_token?: string; error?: string }
+
+    if (tokenData.error || !tokenData.access_token) {
+      return reply.status(400).send({ error: 'Failed to get access token' })
+    }
+
+    // Get user info
+    const userResponse = await fetch('https://api.github.com/user', {
+      headers: {
+        'Authorization': `Bearer ${tokenData.access_token}`,
+        'Accept': 'application/json'
+      }
+    })
+
+    const userData = await userResponse.json() as { login?: string; name?: string; avatar_url?: string }
+
+    // Store user info in session
+    // @ts-expect-error - fastify-session typing issue
+    request.session.github_user = {
+      username: userData.login,
+      name: userData.name,
+      avatar: userData.avatar_url
+    }
+
+    // Redirect back to home page
+    return reply.redirect('/')
+  } catch (error) {
+    fastify.log.error(error)
+    return reply.status(500).send({ error: 'OAuth failed' })
+  }
+})
+
+fastify.get('/api/auth/user', async (request, reply) => {
+  // @ts-expect-error - fastify-session typing issue
+  const user = request.session.github_user
+  if (!user) {
+    return reply.status(401).send({ authenticated: false })
+  }
+  return reply.send({ authenticated: true, user })
+})
+
+fastify.post('/api/auth/logout', async (request, reply) => {
+  // @ts-expect-error - fastify-session typing issue
+  request.session.github_user = undefined
+  return reply.send({ success: true })
+})
 
 if (isProduction) {
   fastify.get('/favicon.ico', async (_request, reply) => {

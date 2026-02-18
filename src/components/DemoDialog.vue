@@ -1,23 +1,53 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
 const dialogRef = ref<HTMLDialogElement | null>(null)
+const user = ref<{ username: string; name: string; avatar: string } | null>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
 
 const open = () => {
   dialogRef.value?.showModal()
+  checkAuth()
 }
 
 const close = () => {
   dialogRef.value?.close()
 }
 
-const handleSubmit = (event: Event) => {
-  event.preventDefault()
-  const formData = new FormData(event.target as HTMLFormElement)
-  const data = Object.fromEntries(formData.entries())
-  console.log('Form submitted:', data)
-  close()
+const checkAuth = async () => {
+  try {
+    const response = await fetch('/api/auth/user')
+    if (response.ok) {
+      const data = await response.json()
+      if (data.authenticated) {
+        user.value = data.user
+      }
+    }
+  } catch (err) {
+    console.error('Failed to check auth:', err)
+  }
 }
+
+const handleGitHubLogin = () => {
+  loading.value = true
+  error.value = null
+  window.location.href = '/api/auth/github'
+}
+
+const handleLogout = async () => {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    user.value = null
+  } catch (err) {
+    error.value = 'Failed to logout'
+    console.error('Logout failed:', err)
+  }
+}
+
+onMounted(() => {
+  checkAuth()
+})
 
 defineExpose({ open, close })
 </script>
@@ -30,79 +60,107 @@ defineExpose({ open, close })
     maxWidth: '500px',
     width: '90vw'
   }">
-    <form method="dialog" @submit="handleSubmit">
-      <h2 :style="{ marginTop: 0 }">Demo Dialog</h2>
+    <h2 :style="{ marginTop: 0 }">GitHub Authentication</h2>
+    
+    <div v-if="error" :style="{ 
+      padding: '1rem',
+      marginBottom: '1rem',
+      background: '#fee',
+      border: '1px solid #fcc',
+      borderRadius: '4px',
+      color: '#c00'
+    }">
+      {{ error }}
+    </div>
+
+    <div v-if="!user">
+      <p :style="{ marginBottom: '1.5rem' }">
+        Sign in with your GitHub account to continue.
+      </p>
       
-      <div :style="{ marginBottom: '1rem' }">
-        <label for="name" :style="{ display: 'block', marginBottom: '0.5rem' }">
-          Name:
-        </label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          required
-          :style="{
-            width: '100%',
-            padding: '0.5rem',
-            borderRadius: '4px',
-            border: '1px solid var(--color-border)'
-          }"
-        />
-      </div>
-
-      <div :style="{ marginBottom: '1rem' }">
-        <label for="email" :style="{ display: 'block', marginBottom: '0.5rem' }">
-          Email:
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          :style="{
-            width: '100%',
-            padding: '0.5rem',
-            borderRadius: '4px',
-            border: '1px solid var(--color-border)'
-          }"
-        />
-      </div>
-
-      <div :style="{ marginBottom: '1rem' }">
-        <label for="message" :style="{ display: 'block', marginBottom: '0.5rem' }">
-          Message:
-        </label>
-        <textarea
-          id="message"
-          name="message"
-          rows="4"
-          :style="{
-            width: '100%',
-            padding: '0.5rem',
-            borderRadius: '4px',
-            border: '1px solid var(--color-border)',
-            fontFamily: 'inherit'
-          }"
-        />
-      </div>
-
-      <div :style="{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }">
+      <div :style="{ display: 'flex', gap: '1rem', justifyContent: 'space-between' }">
         <button
           type="button"
           @click="close"
           :style="{
-            padding: '0.5rem 1rem',
+            padding: '0.75rem 1.5rem',
             borderRadius: '4px',
             border: '1px solid var(--color-border)',
             background: 'transparent',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            fontSize: '1rem'
           }"
         >
           Cancel
         </button>
         <button
-          type="submit"
+          type="button"
+          @click="handleGitHubLogin"
+          :disabled="loading"
+          :style="{
+            padding: '0.75rem 1.5rem',
+            borderRadius: '4px',
+            border: 'none',
+            background: loading ? '#999' : '#24292e',
+            color: 'white',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontSize: '1rem',
+            fontWeight: '500'
+          }"
+        >
+          {{ loading ? 'Loading...' : 'Sign in with GitHub' }}
+        </button>
+      </div>
+    </div>
+
+    <div v-else>
+      <div :style="{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '1rem',
+        marginBottom: '1.5rem',
+        padding: '1rem',
+        background: '#f6f8fa',
+        borderRadius: '8px'
+      }">
+        <img 
+          :src="user.avatar" 
+          :alt="user.username"
+          :style="{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            border: '2px solid #42b883'
+          }"
+        />
+        <div>
+          <div :style="{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.25rem' }">
+            {{ user.name || user.username }}
+          </div>
+          <div :style="{ color: '#666', fontSize: '0.9rem' }">
+            @{{ user.username }}
+          </div>
+        </div>
+      </div>
+
+      <div :style="{ display: 'flex', gap: '1rem', justifyContent: 'space-between' }">
+        <button
+          type="button"
+          @click="handleLogout"
+          :style="{
+            padding: '0.5rem 1rem',
+            borderRadius: '4px',
+            border: '1px solid #dc3545',
+            background: 'transparent',
+            color: '#dc3545',
+            cursor: 'pointer'
+          }"
+        >
+          Logout
+        </button>
+        <button
+          type="button"
+          @click="close"
           :style="{
             padding: '0.5rem 1rem',
             borderRadius: '4px',
@@ -112,10 +170,10 @@ defineExpose({ open, close })
             cursor: 'pointer'
           }"
         >
-          Submit
+          Close
         </button>
       </div>
-    </form>
+    </div>
   </dialog>
 </template>
 
