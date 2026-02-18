@@ -15,4 +15,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  build: {
+    manifest: true,
+    rollupOptions: {
+      input: './src/entry-client.ts',
+    },
+  },
 })

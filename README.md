@@ -1,6 +1,23 @@
 # admin-website
 
-This template should help get you started developing with Vue 3 in Vite.
+Vue 3 SSR application with client-side hydration powered by Vite and Fastify.
+
+## Architecture
+
+This project implements Server-Side Rendering (SSR) with client-side hydration:
+
+- **Server**: Fastify serves SSR-rendered HTML
+- **Client**: Vue 3 hydrates the SSR content for interactivity
+- **Build**: Vite bundles both client and server code
+- **Development**: Integrated Vite dev server with HMR
+
+### Key Files
+
+- `src/app.ts` - Universal app factory (shared between client and server)
+- `src/entry-client.ts` - Client entry point for hydration
+- `src/entry-server.ts` - Server entry point for SSR rendering
+- `src/server.ts` - Fastify server with SSR support
+- `index.html` - HTML template with SSR outlet placeholder
 
 ## Recommended IDE Setup
 
@@ -26,48 +43,78 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 ## Project Setup
 
 ```sh
-bun install
+npm install
 ```
 
-### Compile and Hot-Reload for Development
+## Development
+
+Run the development server with SSR and HMR:
 
 ```sh
-bun dev
+npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+Server will start at `http://localhost:3000`
+
+## Production
+
+### Build
+
+Build both client and server bundles:
 
 ```sh
-bun run build
+npm run build
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+This creates:
+- `dist/client/` - Client-side bundle with assets
+- `dist/server/` - Server-side rendering bundle
+
+### Preview
+
+Run the production build locally:
 
 ```sh
-bun test:unit
+npm run preview
 ```
 
-### Run End-to-End Tests with [Playwright](https://playwright.dev)
+## Testing
+
+### Unit Tests with [Vitest](https://vitest.dev/)
+
+```sh
+npm run test:unit
+```
+
+### E2E Tests with [Playwright](https://playwright.dev)
 
 ```sh
 # Install browsers for the first run
 npx playwright install
 
 # When testing on CI, must build the project first
-bun run build
+npm run build
 
 # Runs the end-to-end tests
-bun test:e2e
+npm run test:e2e
 # Runs the tests only on Chromium
-bun test:e2e --project=chromium
+npm run test:e2e --project=chromium
 # Runs the tests of a specific file
-bun test:e2e tests/example.spec.ts
+npm run test:e2e tests/example.spec.ts
 # Runs the tests in debug mode
-bun test:e2e --debug
+npm run test:e2e --debug
+```
+
+## Code Quality
+
+### Type Checking
+
+```sh
+npm run type-check
 ```
 
 ### Lint with [ESLint](https://eslint.org/)
 
 ```sh
-bun lint
+npm run lint
 ```
