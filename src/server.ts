@@ -18,7 +18,7 @@ const fastify = Fastify({
 
 await fastify.register(fastifyCookie)
 await fastify.register(fastifySession, {
-  secret: process.env.SESSION_SECRET || 'a-very-secret-key-change-in-production',
+  secret: process.env.SESSION_SECRET || 'a-very-secret-key-change-in-production-minimum-32-characters-required',
   cookie: {
     secure: false, // Set to true in production with HTTPS
     httpOnly: true,
