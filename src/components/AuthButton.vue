@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, inject } from 'vue'
 
-// Get initial state from SSR if available
+// Get initial state from SSR (provide/inject) or client (window.__INITIAL_STATE__)
 const getInitialUser = (): { username: string; name: string; avatar: string } | null => {
-  if (typeof window === 'undefined') return null
-  const initialState = (window as any).__INITIAL_STATE__
-  return initialState?.user || null
+  // First try to get from SSR provide/inject
+  const ssrState = inject<{ user?: any }>('initialState', null)
+  if (ssrState?.user) {
+    return ssrState.user
+  }
+  
+  // Fallback to client-side window.__INITIAL_STATE__
+  if (typeof window !== 'undefined') {
+    const initialState = (window as any).__INITIAL_STATE__
+    return initialState?.user || null
+  }
+  
+  return null
 }
 
 const user = ref<{ username: string; name: string; avatar: string } | null>(getInitialUser())

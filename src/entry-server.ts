@@ -1,8 +1,13 @@
 import { renderToString } from 'vue/server-renderer'
 import { createApp } from './app'
 
-export const render = async (url: string) => {
+export const render = async (url: string, initialState?: { user?: any }) => {
   const { app, router } = createApp(true)
+
+  // Provide initial state for SSR
+  if (initialState) {
+    app.provide('initialState', initialState)
+  }
 
   await router.push(url)
   await router.isReady()

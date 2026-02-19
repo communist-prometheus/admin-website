@@ -119,7 +119,7 @@ const renderPage = async (url: string, initialState?: { user?: any }): Promise<s
     render = devRender
   }
 
-  const { html: appHtml, modules } = await render(url)
+  const { html: appHtml, modules } = await render(url, initialState)
   const preloadLinks = generatePreloadLinks(modules)
 
   let finalHtml = template.replace('<!--ssr-outlet-->', appHtml)
