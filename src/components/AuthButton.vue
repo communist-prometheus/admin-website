@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const user = ref<{ username: string; name: string; avatar: string } | null>(null)
 const loading = ref(false)
@@ -7,6 +7,8 @@ const showDropdown = ref(false)
 const error = ref<string | null>(null)
 
 const checkAuth = async () => {
+  if (typeof window === 'undefined') return
+  
   try {
     console.log('[AuthButton] Checking auth...')
     const response = await fetch('/api/auth/user')
@@ -27,6 +29,8 @@ const checkAuth = async () => {
 }
 
 const handleGitHubLogin = () => {
+  if (typeof window === 'undefined') return
+  
   loading.value = true
   error.value = null
   
@@ -79,10 +83,12 @@ const handleGitHubLogin = () => {
 }
 
 const handleLogout = () => {
+  if (typeof window === 'undefined') return
   window.location.href = '/api/auth/logout'
 }
 
 const handleDifferentAccount = () => {
+  if (typeof window === 'undefined') return
   window.open('https://github.com/logout', '_blank')
   showDropdown.value = false
 }
@@ -93,6 +99,7 @@ const toggleDropdown = () => {
 
 // Close dropdown when clicking outside
 const closeDropdown = (event: MouseEvent) => {
+  if (typeof window === 'undefined') return
   const target = event.target as HTMLElement
   if (!target.closest('.auth-dropdown')) {
     showDropdown.value = false
@@ -101,7 +108,15 @@ const closeDropdown = (event: MouseEvent) => {
 
 onMounted(() => {
   checkAuth()
-  document.addEventListener('click', closeDropdown)
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', closeDropdown)
+  }
+})
+
+onUnmounted(() => {
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('click', closeDropdown)
+  }
 })
 </script>
 
