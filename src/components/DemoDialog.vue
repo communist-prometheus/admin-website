@@ -38,7 +38,48 @@ const checkAuth = async () => {
 const handleGitHubLogin = () => {
   loading.value = true
   error.value = null
-  window.location.href = '/api/auth/github'
+  
+  // Open OAuth in popup window
+  const width = 600
+  const height = 700
+  const left = (window.screen.width - width) / 2
+  const top = (window.screen.height - height) / 2
+  
+  const popup = window.open(
+    '/api/auth/github',
+    'github-oauth',
+    `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no`
+  )
+  
+  // Listen for message from popup
+  const handleMessage = (event: MessageEvent) => {
+    if (event.origin !== window.location.origin) return
+    
+    if (event.data.type === 'github-oauth-success') {
+      console.log('[DemoDialog] OAuth success from popup:', event.data.user)
+      user.value = event.data.user
+      loading.value = false
+      window.removeEventListener('message', handleMessage)
+      popup?.close()
+    } else if (event.data.type === 'github-oauth-error') {
+      console.error('[DemoDialog] OAuth error from popup:', event.data.error)
+      error.value = event.data.error || 'Authentication failed'
+      loading.value = false
+      window.removeEventListener('message', handleMessage)
+      popup?.close()
+    }
+  }
+  
+  window.addEventListener('message', handleMessage)
+  
+  // Cleanup if popup is closed manually
+  const checkPopup = setInterval(() => {
+    if (popup?.closed) {
+      clearInterval(checkPopup)
+      loading.value = false
+      window.removeEventListener('message', handleMessage)
+    }
+  }, 500)
 }
 
 const handleLogout = () => {

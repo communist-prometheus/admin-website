@@ -200,8 +200,33 @@ fastify.get('/auth/github/callback', async (request, reply) => {
       name: userData.name
     })
 
-    // Redirect back to home page
-    return reply.redirect('/')
+    // Return HTML page that posts message to parent window and closes popup
+    return reply.type('text/html').send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Authentication Successful</title>
+      </head>
+      <body>
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'github-oauth-success',
+              user: {
+                username: ${JSON.stringify(userData.login)},
+                name: ${JSON.stringify(userData.name)},
+                avatar: ${JSON.stringify(userData.avatar_url)}
+              }
+            }, window.location.origin);
+            window.close();
+          } else {
+            window.location.href = '/';
+          }
+        </script>
+        <p>Authentication successful. This window will close automatically...</p>
+      </body>
+      </html>
+    `)
   } catch (error) {
     fastify.log.error(error)
     return reply.status(500).send({ error: 'OAuth failed' })
