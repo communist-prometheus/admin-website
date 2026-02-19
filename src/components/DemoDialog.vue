@@ -17,15 +17,21 @@ const close = () => {
 
 const checkAuth = async () => {
   try {
+    console.log('[DemoDialog] Checking auth...')
     const response = await fetch('/api/auth/user')
+    console.log('[DemoDialog] Auth response status:', response.status)
     if (response.ok) {
       const data = await response.json()
+      console.log('[DemoDialog] Auth data:', data)
       if (data.authenticated) {
         user.value = data.user
+        console.log('[DemoDialog] User authenticated:', user.value)
+      } else {
+        console.log('[DemoDialog] User not authenticated')
       }
     }
   } catch (err) {
-    console.error('Failed to check auth:', err)
+    console.error('[DemoDialog] Failed to check auth:', err)
   }
 }
 
@@ -74,8 +80,11 @@ defineExpose({ open, close })
     </div>
 
     <div v-if="!user">
-      <p :style="{ marginBottom: '1.5rem' }">
+      <p :style="{ marginBottom: '0.5rem' }">
         Sign in with your GitHub account to continue.
+      </p>
+      <p :style="{ fontSize: '0.875rem', color: '#6e7781', marginBottom: '1.5rem' }">
+        To login with a different account, <a href="https://github.com/logout" target="_blank" :style="{ color: '#0969da', textDecoration: 'none' }">logout from GitHub</a> first.
       </p>
       
       <div :style="{ display: 'flex', gap: '1rem', justifyContent: 'space-between' }">

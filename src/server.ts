@@ -194,6 +194,11 @@ fastify.get('/auth/github/callback', async (request, reply) => {
       name: userData.name,
       avatar: userData.avatar_url
     }
+    
+    fastify.log.info('GitHub OAuth: User stored in session', {
+      username: userData.login,
+      name: userData.name
+    })
 
     // Redirect back to home page
     return reply.redirect('/')
@@ -206,9 +211,12 @@ fastify.get('/auth/github/callback', async (request, reply) => {
 fastify.get('/api/auth/user', async (request, reply) => {
   // @ts-expect-error - fastify-session typing issue
   const user = request.session.github_user
+  fastify.log.info('Auth check - session user:', user)
   if (!user) {
+    fastify.log.info('User not authenticated - returning 401')
     return reply.status(401).send({ authenticated: false })
   }
+  fastify.log.info('User authenticated - returning user data')
   return reply.send({ authenticated: true, user })
 })
 
