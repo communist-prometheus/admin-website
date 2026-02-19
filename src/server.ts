@@ -220,10 +220,14 @@ fastify.get('/api/auth/user', async (request, reply) => {
   return reply.send({ authenticated: true, user })
 })
 
-fastify.post('/api/auth/logout', async (request, reply) => {
+fastify.get('/api/auth/logout', async (request, reply) => {
   // @ts-expect-error - fastify-session typing issue
   request.session.github_user = undefined
-  return reply.send({ success: true })
+  
+  fastify.log.info('User logged out, redirecting to GitHub logout')
+  
+  // Redirect to GitHub logout page
+  return reply.redirect('https://github.com/logout')
 })
 
 if (isProduction) {

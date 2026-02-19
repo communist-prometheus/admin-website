@@ -41,14 +41,9 @@ const handleGitHubLogin = () => {
   window.location.href = '/api/auth/github'
 }
 
-const handleLogout = async () => {
-  try {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    user.value = null
-  } catch (err) {
-    error.value = 'Failed to logout'
-    console.error('Logout failed:', err)
-  }
+const handleLogout = () => {
+  // Redirect to logout endpoint which will clear session and logout from GitHub
+  window.location.href = '/api/auth/logout'
 }
 
 onMounted(() => {
@@ -80,11 +75,8 @@ defineExpose({ open, close })
     </div>
 
     <div v-if="!user">
-      <p :style="{ marginBottom: '0.5rem' }">
+      <p :style="{ marginBottom: '1.5rem' }">
         Sign in with your GitHub account to continue.
-      </p>
-      <p :style="{ fontSize: '0.875rem', color: '#6e7781', marginBottom: '1.5rem' }">
-        To login with a different account, <a href="https://github.com/logout" target="_blank" :style="{ color: '#0969da', textDecoration: 'none' }">logout from GitHub</a> first.
       </p>
       
       <div :style="{ display: 'flex', gap: '1rem', justifyContent: 'space-between' }">
