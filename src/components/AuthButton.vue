@@ -1,13 +1,26 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 
-const user = ref<{ username: string; name: string; avatar: string } | null>(null)
+// Get initial state from SSR if available
+const getInitialUser = (): { username: string; name: string; avatar: string } | null => {
+  if (typeof window === 'undefined') return null
+  const initialState = (window as any).__INITIAL_STATE__
+  return initialState?.user || null
+}
+
+const user = ref<{ username: string; name: string; avatar: string } | null>(getInitialUser())
 const loading = ref(false)
 const showDropdown = ref(false)
 const error = ref<string | null>(null)
 
 const checkAuth = async () => {
   if (typeof window === 'undefined') return
+  
+  // Skip fetch if we already have user from SSR
+  if (user.value) {
+    console.log('[AuthButton] User already loaded from SSR:', user.value)
+    return
+  }
   
   try {
     console.log('[AuthButton] Checking auth...')

@@ -78,7 +78,7 @@ const generatePreloadLinks = (modules: Set<string>): string => {
     .join('\n  ')
 }
 
-const renderPage = async (url: string): Promise<string> => {
+const renderPage = async (url: string, initialState?: { user?: any }): Promise<string> => {
   let template: string
   let render: (url: string) => Promise<{ html: string; modules: Set<string> }>
 
@@ -127,6 +127,12 @@ const renderPage = async (url: string): Promise<string> => {
   if (preloadLinks) {
     // Insert preload links at the START of <head>, not at the end
     finalHtml = finalHtml.replace('<head>', `<head>\n  ${preloadLinks}`)
+  }
+
+  // Inject initial state for SSR hydration
+  if (initialState) {
+    const stateScript = `<script>window.__INITIAL_STATE__ = ${JSON.stringify(initialState)}</script>`
+    finalHtml = finalHtml.replace('</head>', `${stateScript}\n</head>`)
   }
 
   return finalHtml
@@ -276,7 +282,12 @@ if (isProduction) {
 
 fastify.get('*', async (request, reply) => {
   try {
-    const html = await renderPage(request.url)
+    // @ts-expect-error - fastify-session typing issue
+    const githubUser = request.session.github_user
+    
+    const initialState = githubUser ? { user: githubUser } : undefined
+    
+    const html = await renderPage(request.url, initialState)
     reply.type('text/html').send(html)
   } catch (error) {
     fastify.log.error(error)
