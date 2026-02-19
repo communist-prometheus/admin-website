@@ -39,8 +39,8 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
 
-    /* Only on CI systems run the tests headless */
-    headless: !!process.env.CI,
+    /* Run tests headless by default */
+    headless: true,
   },
 
   /* Configure projects for major browsers */
@@ -101,11 +101,8 @@ export default defineConfig({
     /**
      * Use the production server with mock OAuth enabled for e2e tests
      */
-    command: 'cross-env MOCK_OAUTH=true npm run preview',
+    command: 'npm run preview:test',
     port: 3000,
-    reuseExistingServer: !process.env.CI,
-    env: {
-      MOCK_OAUTH: 'true',
-    },
+    reuseExistingServer: false, // Always restart to ensure MOCK_OAUTH is applied
   },
 })

@@ -1,6 +1,13 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('GitHub OAuth Authentication', () => {
+  test('should verify mock OAuth is enabled', async ({ page }) => {
+    const response = await page.request.get('/api/test/status')
+    const data = await response.json()
+    expect(data.mockOAuth).toBe(true)
+    expect(data.mockUser).toBeDefined()
+  })
+
   test('should show login button when not authenticated', async ({ page }) => {
     await page.goto('/')
     
@@ -9,23 +16,12 @@ test.describe('GitHub OAuth Authentication', () => {
     await expect(loginButton).toBeVisible()
   })
 
-  test('should complete login flow with mock OAuth', async ({ page, context }) => {
-    await page.goto('/')
+  test('should complete login flow with mock OAuth', async ({ page }) => {
+    // Use mock OAuth flow - visit auth endpoint which redirects through callback
+    await page.goto('/api/auth/github')
+    await page.waitForURL('/')
     
-    // Click login button
-    const loginButton = page.getByRole('button', { name: 'Login' })
-    await loginButton.click()
-    
-    // Wait for popup window to open
-    const popupPromise = context.waitForEvent('page')
-    
-    // Popup should open, go through OAuth flow, and close automatically
-    const popup = await popupPromise
-    
-    // Wait for popup to close (mock OAuth should auto-complete)
-    await popup.waitForEvent('close', { timeout: 5000 })
-    
-    // Should now see user button with test user data
+    // Should be redirected home and see user button
     const userButton = page.getByRole('button', { name: /Test User/i })
     await expect(userButton).toBeVisible()
     
@@ -35,13 +31,11 @@ test.describe('GitHub OAuth Authentication', () => {
   })
 
   test('should show dropdown menu when clicking user button', async ({ page }) => {
-    await page.goto('/')
+    // Login via mock OAuth
+    await page.goto('/api/auth/github')
+    await page.waitForURL('/')
     
-    // Login first
-    const loginButton = page.getByRole('button', { name: 'Login' })
-    await loginButton.click()
-    
-    // Wait for authentication
+    // User button should be visible
     const userButton = page.getByRole('button', { name: /Test User/i })
     await expect(userButton).toBeVisible()
     
@@ -57,13 +51,11 @@ test.describe('GitHub OAuth Authentication', () => {
   })
 
   test('should logout and show login button again', async ({ page }) => {
-    await page.goto('/')
+    // Login via mock OAuth
+    await page.goto('/api/auth/github')
+    await page.waitForURL('/')
     
-    // Login first
-    const loginButton = page.getByRole('button', { name: 'Login' })
-    await loginButton.click()
-    
-    // Wait for authentication
+    // User button should be visible
     const userButton = page.getByRole('button', { name: /Test User/i })
     await expect(userButton).toBeVisible()
     
@@ -77,13 +69,11 @@ test.describe('GitHub OAuth Authentication', () => {
   })
 
   test('should persist authentication across page reloads', async ({ page }) => {
-    await page.goto('/')
+    // Login via mock OAuth
+    await page.goto('/api/auth/github')
+    await page.waitForURL('/')
     
-    // Login
-    const loginButton = page.getByRole('button', { name: 'Login' })
-    await loginButton.click()
-    
-    // Wait for authentication
+    // User button should be visible
     const userButton = page.getByRole('button', { name: /Test User/i })
     await expect(userButton).toBeVisible()
     

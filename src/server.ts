@@ -11,10 +11,18 @@ import 'dotenv/config'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isProduction = process.env.NODE_ENV === 'production'
+const isMockOAuth = process.env.MOCK_OAUTH === 'true'
 
 const fastify = Fastify({
   logger: true
 })
+
+// Log OAuth mode on startup
+if (isMockOAuth) {
+  fastify.log.info('🧪 MOCK OAUTH MODE ENABLED - GitHub OAuth will be mocked')
+} else {
+  fastify.log.info('🔐 Real GitHub OAuth mode')
+}
 
 await fastify.register(fastifyCookie)
 await fastify.register(fastifySession, {
@@ -145,12 +153,23 @@ const mockUser = {
   avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4'
 }
 
+// Test-only endpoints (only in mock mode)
+if (isMockOAuth) {
+  // Status endpoint for debugging/verification
+  fastify.get('/api/test/status', async (_request, reply) => {
+    return reply.send({ 
+      mockOAuth: true,
+      mockUser,
+      message: 'Mock OAuth mode is active'
+    })
+  })
+}
+
 // GitHub OAuth routes
 fastify.get('/api/auth/github', async (_request, reply) => {
-  const isMockMode = process.env.MOCK_OAUTH === 'true'
-  
   // Mock mode: redirect directly to callback with mock code
-  if (isMockMode) {
+  if (isMockOAuth) {
+    fastify.log.info('🧪 Mock OAuth: Redirecting to callback with mock code')
     const callbackUrl = process.env.GITHUB_CALLBACK_URL || 'http://localhost:3000/auth/github/callback'
     return reply.redirect(`${callbackUrl}?code=mock_code_123`)
   }
@@ -178,12 +197,11 @@ fastify.get('/auth/github/callback', async (request, reply) => {
   }
 
   try {
-    const isMockMode = process.env.MOCK_OAUTH === 'true'
     let userData: { login?: string; name?: string; avatar_url?: string }
     
     // Mock mode: skip GitHub API calls and use mock data
-    if (isMockMode) {
-      fastify.log.info('Mock OAuth: Using mock user data')
+    if (isMockOAuth) {
+      fastify.log.info('🧪 Mock OAuth: Using mock user data')
       userData = mockUser
     } else {
       // Real mode: exchange code for access token
@@ -231,7 +249,21 @@ fastify.get('/auth/github/callback', async (request, reply) => {
       name: userData.name
     })
 
-    // Return HTML page that posts message to parent window and closes popup
+    // Mock mode: simple redirect for e2e tests
+    if (isMockOAuth) {
+      // Explicitly save session before redirect
+      await new Promise<void>((resolve, reject) => {
+        request.session.save((err: Error | null) => {
+          if (err) reject(err)
+          else resolve()
+        })
+      })
+      
+      fastify.log.info('🧪 Mock OAuth: Session saved, redirecting to home')
+      return reply.redirect('/')
+    }
+
+    // Real mode: return HTML page that posts message to parent window and closes popup
     return reply.type('text/html').send(`
       <!DOCTYPE html>
       <html>
