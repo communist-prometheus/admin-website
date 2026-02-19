@@ -209,17 +209,30 @@ fastify.get('/auth/github/callback', async (request, reply) => {
       </head>
       <body>
         <script>
+          console.log('[OAuth Callback] Page loaded');
+          console.log('[OAuth Callback] window.opener exists:', !!window.opener);
+          
           if (window.opener) {
-            window.opener.postMessage({
+            const userData = {
               type: 'github-oauth-success',
               user: {
                 username: ${JSON.stringify(userData.login)},
                 name: ${JSON.stringify(userData.name)},
                 avatar: ${JSON.stringify(userData.avatar_url)}
               }
-            }, window.location.origin);
-            window.close();
+            };
+            
+            console.log('[OAuth Callback] Sending postMessage:', userData);
+            console.log('[OAuth Callback] Target origin:', window.location.origin);
+            
+            window.opener.postMessage(userData, window.location.origin);
+            
+            console.log('[OAuth Callback] Message sent, closing window in 1 second...');
+            setTimeout(() => {
+              window.close();
+            }, 1000);
           } else {
+            console.log('[OAuth Callback] No opener, redirecting to home');
             window.location.href = '/';
           }
         </script>

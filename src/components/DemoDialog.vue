@@ -53,11 +53,16 @@ const handleGitHubLogin = () => {
   
   // Listen for message from popup
   const handleMessage = (event: MessageEvent) => {
-    if (event.origin !== window.location.origin) return
+    console.log('[DemoDialog] Received message:', event.data)
+    if (event.origin !== window.location.origin) {
+      console.log('[DemoDialog] Message from different origin, ignoring')
+      return
+    }
     
     if (event.data.type === 'github-oauth-success') {
       console.log('[DemoDialog] OAuth success from popup:', event.data.user)
       user.value = event.data.user
+      console.log('[DemoDialog] User value set to:', user.value)
       loading.value = false
       window.removeEventListener('message', handleMessage)
       popup?.close()
