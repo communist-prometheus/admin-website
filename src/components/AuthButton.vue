@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, inject } from 'vue'
+import { inject, onMounted, onUnmounted, ref } from 'vue'
 
 // Get initial state from SSR (provide/inject) or client (window.__INITIAL_STATE__)
 const getInitialUser = (): { username: string; name: string; avatar: string } | null => {
@@ -8,13 +8,13 @@ const getInitialUser = (): { username: string; name: string; avatar: string } | 
   if (ssrState?.user) {
     return ssrState.user
   }
-  
+
   // Fallback to client-side window.__INITIAL_STATE__
   if (typeof window !== 'undefined') {
     const initialState = (window as any).__INITIAL_STATE__
     return initialState?.user || null
   }
-  
+
   return null
 }
 
@@ -25,13 +25,13 @@ const error = ref<string | null>(null)
 
 const checkAuth = async () => {
   if (typeof window === 'undefined') return
-  
+
   // Skip fetch if we already have user from SSR
   if (user.value) {
     console.log('[AuthButton] User already loaded from SSR:', user.value)
     return
   }
-  
+
   try {
     console.log('[AuthButton] Checking auth...')
     const response = await fetch('/api/auth/user')
@@ -51,24 +51,24 @@ const checkAuth = async () => {
   }
 }
 
-const handleGitHubLogin = () => {
+const _handleGitHubLogin = () => {
   if (typeof window === 'undefined') return
-  
+
   loading.value = true
   error.value = null
-  
+
   // Open OAuth in popup window
   const width = 600
   const height = 700
   const left = (window.screen.width - width) / 2
   const top = (window.screen.height - height) / 2
-  
+
   const popup = window.open(
     '/api/auth/github',
     'github-oauth',
     `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no`
   )
-  
+
   // Listen for message from popup
   const handleMessage = (event: MessageEvent) => {
     console.log('[AuthButton] Received message:', event.data)
@@ -76,7 +76,7 @@ const handleGitHubLogin = () => {
       console.log('[AuthButton] Message from different origin, ignoring')
       return
     }
-    
+
     if (event.data.type === 'github-oauth-success') {
       console.log('[AuthButton] OAuth success from popup:', event.data.user)
       user.value = event.data.user
@@ -92,9 +92,9 @@ const handleGitHubLogin = () => {
       popup?.close()
     }
   }
-  
+
   window.addEventListener('message', handleMessage)
-  
+
   // Cleanup if popup is closed manually
   const checkPopup = setInterval(() => {
     if (popup?.closed) {
@@ -105,18 +105,18 @@ const handleGitHubLogin = () => {
   }, 500)
 }
 
-const handleLogout = () => {
+const _handleLogout = () => {
   if (typeof window === 'undefined') return
   window.location.href = '/api/auth/logout'
 }
 
-const handleDifferentAccount = () => {
+const _handleDifferentAccount = () => {
   if (typeof window === 'undefined') return
   window.open('https://github.com/logout', '_blank')
   showDropdown.value = false
 }
 
-const toggleDropdown = () => {
+const _toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
 }
 

@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
-import Fastify from 'fastify'
-import fastifyStatic from '@fastify/static'
-import middie from '@fastify/middie'
+import { fileURLToPath } from 'node:url'
 import fastifyCookie from '@fastify/cookie'
+import middie from '@fastify/middie'
 import fastifySession from '@fastify/session'
+import fastifyStatic from '@fastify/static'
+import Fastify from 'fastify'
 import type { ViteDevServer } from 'vite'
 import 'dotenv/config'
 
@@ -14,7 +14,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 const isMockOAuth = process.env.MOCK_OAUTH === 'true'
 
 const fastify = Fastify({
-  logger: true
+  logger: true,
 })
 
 // Log OAuth mode on startup
@@ -26,17 +26,18 @@ if (isMockOAuth) {
 
 await fastify.register(fastifyCookie)
 await fastify.register(fastifySession, {
-  secret: process.env.SESSION_SECRET || 'a-very-secret-key-change-in-production-minimum-32-characters-required',
+  secret:
+    process.env.SESSION_SECRET ||
+    'a-very-secret-key-change-in-production-minimum-32-characters-required',
   cookie: {
     secure: false, // Set to true in production with HTTPS
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
-  }
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+  },
 })
 await fastify.register(middie)
 
-const resolveDistPath = (path: string): string => 
-  resolve(__dirname, '../dist', path)
+const resolveDistPath = (path: string): string => resolve(__dirname, '../dist', path)
 
 let viteServer: ViteDevServer | undefined
 let ssrManifest: Record<string, string[]> | undefined
@@ -46,23 +47,19 @@ if (!isProduction) {
   const vite = await import('vite')
   viteServer = await vite.createServer({
     server: { middlewareMode: true },
-    appType: 'custom'
+    appType: 'custom',
   })
 
   await fastify.use(viteServer.middlewares)
 } else {
   await fastify.register(fastifyStatic, {
     root: resolveDistPath('client/assets'),
-    prefix: '/assets/'
+    prefix: '/assets/',
   })
 
-  ssrManifest = JSON.parse(
-    readFileSync(resolveDistPath('client/.vite/ssr-manifest.json'), 'utf-8')
-  )
+  ssrManifest = JSON.parse(readFileSync(resolveDistPath('client/.vite/ssr-manifest.json'), 'utf-8'))
 
-  clientManifest = JSON.parse(
-    readFileSync(resolveDistPath('client/.vite/manifest.json'), 'utf-8')
-  )
+  clientManifest = JSON.parse(readFileSync(resolveDistPath('client/.vite/manifest.json'), 'utf-8'))
 }
 
 const generatePreloadLinks = (modules: Set<string>): string => {
@@ -92,18 +89,17 @@ const renderPage = async (url: string, initialState?: { user?: any }): Promise<s
 
   if (isProduction) {
     template = readFileSync(resolve(__dirname, '../index.html'), 'utf-8')
-    
+
     const entryClient = clientManifest?.['src/entry-client.ts']
     if (entryClient) {
       // Insert CSS at the START of <head> to prevent FOUC/CLS
-      const cssLinks = entryClient.css
-        ?.map(css => `<link rel="stylesheet" href="/${css}">`)
-        .join('\n  ') || ''
-      
+      const cssLinks =
+        entryClient.css?.map(css => `<link rel="stylesheet" href="/${css}">`).join('\n  ') || ''
+
       if (cssLinks) {
         template = template.replace('<head>', `<head>\n  ${cssLinks}`)
       }
-      
+
       // Replace script tag in body
       const scriptTag = `<script type="module" src="/${entryClient.file}"></script>`
       template = template.replace(
@@ -111,7 +107,7 @@ const renderPage = async (url: string, initialState?: { user?: any }): Promise<s
         scriptTag
       )
     }
-    
+
     // @ts-expect-error - build output not available in dev mode
     const { render: prodRender } = await import('../dist/server/entry-server.js')
     render = prodRender
@@ -150,17 +146,17 @@ const renderPage = async (url: string, initialState?: { user?: any }): Promise<s
 const mockUser = {
   login: 'test-user',
   name: 'Test User',
-  avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4'
+  avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4',
 }
 
 // Test-only endpoints (only in mock mode)
 if (isMockOAuth) {
   // Status endpoint for debugging/verification
   fastify.get('/api/test/status', async (_request, reply) => {
-    return reply.send({ 
+    return reply.send({
       mockOAuth: true,
       mockUser,
-      message: 'Mock OAuth mode is active'
+      message: 'Mock OAuth mode is active',
     })
   })
 }
@@ -170,14 +166,15 @@ fastify.get('/api/auth/github', async (_request, reply) => {
   // Mock mode: redirect directly to callback with mock code
   if (isMockOAuth) {
     fastify.log.info('🧪 Mock OAuth: Redirecting to callback with mock code')
-    const callbackUrl = process.env.GITHUB_CALLBACK_URL || 'http://localhost:3000/auth/github/callback'
+    const callbackUrl =
+      process.env.GITHUB_CALLBACK_URL || 'http://localhost:3000/auth/github/callback'
     return reply.redirect(`${callbackUrl}?code=mock_code_123`)
   }
-  
+
   // Real mode: redirect to GitHub
   const clientId = process.env.GITHUB_CLIENT_ID
   const callbackUrl = process.env.GITHUB_CALLBACK_URL
-  
+
   if (!clientId) {
     return reply.status(500).send({ error: 'GitHub client ID not configured' })
   }
@@ -198,7 +195,7 @@ fastify.get('/auth/github/callback', async (request, reply) => {
 
   try {
     let userData: { login?: string; name?: string; avatar_url?: string }
-    
+
     // Mock mode: skip GitHub API calls and use mock data
     if (isMockOAuth) {
       fastify.log.info('🧪 Mock OAuth: Using mock user data')
@@ -209,17 +206,17 @@ fastify.get('/auth/github/callback', async (request, reply) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
         body: JSON.stringify({
           client_id: process.env.GITHUB_CLIENT_ID,
           client_secret: process.env.GITHUB_CLIENT_SECRET,
           code,
-          redirect_uri: process.env.GITHUB_CALLBACK_URL
-        })
+          redirect_uri: process.env.GITHUB_CALLBACK_URL,
+        }),
       })
 
-      const tokenData = await tokenResponse.json() as { access_token?: string; error?: string }
+      const tokenData = (await tokenResponse.json()) as { access_token?: string; error?: string }
 
       if (tokenData.error || !tokenData.access_token) {
         return reply.status(400).send({ error: 'Failed to get access token' })
@@ -228,12 +225,16 @@ fastify.get('/auth/github/callback', async (request, reply) => {
       // Get user info from GitHub
       const userResponse = await fetch('https://api.github.com/user', {
         headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Accept': 'application/json'
-        }
+          Authorization: `Bearer ${tokenData.access_token}`,
+          Accept: 'application/json',
+        },
       })
 
-      userData = await userResponse.json() as { login?: string; name?: string; avatar_url?: string }
+      userData = (await userResponse.json()) as {
+        login?: string
+        name?: string
+        avatar_url?: string
+      }
     }
 
     // Store user info in session
@@ -241,12 +242,12 @@ fastify.get('/auth/github/callback', async (request, reply) => {
     request.session.github_user = {
       username: userData.login,
       name: userData.name,
-      avatar: userData.avatar_url
+      avatar: userData.avatar_url,
     }
-    
+
     fastify.log.info('GitHub OAuth: User stored in session', {
       username: userData.login,
-      name: userData.name
+      name: userData.name,
     })
 
     // Mock mode: simple redirect for e2e tests
@@ -258,7 +259,7 @@ fastify.get('/auth/github/callback', async (request, reply) => {
           else resolve()
         })
       })
-      
+
       fastify.log.info('🧪 Mock OAuth: Session saved, redirecting to home')
       return reply.redirect('/')
     }
@@ -324,9 +325,9 @@ fastify.get('/api/auth/user', async (request, reply) => {
 fastify.get('/api/auth/logout', async (request, reply) => {
   // @ts-expect-error - fastify-session typing issue
   request.session.github_user = undefined
-  
+
   fastify.log.info('User logged out from app session')
-  
+
   // Redirect back to home page
   return reply.redirect('/')
 })
@@ -341,9 +342,9 @@ fastify.get('*', async (request, reply) => {
   try {
     // @ts-expect-error - fastify-session typing issue
     const githubUser = request.session.github_user
-    
+
     const initialState = githubUser ? { user: githubUser } : undefined
-    
+
     const html = await renderPage(request.url, initialState)
     reply.type('text/html').send(html)
   } catch (error) {

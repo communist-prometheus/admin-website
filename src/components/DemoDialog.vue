@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 
 const dialogRef = ref<HTMLDialogElement | null>(null)
 const user = ref<{ username: string; name: string; avatar: string } | null>(null)
@@ -35,22 +35,22 @@ const checkAuth = async () => {
   }
 }
 
-const handleGitHubLogin = () => {
+const _handleGitHubLogin = () => {
   loading.value = true
   error.value = null
-  
+
   // Open OAuth in popup window
   const width = 600
   const height = 700
   const left = (window.screen.width - width) / 2
   const top = (window.screen.height - height) / 2
-  
+
   const popup = window.open(
     '/api/auth/github',
     'github-oauth',
     `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no`
   )
-  
+
   // Listen for message from popup
   const handleMessage = (event: MessageEvent) => {
     console.log('[DemoDialog] Received message:', event.data)
@@ -58,7 +58,7 @@ const handleGitHubLogin = () => {
       console.log('[DemoDialog] Message from different origin, ignoring')
       return
     }
-    
+
     if (event.data.type === 'github-oauth-success') {
       console.log('[DemoDialog] OAuth success from popup:', event.data.user)
       user.value = event.data.user
@@ -74,9 +74,9 @@ const handleGitHubLogin = () => {
       popup?.close()
     }
   }
-  
+
   window.addEventListener('message', handleMessage)
-  
+
   // Cleanup if popup is closed manually
   const checkPopup = setInterval(() => {
     if (popup?.closed) {
@@ -87,16 +87,18 @@ const handleGitHubLogin = () => {
   }, 500)
 }
 
-const handleLogout = () => {
+const _handleLogout = () => {
   // Redirect to logout endpoint which will clear session
   window.location.href = '/api/auth/logout'
 }
 
-const handleDifferentAccount = () => {
+const _handleDifferentAccount = () => {
   // Open GitHub logout in new tab
   window.open('https://github.com/logout', '_blank')
   // Show instruction to user
-  console.log('[DemoDialog] GitHub logout opened in new tab. After logging out, click "Sign in with GitHub" again.')
+  console.log(
+    '[DemoDialog] GitHub logout opened in new tab. After logging out, click "Sign in with GitHub" again.'
+  )
 }
 
 onMounted(() => {

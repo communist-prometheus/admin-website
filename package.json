@@ -15,9 +15,12 @@
     "test:e2e:ui": "cross-env MOCK_OAUTH=true playwright test --ui",
     "test:e2e:debug": "cross-env MOCK_OAUTH=true playwright test --debug",
     "type-check": "vue-tsc --build",
-    "lint": "run-s lint:*",
-    "lint:oxlint": "oxlint . --fix",
-    "lint:eslint": "eslint . --fix --cache"
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint --write .",
+    "lint:check": "biome lint .",
+    "check": "biome check --write .",
+    "check:ci": "biome ci ."
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
@@ -30,6 +33,7 @@
     "vue-router": "^5.0.2"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.2",
     "@fastify/middie": "^9.1.0",
     "@playwright/test": "^1.58.2",
     "@tsconfig/node24": "^24.0.4",
@@ -37,18 +41,12 @@
     "@types/node": "^24.10.13",
     "@vitejs/plugin-vue": "^6.0.4",
     "@vitest/eslint-plugin": "^1.6.9",
-    "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.8.1",
     "cross-env": "^10.1.0",
-    "eslint": "^9.39.2",
-    "eslint-plugin-oxlint": "~1.46.0",
-    "eslint-plugin-playwright": "^2.5.1",
-    "eslint-plugin-vue": "~10.8.0",
     "jiti": "^2.6.1",
     "jsdom": "^28.1.0",
     "npm-run-all2": "^8.0.4",
-    "oxlint": "~1.47.0",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "vite": "beta",

@@ -1,6 +1,6 @@
 import { createSSRApp } from 'vue'
-import { createRouter, createMemoryHistory, createWebHistory } from 'vue-router'
 import type { Router, RouterHistory } from 'vue-router'
+import { createMemoryHistory, createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import HomeView from './views/HomeView.vue'
 
