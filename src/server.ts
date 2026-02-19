@@ -138,8 +138,24 @@ const renderPage = async (url: string, initialState?: { user?: any }): Promise<s
   return finalHtml
 }
 
+// Mock OAuth data for testing
+const mockUser = {
+  login: 'test-user',
+  name: 'Test User',
+  avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4'
+}
+
 // GitHub OAuth routes
 fastify.get('/api/auth/github', async (_request, reply) => {
+  const isMockMode = process.env.MOCK_OAUTH === 'true'
+  
+  // Mock mode: redirect directly to callback with mock code
+  if (isMockMode) {
+    const callbackUrl = process.env.GITHUB_CALLBACK_URL || 'http://localhost:3000/auth/github/callback'
+    return reply.redirect(`${callbackUrl}?code=mock_code_123`)
+  }
+  
+  // Real mode: redirect to GitHub
   const clientId = process.env.GITHUB_CLIENT_ID
   const callbackUrl = process.env.GITHUB_CALLBACK_URL
   
@@ -162,36 +178,45 @@ fastify.get('/auth/github/callback', async (request, reply) => {
   }
 
   try {
-    // Exchange code for access token
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code,
-        redirect_uri: process.env.GITHUB_CALLBACK_URL
+    const isMockMode = process.env.MOCK_OAUTH === 'true'
+    let userData: { login?: string; name?: string; avatar_url?: string }
+    
+    // Mock mode: skip GitHub API calls and use mock data
+    if (isMockMode) {
+      fastify.log.info('Mock OAuth: Using mock user data')
+      userData = mockUser
+    } else {
+      // Real mode: exchange code for access token
+      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          client_id: process.env.GITHUB_CLIENT_ID,
+          client_secret: process.env.GITHUB_CLIENT_SECRET,
+          code,
+          redirect_uri: process.env.GITHUB_CALLBACK_URL
+        })
       })
-    })
 
-    const tokenData = await tokenResponse.json() as { access_token?: string; error?: string }
+      const tokenData = await tokenResponse.json() as { access_token?: string; error?: string }
 
-    if (tokenData.error || !tokenData.access_token) {
-      return reply.status(400).send({ error: 'Failed to get access token' })
-    }
-
-    // Get user info
-    const userResponse = await fetch('https://api.github.com/user', {
-      headers: {
-        'Authorization': `Bearer ${tokenData.access_token}`,
-        'Accept': 'application/json'
+      if (tokenData.error || !tokenData.access_token) {
+        return reply.status(400).send({ error: 'Failed to get access token' })
       }
-    })
 
-    const userData = await userResponse.json() as { login?: string; name?: string; avatar_url?: string }
+      // Get user info from GitHub
+      const userResponse = await fetch('https://api.github.com/user', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Accept': 'application/json'
+        }
+      })
+
+      userData = await userResponse.json() as { login?: string; name?: string; avatar_url?: string }
+    }
 
     // Store user info in session
     // @ts-expect-error - fastify-session typing issue
