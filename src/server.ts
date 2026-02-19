@@ -135,11 +135,16 @@ const renderPage = async (url: string): Promise<string> => {
 // GitHub OAuth routes
 fastify.get('/api/auth/github', async (_request, reply) => {
   const clientId = process.env.GITHUB_CLIENT_ID
+  const callbackUrl = process.env.GITHUB_CALLBACK_URL
+  
   if (!clientId) {
     return reply.status(500).send({ error: 'GitHub client ID not configured' })
   }
+  if (!callbackUrl) {
+    return reply.status(500).send({ error: 'GitHub callback URL not configured' })
+  }
 
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=read:user`
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=read:user`
   return reply.redirect(githubAuthUrl)
 })
 
@@ -161,7 +166,8 @@ fastify.get('/auth/github/callback', async (request, reply) => {
       body: JSON.stringify({
         client_id: process.env.GITHUB_CLIENT_ID,
         client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code
+        code,
+        redirect_uri: process.env.GITHUB_CALLBACK_URL
       })
     })
 
