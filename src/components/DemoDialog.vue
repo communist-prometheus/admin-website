@@ -88,8 +88,15 @@ const handleGitHubLogin = () => {
 }
 
 const handleLogout = () => {
-  // Redirect to logout endpoint which will clear session and logout from GitHub
+  // Redirect to logout endpoint which will clear session
   window.location.href = '/api/auth/logout'
+}
+
+const handleDifferentAccount = () => {
+  // Open GitHub logout in new tab
+  window.open('https://github.com/logout', '_blank')
+  // Show instruction to user
+  console.log('[DemoDialog] GitHub logout opened in new tab. After logging out, click "Sign in with GitHub" again.')
 }
 
 onMounted(() => {
@@ -125,37 +132,58 @@ defineExpose({ open, close })
         Sign in with your GitHub account to continue.
       </p>
       
-      <div :style="{ display: 'flex', gap: '1rem', justifyContent: 'space-between' }">
+      <div :style="{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }">
+        <div :style="{ display: 'flex', gap: '1rem' }">
+          <button
+            type="button"
+            @click="close"
+            :style="{
+              flex: '1',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '4px',
+              border: '1px solid var(--color-border)',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontSize: '1rem'
+            }"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            @click="handleGitHubLogin"
+            :disabled="loading"
+            :style="{
+              flex: '1',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '4px',
+              border: 'none',
+              background: loading ? '#999' : '#24292e',
+              color: 'white',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: '1rem',
+              fontWeight: '500'
+            }"
+          >
+            {{ loading ? 'Loading...' : 'Sign in with GitHub' }}
+          </button>
+        </div>
         <button
           type="button"
-          @click="close"
-          :style="{
-            padding: '0.75rem 1.5rem',
-            borderRadius: '4px',
-            border: '1px solid var(--color-border)',
-            background: 'transparent',
-            cursor: 'pointer',
-            fontSize: '1rem'
-          }"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          @click="handleGitHubLogin"
+          @click="handleDifferentAccount"
           :disabled="loading"
           :style="{
-            padding: '0.75rem 1.5rem',
+            padding: '0.5rem 1rem',
             borderRadius: '4px',
-            border: 'none',
-            background: loading ? '#999' : '#24292e',
-            color: 'white',
+            border: '1px solid #0969da',
+            background: 'transparent',
+            color: '#0969da',
             cursor: loading ? 'not-allowed' : 'pointer',
-            fontSize: '1rem',
-            fontWeight: '500'
+            fontSize: '0.875rem',
+            opacity: loading ? 0.5 : 1
           }"
         >
-          {{ loading ? 'Loading...' : 'Sign in with GitHub' }}
+          Login with different account
         </button>
       </div>
     </div>
