@@ -100,9 +100,10 @@ export default defineConfig({
   webServer: {
     /**
      * Use the production server with mock OAuth enabled for e2e tests
+     * Always restart server to ensure MOCK_OAUTH is applied
      */
     command: 'npm run preview:test',
     port: 3000,
-    reuseExistingServer: false, // Always restart to ensure MOCK_OAUTH is applied
+    reuseExistingServer: false,
   },
 })

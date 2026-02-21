@@ -1,109 +1,33 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
+import { useAuth } from '@/composables/useAuth'
+import { useOAuthPopup } from '@/composables/useOAuthPopup'
 
 const dialogRef = ref<HTMLDialogElement | null>(null)
-const user = ref<{ username: string; name: string; avatar: string } | null>(null)
-const loading = ref(false)
-const error = ref<string | null>(null)
+const { user, loading: authLoading, error, checkAuth } = useAuth()
+const { loading: oauthLoading, openPopup } = useOAuthPopup(
+  u => {
+    user.value = u
+  },
+  e => {
+    error.value = e
+  }
+)
 
+const loading = authLoading.value || oauthLoading.value
 const open = () => {
   dialogRef.value?.showModal()
   checkAuth()
 }
-
 const close = () => {
   dialogRef.value?.close()
 }
-
-const checkAuth = async () => {
-  try {
-    console.log('[DemoDialog] Checking auth...')
-    const response = await fetch('/api/auth/user')
-    console.log('[DemoDialog] Auth response status:', response.status)
-    if (response.ok) {
-      const data = await response.json()
-      console.log('[DemoDialog] Auth data:', data)
-      if (data.authenticated) {
-        user.value = data.user
-        console.log('[DemoDialog] User authenticated:', user.value)
-      } else {
-        console.log('[DemoDialog] User not authenticated')
-      }
-    }
-  } catch (err) {
-    console.error('[DemoDialog] Failed to check auth:', err)
-  }
-}
-
-const _handleGitHubLogin = () => {
-  loading.value = true
-  error.value = null
-
-  // Open OAuth in popup window
-  const width = 600
-  const height = 700
-  const left = (window.screen.width - width) / 2
-  const top = (window.screen.height - height) / 2
-
-  const popup = window.open(
-    '/api/auth/github',
-    'github-oauth',
-    `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no`
-  )
-
-  // Listen for message from popup
-  const handleMessage = (event: MessageEvent) => {
-    console.log('[DemoDialog] Received message:', event.data)
-    if (event.origin !== window.location.origin) {
-      console.log('[DemoDialog] Message from different origin, ignoring')
-      return
-    }
-
-    if (event.data.type === 'github-oauth-success') {
-      console.log('[DemoDialog] OAuth success from popup:', event.data.user)
-      user.value = event.data.user
-      console.log('[DemoDialog] User value set to:', user.value)
-      loading.value = false
-      window.removeEventListener('message', handleMessage)
-      popup?.close()
-    } else if (event.data.type === 'github-oauth-error') {
-      console.error('[DemoDialog] OAuth error from popup:', event.data.error)
-      error.value = event.data.error || 'Authentication failed'
-      loading.value = false
-      window.removeEventListener('message', handleMessage)
-      popup?.close()
-    }
-  }
-
-  window.addEventListener('message', handleMessage)
-
-  // Cleanup if popup is closed manually
-  const checkPopup = setInterval(() => {
-    if (popup?.closed) {
-      clearInterval(checkPopup)
-      loading.value = false
-      window.removeEventListener('message', handleMessage)
-    }
-  }, 500)
-}
-
-const _handleLogout = () => {
-  // Redirect to logout endpoint which will clear session
+const handleLogout = () => {
   window.location.href = '/api/auth/logout'
 }
-
-const _handleDifferentAccount = () => {
-  // Open GitHub logout in new tab
+const handleDifferentAccount = () => {
   window.open('https://github.com/logout', '_blank')
-  // Show instruction to user
-  console.log(
-    '[DemoDialog] GitHub logout opened in new tab. After logging out, click "Sign in with GitHub" again.'
-  )
 }
-
-onMounted(() => {
-  checkAuth()
-})
 
 defineExpose({ open, close })
 </script>
@@ -153,7 +77,7 @@ defineExpose({ open, close })
           </button>
           <button
             type="button"
-            @click="handleGitHubLogin"
+            @click="openPopup"
             :disabled="loading"
             :style="{
               flex: '1',
