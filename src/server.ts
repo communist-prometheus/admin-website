@@ -7,6 +7,7 @@ import fastifySession from '@fastify/session'
 import fastifyStatic from '@fastify/static'
 import Fastify from 'fastify'
 import type { ViteDevServer } from 'vite'
+import type { InitialState } from './types/user'
 import 'dotenv/config'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -37,13 +38,29 @@ await fastify.register(fastifySession, {
 })
 await fastify.register(middie)
 
-const resolveDistPath = (path: string): string => resolve(__dirname, '../dist', path)
+const resolveDistPath = (path: string): string =>
+  resolve(__dirname, '../dist', path)
 
 let viteServer: ViteDevServer | undefined
 let ssrManifest: Record<string, string[]> | undefined
-let clientManifest: Record<string, { file: string; css?: string[] }> | undefined
+let clientManifest:
+  | Record<string, { file: string; css?: string[] }>
+  | undefined
 
-if (!isProduction) {
+if (isProduction) {
+  await fastify.register(fastifyStatic, {
+    root: resolveDistPath('client/assets'),
+    prefix: '/assets/',
+  })
+
+  ssrManifest = JSON.parse(
+    readFileSync(resolveDistPath('client/.vite/ssr-manifest.json'), 'utf-8')
+  )
+
+  clientManifest = JSON.parse(
+    readFileSync(resolveDistPath('client/.vite/manifest.json'), 'utf-8')
+  )
+} else {
   const vite = await import('vite')
   viteServer = await vite.createServer({
     server: { middlewareMode: true },
@@ -51,15 +68,6 @@ if (!isProduction) {
   })
 
   await fastify.use(viteServer.middlewares)
-} else {
-  await fastify.register(fastifyStatic, {
-    root: resolveDistPath('client/assets'),
-    prefix: '/assets/',
-  })
-
-  ssrManifest = JSON.parse(readFileSync(resolveDistPath('client/.vite/ssr-manifest.json'), 'utf-8'))
-
-  clientManifest = JSON.parse(readFileSync(resolveDistPath('client/.vite/manifest.json'), 'utf-8'))
 }
 
 const generatePreloadLinks = (modules: Set<string>): string => {
@@ -83,9 +91,15 @@ const generatePreloadLinks = (modules: Set<string>): string => {
     .join('\n  ')
 }
 
-const renderPage = async (url: string, initialState?: { user?: any }): Promise<string> => {
+const renderPage = async (
+  url: string,
+  initialState?: InitialState
+): Promise<string> => {
   let template: string
-  let render: (url: string) => Promise<{ html: string; modules: Set<string> }>
+  let render: (
+    url: string,
+    initialState?: InitialState
+  ) => Promise<{ html: string; modules: Set<string> }>
 
   if (isProduction) {
     template = readFileSync(resolve(__dirname, '../index.html'), 'utf-8')
@@ -94,7 +108,9 @@ const renderPage = async (url: string, initialState?: { user?: any }): Promise<s
     if (entryClient) {
       // Insert CSS at the START of <head> to prevent FOUC/CLS
       const cssLinks =
-        entryClient.css?.map(css => `<link rel="stylesheet" href="/${css}">`).join('\n  ') || ''
+        entryClient.css
+          ?.map(css => `<link rel="stylesheet" href="/${css}">`)
+          .join('\n  ') || ''
 
       if (cssLinks) {
         template = template.replace('<head>', `<head>\n  ${cssLinks}`)
@@ -108,8 +124,10 @@ const renderPage = async (url: string, initialState?: { user?: any }): Promise<s
       )
     }
 
-    // @ts-expect-error - build output not available in dev mode
-    const { render: prodRender } = await import('../dist/server/entry-server.js')
+    const { render: prodRender } = await import(
+      // @ts-ignore - build output not available in dev mode
+      '../dist/server/entry-server.js'
+    )
     render = prodRender
   } else {
     if (!viteServer) {
@@ -119,7 +137,9 @@ const renderPage = async (url: string, initialState?: { user?: any }): Promise<s
     template = readFileSync(resolve(__dirname, '../index.html'), 'utf-8')
     template = await viteServer.transformIndexHtml(url, template)
 
-    const { render: devRender } = await viteServer.ssrLoadModule('/src/entry-server.ts')
+    const { render: devRender } = await viteServer.ssrLoadModule(
+      '/src/entry-server.ts'
+    )
     render = devRender
   }
 
@@ -167,7 +187,8 @@ fastify.get('/api/auth/github', async (_request, reply) => {
   if (isMockOAuth) {
     fastify.log.info('🧪 Mock OAuth: Redirecting to callback with mock code')
     const callbackUrl =
-      process.env.GITHUB_CALLBACK_URL || 'http://localhost:3000/auth/github/callback'
+      process.env.GITHUB_CALLBACK_URL ||
+      'http://localhost:3000/auth/github/callback'
     return reply.redirect(`${callbackUrl}?code=mock_code_123`)
   }
 
@@ -176,10 +197,14 @@ fastify.get('/api/auth/github', async (_request, reply) => {
   const callbackUrl = process.env.GITHUB_CALLBACK_URL
 
   if (!clientId) {
-    return reply.status(500).send({ error: 'GitHub client ID not configured' })
+    return reply
+      .status(500)
+      .send({ error: 'GitHub client ID not configured' })
   }
   if (!callbackUrl) {
-    return reply.status(500).send({ error: 'GitHub callback URL not configured' })
+    return reply
+      .status(500)
+      .send({ error: 'GitHub callback URL not configured' })
   }
 
   const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=read:user`
@@ -202,21 +227,27 @@ fastify.get('/auth/github/callback', async (request, reply) => {
       userData = mockUser
     } else {
       // Real mode: exchange code for access token
-      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          client_id: process.env.GITHUB_CLIENT_ID,
-          client_secret: process.env.GITHUB_CLIENT_SECRET,
-          code,
-          redirect_uri: process.env.GITHUB_CALLBACK_URL,
-        }),
-      })
+      const tokenResponse = await fetch(
+        'https://github.com/login/oauth/access_token',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            client_id: process.env.GITHUB_CLIENT_ID,
+            client_secret: process.env.GITHUB_CLIENT_SECRET,
+            code,
+            redirect_uri: process.env.GITHUB_CALLBACK_URL,
+          }),
+        }
+      )
 
-      const tokenData = (await tokenResponse.json()) as { access_token?: string; error?: string }
+      const tokenData = (await tokenResponse.json()) as {
+        access_token?: string
+        error?: string
+      }
 
       if (tokenData.error || !tokenData.access_token) {
         return reply.status(400).send({ error: 'Failed to get access token' })
@@ -245,10 +276,13 @@ fastify.get('/auth/github/callback', async (request, reply) => {
       avatar: userData.avatar_url,
     }
 
-    fastify.log.info('GitHub OAuth: User stored in session', {
-      username: userData.login,
-      name: userData.name,
-    })
+    fastify.log.info(
+      {
+        username: userData.login,
+        name: userData.name,
+      },
+      'GitHub OAuth: User stored in session'
+    )
 
     // Mock mode: simple redirect for e2e tests
     if (isMockOAuth) {
@@ -275,7 +309,7 @@ fastify.get('/auth/github/callback', async (request, reply) => {
         <script>
           console.log('[OAuth Callback] Page loaded');
           console.log('[OAuth Callback] window.opener exists:', !!window.opener);
-          
+
           if (window.opener) {
             const userData = {
               type: 'github-oauth-success',
@@ -285,12 +319,12 @@ fastify.get('/auth/github/callback', async (request, reply) => {
                 avatar: ${JSON.stringify(userData.avatar_url)}
               }
             };
-            
+
             console.log('[OAuth Callback] Sending postMessage:', userData);
             console.log('[OAuth Callback] Target origin:', window.location.origin);
-            
+
             window.opener.postMessage(userData, window.location.origin);
-            
+
             console.log('[OAuth Callback] Message sent, closing window in 1 second...');
             setTimeout(() => {
               window.close();

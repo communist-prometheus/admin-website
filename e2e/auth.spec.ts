@@ -8,7 +8,9 @@ test.describe('GitHub OAuth Authentication', () => {
     expect(data.mockUser).toBeDefined()
   })
 
-  test('should show login button when not authenticated', async ({ page }) => {
+  test('should show login button when not authenticated', async ({
+    page,
+  }) => {
     await page.goto('/')
 
     // Should see login button in header
@@ -30,7 +32,9 @@ test.describe('GitHub OAuth Authentication', () => {
     await expect(avatar).toBeVisible()
   })
 
-  test('should show dropdown menu when clicking user button', async ({ page }) => {
+  test('should show dropdown menu when clicking user button', async ({
+    page,
+  }) => {
     // Login via mock OAuth
     await page.goto('/api/auth/github')
     await page.waitForURL('/')
@@ -70,7 +74,9 @@ test.describe('GitHub OAuth Authentication', () => {
     await expect(page.getByRole('button', { name: 'Login' })).toBeVisible()
   })
 
-  test('should persist authentication across page reloads', async ({ page }) => {
+  test('should persist authentication across page reloads', async ({
+    page,
+  }) => {
     // Login via mock OAuth
     await page.goto('/api/auth/github')
     await page.waitForURL('/')
@@ -83,6 +89,8 @@ test.describe('GitHub OAuth Authentication', () => {
     await page.reload()
 
     // Should still be authenticated (SSR should render user state)
-    await expect(page.getByRole('button', { name: /Test User/i })).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: /Test User/i })
+    ).toBeVisible()
   })
 })

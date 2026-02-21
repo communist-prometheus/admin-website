@@ -56,5 +56,10 @@
       }
     }
   ],
-  "ignorePatterns": ["e2e/auth.spec.ts", "eslint.config.js", "src/auto-imports.d.ts", "src/components.d.ts"]
+  "ignorePatterns": [
+    "e2e/auth.spec.ts",
+    "eslint.config.js",
+    "src/auto-imports.d.ts",
+    "src/components.d.ts"
+  ]
 }
