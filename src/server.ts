@@ -125,7 +125,7 @@ const renderPage = async (
     }
 
     const { render: prodRender } = await import(
-      // @ts-ignore - build output not available in dev mode
+      // @ts-expect-error - build output not available in dev mode
       '../dist/server/entry-server.js'
     )
     render = prodRender
