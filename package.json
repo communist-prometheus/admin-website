@@ -25,7 +25,7 @@
     "lint": "biome lint --write .",
     "lint:check": "biome lint .",
     "lint:sonar": "oxlint --config .oxlintrc.json",
-    "lint:jsdoc": "eslint --config eslint.config.js \"src/**/*.ts\"",
+    "lint:jsdoc": "eslint --config eslint.config.js --max-warnings 0 \"src/**/*.ts\"",
     "lint:css": "stylelint \"**/*.{css,vue}\"",
     "lint:css:fix": "stylelint \"**/*.{css,vue}\" --fix",
     "check": "biome check --write .",

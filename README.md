@@ -11,6 +11,20 @@ This project implements Server-Side Rendering (SSR) with client-side hydration:
 - **Build**: Vite bundles both client and server code
 - **Development**: Integrated Vite dev server with HMR
 
+## Code Style
+
+### Effect.js Functional Programming
+
+All server-side code MUST be written using Effect.js in functional pipeline style:
+
+- Use `Effect.promise`, `Effect.tryPromise`, `Effect.sync` for async operations
+- Chain operations using `pipe()` and `Effect.flatMap`, `Effect.map`, `Effect.tap`
+- Avoid `async/await` - use Effect combinators instead
+- Use `Effect.gen` for complex flows requiring multiple bindings
+- Handle errors with `Effect.mapError`, `Effect.catchAll`
+- Keep functions pure and composable
+- Execute effects with `Effect.runPromise` only at application boundaries
+
 ### Key Files
 
 - `src/app.ts` - Universal app factory (shared between client and server)
