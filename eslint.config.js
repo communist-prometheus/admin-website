@@ -4,6 +4,9 @@ import jsdoc from 'eslint-plugin-jsdoc'
 
 export default [
   {
+    ignores: ['src/components.d.ts'],
+  },
+  {
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
       parser,
