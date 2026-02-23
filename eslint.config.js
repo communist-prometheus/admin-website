@@ -62,7 +62,7 @@ export default [
       'max-lines': [
         'error',
         {
-          max: 200,
+          max: 150,
           skipBlankLines: true,
           skipComments: true,
         },
@@ -70,12 +70,18 @@ export default [
       'max-lines-per-function': [
         'error',
         {
-          max: 50,
+          max: 30,
           skipBlankLines: true,
           skipComments: true,
         },
       ],
       complexity: ['error', { max: 10 }],
+      'vue/block-lang': [
+        'error',
+        {
+          script: { lang: 'ts' },
+        },
+      ],
     },
   },
   {
