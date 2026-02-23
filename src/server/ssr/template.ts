@@ -17,7 +17,7 @@ export const loadTemplate = async (
   viteServer?: ViteDevServer,
   clientManifest?: Record<string, { file: string; css?: string[] }>
 ): Promise<string> => {
-  let template = readFileSync(resolve(__dirname, '../index.html'), 'utf-8')
+  let template = readFileSync(resolve(__dirname, '../../index.html'), 'utf-8')
 
   if (isProduction) {
     const entryClient = clientManifest?.['src/entry-client.ts']

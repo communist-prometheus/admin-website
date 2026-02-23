@@ -13,6 +13,9 @@ export const loadTemplate = (
   clientManifest?: Record<string, { file: string; css?: string[] }>
 ) =>
   Effect.sync(() => {
-    const template = readFileSync(resolve(dirname, '../index.html'), 'utf-8')
+    const template = readFileSync(
+      resolve(dirname, '../../index.html'),
+      'utf-8'
+    )
     return isProduction ? processTemplate(template, clientManifest) : template
   })
