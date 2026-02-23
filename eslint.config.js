@@ -2,7 +2,6 @@ import tseslint from '@typescript-eslint/eslint-plugin'
 import parser from '@typescript-eslint/parser'
 import jsdoc from 'eslint-plugin-jsdoc'
 import vue from 'eslint-plugin-vue'
-import vueParser from 'vue-eslint-parser'
 
 export default [
   {
