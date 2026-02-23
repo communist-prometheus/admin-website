@@ -11,7 +11,10 @@ const __dirname = dirname(__filename)
  */
 export const loadProdRender = () =>
   Effect.promise(async () => {
-    const entryPath = resolve(__dirname, '../../../../dist/server/entry-server.js')
+    const entryPath = resolve(
+      __dirname,
+      '../../../../dist/server/entry-server.js'
+    )
     const module = await import(entryPath)
     return module.render
   })
