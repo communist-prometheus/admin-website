@@ -11,6 +11,13 @@ export default defineConfig({
     vueDevTools(),
     Components({
       dts: 'src/components.d.ts',
+      directives: false,
+      types: [
+        {
+          from: 'vue-router',
+          names: ['RouterLink', 'RouterView'],
+        },
+      ],
     }),
   ],
   resolve: {
