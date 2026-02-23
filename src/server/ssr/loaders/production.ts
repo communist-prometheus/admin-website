@@ -1,17 +1,17 @@
 /* eslint-disable jsdoc/require-returns */
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { Effect } from 'effect'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 /**
  * Load production render function
  */
 export const loadProdRender = () =>
-  Effect.tryPromise({
-    try: async () => {
-      const module = await import(
-        // @ts-expect-error - build output not available in dev mode
-        '../../../dist/server/entry-server.js'
-      )
-      return module.render
-    },
-    catch: () => new Error('Failed to load production render function'),
+  Effect.promise(async () => {
+    const entryPath = resolve(__dirname, '../../../../dist/server/entry-server.js')
+    const module = await import(entryPath)
+    return module.render
   })
