@@ -6,6 +6,10 @@ import type { ViteDevServer } from 'vite'
  * Load dev render function
  */
 export const loadDevRender = (viteServer: ViteDevServer) =>
-  Effect.promise(() =>
-    viteServer.ssrLoadModule('/src/entry-server.ts').then(m => m.render)
-  )
+  Effect.tryPromise({
+    try: async () => {
+      const module = await viteServer.ssrLoadModule('/src/entry-server.ts')
+      return module.render
+    },
+    catch: () => new Error('Failed to load dev render function'),
+  })

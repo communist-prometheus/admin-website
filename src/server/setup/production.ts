@@ -27,12 +27,14 @@ export const setupProductionAssets = (
     Effect.succeed((path: string) => resolve(__dirname, '../dist', path)),
     Effect.flatMap(resolveDistPath =>
       pipe(
-        Effect.promise(() =>
-          fastify.register(fastifyStatic, {
-            root: resolveDistPath('client/assets'),
-            prefix: '/assets/',
-          })
-        ),
+        Effect.tryPromise({
+          try: async () =>
+            await fastify.register(fastifyStatic, {
+              root: resolveDistPath('client/assets'),
+              prefix: '/assets/',
+            }),
+          catch: () => new Error('Failed to register static assets'),
+        }),
         Effect.map(() => readManifests(resolveDistPath))
       )
     )

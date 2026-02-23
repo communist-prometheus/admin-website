@@ -13,7 +13,7 @@ export const setupRenderer = (
   isProduction: boolean,
   dirname: string,
   resolveDistPath: (path: string) => string
-): Effect.Effect<{ config: RenderPageConfig }, never, never> =>
+): Effect.Effect<{ config: RenderPageConfig }, Error, never> =>
   isProduction
     ? setupProductionAssets(fastify, resolveDistPath).pipe(
         Effect.map(({ ssrManifest, clientManifest }) => ({

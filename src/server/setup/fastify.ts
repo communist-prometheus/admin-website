@@ -13,11 +13,23 @@ const sessionConfig = {
 
 const registerPlugins = (fastify: ReturnType<typeof Fastify>) =>
   pipe(
-    Effect.promise(() => fastify.register(fastifyCookie)),
+    Effect.tryPromise({
+      try: async () => await fastify.register(fastifyCookie),
+      catch: () => new Error('Failed to register cookie plugin'),
+    }),
     Effect.flatMap(() =>
-      Effect.promise(() => fastify.register(fastifySession, sessionConfig))
+      Effect.tryPromise({
+        try: async () =>
+          await fastify.register(fastifySession, sessionConfig),
+        catch: () => new Error('Failed to register session plugin'),
+      })
     ),
-    Effect.flatMap(() => Effect.promise(() => fastify.register(middie))),
+    Effect.flatMap(() =>
+      Effect.tryPromise({
+        try: async () => await fastify.register(middie),
+        catch: () => new Error('Failed to register middie plugin'),
+      })
+    ),
     Effect.map(() => fastify)
   )
 

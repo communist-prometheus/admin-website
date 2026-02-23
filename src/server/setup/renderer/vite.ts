@@ -7,17 +7,25 @@ import type Fastify from 'fastify'
  */
 export const setupViteServer = (fastify: ReturnType<typeof Fastify>) =>
   pipe(
-    Effect.promise(() => import('vite')),
+    Effect.tryPromise({
+      try: async () => await import('vite'),
+      catch: () => new Error('Failed to import vite'),
+    }),
     Effect.flatMap(vite =>
-      Effect.promise(() =>
-        vite.createServer({
-          server: { middlewareMode: true },
-          appType: 'custom',
-        })
-      )
+      Effect.tryPromise({
+        try: async () =>
+          await vite.createServer({
+            server: { middlewareMode: true },
+            appType: 'custom',
+          }),
+        catch: () => new Error('Failed to create Vite server'),
+      })
     ),
     Effect.tap(viteServer =>
-      Effect.promise(() => fastify.use(viteServer.middlewares))
+      Effect.tryPromise({
+        try: async () => await fastify.use(viteServer.middlewares),
+        catch: () => new Error('Failed to register Vite middleware'),
+      })
     ),
     Effect.map(viteServer => ({
       viteServer,

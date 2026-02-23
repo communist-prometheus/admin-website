@@ -18,9 +18,10 @@ export const buildHtml = (
   ssrManifest: Record<string, string[]> | undefined
 ) =>
   pipe(
-    Effect.promise<{ html: string; modules: Set<string> }>(() =>
-      render(url, initialState)
-    ),
+    Effect.tryPromise({
+      try: async () => await render(url, initialState),
+      catch: () => new Error('Failed to render HTML'),
+    }),
     Effect.map(({ html: appHtml, modules }) => {
       const preloadLinks = generatePreloadLinks(modules, ssrManifest)
       let finalHtml = template.replace('<!--ssr-outlet-->', appHtml)

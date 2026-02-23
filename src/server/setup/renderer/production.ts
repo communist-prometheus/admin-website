@@ -12,12 +12,14 @@ export const setupProductionAssets = (
   resolveDistPath: (path: string) => string
 ) =>
   pipe(
-    Effect.promise(() =>
-      fastify.register(fastifyStatic, {
-        root: resolveDistPath('client/assets'),
-        prefix: '/assets/',
-      })
-    ),
+    Effect.tryPromise({
+      try: async () =>
+        await fastify.register(fastifyStatic, {
+          root: resolveDistPath('client/assets'),
+          prefix: '/assets/',
+        }),
+      catch: () => new Error('Failed to register static assets'),
+    }),
     Effect.map(() => ({
       ssrManifest: JSON.parse(
         readFileSync(

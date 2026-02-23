@@ -20,9 +20,16 @@ export const loadResources = (
   clientManifest?: Record<string, { file: string; css?: string[] }>
 ) =>
   Effect.all([
-    Effect.promise(() =>
-      loadTemplate(isProduction, __dirname, viteServer, clientManifest)
-    ),
+    Effect.tryPromise({
+      try: async () =>
+        await loadTemplate(
+          isProduction,
+          __dirname,
+          viteServer,
+          clientManifest
+        ),
+      catch: () => new Error('Failed to load template'),
+    }),
     getRenderFunction(isProduction, viteServer),
   ])
 

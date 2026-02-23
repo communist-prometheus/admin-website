@@ -7,4 +7,7 @@ import type Fastify from 'fastify'
  * Register Fastify middie plugin
  */
 export const registerMiddie = (fastify: ReturnType<typeof Fastify>) =>
-  Effect.promise(() => fastify.register(middie))
+  Effect.tryPromise({
+    try: async () => await fastify.register(middie),
+    catch: () => new Error('Failed to register middie plugin'),
+  })

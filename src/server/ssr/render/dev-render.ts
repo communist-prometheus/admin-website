@@ -12,7 +12,10 @@ export const prepareDevRender = (
   viteServer: ViteDevServer
 ) =>
   pipe(
-    Effect.promise(() => viteServer.transformIndexHtml(url, template)),
+    Effect.tryPromise({
+      try: async () => await viteServer.transformIndexHtml(url, template),
+      catch: () => new Error('Failed to transform HTML'),
+    }),
     Effect.flatMap(transformedTemplate =>
       pipe(
         loadDevRender(viteServer),

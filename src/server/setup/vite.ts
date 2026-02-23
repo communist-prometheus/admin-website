@@ -7,13 +7,18 @@ import { Effect, pipe } from 'effect'
  */
 export const setupViteDevServer = (__dirname: string) =>
   pipe(
-    Effect.promise(() => import('vite')),
+    Effect.tryPromise({
+      try: async () => await import('vite'),
+      catch: () => new Error('Failed to import vite'),
+    }),
     Effect.flatMap(vite =>
-      Effect.promise(() =>
-        vite.createServer({
-          server: { middlewareMode: true },
-          appType: 'custom',
-        })
-      )
+      Effect.tryPromise({
+        try: async () =>
+          await vite.createServer({
+            server: { middlewareMode: true },
+            appType: 'custom',
+          }),
+        catch: () => new Error('Failed to create Vite server'),
+      })
     )
   )
