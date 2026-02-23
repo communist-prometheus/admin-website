@@ -44,3 +44,6 @@ playwright-report/
 # Environment variables
 .env
 .env.local
+
+# Auto-generated type definitions
+src/components.d.ts
