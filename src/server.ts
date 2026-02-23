@@ -52,8 +52,7 @@ const program = pipe(
       Effect.flatMap(startServer)
     )
   ),
-  Effect.catchAll(error => {
-    console.error('Server startup failed:', error)
+  Effect.catchAll(_error => {
     process.exit(1)
     return Effect.succeed(undefined)
   })
