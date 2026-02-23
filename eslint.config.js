@@ -58,7 +58,7 @@ export default [
           math: 'always',
         },
       ],
-      'max-depth': ['error', { max: 2 }],
+      'max-depth': ['error', { max: 1 }],
       'max-lines': [
         'error',
         {
