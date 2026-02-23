@@ -35,7 +35,7 @@ export const sendPopupHTML = (reply: FastifyReply, user: User) =>
         if (window.opener) {
           window.opener.postMessage({
             type: 'github-oauth-success',
-            user: { username: ${JSON.stringify(user.username)}, name: ${JSON.stringify(user.name)}, avatar: ${JSON.stringify(user.avatar)} }
+            user: ${JSON.stringify(user)}
           }, window.location.origin);
           setTimeout(() => window.close(), 1000);
         } else {
