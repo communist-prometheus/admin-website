@@ -12,8 +12,14 @@ defineProps<Props>()
 
 <template>
   <article class="user-card">
-    <UserAvatar :src="user.avatar" :alt="user.name" />
-    <UserInfo :name="user.name" :email="user.email" />
+    <UserAvatar
+      :src="user.avatar"
+      :alt="user.name"
+    />
+    <UserInfo
+      :name="user.name"
+      :email="user.email"
+    />
   </article>
 </template>
 

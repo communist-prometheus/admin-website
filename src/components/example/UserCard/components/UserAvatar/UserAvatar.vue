@@ -11,7 +11,11 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-  <img :src="src" :alt="alt" :data-size="size" />
+  <img
+    :src="src"
+    :alt="alt"
+    :data-size="size"
+  />
 </template>
 
 <style scoped>

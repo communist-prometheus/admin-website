@@ -26,12 +26,14 @@ const handleDifferentAccount = () => {
 </script>
 
 <template>
-  <div class="auth-dropdown" :style="{ position: 'relative' }">
+  <div
+    class="auth-dropdown"
+    :style="{ position: 'relative' }"
+  >
     <!-- Not logged in: Login button -->
     <button
       v-if="!user"
       type="button"
-      @click="openPopup"
       :disabled="loading"
       :style="{
         padding: '0.5rem 1.5rem',
@@ -43,6 +45,7 @@ const handleDifferentAccount = () => {
         fontSize: '0.875rem',
         fontWeight: '500'
       }"
+      @click="openPopup"
     >
       {{ loading ? 'Loading...' : 'Login' }}
     </button>
@@ -51,7 +54,6 @@ const handleDifferentAccount = () => {
     <div v-else>
       <button
         type="button"
-        @click.stop="toggleDropdown"
         :style="{
           display: 'flex',
           alignItems: 'center',
@@ -63,6 +65,7 @@ const handleDifferentAccount = () => {
           cursor: 'pointer',
           fontSize: '0.875rem'
         }"
+        @click.stop="toggleDropdown"
       >
         <img 
           :src="user.avatar" 
@@ -94,7 +97,6 @@ const handleDifferentAccount = () => {
       >
         <button
           type="button"
-          @click="handleDifferentAccount"
           :style="{
             width: '100%',
             padding: '0.75rem 1rem',
@@ -105,12 +107,12 @@ const handleDifferentAccount = () => {
             fontSize: '0.875rem',
             borderBottom: '1px solid var(--color-border)'
           }"
+          @click="handleDifferentAccount"
         >
           Login with different account
         </button>
         <button
           type="button"
-          @click="handleLogout"
           :style="{
             width: '100%',
             padding: '0.75rem 1rem',
@@ -121,6 +123,7 @@ const handleDifferentAccount = () => {
             fontSize: '0.875rem',
             color: '#d73a49'
           }"
+          @click="handleLogout"
         >
           Logout
         </button>

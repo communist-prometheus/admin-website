@@ -33,23 +33,31 @@ defineExpose({ open, close })
 </script>
 
 <template>
-  <dialog ref="dialogRef" :style="{ 
-    padding: '2rem',
-    borderRadius: '8px',
-    border: '1px solid var(--color-border)',
-    maxWidth: '500px',
-    width: '90vw'
-  }">
-    <h2 :style="{ marginTop: 0 }">GitHub Authentication</h2>
+  <dialog
+    ref="dialogRef"
+    :style="{ 
+      padding: '2rem',
+      borderRadius: '8px',
+      border: '1px solid var(--color-border)',
+      maxWidth: '500px',
+      width: '90vw'
+    }"
+  >
+    <h2 :style="{ marginTop: 0 }">
+      GitHub Authentication
+    </h2>
     
-    <div v-if="error" :style="{ 
-      padding: '1rem',
-      marginBottom: '1rem',
-      background: '#fee',
-      border: '1px solid #fcc',
-      borderRadius: '4px',
-      color: '#c00'
-    }">
+    <div
+      v-if="error"
+      :style="{ 
+        padding: '1rem',
+        marginBottom: '1rem',
+        background: '#fee',
+        border: '1px solid #fcc',
+        borderRadius: '4px',
+        color: '#c00'
+      }"
+    >
       {{ error }}
     </div>
 
@@ -62,7 +70,6 @@ defineExpose({ open, close })
         <div :style="{ display: 'flex', gap: '1rem' }">
           <button
             type="button"
-            @click="close"
             :style="{
               flex: '1',
               padding: '0.75rem 1.5rem',
@@ -72,12 +79,12 @@ defineExpose({ open, close })
               cursor: 'pointer',
               fontSize: '1rem'
             }"
+            @click="close"
           >
             Cancel
           </button>
           <button
             type="button"
-            @click="openPopup"
             :disabled="loading"
             :style="{
               flex: '1',
@@ -90,13 +97,13 @@ defineExpose({ open, close })
               fontSize: '1rem',
               fontWeight: '500'
             }"
+            @click="openPopup"
           >
             {{ loading ? 'Loading...' : 'Sign in with GitHub' }}
           </button>
         </div>
         <button
           type="button"
-          @click="handleDifferentAccount"
           :disabled="loading"
           :style="{
             padding: '0.5rem 1rem',
@@ -108,6 +115,7 @@ defineExpose({ open, close })
             fontSize: '0.875rem',
             opacity: loading ? 0.5 : 1
           }"
+          @click="handleDifferentAccount"
         >
           Login with different account
         </button>
@@ -115,15 +123,17 @@ defineExpose({ open, close })
     </div>
 
     <div v-else>
-      <div :style="{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '1rem',
-        marginBottom: '1.5rem',
-        padding: '1rem',
-        background: '#f6f8fa',
-        borderRadius: '8px'
-      }">
+      <div
+        :style="{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '1rem',
+          marginBottom: '1.5rem',
+          padding: '1rem',
+          background: '#f6f8fa',
+          borderRadius: '8px'
+        }"
+      >
         <img 
           :src="user.avatar" 
           :alt="user.username"
@@ -147,7 +157,6 @@ defineExpose({ open, close })
       <div :style="{ display: 'flex', gap: '1rem', justifyContent: 'space-between' }">
         <button
           type="button"
-          @click="handleLogout"
           :style="{
             padding: '0.5rem 1rem',
             borderRadius: '4px',
@@ -156,12 +165,12 @@ defineExpose({ open, close })
             color: '#dc3545',
             cursor: 'pointer'
           }"
+          @click="handleLogout"
         >
           Logout
         </button>
         <button
           type="button"
-          @click="close"
           :style="{
             padding: '0.5rem 1rem',
             borderRadius: '4px',
@@ -170,6 +179,7 @@ defineExpose({ open, close })
             color: 'white',
             cursor: 'pointer'
           }"
+          @click="close"
         >
           Close
         </button>
