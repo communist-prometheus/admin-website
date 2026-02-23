@@ -54,6 +54,12 @@
       "rules": {
         "vue/no-restricted-html-elements": "off"
       }
+    },
+    {
+      "files": ["src/server/utils/logger.ts"],
+      "rules": {
+        "no-console": "off"
+      }
     }
   ],
   "ignorePatterns": [

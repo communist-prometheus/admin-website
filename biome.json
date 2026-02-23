@@ -105,6 +105,16 @@
       "formatter": {
         "enabled": false
       }
+    },
+    {
+      "includes": ["src/server/utils/logger.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
     }
   ]
 }
