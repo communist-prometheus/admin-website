@@ -54,20 +54,6 @@
       "rules": {
         "vue/no-restricted-html-elements": "off"
       }
-    },
-    {
-      "files": [
-        "src/server/oauth/github/handlers/callback.ts",
-        "src/server/oauth/github/utils.ts",
-        "src/server/ssr/page-renderer.ts",
-        "src/server/setup/renderer.ts",
-        "src/server/setup/fastify-plugins.ts",
-        "src/server/setup/routes.ts"
-      ],
-      "rules": {
-        "sonarjs/max-lines": "off",
-        "sonarjs/max-lines-per-function": "off"
-      }
     }
   ],
   "ignorePatterns": [

@@ -1,60 +1,9 @@
 /* eslint-disable jsdoc/require-param, jsdoc/require-returns */
-import { readFileSync } from 'node:fs'
-import fastifyStatic from '@fastify/static'
-import { Effect, pipe } from 'effect'
+import { Effect } from 'effect'
 import type Fastify from 'fastify'
 import type { RenderPageConfig } from '../ssr/page-renderer'
-
-/**
- * Setup production assets
- */
-const setupProductionAssets = (
-  fastify: ReturnType<typeof Fastify>,
-  resolveDistPath: (path: string) => string
-) =>
-  pipe(
-    Effect.promise(() =>
-      fastify.register(fastifyStatic, {
-        root: resolveDistPath('client/assets'),
-        prefix: '/assets/',
-      })
-    ),
-    Effect.map(() => ({
-      ssrManifest: JSON.parse(
-        readFileSync(
-          resolveDistPath('client/.vite/ssr-manifest.json'),
-          'utf-8'
-        )
-      ),
-      clientManifest: JSON.parse(
-        readFileSync(resolveDistPath('client/.vite/manifest.json'), 'utf-8')
-      ),
-    }))
-  )
-
-/**
- * Setup Vite dev server
- */
-const setupViteServer = (fastify: ReturnType<typeof Fastify>) =>
-  pipe(
-    Effect.promise(() => import('vite')),
-    Effect.flatMap(vite =>
-      Effect.promise(() =>
-        vite.createServer({
-          server: { middlewareMode: true },
-          appType: 'custom',
-        })
-      )
-    ),
-    Effect.tap(viteServer =>
-      Effect.promise(() => fastify.use(viteServer.middlewares))
-    ),
-    Effect.map(viteServer => ({
-      viteServer,
-      ssrManifest: undefined,
-      clientManifest: undefined,
-    }))
-  )
+import { setupProductionAssets } from './renderer/production'
+import { setupViteServer } from './renderer/vite'
 
 /**
  * Setup SSR renderer
