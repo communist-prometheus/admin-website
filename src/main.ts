@@ -1,7 +1,4 @@
-import './assets/tokens.css'
-import './assets/mixins.css'
-import './assets/main.css'
-import './assets/theme.css'
+import './assets/styles/index.scss'
 
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
