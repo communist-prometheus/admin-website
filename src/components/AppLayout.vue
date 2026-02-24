@@ -6,7 +6,8 @@
     :style="{ 
       display: 'flex', 
       flexDirection: 'column', 
-      minHeight: '100vh' 
+      minHeight: '100vh',
+      color: 'var(--color-text)'
     }"
   >
     <header
@@ -16,7 +17,8 @@
         background: 'var(--color-background)',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        color: 'var(--color-heading)'
       }"
     >
       <div :style="{ fontSize: '1.5rem', fontWeight: '600' }">
@@ -28,7 +30,8 @@
     <main
       :style="{ 
         flex: '1',
-        padding: '2rem'
+        padding: '2rem',
+        color: 'var(--color-text)'
       }"
     >
       <slot></slot>

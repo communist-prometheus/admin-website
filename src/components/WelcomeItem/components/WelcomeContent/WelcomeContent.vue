@@ -33,6 +33,11 @@ h3 {
   color: var(--color-heading);
 }
 
+p {
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+}
+
 .link {
   color: var(--color-link);
   text-decoration: none;
