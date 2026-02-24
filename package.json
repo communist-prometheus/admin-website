@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "husky",
     "dev": "bun src/server.ts",
-    "validate": "bun run type-check && bun run check:ci && bun run lint:sonar && bun run lint:jsdoc && bun run lint:css",
+    "validate": "bun run type-check && bun run check:ci && bun run lint:sonar && bun run lint:vue-depth && bun run lint:css",
     "prebuild": "bun run validate",
     "build": "bun run build:client && bun run build:server",
     "build:client": "vite build --outDir dist/client --ssrManifest",
@@ -26,6 +26,7 @@
     "lint:check": "biome lint .",
     "lint:sonar": "oxlint --config .oxlintrc.json",
     "lint:jsdoc": "eslint --config eslint.config.js --max-warnings 0 \"src/**/*.{ts,vue}\"",
+    "lint:vue-depth": "bun scripts/check-vue-template-depth.ts",
     "lint:css": "stylelint \"**/*.{css,vue}\"",
     "lint:css:fix": "stylelint \"**/*.{css,vue}\" --fix",
     "check": "biome check --write .",

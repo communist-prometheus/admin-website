@@ -60,6 +60,9 @@
       "indentWidth": 2
     }
   },
+  "html": {
+    "experimentalFullSupportEnabled": true
+  },
   "assist": {
     "enabled": true,
     "actions": {
@@ -107,11 +110,49 @@
       }
     },
     {
+      "includes": [
+        "src/components/TheWelcome.vue",
+        "src/components/DemoDialog.vue"
+      ],
+      "formatter": {
+        "enabled": false
+      },
+      "linter": {
+        "enabled": false
+      },
+      "assist": {
+        "enabled": false
+      }
+    },
+    {
       "includes": ["src/server/utils/logger.ts"],
       "linter": {
         "rules": {
           "suspicious": {
             "noConsole": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["eslint-plugin-vue-template-depth.js"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDefaultExport": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/components/**/UserAvatar/*.vue",
+        "src/components/AuthButton/UserMenu.vue"
+      ],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useAltText": "off"
           }
         }
       }

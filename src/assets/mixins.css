@@ -1,0 +1,126 @@
+/* Button mixins */
+.btn {
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--border-radius-sm);
+  border: none;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn-primary:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--color-danger);
+  border: var(--border-width) solid var(--color-border);
+}
+
+.btn-danger:hover {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+/* Layout mixins */
+.flex-center {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card mixins */
+.card {
+  padding: var(--space-xl);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-background);
+}
+
+.card-soft {
+  padding: var(--space-md);
+  background: var(--color-background-soft);
+  border-radius: var(--border-radius-md);
+}
+
+/* Error state */
+.error-message {
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  background: var(--color-error-bg);
+  border: var(--border-width) solid var(--color-error-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-error-text);
+}
+
+/* Avatar */
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-sm {
+  width: 24px;
+  height: 24px;
+}
+
+.avatar-md {
+  width: 32px;
+  height: 32px;
+}
+
+/* Dropdown */
+.dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--space-sm);
+  background: var(--color-background);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-md);
+  min-width: 200px;
+  z-index: 1000;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: background var(--transition-fast);
+}
+
+.dropdown-item:hover {
+  background: var(--color-background-soft);
+}
+
+.dropdown-item-danger {
+  color: var(--color-danger);
+}
