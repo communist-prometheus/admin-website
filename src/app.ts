@@ -6,7 +6,6 @@ import {
   createWebHistory,
 } from 'vue-router'
 import App from './App.vue'
-import AppLayout from './components/AppLayout.vue'
 import HomeView from './views/HomeView.vue'
 
 /**
@@ -16,6 +15,10 @@ import HomeView from './views/HomeView.vue'
  */
 export const createApp = (isSSR: boolean) => {
   const app = createSSRApp(App)
+
+  app.config.compilerOptions.isCustomElement = (tag: string) => {
+    return tag === 'app-layout'
+  }
 
   const history: RouterHistory = isSSR
     ? createMemoryHistory(import.meta.env.BASE_URL)
@@ -38,7 +41,6 @@ export const createApp = (isSSR: boolean) => {
   })
 
   app.use(router)
-  app.component('AppLayout', AppLayout)
 
   return { app, router }
 }

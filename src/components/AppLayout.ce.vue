@@ -1,3 +1,10 @@
+<script setup lang="ts">
+/**
+ * AppLayout Web Component with Shadow DOM isolation
+ * Used for SSR with Declarative Shadow DOM to prevent CLS
+ */
+</script>
+
 <template>
   <div class="app-layout">
     <header>

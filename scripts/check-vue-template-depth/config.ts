@@ -7,7 +7,8 @@ export const config: Config = {
   maxDepth: 1,
   excludePatterns: [
     'src/components/HelloWorld.vue',
-    'src/components/AppLayout.vue',
+    'src/components/AppLayoutSSR.vue',
+    'src/components/AppLayout.ce.vue',
     'src/components/example/**/*.vue',
     'src/components/AuthButton/UserMenu.vue',
     'src/components/DemoDialog.vue',
