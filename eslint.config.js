@@ -1,5 +1,5 @@
-import parser from '@typescript-eslint/parser'
 import tseslint from '@typescript-eslint/eslint-plugin'
+import parser from '@typescript-eslint/parser'
 import jsdoc from 'eslint-plugin-jsdoc'
 
 export default [
@@ -7,7 +7,12 @@ export default [
     ignores: ['src/components.d.ts'],
   },
   {
-    files: ['vite.config.ts', 'vitest.config.ts', 'playwright.config.ts', 'eslint.config.js'],
+    files: [
+      'vite.config.ts',
+      'vitest.config.ts',
+      'playwright.config.ts',
+      'eslint.config.js',
+    ],
     languageOptions: {
       parser,
       parserOptions: {

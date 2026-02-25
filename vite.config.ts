@@ -28,11 +28,11 @@ export default defineConfig({
   build: {
     manifest: true,
     cssCodeSplit: false,
-    rollupOptions: {
+    rolldownOptions: {
       input: './src/entry-client.ts',
       output: {
         assetFileNames: assetInfo => {
-          if (assetInfo.name === 'style.css') return 'assets/style.css'
+          if (assetInfo.names.includes('style.css')) return 'assets/style.css'
           return 'assets/[name]-[hash][extname]'
         },
         manualChunks: id => {
