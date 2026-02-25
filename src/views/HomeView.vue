@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import ContentCard from '@/components/ContentCard/ContentCard.vue'
+import ContentCardDescription from '@/components/ContentCard/ContentCardDescription.vue'
+import ContentCardTitle from '@/components/ContentCard/ContentCardTitle.vue'
+import ContentGrid from '@/components/ContentGrid/ContentGrid.vue'
+import DashboardDescription from '@/components/DashboardDescription/DashboardDescription.vue'
+import DashboardHeading from '@/components/DashboardHeading/DashboardHeading.vue'
+import DashboardSection from '@/components/DashboardSection/DashboardSection.vue'
+import WelcomeDescription from '@/components/WelcomeDescription/WelcomeDescription.vue'
+import WelcomeHeading from '@/components/WelcomeHeading/WelcomeHeading.vue'
+import WelcomeSection from '@/components/WelcomeSection/WelcomeSection.vue'
 import { useAuth } from '@/composables/useAuth'
 
 const { user } = useAuth()
@@ -10,88 +20,28 @@ const { user } = useAuth()
       <AuthButton />
     </template>
 
-    <div
-      v-if="!user"
-      class="welcome"
-    >
-      <h1>Content Management System</h1>
-      <p>Login with GitHub to manage Prometheus website content</p>
-    </div>
+    <WelcomeSection v-if="!user">
+      <WelcomeHeading />
+      <WelcomeDescription />
+    </WelcomeSection>
 
-    <div
-      v-else
-      class="dashboard"
-    >
-      <h1>Content Dashboard</h1>
-      <p>Manage blog posts, pages, and job positions for Prometheus public website</p>
-
-      <div class="content-grid">
-        <div class="content-card">
-          <h2>Blog Posts</h2>
-          <p>Create and edit blog articles</p>
-        </div>
-
-        <div class="content-card">
-          <h2>Pages</h2>
-          <p>Manage static pages</p>
-        </div>
-
-        <div class="content-card">
-          <h2>Positions</h2>
-          <p>Update job openings</p>
-        </div>
-      </div>
-    </div>
+    <DashboardSection v-else>
+      <DashboardHeading />
+      <DashboardDescription />
+      <ContentGrid>
+        <ContentCard>
+          <ContentCardTitle title="Blog Posts" />
+          <ContentCardDescription description="Create and edit blog articles" />
+        </ContentCard>
+        <ContentCard>
+          <ContentCardTitle title="Pages" />
+          <ContentCardDescription description="Manage static pages" />
+        </ContentCard>
+        <ContentCard>
+          <ContentCardTitle title="Positions" />
+          <ContentCardDescription description="Update job openings" />
+        </ContentCard>
+      </ContentGrid>
+    </DashboardSection>
   </AppLayout>
 </template>
-
-<style scoped>
-.welcome,
-.dashboard {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: var(--spacing-xl) var(--spacing-md);
-}
-
-h1 {
-  font-size: 2rem;
-  font-weight: 600;
-  margin-bottom: var(--spacing-md);
-}
-
-p {
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-xl);
-}
-
-.content-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-xl);
-}
-
-.content-card {
-  padding: var(--spacing-lg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.content-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.content-card h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: var(--spacing-sm);
-}
-
-.content-card p {
-  font-size: 0.875rem;
-  margin-bottom: 0;
-}
-</style>
