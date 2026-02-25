@@ -3,6 +3,7 @@ import middie from '@fastify/middie'
 import fastifySession from '@fastify/session'
 import { Effect, pipe } from 'effect'
 import Fastify from 'fastify'
+import { addSecurityHeaders } from './security'
 
 const sessionConfig = {
   secret:
@@ -30,7 +31,7 @@ const registerPlugins = (fastify: ReturnType<typeof Fastify>) =>
         catch: () => new Error('Failed to register middie plugin'),
       })
     ),
-    Effect.map(() => fastify)
+    Effect.flatMap(addSecurityHeaders)
   )
 
 /**

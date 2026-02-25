@@ -22,9 +22,9 @@ export const registerAuthRoutes = (
 
   fastify.get('/api/auth/user', async (request, reply) => {
     const user = getSessionUser(request)
-    return user
-      ? reply.send({ authenticated: true, user })
-      : reply.send({ authenticated: false })
+    return reply
+      .status(200)
+      .send(user ? { authenticated: true, user } : { authenticated: false })
   })
 
   fastify.get('/api/auth/logout', async (request, reply) => {

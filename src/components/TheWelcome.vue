@@ -7,11 +7,11 @@ import ToolingIcon from './icons/IconTooling.vue'
 import WelcomeItem from './WelcomeItem/WelcomeItem.vue'
 
 const s = [
-  { icon: DocumentationIcon, heading: 'Docs', text: 'Official Vue docs', linkHref: 'https://vuejs.org/', linkText: 'Read' },
-  { icon: ToolingIcon, heading: 'Tool', text: 'Vite build tool', linkHref: 'https://vite.dev/', linkText: 'Go' },
-  { icon: EcosystemIcon, heading: 'Eco', text: 'Pinia state', linkHref: 'https://github.com/vuejs/awesome-vue', linkText: 'Go' },
-  { icon: CommunityIcon, heading: 'Chat', text: 'Discord chat', linkHref: 'https://chat.vuejs.org', linkText: 'Go' },
-  { icon: SupportIcon, heading: 'Help', text: 'Sponsor Vue', linkHref: 'https://vuejs.org/sponsor/', linkText: 'Go' },
+  { icon: DocumentationIcon, heading: 'Docs', text: 'Official Vue docs', linkHref: 'https://vuejs.org/', linkText: 'Read Vue documentation' },
+  { icon: ToolingIcon, heading: 'Tool', text: 'Vite build tool', linkHref: 'https://vite.dev/', linkText: 'Explore Vite build tool' },
+  { icon: EcosystemIcon, heading: 'Eco', text: 'Pinia state', linkHref: 'https://github.com/vuejs/awesome-vue', linkText: 'Discover Vue ecosystem' },
+  { icon: CommunityIcon, heading: 'Chat', text: 'Discord chat', linkHref: 'https://chat.vuejs.org', linkText: 'Join Discord community' },
+  { icon: SupportIcon, heading: 'Help', text: 'Sponsor Vue', linkHref: 'https://vuejs.org/sponsor/', linkText: 'Support Vue development' },
 ]
 </script>
 

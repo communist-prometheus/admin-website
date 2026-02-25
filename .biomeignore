@@ -1,3 +1,4 @@
 src/components/TheWelcome.vue
 src/components/DemoDialog.vue
 eslint-plugin-vue-template-depth.js
+lighthouse-report.json
