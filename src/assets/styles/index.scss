@@ -7,6 +7,13 @@ html {
   background: var(--color-background);
 }
 
+#app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100%;
+  color: var(--color-text);
+}
+
 a {
   color: var(--color-accent);
   text-decoration: none;

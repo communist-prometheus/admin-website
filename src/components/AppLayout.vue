@@ -1,27 +1,21 @@
 <template>
-  <header>
-    <h1>Admin Panel</h1>
-    <slot name="header-actions" />
-  </header>
+    <header>
+      <h1>Admin Panel</h1>
+      <slot name="header-actions" />
+    </header>
 
-  <main>
-    <slot />
-  </main>
+    <main>
+      <slot />
+    </main>
 
-  <footer>
-    <slot name="footer">
-      © {{ new Date().getFullYear() }} Admin Panel. All rights reserved.
-    </slot>
-  </footer>
+    <footer>
+      <slot name="footer">
+        © {{ new Date().getFullYear() }} Admin Panel. All rights reserved.
+      </slot>
+    </footer>
 </template>
 
 <style scoped>
-:host {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100vh;
-  color: var(--color-text);
-}
 
 header {
   display: flex;
