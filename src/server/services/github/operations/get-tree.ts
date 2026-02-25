@@ -34,6 +34,12 @@ const mapResponseToTreeItems = (
   return data.map(mapToTreeItem)
 }
 
+/**
+ * Get tree operation
+ * @param octokit - Octokit instance
+ * @param config - GitHub configuration
+ * @returns Function to get tree
+ */
 export const getTree = (octokit: Octokit, config: GitHubConfig) => {
   return (path: string = 'src/content') =>
     Effect.tryPromise({

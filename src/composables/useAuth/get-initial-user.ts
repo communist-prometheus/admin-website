@@ -2,6 +2,10 @@ import { inject } from 'vue'
 import type { InitialState, User } from '@/types/user'
 import { getMockUser } from './mock-user'
 
+/**
+ * Get initial user from SSR state or mock
+ * @returns User or null
+ */
 export const getInitialUser = (): User | null => {
   if (import.meta.env.VITE_MOCK_AUTH === 'true') {
     return getMockUser()

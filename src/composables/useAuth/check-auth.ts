@@ -1,6 +1,10 @@
 import { Effect, pipe } from 'effect'
 import type { User } from '@/types/user'
 
+/**
+ * Check authentication status via API
+ * @returns Effect with auth status and user
+ */
 export const checkAuthStatus = () =>
   pipe(
     Effect.tryPromise({

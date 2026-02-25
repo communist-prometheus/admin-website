@@ -2,6 +2,12 @@ import type { Octokit } from '@octokit/rest'
 import { Effect } from 'effect'
 import type { FileContent, GitHubConfig } from '../types'
 
+/**
+ * Get file content operation
+ * @param octokit - Octokit instance
+ * @param config - GitHub configuration
+ * @returns Function to get file content
+ */
 export const getFileContent = (octokit: Octokit, config: GitHubConfig) => {
   return (path: string) =>
     Effect.tryPromise({

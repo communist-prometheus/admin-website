@@ -8,6 +8,9 @@ interface FileParams {
 
 /**
  * Get file content
+ * @param request - Fastify request with path query
+ * @param reply - Fastify reply
+ * @returns Promise with file content
  */
 export const handleGetFile = async (
   request: FastifyRequest<{ Querystring: FileParams }>,

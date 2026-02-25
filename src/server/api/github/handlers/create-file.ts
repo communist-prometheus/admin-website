@@ -13,6 +13,9 @@ interface CreateFileBody {
 
 /**
  * Create new file
+ * @param request - Fastify request with path query and file body
+ * @param reply - Fastify reply
+ * @returns Promise with creation result
  */
 export const handleCreateFile = async (
   request: FastifyRequest<{

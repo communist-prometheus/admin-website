@@ -14,6 +14,9 @@ interface UpdateFileBody {
 
 /**
  * Update file content
+ * @param request - Fastify request with path query and update body
+ * @param reply - Fastify reply
+ * @returns Promise with update result
  */
 export const handleUpdateFile = async (
   request: FastifyRequest<{

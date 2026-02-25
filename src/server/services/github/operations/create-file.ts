@@ -2,6 +2,12 @@ import type { Octokit } from '@octokit/rest'
 import { Effect } from 'effect'
 import type { GitHubConfig } from '../types'
 
+/**
+ * Create file operation
+ * @param octokit - Octokit instance
+ * @param config - GitHub configuration
+ * @returns Function to create file
+ */
 export const createFile = (octokit: Octokit, config: GitHubConfig) => {
   return (path: string, content: string, message: string) =>
     Effect.tryPromise({

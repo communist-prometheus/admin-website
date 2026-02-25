@@ -1,6 +1,11 @@
 import { Effect, pipe } from 'effect'
 import type { CreateFileParams } from './types'
 
+/**
+ * Create file in GitHub repository
+ * @param params - File creation parameters
+ * @returns Effect with file creation result
+ */
 export const createFile = (params: CreateFileParams) =>
   pipe(
     Effect.tryPromise({

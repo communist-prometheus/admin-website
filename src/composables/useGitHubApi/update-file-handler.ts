@@ -3,6 +3,12 @@ import type { Ref } from 'vue'
 import { UNKNOWN_ERROR_MESSAGE } from './constants'
 import { updateFile } from './update-file'
 
+/**
+ * Creates handler for updating files in GitHub
+ * @param loading - Loading state ref
+ * @param error - Error state ref
+ * @returns Update file handler function
+ */
 export const createUpdateFileHandler =
   (loading: Ref<boolean>, error: Ref<string | null>) =>
   async (path: string, content: string, message: string, sha: string) => {

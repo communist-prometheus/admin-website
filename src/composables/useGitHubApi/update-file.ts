@@ -1,6 +1,11 @@
 import { Effect, pipe } from 'effect'
 import type { UpdateFileParams } from './types'
 
+/**
+ * Update file in GitHub repository
+ * @param params - File update parameters
+ * @returns Effect with update result
+ */
 export const updateFile = (params: UpdateFileParams) =>
   pipe(
     Effect.tryPromise({

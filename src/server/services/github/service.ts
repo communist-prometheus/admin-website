@@ -6,6 +6,7 @@ import { getTree } from './operations/get-tree'
 import { updateFile } from './operations/update-file'
 import type { GitHubConfig } from './types'
 
+/** GitHub API service */
 export class GitHubService {
   private readonly octokit: Octokit
   private readonly config: GitHubConfig
@@ -15,6 +16,10 @@ export class GitHubService {
   readonly createFile: ReturnType<typeof createFile>
   readonly deleteFile: ReturnType<typeof deleteFile>
 
+  /**
+   * Create GitHub service
+   * @param config - GitHub configuration
+   */
   constructor(config: GitHubConfig) {
     this.config = config
     this.octokit = new Octokit({ auth: config.token })

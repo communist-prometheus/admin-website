@@ -1,6 +1,11 @@
 import { Effect } from 'effect'
 import { GitHubService } from './service'
 
+/**
+ * Create GitHub service instance
+ * @param token - GitHub access token
+ * @returns Effect with GitHub service
+ */
 export const createGitHubService = (token: string) =>
   Effect.sync(
     () =>

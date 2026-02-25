@@ -1,3 +1,4 @@
+/** GitHub tree item */
 export interface GitHubTreeItem {
   path: string
   mode: string
@@ -7,6 +8,7 @@ export interface GitHubTreeItem {
   url: string
 }
 
+/** GitHub tree response */
 export interface GitHubTreeResponse {
   sha: string
   url: string
@@ -14,6 +16,7 @@ export interface GitHubTreeResponse {
   truncated: boolean
 }
 
+/** GitHub file content */
 export interface GitHubFileContent {
   name: string
   path: string
@@ -28,12 +31,14 @@ export interface GitHubFileContent {
   encoding: 'base64'
 }
 
+/** Parameters for creating a file */
 export interface CreateFileParams {
   readonly path: string
   readonly content: string
   readonly message: string
 }
 
+/** Parameters for updating a file */
 export interface UpdateFileParams {
   readonly path: string
   readonly content: string

@@ -4,6 +4,10 @@ import type { User } from '@/types/user'
 import { checkAuthStatus } from './useAuth/check-auth'
 import { getInitialUser } from './useAuth/get-initial-user'
 
+/**
+ * Authentication composable
+ * @returns User state and auth methods
+ */
 export const useAuth = () => {
   const user = ref<User | null>(getInitialUser())
   const loading = ref(false)

@@ -8,6 +8,9 @@ interface TreeParams {
 
 /**
  * Get file tree
+ * @param request - Fastify request with path query
+ * @param reply - Fastify reply
+ * @returns Promise with tree data
  */
 export const handleGetTree = async (
   request: FastifyRequest<{ Querystring: TreeParams }>,

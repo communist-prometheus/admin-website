@@ -4,6 +4,10 @@ import { createGetFileHandler } from './useGitHubApi/get-file-handler'
 import { createGetTreeHandler } from './useGitHubApi/get-tree-handler'
 import { createUpdateFileHandler } from './useGitHubApi/update-file-handler'
 
+/**
+ * Composable for GitHub API operations
+ * @returns GitHub API methods and state
+ */
 export const useGitHubApi = () => {
   const loading = ref(false)
   const error = ref<string | null>(null)

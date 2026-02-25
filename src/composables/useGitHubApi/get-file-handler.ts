@@ -3,6 +3,12 @@ import type { Ref } from 'vue'
 import { UNKNOWN_ERROR_MESSAGE } from './constants'
 import { fetchFile } from './fetch-file'
 
+/**
+ * Creates handler for fetching file from GitHub
+ * @param loading - Loading state ref
+ * @param error - Error state ref
+ * @returns Get file handler function
+ */
 export const createGetFileHandler =
   (loading: Ref<boolean>, error: Ref<string | null>) =>
   async (path: string) => {
