@@ -6,7 +6,12 @@ import {
   registerGitHubOAuthRoutes,
 } from '../oauth/github/routes'
 import type { RenderPageConfig } from '../ssr/page-renderer'
-import { handleFavicon, handleSsr } from './routes/handlers'
+import {
+  handleFavicon,
+  handleRobotsTxt,
+  handleSitemap,
+  handleSsr,
+} from './routes/handlers'
 
 /**
  * Setup routes
@@ -23,6 +28,8 @@ export const setupRoutes = (
 
     if (isProduction) {
       fastify.get('/favicon.ico', handleFavicon(resolveDistPath))
+      fastify.get('/robots.txt', handleRobotsTxt(resolveDistPath))
+      fastify.get('/sitemap.xml', handleSitemap(resolveDistPath))
     }
 
     fastify.get('*', handleSsr(renderConfig))

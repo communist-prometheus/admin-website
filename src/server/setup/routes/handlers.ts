@@ -12,6 +12,24 @@ export const handleFavicon =
     reply.sendFile('favicon.ico', resolveDistPath('client'))
 
 /**
+ * Handle robots.txt requests
+ */
+export const handleRobotsTxt =
+  (resolveDistPath: (path: string) => string) =>
+  async (_request: FastifyRequest, reply: FastifyReply) =>
+    reply.type('text/plain').sendFile('robots.txt', resolveDistPath('client'))
+
+/**
+ * Handle sitemap.xml requests
+ */
+export const handleSitemap =
+  (resolveDistPath: (path: string) => string) =>
+  async (_request: FastifyRequest, reply: FastifyReply) =>
+    reply
+      .type('application/xml')
+      .sendFile('sitemap.xml', resolveDistPath('client'))
+
+/**
  * Handle SSR requests
  */
 export const handleSsr =
