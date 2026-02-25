@@ -60,6 +60,13 @@
       "rules": {
         "no-console": "off"
       }
+    },
+    {
+      "files": ["src/server/services/github.ts"],
+      "rules": {
+        "sonarjs/max-lines": ["error", { "maximum": 150 }],
+        "sonarjs/max-lines-per-function": ["error", { "maximum": 40 }]
+      }
     }
   ],
   "ignorePatterns": [
