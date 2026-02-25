@@ -9,11 +9,15 @@ defineProps<{
   text: string
   linkHref: string
   linkText: string
+  iconLabel?: string
 }>()
 </script>
 
 <template>
-  <WelcomeIcon :icon="icon" />
+  <WelcomeIcon
+    :icon="icon"
+    :aria-label="iconLabel || heading"
+  />
   <WelcomeContent
     :heading="heading"
     :text="text"

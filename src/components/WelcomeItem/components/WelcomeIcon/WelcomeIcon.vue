@@ -3,11 +3,16 @@ import type { Component } from 'vue'
 
 defineProps<{
   icon: Component
+  ariaLabel?: string
 }>()
 </script>
 
 <template>
-  <component :is="icon" />
+  <component
+    :is="icon"
+    :aria-label="ariaLabel"
+    role="img"
+  />
 </template>
 
 <style scoped>
