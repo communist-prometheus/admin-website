@@ -5,8 +5,8 @@
 <style scoped>
 :host {
   display: block;
-  max-width: 800px;
+  max-width: min(800px, 100% - 2rem);
   margin: 0 auto;
-  padding: var(--spacing-xl) var(--spacing-md);
+  padding: clamp(1rem, 4vw, 2rem) clamp(0.5rem, 2vw, 1rem);
 }
 </style>

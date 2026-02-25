@@ -5,7 +5,7 @@
 <style scoped>
 :host {
   display: block;
-  padding: var(--spacing-lg);
+  padding: clamp(1rem, 3vw, 1.5rem);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);

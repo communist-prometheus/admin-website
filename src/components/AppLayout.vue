@@ -1,55 +1,55 @@
-<script setup lang="ts">
-</script>
-
 <template>
-  <div
-    :style="{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      minHeight: '100vh',
-      color: 'var(--color-text)'
-    }"
-  >
-    <header
-      :style="{ 
-        padding: '1rem 2rem',
-        borderBottom: '1px solid var(--color-border)',
-        background: 'var(--color-background)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        color: 'var(--color-heading)'
-      }"
-    >
-      <div :style="{ fontSize: '1.5rem', fontWeight: '600' }">
-        Admin Panel
-      </div>
-      <slot name="header-actions"></slot>
-    </header>
+  <header>
+    <h1>Admin Panel</h1>
+    <slot name="header-actions" />
+  </header>
 
-    <main
-      :style="{ 
-        flex: '1',
-        padding: '2rem',
-        color: 'var(--color-text)'
-      }"
-    >
-      <slot></slot>
-    </main>
+  <main>
+    <slot />
+  </main>
 
-    <footer
-      :style="{ 
-        padding: '1.5rem 2rem',
-        borderTop: '1px solid var(--color-border)',
-        background: 'var(--color-background-mute)',
-        textAlign: 'center',
-        color: 'var(--color-text-muted)',
-        fontSize: '0.875rem'
-      }"
-    >
-      <slot name="footer">
-        © {{ new Date().getFullYear() }} Admin Panel. All rights reserved.
-      </slot>
-    </footer>
-  </div>
+  <footer>
+    <slot name="footer">
+      © {{ new Date().getFullYear() }} Admin Panel. All rights reserved.
+    </slot>
+  </footer>
 </template>
+
+<style scoped>
+:host {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+  color: var(--color-text);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 4vw, 2rem);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-heading);
+}
+
+h1 {
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+  font-weight: 600;
+  margin: 0;
+}
+
+main {
+  padding: clamp(1rem, 4vw, 2rem);
+  color: var(--color-text);
+}
+
+footer {
+  padding: clamp(1rem, 3vw, 1.5rem) clamp(1rem, 4vw, 2rem);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-background-mute);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+}
+</style>
