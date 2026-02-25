@@ -1,3 +1,4 @@
+import fastifyCompress from '@fastify/compress'
 import fastifyCookie from '@fastify/cookie'
 import middie from '@fastify/middie'
 import fastifySession from '@fastify/session'
@@ -15,9 +16,16 @@ const sessionConfig = {
 const registerPlugins = (fastify: ReturnType<typeof Fastify>) =>
   pipe(
     Effect.tryPromise({
-      try: async () => await fastify.register(fastifyCookie),
-      catch: () => new Error('Failed to register cookie plugin'),
+      try: async () =>
+        await fastify.register(fastifyCompress, { global: true }),
+      catch: () => new Error('Failed to register compress plugin'),
     }),
+    Effect.flatMap(() =>
+      Effect.tryPromise({
+        try: async () => await fastify.register(fastifyCookie),
+        catch: () => new Error('Failed to register cookie plugin'),
+      })
+    ),
     Effect.flatMap(() =>
       Effect.tryPromise({
         try: async () =>

@@ -15,6 +15,8 @@ const emit = defineEmits<{ logout: []; differentAccount: []; toggle: [] }>()
       :src="user.avatar"
       :alt="user.username"
       class="avatar avatar-sm"
+      width="32"
+      height="32"
     />
     <span class="user-name">{{ user.name || user.username }}</span>
   </button>
