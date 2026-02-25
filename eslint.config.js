@@ -1,4 +1,5 @@
 import parser from '@typescript-eslint/parser'
+import tseslint from '@typescript-eslint/eslint-plugin'
 import jsdoc from 'eslint-plugin-jsdoc'
 
 export default [
@@ -6,7 +7,24 @@ export default [
     ignores: ['src/components.d.ts'],
   },
   {
-    files: ['**/*.ts'],
+    files: ['vite.config.ts', 'vitest.config.ts', 'playwright.config.ts', 'eslint.config.js'],
+    languageOptions: {
+      parser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        project: './tsconfig.node.json',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint,
+    },
+    rules: {
+      '@typescript-eslint/no-deprecated': 'error',
+    },
+  },
+  {
+    files: ['src/**/*.ts'],
     languageOptions: {
       parser,
       parserOptions: {
