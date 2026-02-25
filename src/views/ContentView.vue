@@ -1,24 +1,58 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import FileTree from '@/components/FileTree/FileTree.vue'
+import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor.vue'
 import type { GitHubTreeItem } from '@/composables/useGitHubApi'
+import { useGitHubApi } from '@/composables/useGitHubApi'
 
 const props = defineProps<{
   readonly contentType: 'blog' | 'pages' | 'positions'
 }>()
 
 const rootPath = `src/content/${props.contentType}`
-const selectedItem = ref<GitHubTreeItem | null>(null)
+const { getFile, update, loading, error } = useGitHubApi()
 
-const handleSelect = (item: GitHubTreeItem) => {
+const selectedItem = ref<GitHubTreeItem | null>(null)
+const fileContent = ref('')
+const fileSha = ref('')
+
+const handleSelect = async (item: GitHubTreeItem) => {
   selectedItem.value = item
+  try {
+    const file = await getFile(item.path)
+    fileContent.value = file.content
+    fileSha.value = file.sha
+  } catch {
+    // Error handled by useGitHubApi
+  }
 }
+
+const handleSave = async (message: string) => {
+  if (!selectedItem.value) return
+  try {
+    await update(selectedItem.value.path, fileContent.value, message, fileSha.value)
+  } catch {
+    // Error handled by useGitHubApi
+  }
+}
+
+watch(() => props.contentType, () => {
+  selectedItem.value = null
+  fileContent.value = ''
+  fileSha.value = ''
+})
 </script>
 
 <template>
   <h1>{{ contentType }}</h1>
   <FileTree :root-path="rootPath" @select="handleSelect" />
-  <p v-if="selectedItem">Selected: {{ selectedItem.path }}</p>
+  <MarkdownEditor
+    v-model="fileContent"
+    :file-path="selectedItem?.path ?? null"
+    @save="handleSave"
+  />
+  <p v-if="loading">Loading...</p>
+  <p v-if="error">Error: {{ error }}</p>
 </template>
 
 <style scoped>
