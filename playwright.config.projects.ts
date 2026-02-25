@@ -26,6 +26,7 @@ export const projects = [
   {
     name: 'lighthouse',
     testMatch: [LIGHTHOUSE_TEST_PATTERN],
+    fullyParallel: false,
     use: {
       ...devices['Desktop Chrome'],
       launchOptions: {
