@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { createGitHubService } from '@/server/services/github'
+import { createGitHubService } from '../../../services/github/index'
 
 interface TreeParams {
   path?: string

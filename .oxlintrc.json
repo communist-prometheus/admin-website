@@ -45,17 +45,6 @@
   },
   "overrides": [
     {
-      "files": [
-        "**/!(example)/**/*.vue",
-        "src/App.vue",
-        "src/components/*.vue",
-        "src/views/**/*.vue"
-      ],
-      "rules": {
-        "vue/no-restricted-html-elements": "off"
-      }
-    },
-    {
       "files": ["src/server/utils/logger.ts"],
       "rules": {
         "no-console": "off"
