@@ -9,7 +9,6 @@ const LIGHTHOUSE_CONFIG = {
     'best-practices': 100,
     seo: 100,
   },
-  port: 9222,
   config: {
     extends: 'lighthouse:default',
     settings: {
@@ -27,5 +26,10 @@ const LIGHTHOUSE_CONFIG = {
 test('should achieve 100 score on mobile', async ({ page }) => {
   await page.setViewportSize(MOBILE_VIEWPORT)
   await page.goto('/')
-  await playAudit({ page, ...LIGHTHOUSE_CONFIG })
+
+  await playAudit({
+    page,
+    port: 9223,
+    ...LIGHTHOUSE_CONFIG,
+  })
 })

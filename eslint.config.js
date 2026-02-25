@@ -29,7 +29,7 @@ export default [
     },
   },
   {
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.ts', 'e2e/**/*.ts'],
     languageOptions: {
       parser,
       parserOptions: {

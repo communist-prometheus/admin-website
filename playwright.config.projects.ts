@@ -24,13 +24,22 @@ export const projects = [
     testIgnore: [LIGHTHOUSE_TEST_PATTERN],
   },
   {
-    name: 'lighthouse',
-    testMatch: [LIGHTHOUSE_TEST_PATTERN],
-    fullyParallel: false,
+    name: 'lighthouse-desktop',
+    testMatch: ['**/lighthouse/desktop.spec.ts'],
     use: {
       ...devices['Desktop Chrome'],
       launchOptions: {
         args: ['--remote-debugging-port=9222'],
+      },
+    },
+  },
+  {
+    name: 'lighthouse-mobile',
+    testMatch: ['**/lighthouse/mobile.spec.ts'],
+    use: {
+      ...devices['Desktop Chrome'],
+      launchOptions: {
+        args: ['--remote-debugging-port=9223'],
       },
     },
   },

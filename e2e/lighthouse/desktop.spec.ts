@@ -6,12 +6,12 @@ test('should achieve 100 score on desktop', async ({ page }) => {
 
   await playAudit({
     page,
+    port: 9222,
     thresholds: {
       performance: 97,
       accessibility: 100,
       'best-practices': 100,
       seo: 100,
     },
-    port: 9222,
   })
 })

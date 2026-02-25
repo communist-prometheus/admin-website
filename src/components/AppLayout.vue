@@ -1,4 +1,5 @@
 <template>
+  <div class="app-layout">
     <header>
       <h1>Admin Panel</h1>
       <slot name="header-actions" />
@@ -13,9 +14,16 @@
         © {{ new Date().getFullYear() }} Admin Panel. All rights reserved.
       </slot>
     </footer>
+  </div>
 </template>
 
 <style scoped>
+.app-layout {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+  color: var(--color-text);
+}
 
 header {
   display: flex;
