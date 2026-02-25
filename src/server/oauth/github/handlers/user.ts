@@ -11,12 +11,9 @@ export const handleGetUser = (
   // @ts-expect-error - fastify-session typing issue
   const user = request.session.github_user
   request.log.info('Auth check - session user:', user)
-  if (!user) {
-    request.log.info('User not authenticated - returning 401')
-    return reply.status(401).send({ authenticated: false })
-  }
-  request.log.info('User authenticated - returning user data')
-  return reply.send({ authenticated: true, user })
+  return reply
+    .status(200)
+    .send(user ? { authenticated: true, user } : { authenticated: false })
 }
 
 /**
