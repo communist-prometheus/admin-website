@@ -16,10 +16,6 @@ import HomeView from './views/HomeView.vue'
 export const createApp = (isSSR: boolean) => {
   const app = createSSRApp(App)
 
-  app.config.compilerOptions.isCustomElement = (tag: string) => {
-    return tag === 'app-layout'
-  }
-
   const history: RouterHistory = isSSR
     ? createMemoryHistory(import.meta.env.BASE_URL)
     : createWebHistory(import.meta.env.BASE_URL)

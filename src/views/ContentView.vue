@@ -44,19 +44,21 @@ watch(() => props.contentType, () => {
 </script>
 
 <template>
-  <h1>{{ contentType }}</h1>
-  <FileTree :root-path="rootPath" @select="handleSelect" />
-  <MarkdownEditor
-    v-model="fileContent"
-    :file-path="selectedItem?.path ?? null"
-    @save="handleSave"
-  />
-  <p v-if="loading">Loading...</p>
-  <p v-if="error">Error: {{ error }}</p>
+  <div class="content-view">
+    <h1>{{ contentType }}</h1>
+    <FileTree :root-path="rootPath" @select="handleSelect" />
+    <MarkdownEditor
+      v-model="fileContent"
+      :file-path="selectedItem?.path ?? null"
+      @save="handleSave"
+    />
+    <p v-if="loading">Loading...</p>
+    <p v-if="error">Error: {{ error }}</p>
+  </div>
 </template>
 
 <style scoped>
-:host {
+.content-view {
   display: grid;
   grid-template-columns: 300px 1fr;
   gap: clamp(1rem, 3vw, 2rem);

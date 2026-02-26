@@ -6,43 +6,46 @@ const emit = defineEmits<{ logout: []; differentAccount: []; toggle: [] }>()
 </script>
 
 <template>
-  <button
-    type="button"
-    class="user-btn flex-center"
-    @click.stop="emit('toggle')"
-  >
-    <img
-      :src="user.avatar"
-      :alt="user.username"
-      class="avatar avatar-sm"
-      width="32"
-      height="32"
-    />
-    <span class="user-name">{{ user.name || user.username }}</span>
-  </button>
-  <nav
-    v-if="show"
-    class="dropdown"
-  >
+  <div class="auth-dropdown">
     <button
       type="button"
-      class="dropdown-item"
-      @click="emit('differentAccount')"
+      class="user-btn flex-center"
+      @click.stop="emit('toggle')"
     >
-      Login with different account
+      <img
+        :src="user.avatar"
+        alt=""
+        aria-hidden="true"
+        class="avatar avatar-sm"
+        width="32"
+        height="32"
+      />
+      <span class="user-name">{{ user.name || user.username }}</span>
     </button>
-    <button
-      type="button"
-      class="dropdown-item dropdown-item-danger"
-      @click="emit('logout')"
+    <nav
+      v-if="show"
+      class="dropdown"
     >
-      Logout
-    </button>
-  </nav>
+      <button
+        type="button"
+        class="dropdown-item"
+        @click="emit('differentAccount')"
+      >
+        Login with different account
+      </button>
+      <button
+        type="button"
+        class="dropdown-item dropdown-item-danger"
+        @click="emit('logout')"
+      >
+        Logout
+      </button>
+    </nav>
+  </div>
 </template>
 
 <style scoped>
-:host {
+.auth-dropdown {
   position: relative;
 }
 

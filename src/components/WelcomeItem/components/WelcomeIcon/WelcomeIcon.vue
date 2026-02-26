@@ -8,15 +8,17 @@ defineProps<{
 </script>
 
 <template>
-  <component
-    :is="icon"
-    :aria-label="ariaLabel"
-    role="img"
-  />
+  <div class="welcome-icon">
+    <component
+      :is="icon"
+      :aria-label="ariaLabel"
+      role="img"
+    />
+  </div>
 </template>
 
 <style scoped>
-:host {
+.welcome-icon {
   display: flex;
   place-items: center;
   place-content: center;

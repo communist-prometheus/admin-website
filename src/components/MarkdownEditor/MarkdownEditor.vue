@@ -31,14 +31,16 @@ const handleSave = (message: string) => {
 </script>
 
 <template>
-  <p v-if="!filePath">Select a file to edit</p>
-  <EditorHeader v-if="filePath" :file-path="filePath" />
-  <textarea v-if="filePath" :value="content" @input="handleInput" />
-  <EditorFooter v-if="filePath" :disabled="false" @save="handleSave" />
+  <div class="markdown-editor">
+    <p v-if="!filePath">Select a file to edit</p>
+    <EditorHeader v-if="filePath" :file-path="filePath" />
+    <textarea v-if="filePath" :value="content" @input="handleInput" />
+    <EditorFooter v-if="filePath" :disabled="false" @save="handleSave" />
+  </div>
 </template>
 
 <style scoped>
-:host {
+.markdown-editor {
   display: flex;
   flex-direction: column;
   height: 100%;

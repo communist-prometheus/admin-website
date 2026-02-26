@@ -1,9 +1,11 @@
 <template>
-  <slot />
+  <section class="welcome-section">
+    <slot />
+  </section>
 </template>
 
 <style scoped>
-:host {
+.welcome-section {
   display: block;
   max-width: min(800px, 100% - 2rem);
   margin: 0 auto;

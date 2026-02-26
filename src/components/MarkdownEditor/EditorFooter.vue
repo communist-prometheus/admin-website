@@ -19,18 +19,20 @@ const handleSave = () => {
 </script>
 
 <template>
-  <input
-    v-model="commitMessage"
-    type="text"
-    placeholder="Commit message"
-  />
-  <button type="button" :disabled="disabled || !commitMessage.trim()" @click="handleSave">
-    Save
-  </button>
+  <div class="editor-footer">
+    <input
+      v-model="commitMessage"
+      type="text"
+      placeholder="Commit message"
+    />
+    <button type="button" :disabled="disabled || !commitMessage.trim()" @click="handleSave">
+      Save
+    </button>
+  </div>
 </template>
 
 <style scoped>
-:host {
+.editor-footer {
   display: flex;
   gap: clamp(0.5rem, 2vw, 1rem);
   padding: clamp(0.75rem, 2vw, 1rem);

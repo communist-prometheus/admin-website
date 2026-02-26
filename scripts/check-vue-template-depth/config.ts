@@ -4,14 +4,10 @@ export interface Config {
 }
 
 export const config: Config = {
-  maxDepth: 1,
+  maxDepth: 2,
   excludePatterns: [
     'src/components/HelloWorld.vue',
-    'src/components/AppLayoutSSR.vue',
-    'src/components/AppLayout.ce.vue',
-    'src/components/example/**/*.vue',
     'src/components/AuthButton/UserMenu.vue',
-    'src/components/DemoDialog.vue',
     'src/components/icons/**/*.vue',
     'src/views/**/*.vue',
   ],

@@ -110,10 +110,7 @@
       }
     },
     {
-      "includes": [
-        "src/components/TheWelcome.vue",
-        "src/components/DemoDialog.vue"
-      ],
+      "includes": ["src/components/TheWelcome.vue"],
       "formatter": {
         "enabled": false
       },
@@ -140,19 +137,6 @@
         "rules": {
           "style": {
             "noDefaultExport": "off"
-          }
-        }
-      }
-    },
-    {
-      "includes": [
-        "src/components/**/UserAvatar/*.vue",
-        "src/components/AuthButton/UserMenu.vue"
-      ],
-      "linter": {
-        "rules": {
-          "a11y": {
-            "useAltText": "off"
           }
         }
       }

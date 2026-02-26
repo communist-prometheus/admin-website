@@ -1,9 +1,11 @@
 <template>
-  <slot />
+  <div class="content-grid">
+    <slot />
+  </div>
 </template>
 
 <style scoped>
-:host {
+.content-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
   gap: clamp(0.75rem, 2vw, 1rem);

@@ -3,14 +3,7 @@ import Components from 'unplugin-vue-components/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 export const createPlugins = () => [
-  vue({
-    customElement: /\.ce\.vue$/,
-    template: {
-      compilerOptions: {
-        isCustomElement: (tag: string) => tag === 'app-layout',
-      },
-    },
-  }),
+  vue(),
   vueDevTools(),
   Components({
     dts: 'src/components.d.ts',
@@ -21,6 +14,5 @@ export const createPlugins = () => [
         names: ['RouterLink', 'RouterView'],
       },
     ],
-    exclude: [/AppLayout\.vue$/, /AppLayout\.ce\.vue$/],
   }),
 ]

@@ -15,7 +15,7 @@ const { user } = useAuth()
 </script>
 
 <template>
-  <AppLayoutSSR>
+  <AppLayout>
     <template #header-actions>
       <AuthButton />
     </template>
@@ -43,5 +43,5 @@ const { user } = useAuth()
         </ContentCard>
       </ContentGrid>
     </DashboardSection>
-  </AppLayoutSSR>
+  </AppLayout>
 </template>

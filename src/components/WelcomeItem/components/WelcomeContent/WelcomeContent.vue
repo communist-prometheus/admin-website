@@ -8,20 +8,22 @@ defineProps<{
 </script>
 
 <template>
-  <h3>{{ heading }}</h3>
-  <p>{{ text }}</p>
-  <a
-    :href="linkHref"
-    target="_blank"
-    rel="noopener"
-    class="link"
-  >
-    {{ linkText }}
-  </a>
+  <div class="welcome-content">
+    <h3>{{ heading }}</h3>
+    <p>{{ text }}</p>
+    <a
+      :href="linkHref"
+      target="_blank"
+      rel="noopener"
+      class="link"
+    >
+      {{ linkText }}
+    </a>
+  </div>
 </template>
 
 <style scoped>
-:host {
+.welcome-content {
   flex: 1;
   margin-left: var(--space-md);
 }

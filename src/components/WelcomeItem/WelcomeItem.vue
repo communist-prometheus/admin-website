@@ -14,20 +14,22 @@ defineProps<{
 </script>
 
 <template>
-  <WelcomeIcon
-    :icon="icon"
-    :aria-label="iconLabel || heading"
-  />
-  <WelcomeContent
-    :heading="heading"
-    :text="text"
-    :link-href="linkHref"
-    :link-text="linkText"
-  />
+  <div class="welcome-item">
+    <WelcomeIcon
+      :icon="icon"
+      :aria-label="iconLabel || heading"
+    />
+    <WelcomeContent
+      :heading="heading"
+      :text="text"
+      :link-href="linkHref"
+      :link-text="linkText"
+    />
+  </div>
 </template>
 
 <style scoped>
-:host {
+.welcome-item {
   margin-top: var(--space-xl);
   display: flex;
   position: relative;

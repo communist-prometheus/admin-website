@@ -49,19 +49,21 @@ onMounted(loadTree)
 </script>
 
 <template>
-  <p v-if="message">{{ message }}</p>
-  <FileTreeItem
-    v-for="item in items"
-    v-else
-    :key="item.path"
-    :item="item"
-    :is-selected="selectedPath === item.path"
-    @select="handleSelect"
-  />
+  <div class="file-tree">
+    <p v-if="message">{{ message }}</p>
+    <FileTreeItem
+      v-for="item in items"
+      v-else
+      :key="item.path"
+      :item="item"
+      :is-selected="selectedPath === item.path"
+      @select="handleSelect"
+    />
+  </div>
 </template>
 
 <style scoped>
-:host {
+.file-tree {
   display: flex;
   flex-direction: column;
   gap: clamp(0.25rem, 1vw, 0.5rem);

@@ -5,16 +5,15 @@ export interface ASTNode {
 
 const isElementNode = (node: ASTNode): boolean => node.type === 1
 
-const calculateChildDepth =
-  (currentDepth: number) =>
-  (child: ASTNode): number =>
-    isElementNode(child)
-      ? getElementDepth(child, currentDepth + 1)
-      : currentDepth
-
 export const getElementDepth = (node: ASTNode, depth = 0): number => {
   if (!node?.children) return depth
 
-  const childDepths = node.children.map(calculateChildDepth(depth))
-  return Math.max(depth, ...childDepths)
+  const elementChildren = node.children.filter(isElementNode)
+
+  if (elementChildren.length === 0) return depth
+
+  const childDepths = elementChildren.map(child =>
+    getElementDepth(child, depth + 1)
+  )
+  return Math.max(...childDepths)
 }

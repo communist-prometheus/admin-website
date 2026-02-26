@@ -11,7 +11,7 @@ export const BUTTON_NAMES = {
 } as const
 
 export const SELECTORS = {
-  testUserAvatar: 'img[alt="test-user"]',
+  testUserAvatar: 'img[aria-hidden="true"]',
 } as const
 
 export const ROUTES = {

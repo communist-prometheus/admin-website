@@ -1,9 +1,11 @@
 <template>
-  <slot />
+  <div class="content-card">
+    <slot />
+  </div>
 </template>
 
 <style scoped>
-:host {
+.content-card {
   display: block;
   padding: clamp(1rem, 3vw, 1.5rem);
   border: 1px solid var(--color-border);
@@ -14,7 +16,7 @@
     box-shadow var(--transition-fast);
 }
 
-:host(:hover) {
+.content-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
