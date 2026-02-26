@@ -1,8 +1,9 @@
 /**
  * Wraps content with Declarative Shadow DOM template
+ * Styles go in Shadow DOM, content stays in light DOM via slot
  * @param tagName - Custom element tag name
  * @param attributes - Tag attributes string
- * @param content - Inner content to wrap
+ * @param content - Inner content to place in light DOM
  * @param styles - CSS styles for shadow DOM
  * @returns HTML string with Declarative Shadow DOM structure
  */
@@ -14,6 +15,7 @@ export const wrapWithShadowDOM = (
 ): string => `<${tagName}${attributes}>
   <template shadowrootmode="open">
     <style>${styles}</style>
-    ${content.trim()}
+    <slot></slot>
   </template>
+  ${content.trim()}
 </${tagName}>`
