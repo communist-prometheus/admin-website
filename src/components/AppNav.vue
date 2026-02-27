@@ -46,7 +46,7 @@ const route = useRoute()
   border-bottom-color: var(--color-accent);
 }
 
-.app-nav a.active {
+.app-nav .active {
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
 }
