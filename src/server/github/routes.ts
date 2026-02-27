@@ -4,6 +4,7 @@ import type {
   ContentType,
   ContentUpdateRequest,
 } from '@/types/github-content'
+import { getSessionUser } from '../auth/session'
 import type { GitHubClient } from './client'
 import { createGitHubClient } from './client'
 import { loadGitHubConfig } from './config'
@@ -15,17 +16,17 @@ import { MockContentService } from './mock-service'
  * @param fastify - Fastify instance
  */
 export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
-  const config = loadGitHubConfig()
-  const useMock = process.env.NODE_ENV === 'test' || !config.token
+  const baseConfig = loadGitHubConfig()
 
-  const githubClient: GitHubClient = useMock
-    ? (new MockContentService() as unknown as GitHubClient)
-    : createGitHubClient(config)
+  const getContentService = (accessToken?: string) => {
+    const useMock = process.env.NODE_ENV === 'test' || !accessToken
 
-  const contentService = createContentService(
-    githubClient,
-    config.contentPath
-  )
+    const githubClient: GitHubClient = useMock
+      ? (new MockContentService() as unknown as GitHubClient)
+      : createGitHubClient({ ...baseConfig, token: accessToken! })
+
+    return createContentService(githubClient, baseConfig.contentPath)
+  }
   /**
    * GET /api/github/content/:type
    * List all content of a specific type
@@ -34,6 +35,8 @@ export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
     Params: { type: ContentType }
   }>('/api/github/content/:type', async (request, reply) => {
     const { type } = request.params
+    const user = getSessionUser(request)
+    const contentService = getContentService(user?.accessToken)
 
     return Effect.runPromise(contentService.listContent(type))
       .then(items => reply.send({ items }))
@@ -51,6 +54,8 @@ export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
     Params: { type: ContentType; slug: string; lang: string }
   }>('/api/github/content/:type/:slug/:lang', async (request, reply) => {
     const { type, slug, lang } = request.params
+    const user = getSessionUser(request)
+    const contentService = getContentService(user?.accessToken)
 
     return Effect.runPromise(contentService.getContent(type, slug, lang))
       .then(item => reply.send(item))
@@ -68,6 +73,8 @@ export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
     Body: ContentUpdateRequest
   }>('/api/github/content', async (request, reply) => {
     const updateRequest = request.body
+    const user = getSessionUser(request)
+    const contentService = getContentService(user?.accessToken)
 
     return Effect.runPromise(contentService.updateContent(updateRequest))
       .then(result => reply.send(result))
@@ -87,6 +94,8 @@ export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
   }>('/api/github/content/:type/:slug/:lang', async (request, reply) => {
     const { type, slug, lang } = request.params
     const { sha } = request.body
+    const user = getSessionUser(request)
+    const contentService = getContentService(user?.accessToken)
 
     return Effect.runPromise(
       contentService.deleteContent(type, slug, lang, sha)

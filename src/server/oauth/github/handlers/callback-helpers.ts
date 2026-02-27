@@ -25,15 +25,23 @@ export const getUserData = (
   }
 ) =>
   config.isMockMode
-    ? Effect.succeed(mockUser)
-    : pipe(fetchAccessToken(code, config), Effect.flatMap(fetchGitHubUser))
+    ? Effect.succeed({ ...mockUser, accessToken: 'mock-token' })
+    : pipe(
+        fetchAccessToken(code, config),
+        Effect.flatMap(accessToken =>
+          pipe(
+            fetchGitHubUser(accessToken),
+            Effect.map(user => ({ ...user, accessToken }))
+          )
+        )
+      )
 
 /**
  * Store user data in session
  */
 export const storeUserInSession = (
   request: FastifyRequest,
-  userData: { login?: string; name?: string; avatar_url?: string }
+  userData: { login?: string; name?: string; avatar_url?: string; accessToken?: string }
 ) =>
   Effect.sync(() => {
     // @ts-expect-error - fastify-session typing issue
@@ -41,6 +49,7 @@ export const storeUserInSession = (
       username: userData.login,
       name: userData.name,
       avatar: userData.avatar_url,
+      accessToken: userData.accessToken,
     }
     request.log.info(
       { username: userData.login, name: userData.name },
