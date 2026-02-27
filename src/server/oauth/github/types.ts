@@ -17,6 +17,7 @@ export const mockUser: User = {
   username: 'test-user',
   name: 'Test User',
   avatar: 'https://avatars.githubusercontent.com/u/1?v=4',
+  accessToken: 'mock-token',
 }
 
 /**
@@ -25,14 +26,17 @@ export const mockUser: User = {
  * @param data.login - GitHub username
  * @param data.name - User's display name
  * @param data.avatar_url - URL to user's avatar image
+ * @param data.accessToken - OAuth access token
  * @returns Normalized user object
  */
 export const toUser = (data: {
   login?: string
   name?: string
   avatar_url?: string
+  accessToken?: string
 }): User => ({
   username: data.login ?? 'unknown',
   name: data.name ?? 'Unknown User',
   avatar: data.avatar_url ?? '',
+  accessToken: data.accessToken ?? '',
 })
