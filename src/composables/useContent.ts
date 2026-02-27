@@ -1,8 +1,8 @@
 import type { ContentType } from '@/types/content'
-import { useGitHubApi } from './useGitHubApi'
 import { useContentCreator } from './useContent/useContentCreator'
 import { useContentEditor } from './useContent/useContentEditor'
 import { useContentList } from './useContent/useContentList'
+import { useGitHubApi } from './useGitHubApi'
 
 export const useContent = (contentType: ContentType) => {
   const { loading, error } = useGitHubApi()
