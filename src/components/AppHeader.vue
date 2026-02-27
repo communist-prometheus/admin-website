@@ -7,9 +7,7 @@ import AppNav from './AppNav.vue'
   <header class="app-header">
     <RouterLink to="/" class="logo">Prometheus</RouterLink>
     <AppNav />
-    <div class="actions">
-      <slot name="actions" />
-    </div>
+    <slot name="actions" />
   </header>
 </template>
 
@@ -35,9 +33,5 @@ import AppNav from './AppNav.vue'
 
 .logo:hover {
   color: var(--color-accent);
-}
-
-.actions {
-  margin-left: auto;
 }
 </style>
