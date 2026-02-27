@@ -74,7 +74,8 @@ const handleClose = () => {
 
 <template>
   <dialog
-    :open="show"
+    v-if="show"
+    open
     class="create-dialog"
     @click.self="handleClose"
   >
