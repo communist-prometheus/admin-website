@@ -4,8 +4,8 @@ import type {
   ContentType,
   ContentUpdateRequest,
 } from '@/types/github-content'
-import { createGitHubClient } from './client'
 import type { GitHubClient } from './client'
+import { createGitHubClient } from './client'
 import { loadGitHubConfig } from './config'
 import { createContentService } from './content-service'
 import { MockContentService } from './mock-service'

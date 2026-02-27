@@ -54,7 +54,7 @@ const closeCreateDialog = () => {
   showCreateDialog.value = false
 }
 
-watch(() => props.contentType, async (newType) => {
+watch(() => props.contentType, async () => {
   selectedItem.value = null
   fileContent.value = ''
   await loadContent()
