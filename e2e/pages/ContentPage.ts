@@ -43,7 +43,7 @@ export class ContentPage {
   }
 
   async selectLanguage(lang: 'en' | 'ru' | 'it' | 'es'): Promise<void> {
-    await this.page.getByRole('button', { name: lang }).click()
+    await this.page.click(`button[data-lang="${lang}"]`)
     await waitForNetworkIdle(this.page, { idleTime: 300 })
   }
 }

@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test'
 import { ContentPage } from '../pages/ContentPage'
-import { waitForNetworkIdle } from '../helpers/network'
 
 test.describe('GitHub Content - List', () => {
   let contentPage: ContentPage
@@ -36,8 +35,7 @@ test.describe('GitHub Content - List', () => {
 
   test('should navigate between content types', async ({ page }) => {
     await page.click('a[href="/content/pages"]')
-    await waitForNetworkIdle(page)
-    await expect(page).toHaveURL('/content/pages')
+    await page.waitForURL('/content/pages')
     await expect(page.getByRole('heading', { name: /pages/i })).toBeVisible()
   })
 
