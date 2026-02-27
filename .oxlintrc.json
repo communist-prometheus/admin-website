@@ -55,11 +55,14 @@
         "src/server/**/*.ts",
         "src/types/**/*.ts",
         "src/views/ContentView.vue",
-        "src/composables/useContent.ts"
+        "src/composables/useContent.ts",
+        "**/*.test.ts",
+        "**/*.spec.ts"
       ],
       "rules": {
         "sonarjs/max-lines": "off",
-        "sonarjs/max-lines-per-function": "off"
+        "sonarjs/max-lines-per-function": "off",
+        "sonarjs/no-duplicate-string": "off"
       }
     },
     {
