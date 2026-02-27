@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useContentCreator } from './useContentCreator'
 
 const mockCreate = vi.fn()
@@ -10,6 +10,10 @@ vi.mock('../useGitHubApi', () => ({
 }))
 
 describe('useContentCreator', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('creates blog content with frontmatter', async () => {
     mockCreate.mockResolvedValueOnce({ success: true })
 

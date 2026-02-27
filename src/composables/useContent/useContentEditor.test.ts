@@ -45,6 +45,6 @@ describe('useContentEditor', () => {
     fileContent.value = '# New Content'
     await saveContent('blog/test.md', 'Update content')
 
-    expect(mockUpdate).toHaveBeenCalledWith('blog/test.md', '# New Content', 'abc123', 'Update content')
+    expect(mockUpdate).toHaveBeenCalledWith('blog/test.md', '# New Content', 'Update content', 'abc123')
   })
 })
