@@ -1,9 +1,15 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { RouterLink } from 'vue-router'
+import AppNav from './AppNav.vue'
+</script>
 
 <template>
   <header class="app-header">
-    <h1>Admin Panel</h1>
-    <slot name="actions" />
+    <RouterLink to="/" class="logo">Prometheus</RouterLink>
+    <AppNav />
+    <div class="actions">
+      <slot name="actions" />
+    </div>
   </header>
 </template>
 
@@ -16,11 +22,22 @@
   border-bottom: 1px solid var(--color-border);
   background: var(--color-background);
   color: var(--color-heading);
+  gap: clamp(2rem, 5vw, 4rem);
 }
 
-.app-header h1 {
+.logo {
   font-size: clamp(1.25rem, 3vw, 1.5rem);
-  font-weight: 600;
-  margin: 0;
+  font-weight: 700;
+  color: var(--color-heading);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.logo:hover {
+  color: var(--color-accent);
+}
+
+.actions {
+  margin-left: auto;
 }
 </style>

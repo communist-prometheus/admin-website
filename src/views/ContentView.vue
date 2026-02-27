@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
+import AppLayout from '@/components/AppLayout.vue'
+import AuthButton from '@/components/AuthButton.vue'
 import ContentList from '@/components/ContentList/ContentList.vue'
 import ContentNav from '@/components/ContentNav/ContentNav.vue'
 import CreateContentDialog from '@/components/CreateContentDialog/CreateContentDialog.vue'
