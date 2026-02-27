@@ -17,12 +17,15 @@ import { MockContentService } from './mock-service'
 export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
   const config = loadGitHubConfig()
   const useMock = process.env.NODE_ENV === 'test' || !config.token
-  
+
   const githubClient: GitHubClient = useMock
     ? (new MockContentService() as unknown as GitHubClient)
     : createGitHubClient(config)
-  
-  const contentService = createContentService(githubClient, config.contentPath)
+
+  const contentService = createContentService(
+    githubClient,
+    config.contentPath
+  )
   /**
    * GET /api/github/content/:type
    * List all content of a specific type
