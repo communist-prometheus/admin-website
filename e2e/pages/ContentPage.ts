@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { waitForContentLoad, waitForNetworkIdle } from '../helpers/network'
+import { waitForNetworkIdle } from '../helpers/network'
 
 export class ContentPage {
   constructor(private readonly page: Page) {}
