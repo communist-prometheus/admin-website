@@ -15,7 +15,7 @@ const mockBlogFiles: GitHubFileContent[] = [
     git_url: '',
     download_url: null,
     type: 'file',
-    content: btoa(`---
+    content: Buffer.from(`---
 title: Welcome to Prometheus
 description: Discover our vision for a modern knowledge sharing platform built with cutting-edge technologies.
 category: Announcement
@@ -25,7 +25,7 @@ lang: en
 
 # Welcome to Prometheus
 
-We're excited to introduce **Prometheus** - a modern platform.`),
+We're excited to introduce **Prometheus** - a modern platform.`).toString('base64'),
     encoding: 'base64',
   },
   {
@@ -38,7 +38,7 @@ We're excited to introduce **Prometheus** - a modern platform.`),
     git_url: '',
     download_url: null,
     type: 'file',
-    content: btoa(`---
+    content: Buffer.from(`---
 title: Добро пожаловать в Prometheus
 description: Откройте для себя наше видение современной платформы.
 category: Announcement
@@ -48,7 +48,7 @@ lang: ru
 
 # Добро пожаловать в Prometheus
 
-Мы рады представить **Prometheus**.`),
+Мы рады представить **Prometheus**.`).toString('base64'),
     encoding: 'base64',
   },
 ]
@@ -64,14 +64,14 @@ const mockPagesFiles: GitHubFileContent[] = [
     git_url: '',
     download_url: null,
     type: 'file',
-    content: btoa(`---
+    content: Buffer.from(`---
 title: Our Manifest
 lang: en
 ---
 
 # Our Manifest
 
-Our principles and values.`),
+Our principles and values.`).toString('base64'),
     encoding: 'base64',
   },
 ]
@@ -87,7 +87,7 @@ const mockPositionsFiles: GitHubFileContent[] = [
     git_url: '',
     download_url: null,
     type: 'file',
-    content: btoa(`---
+    content: Buffer.from(`---
 title: Digital Sovereignty
 description: Technology must serve the people, not corporations.
 order: 1
@@ -96,7 +96,7 @@ lang: en
 
 # Digital Sovereignty
 
-We advocate for open-source infrastructure.`),
+We advocate for open-source infrastructure.`).toString('base64'),
     encoding: 'base64',
   },
 ]
