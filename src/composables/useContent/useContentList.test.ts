@@ -18,13 +18,13 @@ describe('useContentList', () => {
 
   it('loads content from API', async () => {
     const mockItems = [
-      { path: 'blog/post1.md', title: 'Post 1', lang: 'en' },
-      { path: 'blog/post2.md', title: 'Post 2', lang: 'en' },
+      { path: 'blog/post1.md', slug: 'post1', frontmatter: { lang: 'en', title: 'Post 1' } },
+      { path: 'blog/post2.md', slug: 'post2', frontmatter: { lang: 'en', title: 'Post 2' } },
     ]
 
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => mockItems,
+      json: async () => ({ items: mockItems }),
     } as Response)
 
     const { items, loadContent } = useContentList('blog')
@@ -33,7 +33,8 @@ describe('useContentList', () => {
     await nextTick()
 
     expect(fetch).toHaveBeenCalledWith('/api/github/content/blog')
-    expect(items.value).toEqual(mockItems)
+    expect(items.value).toHaveLength(2)
+    expect(items.value[0]?.path).toBe('blog/post1.md')
   })
 
   it('throws error when API fails', async () => {
