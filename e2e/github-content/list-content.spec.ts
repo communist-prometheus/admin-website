@@ -45,7 +45,7 @@ test.describe('GitHub Content - List', () => {
   })
 
   test('should show create button', async ({ page }) => {
-    const createBtn = page.getByRole('button', { name: /create/i })
+    const createBtn = page.locator('[data-testid="create-button"]')
     await expect(createBtn).toBeVisible()
   })
 })
