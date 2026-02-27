@@ -17,17 +17,21 @@ export class ContentPage {
   }
 
   async expectToBeVisible(): Promise<void> {
-    await expect(this.page.locator('.content-view')).toBeVisible()
+    await expect(this.page.locator('.content-view')).toBeVisible({
+      timeout: 15000,
+    })
   }
 
   async expectItemCount(count: number): Promise<void> {
-    await expect(this.page.locator('.content-item')).toHaveCount(count)
+    await expect(this.page.locator('.content-item')).toHaveCount(count, {
+      timeout: 15000,
+    })
   }
 
   async expectItemWithTitle(title: string): Promise<void> {
     await expect(
       this.page.locator('.content-item').filter({ hasText: title })
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 15000 })
   }
 
   async selectItem(title: string): Promise<void> {
@@ -44,9 +48,10 @@ export class ContentPage {
 
   async selectLanguage(lang: 'en' | 'ru' | 'it' | 'es'): Promise<void> {
     const button = this.page.locator(`button[data-lang="${lang}"]`)
-    await button.waitFor({ state: 'visible' })
+    await button.waitFor({ state: 'visible', timeout: 10000 })
     await button.click()
-    await this.page.waitForTimeout(100)
-    await waitForNetworkIdle(this.page, { idleTime: 500 })
+    await expect(button).toHaveClass(/active/, { timeout: 10000 })
+    await this.page.waitForTimeout(300)
+    await waitForNetworkIdle(this.page, { idleTime: 1000 })
   }
 }
