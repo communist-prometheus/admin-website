@@ -28,9 +28,9 @@ describe('useContentCreator', () => {
     })
 
     expect(mockCreate).toHaveBeenCalledWith(
-      'src/content/blog/en/test-post.md',
+      'src/content/blog/test-post.en.md',
       expect.stringContaining('title: Test Post'),
-      'Create new blog: test-post'
+      'Create test-post.en.md'
     )
   })
 
@@ -46,9 +46,9 @@ describe('useContentCreator', () => {
     })
 
     expect(mockCreate).toHaveBeenCalledWith(
-      'src/content/pages/ru/about.md',
+      'src/content/pages/about.ru.md',
       expect.stringContaining('title: О нас'),
-      'Create new pages: about'
+      'Create about.ru.md'
     )
   })
 
@@ -66,9 +66,9 @@ describe('useContentCreator', () => {
     })
 
     expect(mockCreate).toHaveBeenCalledWith(
-      'src/content/positions/en/developer.md',
+      'src/content/positions/developer.en.md',
       expect.stringContaining('order: 1'),
-      'Create new positions: developer'
+      'Create developer.en.md'
     )
   })
 })
