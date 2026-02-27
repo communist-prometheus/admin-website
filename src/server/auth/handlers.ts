@@ -62,8 +62,6 @@ export const handleGitHubCallback =
     )
 
     return Effect.runPromise(program)
-      .then(user =>
-        config.isMockMode ? reply.redirect('/') : sendPopupHTML(reply, user)
-      )
+      .then(user => sendPopupHTML(reply, user))
       .catch(() => reply.status(500).send({ error: 'OAuth failed' }))
   }

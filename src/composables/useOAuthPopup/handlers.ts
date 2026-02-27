@@ -14,6 +14,7 @@ export const createMessageHandler =
     cleanup: () => void
   ) =>
   (event: MessageEvent) => {
+    if (typeof globalThis.location === 'undefined') return
     if (event.origin !== globalThis.location.origin) return
     if (event.data.type === 'github-oauth-success') {
       onSuccess(event.data.user)

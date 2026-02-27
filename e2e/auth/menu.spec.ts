@@ -1,19 +1,18 @@
-import { expect, test } from '@playwright/test'
-import {
-  getDifferentAccountButton,
-  getLogoutButton,
-  getUserButton,
-  loginViaMockOAuth,
-} from './helpers'
+import { test } from '@playwright/test'
+import { waitForNetworkIdle } from '../helpers/network'
+import { AuthPage } from '../pages/AuthPage'
 
 test('should show dropdown menu when clicking user button', async ({
   page,
 }) => {
-  await loginViaMockOAuth(page)
-  await expect(getUserButton(page)).toBeVisible()
+  const authPage = new AuthPage(page)
 
-  await getUserButton(page).click()
+  await page.goto('/')
+  await waitForNetworkIdle(page)
+  await authPage.mockLogin()
 
-  await expect(getDifferentAccountButton(page)).toBeVisible()
-  await expect(getLogoutButton(page)).toBeVisible()
+  await authPage.expectUserMenuVisible()
+  await authPage.clickUserMenu()
+
+  await authPage.expectDropdownVisible()
 })

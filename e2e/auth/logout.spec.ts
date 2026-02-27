@@ -1,17 +1,18 @@
-import { expect, test } from '@playwright/test'
-import {
-  getLoginButton,
-  getLogoutButton,
-  getUserButton,
-  loginViaMockOAuth,
-} from './helpers'
+import { test } from '@playwright/test'
+import { waitForNetworkIdle } from '../helpers/network'
+import { AuthPage } from '../pages/AuthPage'
 
 test('should logout and show login button again', async ({ page }) => {
-  await loginViaMockOAuth(page)
-  await expect(getUserButton(page)).toBeVisible()
+  const authPage = new AuthPage(page)
 
-  await getUserButton(page).click()
-  await getLogoutButton(page).click()
+  await page.goto('/')
+  await waitForNetworkIdle(page)
+  await authPage.mockLogin()
 
-  await expect(getLoginButton(page)).toBeVisible()
+  await authPage.expectUserMenuVisible()
+
+  await authPage.clickUserMenu()
+  await authPage.clickLogout()
+
+  await authPage.expectLoginButtonVisible()
 })

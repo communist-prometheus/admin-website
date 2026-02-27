@@ -1,13 +1,20 @@
-import { expect, test } from '@playwright/test'
-import { getUserButton, loginViaMockOAuth } from './helpers'
+import { test } from '@playwright/test'
+import { waitForNetworkIdle } from '../helpers/network'
+import { AuthPage } from '../pages/AuthPage'
 
 test('should persist authentication across page reloads', async ({
   page,
 }) => {
-  await loginViaMockOAuth(page)
-  await expect(getUserButton(page)).toBeVisible()
+  const authPage = new AuthPage(page)
+
+  await page.goto('/')
+  await waitForNetworkIdle(page)
+  await authPage.mockLogin()
+
+  await authPage.expectUserMenuVisible()
 
   await page.reload()
+  await waitForNetworkIdle(page)
 
-  await expect(getUserButton(page)).toBeVisible()
+  await authPage.expectUserMenuVisible()
 })

@@ -10,8 +10,10 @@ import WelcomeDescription from '@/components/WelcomeDescription/WelcomeDescripti
 import WelcomeHeading from '@/components/WelcomeHeading/WelcomeHeading.vue'
 import WelcomeSection from '@/components/WelcomeSection/WelcomeSection.vue'
 import { useAuth } from '@/composables/useAuth'
+import { useAuthStore } from '@/stores/auth'
 
-const { user } = useAuth()
+useAuth()
+const authStore = useAuthStore()
 </script>
 
 <template>
@@ -20,7 +22,7 @@ const { user } = useAuth()
       <AuthButton />
     </template>
 
-    <WelcomeSection v-if="!user">
+    <WelcomeSection v-if="!authStore.user">
       <WelcomeHeading />
       <WelcomeDescription />
     </WelcomeSection>

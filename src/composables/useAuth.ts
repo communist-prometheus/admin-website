@@ -1,35 +1,19 @@
-import { Effect, pipe } from 'effect'
-import { onMounted, ref } from 'vue'
-import type { User } from '@/types/user'
-import { checkAuthStatus } from './useAuth/check-auth'
-import { getInitialUser } from './useAuth/get-initial-user'
+import { onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
 /**
  * Authentication composable
- * @returns User state and auth methods
+ * @returns User state and auth methods from Pinia store
  */
 export const useAuth = () => {
-  const user = ref<User | null>(getInitialUser())
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+  const store = useAuthStore()
 
-  const checkAuth = () => {
-    if (typeof window === 'undefined' || user.value) return
-    pipe(
-      checkAuthStatus(),
-      Effect.map(data =>
-        data.authenticated && data.user ? data.user : null
-      ),
-      Effect.tap(userData =>
-        Effect.sync(() => {
-          if (userData) user.value = userData
-        })
-      ),
-      Effect.runPromise
-    )
+  onMounted(store.checkAuth)
+
+  return {
+    user: store.user,
+    loading: store.loading,
+    error: store.error,
+    checkAuth: store.checkAuth,
   }
-
-  onMounted(checkAuth)
-
-  return { user, loading, error, checkAuth }
 }

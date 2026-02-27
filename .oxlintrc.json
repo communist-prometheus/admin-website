@@ -49,6 +49,25 @@
       "rules": {
         "no-console": "off"
       }
+    },
+    {
+      "files": [
+        "src/composables/useContent.ts",
+        "src/components/CreateContentDialog/CreateContentDialog.vue",
+        "src/utils/frontmatter.ts"
+      ],
+      "rules": {
+        "sonarjs/max-lines": "off",
+        "sonarjs/max-lines-per-function": "off"
+      }
+    },
+    {
+      "files": ["e2e/**/*.ts"],
+      "rules": {
+        "sonarjs/max-lines": "off",
+        "sonarjs/max-lines-per-function": "off",
+        "sonarjs/no-duplicate-string": "off"
+      }
     }
   ],
   "ignorePatterns": [

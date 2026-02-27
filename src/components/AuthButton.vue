@@ -3,21 +3,23 @@ import { computed } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useDropdown } from '@/composables/useDropdown'
 import { useOAuthPopup } from '@/composables/useOAuthPopup'
+import { useAuthStore } from '@/stores/auth'
 import LoginButton from './AuthButton/LoginButton.vue'
 import UserMenu from './AuthButton/UserMenu.vue'
 
-const { user, loading: authLoading, error } = useAuth()
+const { loading: authLoading } = useAuth()
+const authStore = useAuthStore()
 const { show: showDropdown, toggle: toggleDropdown } = useDropdown()
 const { loading: oauthLoading, openPopup } = useOAuthPopup(
   u => {
-    user.value = u
+    authStore.setUser(u)
   },
   e => {
-    error.value = e
+    authStore.error = e
   }
 )
 
-const loading = computed(() => authLoading.value || oauthLoading.value)
+const loading = computed(() => authLoading || oauthLoading.value)
 
 const handleLogout = () => {
   if (typeof globalThis !== 'undefined') {
@@ -35,13 +37,13 @@ const handleDifferentAccount = () => {
 
 <template>
   <LoginButton
-    v-if="!user"
+    v-if="!authStore.user"
     :loading="loading"
     @click="openPopup"
   />
   <UserMenu
     v-else
-    :user="user"
+    :user="authStore.user"
     :show="showDropdown"
     @toggle="toggleDropdown"
     @logout="handleLogout"

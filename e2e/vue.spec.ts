@@ -1,7 +1,12 @@
-import { expect, test } from '@playwright/test'
+import { test } from '@playwright/test'
+import { waitForNetworkIdle } from './helpers/network'
+import { AuthPage } from './pages/AuthPage'
 
 test('visits the app root url', async ({ page }) => {
+  const authPage = new AuthPage(page)
+
   await page.goto('/')
-  await expect(page.locator('header h1')).toContainText('Admin Panel')
-  await expect(page.locator('button')).toContainText('Login')
+  await waitForNetworkIdle(page)
+
+  await authPage.expectLoginButtonVisible()
 })

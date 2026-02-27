@@ -1,5 +1,23 @@
 /* eslint-disable jsdoc/require-param, jsdoc/require-returns */
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { generateCallbackHtml } from './callback-html'
+
+const mockUser = {
+  login: 'test-user',
+  name: 'Test User',
+  avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4',
+}
+
+const handleMockAuth = (request: FastifyRequest, reply: FastifyReply) => {
+  request.log.info('🧪 Mock OAuth: Sending mock user via postMessage')
+  // @ts-expect-error - fastify-session typing issue
+  request.session.github_user = {
+    username: mockUser.login,
+    name: mockUser.name,
+    avatar: mockUser.avatar_url,
+  }
+  return reply.type('text/html').send(generateCallbackHtml(mockUser))
+}
 
 /**
  * Handle GitHub OAuth initiation
@@ -15,10 +33,7 @@ export const handleAuth = (
   }
 ) => {
   if (config.isMockMode) {
-    request.log.info('🧪 Mock OAuth: Redirecting to callback with mock code')
-    const callbackUrl =
-      config.callbackUrl || 'http://localhost:3000/auth/github/callback'
-    return reply.redirect(`${callbackUrl}?code=mock_code_123`)
+    return handleMockAuth(request, reply)
   }
 
   if (!config.clientId) {

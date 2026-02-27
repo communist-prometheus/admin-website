@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { User } from '@/types/user'
+import UserMenuButton from './UserMenuButton.vue'
+import UserMenuDropdown from './UserMenuDropdown.vue'
 
 defineProps<{ user: User; show: boolean }>()
 const emit = defineEmits<{ logout: []; differentAccount: []; toggle: [] }>()
@@ -7,58 +9,20 @@ const emit = defineEmits<{ logout: []; differentAccount: []; toggle: [] }>()
 
 <template>
   <div class="auth-dropdown">
-    <button
-      type="button"
-      class="user-btn flex-center"
-      @click.stop="emit('toggle')"
-    >
-      <img
-        :src="user.avatar"
-        alt=""
-        aria-hidden="true"
-        class="avatar avatar-sm"
-        width="32"
-        height="32"
-      />
-      <span class="user-name">{{ user.name || user.username }}</span>
-    </button>
-    <nav
+    <UserMenuButton
+      :user="user"
+      @click="emit('toggle')"
+    />
+    <UserMenuDropdown
       v-if="show"
-      class="dropdown"
-    >
-      <button
-        type="button"
-        class="dropdown-item"
-        @click="emit('differentAccount')"
-      >
-        Login with different account
-      </button>
-      <button
-        type="button"
-        class="dropdown-item dropdown-item-danger"
-        @click="emit('logout')"
-      >
-        Logout
-      </button>
-    </nav>
+      @logout="emit('logout')"
+      @different-account="emit('differentAccount')"
+    />
   </div>
 </template>
 
 <style scoped>
 .auth-dropdown {
   position: relative;
-}
-
-.user-btn {
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--border-radius-sm);
-  border: var(--border-width) solid var(--color-border);
-  background: var(--color-background);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-}
-
-.user-name {
-  font-weight: var(--font-weight-medium);
 }
 </style>

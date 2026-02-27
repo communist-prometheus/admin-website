@@ -1,17 +1,10 @@
 import './assets/styles/index.scss'
 
-import { createPinia } from 'pinia'
-import { createApp } from 'vue'
-
-import App from './App.vue'
+import { createApp } from './app'
 import { vChildren } from './directives/render'
-import router from './router'
 
-const app = createApp(App)
+const { app } = createApp(false)
 
 app.directive('children', vChildren)
-
-app.use(createPinia())
-app.use(router)
 
 app.mount('#app')

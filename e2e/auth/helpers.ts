@@ -20,3 +20,12 @@ export const getDifferentAccountButton = (page: Page) =>
 
 export const getUserAvatar = (page: Page) =>
   page.locator(SELECTORS.testUserAvatar)
+
+export const login = async (page: Page): Promise<void> => {
+  await loginViaMockOAuth(page)
+}
+
+export const logout = async (page: Page): Promise<void> => {
+  await getUserButton(page).click()
+  await getLogoutButton(page).click()
+}

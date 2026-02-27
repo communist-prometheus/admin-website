@@ -1,12 +1,13 @@
+import { createPinia } from 'pinia'
 import { createSSRApp } from 'vue'
-import type { Router, RouterHistory } from 'vue-router'
+import type { Router } from 'vue-router'
 import {
   createMemoryHistory,
   createRouter,
   createWebHistory,
 } from 'vue-router'
 import App from './App.vue'
-import HomeView from './views/HomeView.vue'
+import { routes } from './router'
 
 /**
  * Creates Vue application instance with router for SSR or client.
@@ -15,27 +16,18 @@ import HomeView from './views/HomeView.vue'
  */
 export const createApp = (isSSR: boolean) => {
   const app = createSSRApp(App)
+  const pinia = createPinia()
 
-  const history: RouterHistory = isSSR
+  const history = isSSR
     ? createMemoryHistory(import.meta.env.BASE_URL)
     : createWebHistory(import.meta.env.BASE_URL)
 
   const router: Router = createRouter({
     history,
-    routes: [
-      {
-        path: '/',
-        name: 'home',
-        component: HomeView,
-      },
-      {
-        path: '/about',
-        name: 'about',
-        component: () => import('./views/AboutView.vue'),
-      },
-    ],
+    routes,
   })
 
+  app.use(pinia)
   app.use(router)
 
   return { app, router }
