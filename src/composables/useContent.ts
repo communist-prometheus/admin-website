@@ -4,31 +4,37 @@ import { useContentEditor } from './useContent/useContentEditor'
 import { useContentList } from './useContent/useContentList'
 import { useGitHubApi } from './useGitHubApi'
 
-const createSelectHandler = (
-  list: ReturnType<typeof useContentList>,
-  editor: ReturnType<typeof useContentEditor>
-) => async (item: typeof list.selectedItem.value) => {
-  if (!item) return
-  list.selectedItem.value = item
-  await editor.selectItem(item)
-}
+const createSelectHandler =
+  (
+    list: ReturnType<typeof useContentList>,
+    editor: ReturnType<typeof useContentEditor>
+  ) =>
+  async (item: typeof list.selectedItem.value) => {
+    if (!item) return
+    list.selectedItem.value = item
+    await editor.selectItem(item)
+  }
 
-const createSaveHandler = (
-  list: ReturnType<typeof useContentList>,
-  editor: ReturnType<typeof useContentEditor>
-) => async (message: string) => {
-  if (!list.selectedItem.value) return
-  await editor.saveContent(list.selectedItem.value.path, message)
-  await list.loadContent()
-}
+const createSaveHandler =
+  (
+    list: ReturnType<typeof useContentList>,
+    editor: ReturnType<typeof useContentEditor>
+  ) =>
+  async (message: string) => {
+    if (!list.selectedItem.value) return
+    await editor.saveContent(list.selectedItem.value.path, message)
+    await list.loadContent()
+  }
 
-const createContentHandler = (
-  list: ReturnType<typeof useContentList>,
-  creator: ReturnType<typeof useContentCreator>
-) => async (...args: Parameters<typeof creator.createContent>) => {
-  await creator.createContent(...args)
-  await list.loadContent()
-}
+const createContentHandler =
+  (
+    list: ReturnType<typeof useContentList>,
+    creator: ReturnType<typeof useContentCreator>
+  ) =>
+  async (...args: Parameters<typeof creator.createContent>) => {
+    await creator.createContent(...args)
+    await list.loadContent()
+  }
 
 export const useContent = (contentType: ContentType) => {
   const { loading, error } = useGitHubApi()

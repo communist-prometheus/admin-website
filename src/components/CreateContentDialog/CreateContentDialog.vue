@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { ContentType, Language } from '@/types/content'
+import DialogForm from './DialogForm.vue'
 
-const props = defineProps<{
+defineProps<{
   readonly show: boolean
   readonly contentType: ContentType
 }>()
@@ -21,53 +22,14 @@ export interface CreateContentData {
   readonly order?: number
 }
 
-const slug = ref('')
-const lang = ref<Language>('en')
-const title = ref('')
-const description = ref('')
-const category = ref('')
-const order = ref<number>(1)
+const formRef = ref<InstanceType<typeof DialogForm>>()
 
-const reset = () => {
-  slug.value = ''
-  lang.value = 'en'
-  title.value = ''
-  description.value = ''
-  category.value = ''
-  order.value = 1
-}
-
-const handleCreate = () => {
-  const baseData = {
-    slug: slug.value,
-    lang: lang.value,
-    title: title.value,
-  }
-
-  let data: CreateContentData
-
-  if (props.contentType === 'blog') {
-    data = {
-      ...baseData,
-      description: description.value,
-      category: category.value,
-    }
-  } else if (props.contentType === 'positions') {
-    data = {
-      ...baseData,
-      description: description.value,
-      order: order.value,
-    }
-  } else {
-    data = baseData
-  }
-
+const handleSubmit = (data: CreateContentData) => {
   emit('create', data)
-  reset()
 }
 
 const handleClose = () => {
-  reset()
+  formRef.value?.reset()
   emit('close')
 }
 </script>
