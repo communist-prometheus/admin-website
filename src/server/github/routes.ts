@@ -23,7 +23,7 @@ export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
 
     const githubClient: GitHubClient = useMock
       ? (new MockContentService() as unknown as GitHubClient)
-      : createGitHubClient({ ...baseConfig, token: accessToken! })
+      : createGitHubClient({ ...baseConfig, token: accessToken || '' })
 
     return createContentService(githubClient, baseConfig.contentPath)
   }

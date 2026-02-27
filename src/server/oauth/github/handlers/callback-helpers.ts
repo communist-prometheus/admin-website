@@ -41,7 +41,12 @@ export const getUserData = (
  */
 export const storeUserInSession = (
   request: FastifyRequest,
-  userData: { login?: string; name?: string; avatar_url?: string; accessToken?: string }
+  userData: {
+    login?: string
+    name?: string
+    avatar_url?: string
+    accessToken?: string
+  }
 ) =>
   Effect.sync(() => {
     // @ts-expect-error - fastify-session typing issue
