@@ -33,6 +33,23 @@ const {
 const selectedLang = ref<Language>('en')
 const showCreateDialog = ref(false)
 
+const openCreateDialog = () => {
+  showCreateDialog.value = true
+}
+
+const closeCreateDialog = () => {
+  showCreateDialog.value = false
+}
+
+const updateFileContent = (value: string) => {
+  fileContent.value = value
+}
+
+const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
+  await createContent(data)
+  showCreateDialog.value = false
+}
+
 watch(() => props.contentType, async () => {
   selectedItem.value = null
   fileContent.value = ''
@@ -64,9 +81,9 @@ onMounted(async () => {
       :file-content="fileContent"
       :is-authenticated="isAuthenticated"
       @select="selectItem"
-      @create="showCreateDialog = true"
+      @create="openCreateDialog"
       @save="saveContent"
-      @update:file-content="fileContent = $event"
+      @update:file-content="updateFileContent"
     />
 
     <ContentViewOverlays
@@ -77,8 +94,8 @@ onMounted(async () => {
     <CreateContentDialog
       :show="showCreateDialog"
       :content-type="contentType"
-      @close="showCreateDialog = false"
-      @create="(data) => { createContent(data); showCreateDialog = false }"
+      @close="closeCreateDialog"
+      @create="handleCreate"
     />
   </AppLayout>
 </template>
