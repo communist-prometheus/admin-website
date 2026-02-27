@@ -36,6 +36,11 @@ const createContentHandler =
     await list.loadContent()
   }
 
+/**
+ * Main content management composable
+ * @param contentType - Type of content to manage
+ * @returns Content management interface
+ */
 export const useContent = (contentType: ContentType) => {
   const { loading, error } = useGitHubApi()
   const list = useContentList(contentType)
