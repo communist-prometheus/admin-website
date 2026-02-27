@@ -60,7 +60,12 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="content-view">
+  <AppLayout>
+    <template #header-actions>
+      <AuthButton />
+    </template>
+
+    <div class="content-view">
     <ContentNav />
     
     <div class="view-header">
@@ -105,6 +110,7 @@ onMounted(async () => {
       @create="handleCreate"
     />
   </div>
+  </AppLayout>
 </template>
 
 <style scoped>
