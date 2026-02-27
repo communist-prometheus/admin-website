@@ -40,7 +40,6 @@ const openCreateDialog = () => {
 const closeCreateDialog = () => {
   showCreateDialog.value = false
 }
-
 const updateFileContent = (value: string) => {
   fileContent.value = value
 }
