@@ -49,120 +49,10 @@ const handleClose = () => {
     >
       ×
     </button>
-    <label
-      for="slug"
-      class="field-label"
-    >Slug *</label>
-    <input
-      id="slug"
-      v-model="slug"
-      type="text"
-      required
-      placeholder="my-article-slug"
-      class="field-input"
-    />
-    <span class="field-label">Language *</span>
-    <input
-      id="lang-en"
-      v-model="lang"
-      type="radio"
-      value="en"
-      required
-      class="radio-input"
-    />
-    <label
-      for="lang-en"
-      class="radio-label"
-    >English</label>
-    <input
-      id="lang-ru"
-      v-model="lang"
-      type="radio"
-      value="ru"
-      required
-      class="radio-input"
-    />
-    <label
-      for="lang-ru"
-      class="radio-label"
-    >Русский</label>
-    <input
-      id="lang-it"
-      v-model="lang"
-      type="radio"
-      value="it"
-      required
-      class="radio-input"
-    />
-    <label
-      for="lang-it"
-      class="radio-label"
-    >Italiano</label>
-    <input
-      id="lang-es"
-      v-model="lang"
-      type="radio"
-      value="es"
-      required
-      class="radio-input"
-    />
-    <label
-      for="lang-es"
-      class="radio-label"
-    >Español</label>
-    <label
-      for="title"
-      class="field-label"
-    >Title *</label>
-    <input
-      id="title"
-      v-model="title"
-      type="text"
-      required
-      placeholder="Article Title"
-      class="field-input"
-    />
-    <label
-      v-if="contentType === 'blog' || contentType === 'positions'"
-      for="description"
-      class="field-label"
-    >Description *</label>
-    <textarea
-      v-if="contentType === 'blog' || contentType === 'positions'"
-      id="description"
-      v-model="description"
-      required
-      placeholder="Brief description..."
-      rows="3"
-      class="field-input"
-    />
-    <label
-      v-if="contentType === 'blog'"
-      for="category"
-      class="field-label"
-    >Category *</label>
-    <input
-      v-if="contentType === 'blog'"
-      id="category"
-      v-model="category"
-      type="text"
-      required
-      placeholder="Technology"
-      class="field-input"
-    />
-    <label
-      v-if="contentType === 'positions'"
-      for="order"
-      class="field-label"
-    >Order *</label>
-    <input
-      v-if="contentType === 'positions'"
-      id="order"
-      v-model.number="order"
-      type="number"
-      required
-      min="1"
-      class="field-input"
+    <DialogForm
+      ref="formRef"
+      :content-type="contentType"
+      @submit="handleSubmit"
     />
     <button
       type="button"
@@ -170,13 +60,6 @@ const handleClose = () => {
       @click="handleClose"
     >
       Cancel
-    </button>
-    <button
-      type="button"
-      class="btn btn-primary"
-      @click="handleCreate"
-    >
-      Create
     </button>
   </dialog>
 </template>

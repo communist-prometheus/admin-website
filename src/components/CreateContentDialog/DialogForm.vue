@@ -46,9 +46,4 @@ const reset = () => {
   order.value = 1
 }
 
-const handleSubmit = () => {
-  emit('submit', buildFormData())
-  reset()
-}
-
-defineExpose({ reset })
+defineExpose({ reset, submit: () => emit('submit', buildFormData()) })
