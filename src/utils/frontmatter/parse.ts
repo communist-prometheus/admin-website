@@ -13,7 +13,7 @@ const parseValue = (value: string): unknown => {
 
 const parseFrontmatterLines = (text: string): Record<string, unknown> => {
   const frontmatter: Record<string, unknown> = {}
-  
+
   for (const line of text.split('\n')) {
     const colonIndex = line.indexOf(':')
     if (colonIndex === -1) continue
