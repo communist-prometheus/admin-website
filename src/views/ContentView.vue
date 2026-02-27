@@ -44,7 +44,6 @@ const closeCreateDialog = () => {
 const updateFileContent = (value: string) => {
   fileContent.value = value
 }
-
 const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
   await createContent(data)
   showCreateDialog.value = false
