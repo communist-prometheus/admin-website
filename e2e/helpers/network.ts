@@ -160,7 +160,7 @@ export const waitForContentLoad = async (
   page: Page,
   contentType: string
 ): Promise<void> => {
-  await waitForApiCall(page, `/api/content/${contentType}`, {
+  await waitForApiCall(page, `/api/github/content/${contentType}`, {
     method: 'GET',
     timeout: 15000,
   })
