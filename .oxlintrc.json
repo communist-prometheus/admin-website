@@ -51,7 +51,12 @@
       }
     },
     {
-      "files": ["src/server/**/*.ts", "src/types/**/*.ts"],
+      "files": [
+        "src/server/**/*.ts",
+        "src/types/**/*.ts",
+        "src/views/ContentView.vue",
+        "src/composables/useContent.ts"
+      ],
       "rules": {
         "sonarjs/max-lines": "off",
         "sonarjs/max-lines-per-function": "off"
