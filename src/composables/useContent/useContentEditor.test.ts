@@ -26,7 +26,12 @@ describe('useContentEditor', () => {
 
     const { fileContent, selectItem } = useContentEditor()
 
-    await selectItem({ path: 'blog/test.md', slug: 'test', lang: 'en', frontmatter: { lang: 'en', title: 'Test' } })
+    await selectItem({
+      path: 'blog/test.md',
+      slug: 'test',
+      lang: 'en',
+      frontmatter: { lang: 'en', title: 'Test' },
+    })
 
     expect(mockGetFile).toHaveBeenCalledWith('blog/test.md')
     expect(fileContent.value).toBe('# Test Content')
@@ -41,10 +46,20 @@ describe('useContentEditor', () => {
 
     const { fileContent, selectItem, saveContent } = useContentEditor()
 
-    await selectItem({ path: 'blog/test.md', slug: 'test', lang: 'en', frontmatter: { lang: 'en', title: 'Test' } })
+    await selectItem({
+      path: 'blog/test.md',
+      slug: 'test',
+      lang: 'en',
+      frontmatter: { lang: 'en', title: 'Test' },
+    })
     fileContent.value = '# New Content'
     await saveContent('blog/test.md', 'Update content')
 
-    expect(mockUpdate).toHaveBeenCalledWith('blog/test.md', '# New Content', 'Update content', 'abc123')
+    expect(mockUpdate).toHaveBeenCalledWith(
+      'blog/test.md',
+      '# New Content',
+      'Update content',
+      'abc123'
+    )
   })
 })

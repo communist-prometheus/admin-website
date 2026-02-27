@@ -1,5 +1,5 @@
-import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { useContentList } from './useContentList'
 
 global.fetch = vi.fn()
@@ -18,8 +18,16 @@ describe('useContentList', () => {
 
   it('loads content from API', async () => {
     const mockItems = [
-      { path: 'blog/post1.md', slug: 'post1', frontmatter: { lang: 'en', title: 'Post 1' } },
-      { path: 'blog/post2.md', slug: 'post2', frontmatter: { lang: 'en', title: 'Post 2' } },
+      {
+        path: 'blog/post1.md',
+        slug: 'post1',
+        frontmatter: { lang: 'en', title: 'Post 1' },
+      },
+      {
+        path: 'blog/post2.md',
+        slug: 'post2',
+        frontmatter: { lang: 'en', title: 'Post 2' },
+      },
     ]
 
     vi.mocked(fetch).mockResolvedValueOnce({
@@ -45,6 +53,8 @@ describe('useContentList', () => {
 
     const { loadContent } = useContentList('blog')
 
-    await expect(loadContent()).rejects.toThrow('Failed to load content: Not Found')
+    await expect(loadContent()).rejects.toThrow(
+      'Failed to load content: Not Found'
+    )
   })
 })
