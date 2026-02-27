@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import AuthButton from '@/components/AuthButton.vue'
 import ContentList from '@/components/ContentList/ContentList.vue'
@@ -8,11 +8,15 @@ import CreateContentDialog from '@/components/CreateContentDialog/CreateContentD
 import LanguageSelector from '@/components/LanguageSelector/LanguageSelector.vue'
 import MarkdownEditor from '@/components/MarkdownEditor/MarkdownEditor.vue'
 import { useContent } from '@/composables/useContent'
+import { useAuthStore } from '@/stores/auth'
 import type { Language } from '@/types/content'
 
 const props = defineProps<{
   readonly contentType: 'blog' | 'pages' | 'positions'
 }>()
+
+const authStore = useAuthStore()
+const isAuthenticated = computed(() => !!authStore.user)
 
 const {
   items,
@@ -50,9 +54,11 @@ const closeCreateDialog = () => {
   showCreateDialog.value = false
 }
 
-watch(() => props.contentType, async () => {
+watch(() => props.contentType, async (newType) => {
+  selectedItem.value = null
+  fileContent.value = ''
   await loadContent()
-})
+}, { immediate: true })
 
 onMounted(async () => {
   await loadContent()
@@ -79,14 +85,18 @@ onMounted(async () => {
         :selected-lang="selectedLang"
         :selected-path="selectedItem?.path ?? null"
         @select="handleSelect"
-        @create="openCreateDialog"
+        @create="isAuthenticated ? openCreateDialog : undefined"
       />
       
       <MarkdownEditor
+        v-if="isAuthenticated"
         v-model="fileContent"
         :file-path="selectedItem?.path ?? null"
         @save="handleSave"
       />
+      <div v-else class="auth-required">
+        <p>Please log in to edit content</p>
+      </div>
     </div>
 
     <div
@@ -177,5 +187,14 @@ h1 {
   margin: 0;
   color: #ef4444;
   font-size: clamp(0.875rem, 2vw, 1rem);
+}
+
+.auth-required {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--color-text-secondary);
+  font-size: clamp(1rem, 2vw, 1.25rem);
 }
 </style>
