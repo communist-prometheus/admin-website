@@ -4,7 +4,9 @@ import type {
   ContentType,
   ContentUpdateRequest,
 } from '@/types/github-content'
+import { createGitHubClient } from './client'
 import type { GitHubClient } from './client'
+import { loadGitHubConfig } from './config'
 import { createContentService } from './content-service'
 import { MockContentService } from './mock-service'
 
@@ -13,11 +15,14 @@ import { MockContentService } from './mock-service'
  * @param fastify - Fastify instance
  */
 export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
-  const mockGithub = new MockContentService()
-  const contentService = createContentService(
-    mockGithub as unknown as GitHubClient,
-    'src/content'
-  )
+  const config = loadGitHubConfig()
+  const useMock = process.env.NODE_ENV === 'test' || !config.token
+  
+  const githubClient: GitHubClient = useMock
+    ? (new MockContentService() as unknown as GitHubClient)
+    : createGitHubClient(config)
+  
+  const contentService = createContentService(githubClient, config.contentPath)
   /**
    * GET /api/github/content/:type
    * List all content of a specific type
