@@ -36,4 +36,8 @@ const emit = defineEmits<{ click: [] }>()
 .user-name {
   font-weight: var(--font-weight-medium);
 }
+
+.avatar {
+  border-radius: 50%;
+}
 </style>
