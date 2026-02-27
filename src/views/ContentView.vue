@@ -65,7 +65,6 @@ onMounted(async () => {
     <template #header-actions>
       <AuthButton />
     </template>
-
     <ContentNav />
     
     <ContentViewHeader
