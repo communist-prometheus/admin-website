@@ -6,9 +6,9 @@ export class ContentPage {
   constructor(private readonly page: Page) {}
 
   async navigate(contentType: 'blog' | 'pages' | 'positions'): Promise<void> {
-    await this.page.goto(`/content/${contentType}`)
-    await waitForContentLoad(this.page, contentType)
-    await waitForNetworkIdle(this.page)
+    await this.page.goto(`/content/${contentType}`, { waitUntil: 'domcontentloaded' })
+    await this.page.waitForSelector('[data-testid="content-list"]', { state: 'visible', timeout: 20000 })
+    await waitForNetworkIdle(this.page, { idleTime: 1000 })
   }
 
   async clickCreateButton(): Promise<void> {
