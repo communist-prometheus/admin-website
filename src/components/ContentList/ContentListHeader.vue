@@ -8,6 +8,7 @@ const emit = defineEmits<{ create: [] }>()
     <button
       type="button"
       class="btn btn-primary"
+      data-testid="create-button"
       @click="emit('create')"
     >
       + New

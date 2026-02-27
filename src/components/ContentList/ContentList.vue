@@ -22,7 +22,7 @@ const filteredItems = computed(() =>
 </script>
 
 <template>
-  <div class="content-list">
+  <div class="content-list" data-testid="content-list">
     <ContentListHeader @create="emit('create')" />
     <ContentListEmpty
       v-if="filteredItems.length === 0"

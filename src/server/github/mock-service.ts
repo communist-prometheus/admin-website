@@ -28,6 +28,29 @@ lang: en
 We're excited to introduce **Prometheus** - a modern platform.`),
     encoding: 'base64',
   },
+  {
+    name: 'welcome-to-prometheus.ru.md',
+    path: 'src/content/blog/welcome-to-prometheus.ru.md',
+    sha: 'mock-sha-ru-1',
+    size: 1250,
+    url: '',
+    html_url: '',
+    git_url: '',
+    download_url: null,
+    type: 'file',
+    content: btoa(`---
+title: Добро пожаловать в Prometheus
+description: Откройте для себя наше видение современной платформы.
+category: Announcement
+pubDate: 2024-01-15
+lang: ru
+---
+
+# Добро пожаловать в Prometheus
+
+Мы рады представить **Prometheus**.`),
+    encoding: 'base64',
+  },
 ]
 
 const mockPagesFiles: GitHubFileContent[] = [

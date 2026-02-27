@@ -43,6 +43,7 @@ const description = computed(() =>
   <div
     class="content-item"
     :class="{ selected }"
+    data-testid="content-item"
     @click="emit('click')"
   >
     <ItemHeader

@@ -58,6 +58,6 @@ export default defineConfig({
      */
     command: 'bun run preview:test',
     port: 3000,
-    reuseExistingServer: false,
+    reuseExistingServer: true,
   },
 })

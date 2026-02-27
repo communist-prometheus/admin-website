@@ -26,13 +26,14 @@ const handleChange = (code: 'en' | 'ru' | 'it' | 'es') => {
 </script>
 
 <template>
-  <div class="language-selector">
+  <div class="language-selector" data-testid="language-selector">
     <button
       v-for="lang in languages"
       :key="lang.code"
       type="button"
       class="lang-button"
       :class="{ active: modelValue === lang.code }"
+      :data-lang="lang.code"
       @click="handleChange(lang.code)"
     >
       {{ lang.label }}

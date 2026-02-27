@@ -9,7 +9,7 @@ const navItems = [
 </script>
 
 <template>
-  <nav class="content-nav">
+  <nav class="content-nav" data-testid="content-nav">
     <RouterLink
       v-for="item in navItems"
       :key="item.path"

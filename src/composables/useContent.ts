@@ -55,21 +55,24 @@ export const useContent = (contentType: ContentType) => {
 
   const loadContent = async () => {
     try {
-      const result = await getTree(rootPath)
-      const mdFiles = result.tree.filter(
-        item => item.type === 'blob' && item.path.endsWith('.md')
-      )
-
-      const parsePromises = mdFiles.map(file =>
-        parseContentFile(file.path, getFile)
-      )
-      const parsedFiles = await Promise.all(parsePromises)
-
-      items.value = parsedFiles.filter(
-        (item): item is ContentItem => item !== null
-      )
-    } catch {
-      // Error handled by useGitHubApi
+      const response = await fetch(`/api/github/content/${contentType}`)
+      if (!response.ok) {
+        throw new Error(`Failed to load content: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      items.value = (data.items || []).map((item: {
+        path: string
+        slug: string
+        frontmatter: { lang: Language; [key: string]: unknown }
+      }) => ({
+        path: item.path,
+        slug: item.slug,
+        lang: item.frontmatter.lang,
+        frontmatter: item.frontmatter,
+      }))
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to load content'
     }
   }
 

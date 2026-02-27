@@ -31,7 +31,7 @@ const handleSave = (message: string) => {
 </script>
 
 <template>
-  <div class="markdown-editor">
+  <div class="markdown-editor" data-testid="markdown-editor">
     <p v-if="!filePath">Select a file to edit</p>
     <EditorHeader v-if="filePath" :file-path="filePath" />
     <textarea v-if="filePath" :value="content" @input="handleInput" />
