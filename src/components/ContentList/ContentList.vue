@@ -30,7 +30,6 @@ const filteredItems = computed(() =>
     />
     <ContentListItem
       v-for="item in filteredItems"
-      v-else
       :key="item.path"
       :item="item"
       :selected="selectedPath === item.path"

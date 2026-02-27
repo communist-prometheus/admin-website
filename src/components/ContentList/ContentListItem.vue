@@ -15,11 +15,12 @@ const formattedDate = computed(() => {
   if (!('pubDate' in props.item.frontmatter)) return undefined
   const date = props.item.frontmatter.pubDate
   if (!date) return undefined
+  const dateObj = typeof date === 'string' ? new Date(date) : date
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  }).format(date)
+  }).format(dateObj)
 })
 
 const category = computed(() =>
