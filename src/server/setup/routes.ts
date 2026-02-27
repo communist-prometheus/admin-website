@@ -2,6 +2,7 @@
 import { Effect } from 'effect'
 import type Fastify from 'fastify'
 import { registerGitHubApiRoutes } from '../api/github/routes'
+import { registerGitHubContentRoutes } from '../github/routes'
 import {
   type GitHubOAuthConfig,
   registerGitHubOAuthRoutes,
@@ -27,6 +28,7 @@ export const setupRoutes = (
   Effect.sync(() => {
     registerGitHubOAuthRoutes(fastify, oauthConfig)
     registerGitHubApiRoutes(fastify)
+    registerGitHubContentRoutes(fastify)
 
     if (isProduction) {
       fastify.get('/favicon.ico', handleFavicon(resolveDistPath))

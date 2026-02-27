@@ -78,9 +78,13 @@ export default [
       'src/router/**/*.ts',
       'scripts/**/*.ts',
       'e2e/**/*.ts',
+      'src/server/github/**/*.ts',
+      'src/types/github-content.ts',
     ],
     rules: {
       'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/require-returns': 'off',
     },
   },
 ]
