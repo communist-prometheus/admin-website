@@ -1,3 +1,6 @@
+/**
+ * Parsed markdown content with frontmatter
+ */
 export interface ParsedContent<T = Record<string, unknown>> {
   readonly frontmatter: T
   readonly content: string
@@ -26,6 +29,11 @@ const parseFrontmatterLines = (text: string): Record<string, unknown> => {
   return frontmatter
 }
 
+/**
+ * Parse frontmatter from markdown content
+ * @param markdown - Markdown content with frontmatter
+ * @returns Parsed content with frontmatter and body
+ */
 export const parseFrontmatter = <T = Record<string, unknown>>(
   markdown: string
 ): ParsedContent<T> => {

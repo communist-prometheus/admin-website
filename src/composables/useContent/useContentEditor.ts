@@ -2,6 +2,10 @@ import { ref } from 'vue'
 import type { ContentItem } from '@/types/content'
 import { useGitHubApi } from '../useGitHubApi'
 
+/**
+ * Content editing composable
+ * @returns Content editing interface
+ */
 export const useContentEditor = () => {
   const { getFile, update } = useGitHubApi()
   const fileContent = ref('')

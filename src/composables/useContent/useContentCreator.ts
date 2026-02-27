@@ -2,6 +2,11 @@ import type { ContentType, Language } from '@/types/content'
 import { stringifyFrontmatter } from '@/utils/frontmatter'
 import { useGitHubApi } from '../useGitHubApi'
 
+/**
+ * Content creation composable
+ * @param contentType - Type of content to create
+ * @returns Content creation interface
+ */
 export const useContentCreator = (contentType: ContentType) => {
   const { create } = useGitHubApi()
   const rootPath = `src/content/${contentType}`

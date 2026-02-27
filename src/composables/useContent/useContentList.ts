@@ -1,6 +1,11 @@
 import { ref } from 'vue'
 import type { ContentItem, ContentType } from '@/types/content'
 
+/**
+ * Content list management composable
+ * @param contentType - Type of content to list
+ * @returns Content list interface
+ */
 export const useContentList = (contentType: ContentType) => {
   const items = ref<readonly ContentItem[]>([])
   const selectedItem = ref<ContentItem | null>(null)

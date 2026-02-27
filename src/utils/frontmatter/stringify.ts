@@ -5,6 +5,12 @@ const formatValue = (value: unknown): string => {
   return String(value)
 }
 
+/**
+ * Convert frontmatter and content to markdown string
+ * @param frontmatter - Frontmatter object
+ * @param content - Markdown content
+ * @returns Formatted markdown with frontmatter
+ */
 export const stringifyFrontmatter = <
   T extends Record<string, unknown> = Record<string, unknown>,
 >(
