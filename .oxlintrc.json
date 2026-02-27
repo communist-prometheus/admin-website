@@ -34,7 +34,7 @@
     "sonarjs/prefer-object-literal": "error",
     "sonarjs/prefer-single-boolean-return": "error",
     "sonarjs/max-lines": ["error", { "maximum": 50 }],
-    "sonarjs/max-lines-per-function": ["error", { "maximum": 30 }],
+    "sonarjs/max-lines-per-function": ["error", { "maximum": 25 }],
     "vue/no-restricted-html-elements": [
       "error",
       {
@@ -52,14 +52,8 @@
     },
     {
       "files": [
-        "src/composables/useContent.ts",
-        "src/components/CreateContentDialog/CreateContentDialog.vue",
-        "src/utils/frontmatter.ts",
-        "src/server/github/client.ts",
-        "src/server/github/mock-service.ts",
-        "src/server/github/content-service.ts",
-        "src/server/github/routes.ts",
-        "src/types/github-content.ts"
+        "src/server/**/*.ts",
+        "src/types/**/*.ts"
       ],
       "rules": {
         "sonarjs/max-lines": "off",

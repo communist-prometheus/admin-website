@@ -4,12 +4,13 @@ import AppLayout from '@/components/AppLayout.vue'
 import AuthButton from '@/components/AuthButton.vue'
 import ContentNav from '@/components/ContentNav/ContentNav.vue'
 import CreateContentDialog from '@/components/CreateContentDialog/CreateContentDialog.vue'
+import ErrorMessage from '@/components/common/ErrorMessage.vue'
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import { useContent } from '@/composables/useContent'
 import { useAuthStore } from '@/stores/auth'
 import type { Language } from '@/types/content'
 import ContentViewHeader from './ContentView/ContentViewHeader.vue'
 import ContentViewMain from './ContentView/ContentViewMain.vue'
-import ContentViewOverlays from './ContentView/ContentViewOverlays.vue'
 
 const props = defineProps<{
   readonly contentType: 'blog' | 'pages' | 'positions'
@@ -86,10 +87,8 @@ onMounted(async () => {
       @update:file-content="updateFileContent"
     />
 
-    <ContentViewOverlays
-      :loading="loading"
-      :error="error"
-    />
+    <LoadingOverlay :show="loading" />
+    <ErrorMessage :error="error" />
 
     <CreateContentDialog
       :show="showCreateDialog"

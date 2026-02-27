@@ -1,18 +1,10 @@
 <script setup lang="ts">
 defineProps<{
-  readonly loading: boolean
   readonly error: string | null
 }>()
 </script>
 
 <template>
-  <div
-    v-if="loading"
-    class="loading-overlay"
-  >
-    <p>Loading...</p>
-  </div>
-  
   <div
     v-if="error"
     class="error-message"
@@ -22,24 +14,6 @@ defineProps<{
 </template>
 
 <style scoped>
-.loading-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(0 0 0 / 50%);
-  z-index: 1000;
-}
-
-.loading-overlay p {
-  padding: clamp(1rem, 2vw, 2rem);
-  background: var(--color-background);
-  border-radius: var(--radius-lg);
-  font-size: clamp(1rem, 2vw, 1.25rem);
-  color: var(--color-text);
-}
-
 .error-message {
   position: fixed;
   top: clamp(1rem, 2vw, 2rem);
