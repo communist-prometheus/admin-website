@@ -9,7 +9,7 @@ import { useGitHubApi } from './useGitHubApi'
  * @param getFile - Function to get file content
  * @returns Parsed content item or null
  */
-const parseContentFile = async (
+const _parseContentFile = async (
   filePath: string,
   getFile: ReturnType<typeof useGitHubApi>['getFile']
 ): Promise<ContentItem | null> => {
