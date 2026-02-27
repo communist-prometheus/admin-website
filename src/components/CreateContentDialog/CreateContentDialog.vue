@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { ContentType, Language } from '@/types/content'
-import DialogForm from './DialogForm.vue'
 
-defineProps<{
+const props = defineProps<{
   readonly show: boolean
   readonly contentType: ContentType
 }>()
@@ -22,14 +21,38 @@ export interface CreateContentData {
   readonly order?: number
 }
 
-const formRef = ref<InstanceType<typeof DialogForm>>()
+const slug = ref('')
+const lang = ref<Language>('en')
+const title = ref('')
+const description = ref('')
+const category = ref('')
+const order = ref<number>(1)
 
-const handleSubmit = (data: CreateContentData) => {
+const reset = () => {
+  slug.value = ''
+  lang.value = 'en'
+  title.value = ''
+  description.value = ''
+  category.value = ''
+  order.value = 1
+}
+
+const handleCreate = () => {
+  const baseData = { slug: slug.value, lang: lang.value, title: title.value }
+  let data: CreateContentData
+  if (props.contentType === 'blog') {
+    data = { ...baseData, description: description.value, category: category.value }
+  } else if (props.contentType === 'positions') {
+    data = { ...baseData, description: description.value, order: order.value }
+  } else {
+    data = baseData
+  }
   emit('create', data)
+  reset()
 }
 
 const handleClose = () => {
-  formRef.value?.reset()
+  reset()
   emit('close')
 }
 </script>
@@ -49,18 +72,27 @@ const handleClose = () => {
     >
       ×
     </button>
-    <DialogForm
-      ref="formRef"
-      :content-type="contentType"
-      @submit="handleSubmit"
-    />
-    <button
-      type="button"
-      class="btn btn-secondary"
-      @click="handleClose"
-    >
-      Cancel
-    </button>
+    <label for="slug" class="field-label">Slug *</label>
+    <input id="slug" v-model="slug" type="text" required placeholder="my-article-slug" class="field-input" />
+    <span class="field-label">Language *</span>
+    <input id="lang-en" v-model="lang" type="radio" value="en" required class="radio-input" />
+    <label for="lang-en" class="radio-label">English</label>
+    <input id="lang-ru" v-model="lang" type="radio" value="ru" required class="radio-input" />
+    <label for="lang-ru" class="radio-label">Русский</label>
+    <input id="lang-it" v-model="lang" type="radio" value="it" required class="radio-input" />
+    <label for="lang-it" class="radio-label">Italiano</label>
+    <input id="lang-es" v-model="lang" type="radio" value="es" required class="radio-input" />
+    <label for="lang-es" class="radio-label">Español</label>
+    <label for="title" class="field-label">Title *</label>
+    <input id="title" v-model="title" type="text" required placeholder="Article Title" class="field-input" />
+    <label v-if="contentType === 'blog' || contentType === 'positions'" for="description" class="field-label">Description *</label>
+    <textarea v-if="contentType === 'blog' || contentType === 'positions'" id="description" v-model="description" required placeholder="Brief description..." rows="3" class="field-input" />
+    <label v-if="contentType === 'blog'" for="category" class="field-label">Category *</label>
+    <input v-if="contentType === 'blog'" id="category" v-model="category" type="text" required placeholder="Technology" class="field-input" />
+    <label v-if="contentType === 'positions'" for="order" class="field-label">Order *</label>
+    <input v-if="contentType === 'positions'" id="order" v-model.number="order" type="number" required min="1" class="field-input" />
+    <button type="button" class="btn btn-secondary" @click="handleClose">Cancel</button>
+    <button type="button" class="btn btn-primary" @click="handleCreate">Create</button>
   </dialog>
 </template>
 
