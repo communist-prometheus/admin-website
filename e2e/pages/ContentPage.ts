@@ -31,11 +31,11 @@ export class ContentPage {
   }
 
   async selectItem(title: string): Promise<void> {
-    await this.page
-      .locator('.content-item')
-      .filter({ hasText: title })
-      .click()
-    await waitForNetworkIdle(this.page, { idleTime: 300 })
+    const item = this.page.locator('.content-item').filter({ hasText: title })
+    await item.waitFor({ state: 'visible' })
+    await item.click()
+    await this.page.waitForTimeout(100)
+    await waitForNetworkIdle(this.page, { idleTime: 500 })
   }
 
   async expectEmptyState(): Promise<void> {
@@ -43,7 +43,10 @@ export class ContentPage {
   }
 
   async selectLanguage(lang: 'en' | 'ru' | 'it' | 'es'): Promise<void> {
-    await this.page.click(`button[data-lang="${lang}"]`)
-    await waitForNetworkIdle(this.page, { idleTime: 300 })
+    const button = this.page.locator(`button[data-lang="${lang}"]`)
+    await button.waitFor({ state: 'visible' })
+    await button.click()
+    await this.page.waitForTimeout(100)
+    await waitForNetworkIdle(this.page, { idleTime: 500 })
   }
 }
