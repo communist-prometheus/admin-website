@@ -44,7 +44,7 @@ const parseContentFile = async (
  * @returns Content management methods and state
  */
 export const useContent = (contentType: ContentType) => {
-  const { getTree, getFile, create, update, loading, error } = useGitHubApi()
+  const { getFile, create, update, loading, error } = useGitHubApi()
 
   const items = ref<readonly ContentItem[]>([])
   const selectedItem = ref<ContentItem | null>(null)
@@ -59,20 +59,23 @@ export const useContent = (contentType: ContentType) => {
       if (!response.ok) {
         throw new Error(`Failed to load content: ${response.statusText}`)
       }
-      
+
       const data = await response.json()
-      items.value = (data.items || []).map((item: {
-        path: string
-        slug: string
-        frontmatter: { lang: Language; [key: string]: unknown }
-      }) => ({
-        path: item.path,
-        slug: item.slug,
-        lang: item.frontmatter.lang,
-        frontmatter: item.frontmatter,
-      }))
+      items.value = (data.items || []).map(
+        (item: {
+          path: string
+          slug: string
+          frontmatter: { lang: Language; [key: string]: unknown }
+        }) => ({
+          path: item.path,
+          slug: item.slug,
+          lang: item.frontmatter.lang,
+          frontmatter: item.frontmatter,
+        })
+      )
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to load content'
+      error.value =
+        err instanceof Error ? err.message : 'Failed to load content'
     }
   }
 

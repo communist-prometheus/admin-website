@@ -25,7 +25,9 @@ lang: en
 
 # Welcome to Prometheus
 
-We're excited to introduce **Prometheus** - a modern platform.`).toString('base64'),
+We're excited to introduce **Prometheus** - a modern platform.`).toString(
+      'base64'
+    ),
     encoding: 'base64',
   },
   {
