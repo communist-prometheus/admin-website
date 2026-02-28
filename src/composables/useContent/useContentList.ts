@@ -6,7 +6,9 @@ import type { ContentItem, ContentType } from '@/types/content'
  * @param contentType - Type of content to list
  * @returns Content list interface
  */
-export const useContentList = (contentType: ContentType | Ref<ContentType>) => {
+export const useContentList = (
+  contentType: ContentType | Ref<ContentType>
+) => {
   const items = ref<readonly ContentItem[]>([])
   const selectedItem = ref<ContentItem | null>(null)
 

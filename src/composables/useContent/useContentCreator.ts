@@ -7,10 +7,13 @@ import { useGitHubApi } from '../useGitHubApi'
  * @param contentType - Type of content to create or function returning type
  * @returns Content creation interface
  */
-export const useContentCreator = (contentType: ContentType | (() => ContentType)) => {
+export const useContentCreator = (
+  contentType: ContentType | (() => ContentType)
+) => {
   const { create } = useGitHubApi()
-  
-  const getContentType = () => typeof contentType === 'function' ? contentType() : contentType
+
+  const getContentType = () =>
+    typeof contentType === 'function' ? contentType() : contentType
   const getRootPath = () => `src/content/${getContentType()}`
 
   const createContent = async (
