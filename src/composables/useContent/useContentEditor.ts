@@ -12,9 +12,7 @@ export const useContentEditor = () => {
   const fileSha = ref('')
 
   const selectItem = async (item: ContentItem) => {
-    console.log('selectItem called', item.path)
     const file = await getFile(item.path)
-    console.log('file loaded', { contentLength: file.content.length, sha: file.sha })
     fileContent.value = file.content
     fileSha.value = file.sha
   }
