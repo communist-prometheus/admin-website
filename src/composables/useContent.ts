@@ -54,6 +54,7 @@ export const useContent = (contentType: ContentType | Ref<ContentType>) => {
     selectedItem: list.selectedItem,
     fileContent: editor.fileContent,
     loading,
+    loadingFile: editor.loadingFile,
     error,
     loadContent: list.loadContent,
     selectItem: createSelectHandler(list, editor),

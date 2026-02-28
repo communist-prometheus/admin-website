@@ -25,6 +25,7 @@ const {
   selectedItem,
   fileContent,
   loading,
+  loadingFile,
   error,
   loadContent,
   selectItem,
@@ -78,6 +79,7 @@ onMounted(async () => {
       :file-content="fileContent"
       :is-authenticated="isAuthenticated"
       :loading="loading"
+      :loading-file="loadingFile"
       @select="selectItem"
       @create="openCreateDialog"
       @save="saveContent"

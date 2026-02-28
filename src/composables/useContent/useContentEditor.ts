@@ -10,11 +10,17 @@ export const useContentEditor = () => {
   const { getFile, update } = useGitHubApi()
   const fileContent = ref('')
   const fileSha = ref('')
+  const loadingFile = ref(false)
 
   const selectItem = async (item: ContentItem) => {
-    const file = await getFile(item.path)
-    fileContent.value = file.content
-    fileSha.value = file.sha
+    loadingFile.value = true
+    try {
+      const file = await getFile(item.path)
+      fileContent.value = file.content
+      fileSha.value = file.sha
+    } finally {
+      loadingFile.value = false
+    }
   }
 
   const saveContent = async (path: string, message: string) => {
@@ -23,6 +29,7 @@ export const useContentEditor = () => {
 
   return {
     fileContent,
+    loadingFile,
     selectItem,
     saveContent,
   }

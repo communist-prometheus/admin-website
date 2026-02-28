@@ -10,6 +10,7 @@ defineProps<{
   readonly fileContent: string
   readonly isAuthenticated: boolean
   readonly loading?: boolean
+  readonly loadingFile?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -35,6 +36,7 @@ const emit = defineEmits<{
       v-if="isAuthenticated"
       :model-value="fileContent"
       :file-path="selectedPath"
+      :loading="loadingFile"
       @update:model-value="emit('update:fileContent', $event)"
       @save="emit('save', $event)"
     />

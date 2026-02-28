@@ -6,6 +6,7 @@ import EditorHeader from './EditorHeader.vue'
 const props = defineProps<{
   readonly modelValue: string
   readonly filePath: string | null
+  readonly loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -33,9 +34,12 @@ const handleSave = (message: string) => {
 <template>
   <div class="markdown-editor" data-testid="markdown-editor">
     <p v-if="!filePath">Select a file to edit</p>
-    <EditorHeader v-if="filePath" :file-path="filePath" />
-    <textarea v-if="filePath" :value="content" @input="handleInput" />
-    <EditorFooter v-if="filePath" :disabled="false" @save="handleSave" />
+    <div v-else-if="loading" class="loading-state">Loading file...</div>
+    <template v-else>
+      <EditorHeader :file-path="filePath" />
+      <textarea :value="content" @input="handleInput" />
+      <EditorFooter :disabled="false" @save="handleSave" />
+    </template>
   </div>
 </template>
 
@@ -60,7 +64,8 @@ textarea {
   resize: none;
 }
 
-p {
+p,
+.loading-state {
   padding: clamp(1rem, 3vw, 2rem);
   color: var(--color-text-secondary);
   font-size: clamp(1rem, 2.5vw, 1.25rem);
