@@ -38,7 +38,10 @@ test.describe('Content Editing', () => {
   test('should show loading spinner when loading file', async ({ page }) => {
     const firstItem = page.locator('[data-testid="content-item"]').first()
 
-    const loadingStatePromise = page.locator('.loading-state').waitFor({ state: 'visible', timeout: 2000 }).catch(() => null)
+    const loadingStatePromise = page
+      .locator('.loading-state')
+      .waitFor({ state: 'visible', timeout: 2000 })
+      .catch(() => null)
 
     await firstItem.click()
 
