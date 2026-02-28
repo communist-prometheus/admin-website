@@ -43,7 +43,7 @@ test.describe('Content Editing', () => {
     const textarea = page.locator('textarea')
     const originalContent = await textarea.inputValue()
 
-    await textarea.fill(originalContent + '\n\n## Test Edit')
+    await textarea.fill(`${originalContent}\n\n## Test Edit`)
     const newContent = await textarea.inputValue()
 
     expect(newContent).toContain('## Test Edit')
