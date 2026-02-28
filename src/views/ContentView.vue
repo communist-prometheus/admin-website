@@ -19,6 +19,8 @@ const props = defineProps<{
 const authStore = useAuthStore()
 const isAuthenticated = computed(() => !!authStore.user)
 
+const contentTypeRef = computed(() => props.contentType)
+
 const {
   items,
   selectedItem,
@@ -29,7 +31,7 @@ const {
   selectItem,
   saveContent,
   createContent,
-} = useContent(props.contentType)
+} = useContent(contentTypeRef)
 
 const selectedLang = ref<Language>('en')
 const showCreateDialog = ref(false)

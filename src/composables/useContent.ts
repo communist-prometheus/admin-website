@@ -1,3 +1,5 @@
+import type { Ref } from 'vue'
+import { toValue } from 'vue'
 import type { ContentType } from '@/types/content'
 import { useContentCreator } from './useContent/useContentCreator'
 import { useContentEditor } from './useContent/useContentEditor'
@@ -41,11 +43,11 @@ const createContentHandler =
  * @param contentType - Type of content to manage
  * @returns Content management interface
  */
-export const useContent = (contentType: ContentType) => {
+export const useContent = (contentType: ContentType | Ref<ContentType>) => {
   const { loading, error } = useGitHubApi()
   const list = useContentList(contentType)
   const editor = useContentEditor()
-  const creator = useContentCreator(contentType)
+  const creator = useContentCreator(() => toValue(contentType))
 
   return {
     items: list.items,

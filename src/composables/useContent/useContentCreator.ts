@@ -4,12 +4,14 @@ import { useGitHubApi } from '../useGitHubApi'
 
 /**
  * Content creation composable
- * @param contentType - Type of content to create
+ * @param contentType - Type of content to create or function returning type
  * @returns Content creation interface
  */
-export const useContentCreator = (contentType: ContentType) => {
+export const useContentCreator = (contentType: ContentType | (() => ContentType)) => {
   const { create } = useGitHubApi()
-  const rootPath = `src/content/${contentType}`
+  
+  const getContentType = () => typeof contentType === 'function' ? contentType() : contentType
+  const getRootPath = () => `src/content/${getContentType()}`
 
   const createContent = async (
     data: {
@@ -23,9 +25,9 @@ export const useContentCreator = (contentType: ContentType) => {
     initialContent = ''
   ) => {
     const fileName = `${data.slug}.${data.lang}.md`
-    const filePath = `${rootPath}/${fileName}`
+    const filePath = `${getRootPath()}/${fileName}`
 
-    const frontmatter = buildFrontmatter(contentType, data)
+    const frontmatter = buildFrontmatter(getContentType(), data)
     const content = stringifyFrontmatter(frontmatter, initialContent)
 
     await create(filePath, content, `Create ${fileName}`)
