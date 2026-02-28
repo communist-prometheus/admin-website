@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import AuthButton from '@/components/AuthButton.vue'
-import ContentNav from '@/components/ContentNav/ContentNav.vue'
 import CreateContentDialog from '@/components/CreateContentDialog/CreateContentDialog.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -66,7 +65,6 @@ onMounted(async () => {
     <template #header-actions>
       <AuthButton />
     </template>
-    <ContentNav />
     
     <ContentViewHeader
       v-model="selectedLang"
@@ -79,6 +77,7 @@ onMounted(async () => {
       :selected-path="selectedItem?.path ?? null"
       :file-content="fileContent"
       :is-authenticated="isAuthenticated"
+      :loading="loading"
       @select="selectItem"
       @create="openCreateDialog"
       @save="saveContent"

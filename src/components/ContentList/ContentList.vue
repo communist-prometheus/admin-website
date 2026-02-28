@@ -9,6 +9,7 @@ const props = defineProps<{
   readonly items: readonly ContentItem[]
   readonly selectedLang: Language
   readonly selectedPath: string | null
+  readonly loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -24,12 +25,14 @@ const filteredItems = computed(() =>
 <template>
   <div class="content-list" data-testid="content-list">
     <ContentListHeader @create="emit('create')" />
+    <div v-if="loading" class="loading">Loading content...</div>
     <ContentListEmpty
-      v-if="filteredItems.length === 0"
+      v-else-if="filteredItems.length === 0"
       :lang="selectedLang"
     />
     <ContentListItem
       v-for="item in filteredItems"
+      v-else
       :key="item.path"
       :item="item"
       :selected="selectedPath === item.path"
@@ -45,5 +48,11 @@ const filteredItems = computed(() =>
   gap: clamp(0.75rem, 2vw, 1rem);
   height: 100%;
   overflow-y: auto;
+}
+
+.loading {
+  padding: clamp(1rem, 3vw, 2rem);
+  text-align: center;
+  color: var(--color-text-secondary);
 }
 </style>

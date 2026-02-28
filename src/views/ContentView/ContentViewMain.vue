@@ -9,6 +9,7 @@ defineProps<{
   readonly selectedPath: string | null
   readonly fileContent: string
   readonly isAuthenticated: boolean
+  readonly loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +26,7 @@ const emit = defineEmits<{
       :items="items"
       :selected-lang="selectedLang"
       :selected-path="selectedPath"
+      :loading="loading"
       @select="emit('select', $event)"
       @create="isAuthenticated ? emit('create') : undefined"
     />
