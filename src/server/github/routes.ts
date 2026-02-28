@@ -19,7 +19,7 @@ export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
   const baseConfig = loadGitHubConfig()
 
   const getContentService = (accessToken?: string) => {
-    const useMock = process.env.NODE_ENV === 'test' || !accessToken
+    const useMock = process.env.NODE_ENV === 'test'
 
     const githubClient: GitHubClient = useMock
       ? (new MockContentService() as unknown as GitHubClient)
