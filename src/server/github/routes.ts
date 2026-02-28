@@ -36,6 +36,16 @@ export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
   }>('/api/github/content/:type', async (request, reply) => {
     const { type } = request.params
     const user = getSessionUser(request)
+
+    request.log.info(
+      {
+        hasUser: !!user,
+        hasToken: !!user?.accessToken,
+        username: user?.username,
+      },
+      'Loading content'
+    )
+
     const contentService = getContentService(user?.accessToken)
 
     return Effect.runPromise(contentService.listContent(type))
