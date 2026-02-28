@@ -35,11 +35,9 @@ const handleSave = (message: string) => {
   <div class="markdown-editor" data-testid="markdown-editor">
     <p v-if="!filePath">Select a file to edit</p>
     <div v-else-if="loading" class="loading-state">Loading file...</div>
-    <template v-else>
-      <EditorHeader :file-path="filePath" />
-      <textarea :value="content" @input="handleInput" />
-      <EditorFooter :disabled="false" @save="handleSave" />
-    </template>
+    <EditorHeader v-else :file-path="filePath" />
+    <textarea v-if="filePath && !loading" :value="content" @input="handleInput" />
+    <EditorFooter v-if="filePath && !loading" :disabled="false" @save="handleSave" />
   </div>
 </template>
 
