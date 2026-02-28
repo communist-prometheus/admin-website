@@ -56,6 +56,7 @@
         "src/types/**/*.ts",
         "src/views/ContentView.vue",
         "src/composables/useContent.ts",
+        "src/composables/useContent/useContentCreator.ts",
         "**/*.test.ts",
         "**/*.spec.ts"
       ],
