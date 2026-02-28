@@ -3,11 +3,10 @@
   --color-surface: hsl(0, 0%, 13%);
   --color-surface-elevated: hsl(0, 0%, 16%);
   --color-accent: #ee6f57;
+  --color-accent-hover: #f18771;
   --color-text-primary: hsl(0, 0%, 95%);
   --color-text-secondary: hsl(0, 0%, 65%);
   --color-border: hsl(0, 0%, 25%);
-  --color-accent: hsl(12, 80%, 45%);
-  --color-accent-hover: hsl(12, 80%, 55%);
 
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
@@ -43,8 +42,8 @@
     --color-text-primary: hsl(0, 0%, 13%);
     --color-text-secondary: hsl(0, 0%, 40%);
     --color-border: hsl(0, 0%, 90%);
-    --color-accent: hsl(12, 80%, 45%);
-    --color-accent-hover: hsl(12, 80%, 38%);
+    --color-accent: #ee6f57;
+    --color-accent-hover: #d95a42;
 
     color-scheme: light;
   }
