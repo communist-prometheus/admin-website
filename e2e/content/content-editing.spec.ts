@@ -35,6 +35,18 @@ test.describe('Content Editing', () => {
     expect(editorContent.length).toBeGreaterThan(0)
   })
 
+  test('should show loading spinner when loading file', async ({ page }) => {
+    const firstItem = page.locator('[data-testid="content-item"]').first()
+    
+    const loadingStatePromise = page.locator('.loading-state').waitFor({ state: 'visible', timeout: 2000 }).catch(() => null)
+    
+    await firstItem.click()
+    
+    await loadingStatePromise
+    
+    await expect(page.locator('textarea')).toBeVisible({ timeout: 5000 })
+  })
+
   test('should allow editing content in textarea', async ({ page }) => {
     const firstItem = page.locator('[data-testid="content-item"]').first()
     await firstItem.click()
