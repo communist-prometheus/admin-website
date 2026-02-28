@@ -57,7 +57,12 @@ export const storeUserInSession = (
       accessToken: userData.accessToken,
     }
     request.log.info(
-      { username: userData.login, name: userData.name },
+      {
+        username: userData.login,
+        name: userData.name,
+        hasToken: !!userData.accessToken,
+        tokenLength: userData.accessToken?.length,
+      },
       'GitHub OAuth: User stored in session'
     )
   })
