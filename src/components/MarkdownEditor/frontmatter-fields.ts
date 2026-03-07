@@ -20,7 +20,6 @@ const blogFields: readonly FieldDefinition[] = [
   },
   { key: 'category', label: 'Category', type: 'text', required: true },
   { key: 'pubDate', label: 'Publication Date', type: 'date' },
-  { key: 'lang', label: 'Language', type: 'text' },
   { key: 'image', label: 'Image URL', type: 'text' },
 ]
 
@@ -33,12 +32,10 @@ const positionsFields: readonly FieldDefinition[] = [
     required: true,
   },
   { key: 'order', label: 'Order', type: 'number' },
-  { key: 'lang', label: 'Language', type: 'text' },
 ]
 
 const pagesFields: readonly FieldDefinition[] = [
   { key: 'title', label: 'Title', type: 'text', required: true },
-  { key: 'lang', label: 'Language', type: 'text' },
 ]
 
 const fieldsByContentType: Record<ContentType, readonly FieldDefinition[]> = {

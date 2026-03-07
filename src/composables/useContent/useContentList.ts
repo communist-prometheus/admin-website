@@ -22,7 +22,7 @@ export const useContentList = (
   const selectedItem = ref<ContentItem | null>(null)
 
   const loadContent = async () => {
-    await store.loadAll()
+    await store.ensureLoaded()
   }
 
   return {

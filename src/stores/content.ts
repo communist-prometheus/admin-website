@@ -29,15 +29,21 @@ const fetchContentItems = async (
 export const useContentStore = defineStore('content', () => {
   const allItems = ref<readonly ContentItem[]>([])
   const loading = ref(false)
+  const loaded = ref(false)
 
   const loadAll = async () => {
     loading.value = true
     try {
       const results = await Promise.all(CONTENT_TYPES.map(fetchContentItems))
       allItems.value = results.flat()
+      loaded.value = true
     } finally {
       loading.value = false
     }
+  }
+
+  const ensureLoaded = async () => {
+    if (!loaded.value) await loadAll()
   }
 
   const itemsByType = (type: ContentType) =>
@@ -47,5 +53,5 @@ export const useContentStore = defineStore('content', () => {
       )
     )
 
-  return { allItems, loading, loadAll, itemsByType }
+  return { allItems, loading, loaded, loadAll, ensureLoaded, itemsByType }
 })

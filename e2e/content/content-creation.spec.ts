@@ -141,7 +141,6 @@ test.describe('Content Creation', () => {
     await page.fill('#description', 'Description')
     await page.fill('#category', 'Test')
 
-
     await page.click('button:has-text("Create")')
     await expect(page.locator('.create-dialog')).not.toBeVisible({
       timeout: 10000,
