@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
+import { login } from '../auth/helpers'
 import { waitForNetworkIdle } from '../helpers/network'
 
 export class AuthPage {
@@ -11,8 +12,10 @@ export class AuthPage {
   }
 
   async clickLogout(): Promise<void> {
+    await this.page
+      .locator('.dropdown')
+      .waitFor({ state: 'visible', timeout: 5000 })
     await this.page.getByRole('button', { name: /logout/i }).click()
-    await waitForNetworkIdle(this.page)
   }
 
   async expectLoginButtonVisible(): Promise<void> {
@@ -24,43 +27,26 @@ export class AuthPage {
   async expectUserMenuVisible(): Promise<void> {
     await expect(
       this.page.getByRole('button', { name: /test user/i })
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 10000 })
   }
 
   async expectDropdownVisible(): Promise<void> {
-    await expect(this.page.locator('.user-dropdown')).toBeVisible()
+    await expect(this.page.locator('.dropdown')).toBeVisible()
   }
 
   /**
-   * Mock authentication by setting localStorage
-   * This simulates successful OAuth without popup
+   * Mock authentication via server-side mock OAuth
    */
   async mockLogin(): Promise<void> {
-    await this.page.evaluate(() => {
-      globalThis.localStorage.setItem(
-        'auth',
-        JSON.stringify({
-          user: {
-            id: '12345',
-            name: 'Test User',
-            email: 'test@example.com',
-            avatar_url: 'https://github.com/ghost.png',
-          },
-        })
-      )
-    })
-    await this.page.reload()
-    await waitForNetworkIdle(this.page)
+    await login(this.page)
   }
 
   /**
-   * Clear authentication
+   * Clear authentication by logging out
    */
   async clearAuth(): Promise<void> {
-    await this.page.evaluate(() => {
-      globalThis.localStorage.removeItem('auth')
-    })
-    await this.page.reload()
+    await this.page.goto('/api/auth/logout')
+    await this.page.goto('/')
     await waitForNetworkIdle(this.page)
   }
 }

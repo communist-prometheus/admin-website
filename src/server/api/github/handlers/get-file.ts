@@ -1,5 +1,6 @@
 import { Effect } from 'effect'
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { getSessionUser } from '../../../auth/session'
 import { createGitHubService } from '../../../services/github/index'
 
 interface FileParams {
@@ -16,8 +17,8 @@ export const handleGetFile = async (
   request: FastifyRequest<{ Querystring: FileParams }>,
   reply: FastifyReply
 ) => {
-  // @ts-expect-error - fastify-session typing issue
-  const token = request.session.github_token
+  const user = getSessionUser(request)
+  const token = user?.accessToken
 
   if (!token) {
     return reply.status(401).send({ error: 'Unauthorized' })

@@ -1,12 +1,10 @@
 import { Effect } from 'effect'
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { getSessionUser } from '../../../auth/session'
 import { createGitHubService } from '../../../services/github/index'
 
-interface FileParams {
-  path: string
-}
-
 interface UpdateFileBody {
+  path: string
   content: string
   sha: string
   message: string
@@ -14,26 +12,24 @@ interface UpdateFileBody {
 
 /**
  * Update file content
- * @param request - Fastify request with path query and update body
+ * @param request - Fastify request with file update body
  * @param reply - Fastify reply
  * @returns Promise with update result
  */
 export const handleUpdateFile = async (
   request: FastifyRequest<{
-    Querystring: FileParams
     Body: UpdateFileBody
   }>,
   reply: FastifyReply
 ) => {
-  // @ts-expect-error - fastify-session typing issue
-  const token = request.session.github_token
+  const user = getSessionUser(request)
+  const token = user?.accessToken
 
   if (!token) {
     return reply.status(401).send({ error: 'Unauthorized' })
   }
 
-  const { path } = request.query
-  const { content, sha, message } = request.body
+  const { path, content, sha, message } = request.body
 
   if (!path || !content || !sha || !message) {
     return reply.status(400).send({ error: 'Missing required fields' })

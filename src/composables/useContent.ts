@@ -1,10 +1,9 @@
 import type { Ref } from 'vue'
-import { toValue } from 'vue'
+import { ref, toValue } from 'vue'
 import type { ContentType } from '@/types/content'
 import { useContentCreator } from './useContent/useContentCreator'
 import { useContentEditor } from './useContent/useContentEditor'
 import { useContentList } from './useContent/useContentList'
-import { useGitHubApi } from './useGitHubApi'
 
 const createSelectHandler =
   (
@@ -44,16 +43,17 @@ const createContentHandler =
  * @returns Content management interface
  */
 export const useContent = (contentType: ContentType | Ref<ContentType>) => {
-  const { loading, error } = useGitHubApi()
   const list = useContentList(contentType)
   const editor = useContentEditor()
   const creator = useContentCreator(() => toValue(contentType))
+  const error = ref<string | null>(null)
 
   return {
     items: list.items,
     selectedItem: list.selectedItem,
-    fileContent: editor.fileContent,
-    loading,
+    frontmatterData: editor.frontmatterData,
+    bodyContent: editor.bodyContent,
+    loadingList: list.loadingList,
     loadingFile: editor.loadingFile,
     error,
     loadContent: list.loadContent,

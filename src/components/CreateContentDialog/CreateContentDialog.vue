@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, useTemplateRef, watch } from 'vue'
 import type { ContentType, Language } from '@/types/content'
+import {
+  buildCreateData,
+  type CreateContentData,
+  isFormValid,
+} from './helpers'
 
 const props = defineProps<{
   readonly show: boolean
   readonly contentType: ContentType
+  readonly lang: Language
 }>()
 
 const emit = defineEmits<{
@@ -12,17 +18,9 @@ const emit = defineEmits<{
   create: [data: CreateContentData]
 }>()
 
-export interface CreateContentData {
-  readonly slug: string
-  readonly lang: Language
-  readonly title: string
-  readonly description?: string
-  readonly category?: string
-  readonly order?: number
-}
+const dialogRef = useTemplateRef<HTMLDialogElement>('dialogRef')
 
 const slug = ref('')
-const lang = ref<Language>('en')
 const title = ref('')
 const description = ref('')
 const category = ref('')
@@ -30,39 +28,41 @@ const order = ref<number>(1)
 
 const reset = () => {
   slug.value = ''
-  lang.value = 'en'
   title.value = ''
   description.value = ''
   category.value = ''
   order.value = 1
 }
 
+const formState = () => ({
+  slug: slug.value, lang: props.lang, title: title.value,
+  description: description.value, category: category.value, order: order.value,
+})
+
 const handleCreate = () => {
-  const baseData = { slug: slug.value, lang: lang.value, title: title.value }
-  let data: CreateContentData
-  if (props.contentType === 'blog') {
-    data = { ...baseData, description: description.value, category: category.value }
-  } else if (props.contentType === 'positions') {
-    data = { ...baseData, description: description.value, order: order.value }
-  } else {
-    data = baseData
-  }
-  emit('create', data)
+  if (!isFormValid(formState())) return
+  emit('create', buildCreateData(props.contentType, formState()))
   reset()
 }
 
 const handleClose = () => {
+  dialogRef.value?.close()
   reset()
   emit('close')
 }
+
+watch(() => props.show, (visible) => {
+  if (visible) dialogRef.value?.showModal()
+  else dialogRef.value?.close()
+})
 </script>
 
 <template>
   <dialog
-    v-if="show"
-    open
+    ref="dialogRef"
     class="create-dialog"
-    @click.self="handleClose"
+    @close="handleClose"
+    @cancel.prevent="handleClose"
   >
     <span class="dialog-title">Create New {{ contentType }}</span>
     <button
@@ -74,15 +74,6 @@ const handleClose = () => {
     </button>
     <label for="slug" class="field-label">Slug *</label>
     <input id="slug" v-model="slug" type="text" required placeholder="my-article-slug" class="field-input" />
-    <span class="field-label">Language *</span>
-    <input id="lang-en" v-model="lang" type="radio" value="en" required class="radio-input" />
-    <label for="lang-en" class="radio-label">English</label>
-    <input id="lang-ru" v-model="lang" type="radio" value="ru" required class="radio-input" />
-    <label for="lang-ru" class="radio-label">Русский</label>
-    <input id="lang-it" v-model="lang" type="radio" value="it" required class="radio-input" />
-    <label for="lang-it" class="radio-label">Italiano</label>
-    <input id="lang-es" v-model="lang" type="radio" value="es" required class="radio-input" />
-    <label for="lang-es" class="radio-label">Español</label>
     <label for="title" class="field-label">Title *</label>
     <input id="title" v-model="title" type="text" required placeholder="Article Title" class="field-input" />
     <label v-if="contentType === 'blog' || contentType === 'positions'" for="description" class="field-label">Description *</label>
@@ -97,7 +88,7 @@ const handleClose = () => {
 </template>
 
 <style scoped>
-.create-dialog {
+.create-dialog[open] {
   display: flex;
   flex-direction: column;
   gap: clamp(1rem, 2vw, 1.5rem);
@@ -138,30 +129,6 @@ const handleClose = () => {
 
 .field-input:focus {
   outline: none;
-  border-color: var(--color-heading);
-}
-
-.radio-input {
-  display: none;
-}
-
-.radio-label {
-  display: block;
-  padding: clamp(0.5rem, 1vw, 0.75rem);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: clamp(0.875rem, 2vw, 1rem);
-
-  &:hover {
-    background: var(--color-background-soft);
-  }
-}
-
-.radio-input:checked + .radio-label {
-  background: var(--color-heading);
-  color: var(--color-background);
   border-color: var(--color-heading);
 }
 

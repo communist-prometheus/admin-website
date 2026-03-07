@@ -57,6 +57,8 @@
         "src/views/ContentView.vue",
         "src/composables/useContent.ts",
         "src/composables/useContent/useContentCreator.ts",
+        "src/composables/useContent/useMultiLangEditor.ts",
+        "src/composables/useContent/useMultiLangEditor/load-language.ts",
         "**/*.test.ts",
         "**/*.spec.ts"
       ],

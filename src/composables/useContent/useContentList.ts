@@ -1,36 +1,34 @@
-import { type Ref, ref, toValue } from 'vue'
+import { computed, type Ref, ref, toValue } from 'vue'
+import { useContentStore } from '@/stores/content'
 import type { ContentItem, ContentType } from '@/types/content'
 
+const matchesType = (item: ContentItem, type: ContentType): boolean =>
+  item.path.startsWith(`src/content/${type}/`)
+
 /**
- * Content list management composable
+ * Content list composable — reads from the global content store
  * @param contentType - Type of content to list
  * @returns Content list interface
  */
 export const useContentList = (
   contentType: ContentType | Ref<ContentType>
 ) => {
-  const items = ref<readonly ContentItem[]>([])
+  const store = useContentStore()
+
+  const items = computed(() =>
+    store.allItems.filter(item => matchesType(item, toValue(contentType)))
+  )
+
   const selectedItem = ref<ContentItem | null>(null)
 
   const loadContent = async () => {
-    const type = toValue(contentType)
-    const response = await fetch(`/api/github/content/${type}`)
-    if (!response.ok) {
-      throw new Error(`Failed to load content: ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    items.value = (data.items || []).map((item: ContentItem) => ({
-      path: item.path,
-      slug: item.slug,
-      lang: item.frontmatter.lang,
-      frontmatter: item.frontmatter,
-    }))
+    await store.loadAll()
   }
 
   return {
     items,
     selectedItem,
+    loadingList: computed(() => store.loading),
     loadContent,
   }
 }

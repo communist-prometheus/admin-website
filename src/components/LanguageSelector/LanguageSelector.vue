@@ -1,42 +1,42 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import type { Language } from '@/types/content'
+import { LANGUAGES } from '@/types/content'
 
 const props = defineProps<{
-  readonly modelValue: 'en' | 'ru' | 'it' | 'es'
+  readonly modelValue: Language
+  readonly availableLanguages?: ReadonlySet<Language>
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: 'en' | 'ru' | 'it' | 'es']
+  'update:modelValue': [value: Language]
 }>()
 
-const languages = [
-  { code: 'en', label: 'English' },
-  { code: 'ru', label: 'Русский' },
-  { code: 'it', label: 'Italiano' },
-  { code: 'es', label: 'Español' },
-] as const
-
-const selectedLanguage = computed(() =>
-  languages.find(lang => lang.code === props.modelValue)
-)
-
-const handleChange = (code: 'en' | 'ru' | 'it' | 'es') => {
-  emit('update:modelValue', code)
+const labels: Record<Language, string> = {
+  en: 'English',
+  ru: 'Русский',
+  it: 'Italiano',
+  es: 'Español',
 }
+
+const langButtonClass = (code: Language) => ({
+  active: props.modelValue === code,
+  exists: props.availableLanguages?.has(code) ?? false,
+  dimmed: props.availableLanguages !== undefined && !props.availableLanguages.has(code),
+})
 </script>
 
 <template>
   <div class="language-selector" data-testid="language-selector">
     <button
-      v-for="lang in languages"
-      :key="lang.code"
+      v-for="code in LANGUAGES"
+      :key="code"
       type="button"
       class="lang-button"
-      :class="{ active: modelValue === lang.code }"
-      :data-lang="lang.code"
-      @click="handleChange(lang.code)"
+      :class="langButtonClass(code)"
+      :data-lang="code"
+      @click="emit('update:modelValue', code)"
     >
-      {{ lang.label }}
+      {{ labels[code] }}
     </button>
   </div>
 </template>
@@ -69,6 +69,20 @@ const handleChange = (code: 'en' | 'ru' | 'it' | 'es') => {
   &.active {
     background: var(--color-background-mute);
     color: var(--color-heading);
+  }
+
+  &.exists::after {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-accent, #4caf50);
+    margin: 2px auto 0;
+  }
+
+  &.dimmed {
+    opacity: 50%;
   }
 }
 </style>

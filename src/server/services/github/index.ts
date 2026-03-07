@@ -1,4 +1,5 @@
 import { Effect } from 'effect'
+import { MockGitHubService } from './mock-service'
 import { GitHubService } from './service'
 
 /**
@@ -7,13 +8,15 @@ import { GitHubService } from './service'
  * @returns Effect with GitHub service
  */
 export const createGitHubService = (token: string) =>
-  Effect.sync(
-    () =>
-      new GitHubService({
-        owner: process.env['GITHUB_REPO_OWNER'] || 'prometheus',
-        repo: process.env['GITHUB_REPO_NAME'] || 'public-website',
-        token,
-      })
+  Effect.sync(() =>
+    process.env.MOCK_OAUTH === 'true'
+      ? new MockGitHubService()
+      : new GitHubService({
+          owner: process.env.GITHUB_OWNER || 'communist-prometheus',
+          repo: process.env.GITHUB_REPO || 'public-website',
+          token,
+          branch: process.env.GITHUB_BRANCH || 'main',
+        })
   )
 
 export { GitHubService } from './service'

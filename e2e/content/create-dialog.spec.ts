@@ -1,23 +1,13 @@
 import { test } from '@playwright/test'
-import { waitForNetworkIdle } from '../helpers/network'
-import { AuthPage } from '../pages/AuthPage'
+import { login } from '../auth/helpers'
 import { ContentPage } from '../pages/ContentPage'
 import { CreateDialog } from '../pages/CreateDialog'
 
 test.describe('Create Content Dialog', () => {
   test.beforeEach(async ({ page }) => {
-    const authPage = new AuthPage(page)
+    await login(page)
     const contentPage = new ContentPage(page)
-
-    await page.goto('/')
-    await waitForNetworkIdle(page)
-    await authPage.mockLogin()
     await contentPage.navigate('blog')
-  })
-
-  test.afterEach(async ({ page }) => {
-    const authPage = new AuthPage(page)
-    await authPage.clearAuth()
   })
 
   test('should open create dialog when clicking create button', async ({
@@ -76,7 +66,9 @@ test.describe('Create Content Dialog', () => {
     await createDialog.expectFieldToBeHidden('category')
   })
 
-  test('should validate required fields', async ({ page }) => {
+  test('should keep dialog open when clicking create without data', async ({
+    page,
+  }) => {
     const contentPage = new ContentPage(page)
     const createDialog = new CreateDialog(page)
 

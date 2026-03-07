@@ -1,38 +1,34 @@
 import { Effect } from 'effect'
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { getSessionUser } from '../../../auth/session'
 import { createGitHubService } from '../../../services/github/index'
 
-interface FileParams {
-  path: string
-}
-
 interface CreateFileBody {
+  path: string
   content: string
   message: string
 }
 
 /**
  * Create new file
- * @param request - Fastify request with path query and file body
+ * @param request - Fastify request with file creation body
  * @param reply - Fastify reply
  * @returns Promise with creation result
  */
 export const handleCreateFile = async (
   request: FastifyRequest<{
-    Querystring: FileParams
     Body: CreateFileBody
   }>,
   reply: FastifyReply
 ) => {
-  // @ts-expect-error - fastify-session typing issue
-  const token = request.session.github_token
+  const user = getSessionUser(request)
+  const token = user?.accessToken
 
   if (!token) {
     return reply.status(401).send({ error: 'Unauthorized' })
   }
 
-  const { path } = request.query
-  const { content, message } = request.body
+  const { path, content, message } = request.body
 
   if (!path || !content || !message) {
     return reply.status(400).send({ error: 'Missing required fields' })

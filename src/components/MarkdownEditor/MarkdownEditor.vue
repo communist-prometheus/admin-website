@@ -1,34 +1,23 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import type { ContentType } from '@/types/content'
 import EditorFooter from './EditorFooter.vue'
 import EditorHeader from './EditorHeader.vue'
+import FrontmatterEditor from './FrontmatterEditor.vue'
+import MarkdownEditorBody from './MarkdownEditorBody.vue'
 
-const props = defineProps<{
+defineProps<{
   readonly modelValue: string
   readonly filePath: string | null
   readonly loading?: boolean
+  readonly frontmatter?: Record<string, unknown>
+  readonly contentType?: ContentType
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'update:frontmatter': [data: Record<string, unknown>]
   save: [message: string]
 }>()
-
-const content = ref(props.modelValue)
-
-watch(() => props.modelValue, (newValue) => {
-  content.value = newValue
-})
-
-const handleInput = (event: Event) => {
-  const target = event.target as HTMLTextAreaElement
-  content.value = target.value
-  emit('update:modelValue', target.value)
-}
-
-const handleSave = (message: string) => {
-  emit('save', message)
-}
 </script>
 
 <template>
@@ -36,8 +25,18 @@ const handleSave = (message: string) => {
     <p v-if="!filePath">Select a file to edit</p>
     <div v-else-if="loading" class="loading-state">Loading file...</div>
     <EditorHeader v-else :file-path="filePath" />
-    <textarea v-if="filePath && !loading" :value="content" @input="handleInput" />
-    <EditorFooter v-if="filePath && !loading" :disabled="false" @save="handleSave" />
+    <FrontmatterEditor
+      v-if="filePath && !loading && frontmatter && contentType"
+      :frontmatter="frontmatter"
+      :content-type="contentType"
+      @update:frontmatter="emit('update:frontmatter', $event)"
+    />
+    <MarkdownEditorBody
+      v-if="filePath && !loading"
+      :model-value="modelValue"
+      @update:model-value="emit('update:modelValue', $event)"
+    />
+    <EditorFooter v-if="filePath && !loading" :disabled="false" @save="emit('save', $event)" />
   </div>
 </template>
 
@@ -47,19 +46,7 @@ const handleSave = (message: string) => {
   flex-direction: column;
   height: 100%;
   gap: clamp(0.5rem, 2vw, 1rem);
-}
-
-textarea {
-  flex: 1;
-  padding: clamp(0.75rem, 2vw, 1rem);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-background);
-  color: var(--color-text);
-  font-family: 'Courier New', monospace;
-  font-size: clamp(0.875rem, 2vw, 1rem);
-  line-height: 1.6;
-  resize: none;
+  overflow: auto;
 }
 
 p,

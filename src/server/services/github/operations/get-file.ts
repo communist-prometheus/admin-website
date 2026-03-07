@@ -16,6 +16,7 @@ export const getFileContent = (octokit: Octokit, config: GitHubConfig) => {
           owner: config.owner,
           repo: config.repo,
           path,
+          ref: config.branch,
         })
 
         if (Array.isArray(data) || data.type !== 'file') {

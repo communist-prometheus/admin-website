@@ -1,7 +1,12 @@
 /**
+ * All supported content languages
+ */
+export const LANGUAGES = ['en', 'ru', 'it', 'es'] as const
+
+/**
  * Supported content languages
  */
-export type Language = 'en' | 'ru' | 'it' | 'es'
+export type Language = (typeof LANGUAGES)[number]
 
 /**
  * Frontmatter metadata for blog posts

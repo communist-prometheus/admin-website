@@ -1,13 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { waitForNetworkIdle } from '../helpers/network'
-import { AuthPage } from '../pages/AuthPage'
+import { login } from '../auth/helpers'
 
 test.describe('Content Section Switching', () => {
   test.beforeEach(async ({ page }) => {
-    const authPage = new AuthPage(page)
-    await page.goto('/')
-    await waitForNetworkIdle(page)
-    await authPage.mockLogin()
+    await login(page)
   })
 
   test('should load blog content when navigating to /content/blog', async ({
@@ -44,7 +40,10 @@ test.describe('Content Section Switching', () => {
     page,
   }) => {
     await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
+    await page
+      .locator('[data-testid="content-item"]')
+      .first()
+      .waitFor({ state: 'visible', timeout: 15000 })
 
     const blogItems = await page
       .locator('[data-testid="content-item"]')
@@ -54,12 +53,7 @@ test.describe('Content Section Switching', () => {
     await page.waitForURL('/content/positions')
     await page.waitForLoadState('networkidle')
 
-    const positionsItems = await page
-      .locator('[data-testid="content-item"]')
-      .count()
-
     expect(blogItems).toBeGreaterThan(0)
-    expect(positionsItems).toBeGreaterThanOrEqual(0)
   })
 
   test('should update content list when switching from positions to pages', async ({
@@ -75,23 +69,19 @@ test.describe('Content Section Switching', () => {
     await expect(page.locator('[data-testid="content-list"]')).toBeVisible()
   })
 
-  test('should clear selected item when switching sections', async ({
+  test('clicking item navigates to edit page instead of inline editor', async ({
     page,
   }) => {
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
 
     const firstItem = page.locator('[data-testid="content-item"]').first()
+    await firstItem.waitFor({ state: 'visible', timeout: 30000 })
     await firstItem.click()
+
+    await page.waitForURL(/\/content\/blog\/edit\//, { timeout: 10000 })
     await expect(
       page.locator('[data-testid="markdown-editor"]')
     ).toBeVisible()
-
-    await page.click('a[href="/content/positions"]')
-    await page.waitForURL('/content/positions')
-
-    await expect(
-      page.locator('[data-testid="markdown-editor"]')
-    ).toContainText('Select a file to edit')
   })
 })

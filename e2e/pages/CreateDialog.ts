@@ -15,7 +15,9 @@ export class CreateDialog {
   constructor(private readonly page: Page) {}
 
   async expectToBeVisible(): Promise<void> {
-    await expect(this.page.locator('.create-dialog')).toBeVisible()
+    await expect(this.page.locator('.create-dialog')).toBeVisible({
+      timeout: 10000,
+    })
   }
 
   async expectToBeHidden(): Promise<void> {

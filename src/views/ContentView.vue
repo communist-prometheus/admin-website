@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
 import AuthButton from '@/components/AuthButton.vue'
 import CreateContentDialog from '@/components/CreateContentDialog/CreateContentDialog.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
-import { useContent } from '@/composables/useContent'
+import { useContentCreator } from '@/composables/useContent/useContentCreator'
+import { useContentList } from '@/composables/useContent/useContentList'
 import { useAuthStore } from '@/stores/auth'
-import type { Language } from '@/types/content'
+import type { ContentItem, Language } from '@/types/content'
 import ContentViewHeader from './ContentView/ContentViewHeader.vue'
 import ContentViewMain from './ContentView/ContentViewMain.vue'
 
@@ -15,50 +17,32 @@ const props = defineProps<{
   readonly contentType: 'blog' | 'pages' | 'positions'
 }>()
 
+const router = useRouter()
 const authStore = useAuthStore()
 const isAuthenticated = computed(() => !!authStore.user)
 
 const contentTypeRef = computed(() => props.contentType)
-
-const {
-  items,
-  selectedItem,
-  fileContent,
-  loading,
-  loadingFile,
-  error,
-  loadContent,
-  selectItem,
-  saveContent,
-  createContent,
-} = useContent(contentTypeRef)
+const { items, loadingList, loadContent } = useContentList(contentTypeRef)
+const { createContent } = useContentCreator(() => props.contentType)
+const error = ref<string | null>(null)
 
 const selectedLang = ref<Language>('en')
 const showCreateDialog = ref(false)
-const openCreateDialog = () => {
-  showCreateDialog.value = true
+const openCreateDialog = () => { showCreateDialog.value = true }
+const closeCreateDialog = () => { showCreateDialog.value = false }
+
+const handleSelect = (item: ContentItem) => {
+  router.push({
+    name: 'content-edit',
+    params: { type: props.contentType, slug: item.slug },
+  })
 }
 
-const closeCreateDialog = () => {
-  showCreateDialog.value = false
-}
-const updateFileContent = (value: string) => {
-  fileContent.value = value
-}
 const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
   await createContent(data)
+  await loadContent()
   showCreateDialog.value = false
 }
-
-watch(() => props.contentType, async () => {
-  selectedItem.value = null
-  fileContent.value = ''
-  await loadContent()
-}, { immediate: true })
-
-onMounted(async () => {
-  await loadContent()
-})
 </script>
 
 <template>
@@ -66,7 +50,7 @@ onMounted(async () => {
     <template #header-actions>
       <AuthButton />
     </template>
-    
+
     <ContentViewHeader
       v-model="selectedLang"
       :content-type="contentType"
@@ -75,23 +59,19 @@ onMounted(async () => {
     <ContentViewMain
       :items="items"
       :selected-lang="selectedLang"
-      :selected-path="selectedItem?.path ?? null"
-      :file-content="fileContent"
       :is-authenticated="isAuthenticated"
-      :loading="loading"
-      :loading-file="loadingFile"
-      @select="selectItem"
+      :loading="loadingList"
+      @select="handleSelect"
       @create="openCreateDialog"
-      @save="saveContent"
-      @update:file-content="updateFileContent"
     />
 
-    <LoadingOverlay :show="loading" />
+    <LoadingOverlay :show="loadingList" />
     <ErrorMessage :error="error" />
 
     <CreateContentDialog
       :show="showCreateDialog"
       :content-type="contentType"
+      :lang="selectedLang"
       @close="closeCreateDialog"
       @create="handleCreate"
     />

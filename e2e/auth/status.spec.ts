@@ -1,17 +1,13 @@
 import { expect, test } from '@playwright/test'
-import { waitForApiCall } from '../helpers/network'
+import { login } from '../auth/helpers'
 
-test('should verify mock OAuth is enabled', async ({ page }) => {
-  const responsePromise = page.waitForResponse(
-    response =>
-      response.url().includes('/api/auth/status') && response.status() === 200
-  )
-
+test('should verify mock OAuth authenticates user', async ({ page }) => {
+  await login(page)
   await page.goto('/')
-  await waitForApiCall(page, '/api/auth/status')
 
-  const response = await responsePromise
+  const response = await page.request.get('/api/auth/user')
   const data = await response.json()
-  expect(data.mockOAuth).toBe(true)
-  expect(data.mockUser).toBeDefined()
+  expect(data.authenticated).toBe(true)
+  expect(data.user).toBeDefined()
+  expect(data.user.username).toBe('test-user')
 })

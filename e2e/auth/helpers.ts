@@ -27,5 +27,6 @@ export const login = async (page: Page): Promise<void> => {
 
 export const logout = async (page: Page): Promise<void> => {
   await getUserButton(page).click()
+  await page.locator('.dropdown').waitFor({ state: 'visible', timeout: 5000 })
   await getLogoutButton(page).click()
 }

@@ -18,12 +18,12 @@ import { MockContentService } from './mock-service'
 export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
   const baseConfig = loadGitHubConfig()
 
-  const getContentService = (accessToken?: string) => {
-    const useMock = process.env.NODE_ENV === 'test'
+  const getContentService = (accessToken: string) => {
+    const useMock = process.env.MOCK_OAUTH === 'true'
 
     const githubClient: GitHubClient = useMock
       ? (new MockContentService() as unknown as GitHubClient)
-      : createGitHubClient({ ...baseConfig, token: accessToken || '' })
+      : createGitHubClient({ ...baseConfig, token: accessToken })
 
     return createContentService(githubClient, baseConfig.contentPath)
   }
@@ -37,16 +37,11 @@ export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
     const { type } = request.params
     const user = getSessionUser(request)
 
-    request.log.info(
-      {
-        hasUser: !!user,
-        hasToken: !!user?.accessToken,
-        username: user?.username,
-      },
-      'Loading content'
-    )
+    if (!user?.accessToken) {
+      return reply.send({ items: [] })
+    }
 
-    const contentService = getContentService(user?.accessToken)
+    const contentService = getContentService(user.accessToken)
 
     return Effect.runPromise(contentService.listContent(type))
       .then(items => reply.send({ items }))
@@ -65,7 +60,12 @@ export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
   }>('/api/github/content/:type/:slug/:lang', async (request, reply) => {
     const { type, slug, lang } = request.params
     const user = getSessionUser(request)
-    const contentService = getContentService(user?.accessToken)
+
+    if (!user?.accessToken) {
+      return reply.status(401).send({ error: 'Unauthorized' })
+    }
+
+    const contentService = getContentService(user.accessToken)
 
     return Effect.runPromise(contentService.getContent(type, slug, lang))
       .then(item => reply.send(item))
@@ -84,7 +84,12 @@ export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
   }>('/api/github/content', async (request, reply) => {
     const updateRequest = request.body
     const user = getSessionUser(request)
-    const contentService = getContentService(user?.accessToken)
+
+    if (!user?.accessToken) {
+      return reply.status(401).send({ error: 'Unauthorized' })
+    }
+
+    const contentService = getContentService(user.accessToken)
 
     return Effect.runPromise(contentService.updateContent(updateRequest))
       .then(result => reply.send(result))
@@ -105,7 +110,12 @@ export const registerGitHubContentRoutes = (fastify: FastifyInstance) => {
     const { type, slug, lang } = request.params
     const { sha } = request.body
     const user = getSessionUser(request)
-    const contentService = getContentService(user?.accessToken)
+
+    if (!user?.accessToken) {
+      return reply.status(401).send({ error: 'Unauthorized' })
+    }
+
+    const contentService = getContentService(user.accessToken)
 
     return Effect.runPromise(
       contentService.deleteContent(type, slug, lang, sha)

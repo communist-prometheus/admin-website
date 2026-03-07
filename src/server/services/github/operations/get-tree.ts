@@ -48,6 +48,7 @@ export const getTree = (octokit: Octokit, config: GitHubConfig) => {
           owner: config.owner,
           repo: config.repo,
           path,
+          ref: config.branch,
         })
         return mapResponseToTreeItems(data)
       },

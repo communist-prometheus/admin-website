@@ -18,6 +18,7 @@ export const createFile = (octokit: Octokit, config: GitHubConfig) => {
           path,
           message,
           content: Buffer.from(content).toString('base64'),
+          branch: config.branch,
         })
 
         return data

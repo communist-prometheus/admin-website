@@ -19,6 +19,7 @@ export const updateFile = (octokit: Octokit, config: GitHubConfig) => {
           message,
           content: Buffer.from(content).toString('base64'),
           sha,
+          branch: config.branch,
         })
 
         return data

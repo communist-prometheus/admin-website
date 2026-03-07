@@ -2,11 +2,9 @@ import process from 'node:process'
 import { defineConfig } from '@playwright/test'
 import { projects } from './playwright.config.projects'
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// require('dotenv').config();
+import 'dotenv/config'
+
+process.env.MOCK_OAUTH = 'true'
 
 /**
  * See https://playwright.dev/docs/test-configuration.

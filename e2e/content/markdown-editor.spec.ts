@@ -1,47 +1,35 @@
-import { test } from '@playwright/test'
-import { waitForNetworkIdle } from '../helpers/network'
-import { AuthPage } from '../pages/AuthPage'
-import { ContentPage } from '../pages/ContentPage'
+import { expect, test } from '@playwright/test'
+import { login } from '../auth/helpers'
+import { ContentEditPage } from '../pages/ContentEditPage'
 
 test.describe('Markdown Editor', () => {
   test.beforeEach(async ({ page }) => {
-    const authPage = new AuthPage(page)
-    const contentPage = new ContentPage(page)
-
-    await page.goto('/')
-    await waitForNetworkIdle(page)
-    await authPage.mockLogin()
-    await contentPage.navigate('blog')
+    await login(page)
   })
 
-  test.afterEach(async ({ page }) => {
-    const authPage = new AuthPage(page)
-    await authPage.clearAuth()
-  })
-
-  test('should display markdown editor when content is selected', async ({
+  test('should display editor with textarea when navigating to edit page', async ({
     page,
   }) => {
-    const contentPage = new ContentPage(page)
-    await contentPage.expectToBeVisible()
+    const editPage = new ContentEditPage(page)
+    await editPage.navigate('blog', 'welcome-to-prometheus')
+
+    const textarea = editPage.getEditorBody()
+    await textarea.waitFor({ state: 'visible', timeout: 10000 })
+    await expect(textarea).toBeVisible()
   })
 
-  test('should display save button when content is loaded', async ({
+  test('should display commit message input and save button', async ({
     page,
   }) => {
-    const contentPage = new ContentPage(page)
-    await contentPage.expectToBeVisible()
-  })
+    const editPage = new ContentEditPage(page)
+    await editPage.navigate('blog', 'welcome-to-prometheus')
 
-  test('should allow editing content in textarea', async ({ page }) => {
-    const contentPage = new ContentPage(page)
-    await contentPage.expectToBeVisible()
-  })
+    const textarea = editPage.getEditorBody()
+    await textarea.waitFor({ state: 'visible', timeout: 10000 })
 
-  test('should not display editor when no content is selected', async ({
-    page,
-  }) => {
-    const contentPage = new ContentPage(page)
-    await contentPage.expectToBeVisible()
+    await expect(
+      page.locator('input[placeholder="Commit message"]')
+    ).toBeVisible()
+    await expect(page.getByRole('button', { name: /save/i })).toBeVisible()
   })
 })

@@ -17,30 +17,35 @@ export class ContentPage {
   }
 
   async clickCreateButton(): Promise<void> {
-    await this.page.getByRole('button', { name: /create new/i }).click()
+    await this.page.getByRole('button', { name: /new/i }).click()
     await waitForNetworkIdle(this.page, { idleTime: 300 })
   }
 
   async expectToBeVisible(): Promise<void> {
-    await expect(this.page.locator('.content-view')).toBeVisible({
-      timeout: 15000,
-    })
+    await expect(
+      this.page.locator('[data-testid="content-list"]')
+    ).toBeVisible({ timeout: 15000 })
   }
 
-  async expectItemCount(count: number): Promise<void> {
-    await expect(this.page.locator('.content-item')).toHaveCount(count, {
-      timeout: 15000,
-    })
+  async expectItemCount(minCount: number): Promise<void> {
+    await expect(
+      this.page.locator('[data-testid="content-item"]')
+    ).toHaveCount(minCount, { timeout: 15000 })
   }
 
   async expectItemWithTitle(title: string): Promise<void> {
     await expect(
-      this.page.locator('.content-item').filter({ hasText: title })
+      this.page
+        .locator('[data-testid="content-item"]')
+        .filter({ hasText: title })
+        .first()
     ).toBeVisible({ timeout: 15000 })
   }
 
   async selectItem(title: string): Promise<void> {
-    const item = this.page.locator('.content-item').filter({ hasText: title })
+    const item = this.page
+      .locator('[data-testid="content-item"]')
+      .filter({ hasText: title })
     await item.waitFor({ state: 'visible' })
     await item.click()
     await this.page.waitForTimeout(100)
@@ -52,11 +57,18 @@ export class ContentPage {
   }
 
   async selectLanguage(lang: 'en' | 'ru' | 'it' | 'es'): Promise<void> {
-    const button = this.page.locator(`button[data-lang="${lang}"]`)
+    const langNames: Record<string, string> = {
+      en: 'English',
+      ru: 'Русский',
+      it: 'Italiano',
+      es: 'Español',
+    }
+    const button = this.page.getByRole('button', {
+      name: langNames[lang] ?? lang,
+    })
     await button.waitFor({ state: 'visible', timeout: 10000 })
     await button.click()
-    await expect(button).toHaveClass(/active/, { timeout: 10000 })
-    await this.page.waitForTimeout(300)
+    await this.page.waitForTimeout(500)
     await waitForNetworkIdle(this.page, { idleTime: 1000 })
   }
 }

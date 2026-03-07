@@ -30,4 +30,10 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('../views/ContentView.vue'),
     props: { contentType: 'positions' },
   },
+  {
+    path: '/content/:type/edit/:slug',
+    name: 'content-edit',
+    component: () => import('../views/ContentEditView.vue'),
+    props: true,
+  },
 ]

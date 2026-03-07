@@ -15,6 +15,7 @@ const handleMockAuth = (request: FastifyRequest, reply: FastifyReply) => {
     username: mockUser.login,
     name: mockUser.name,
     avatar: mockUser.avatar_url,
+    accessToken: process.env.GITHUB_TOKEN || process.env.GITHUB_E2E_KEY || '',
   }
   return reply.type('text/html').send(generateCallbackHtml(mockUser))
 }
@@ -47,6 +48,7 @@ export const handleAuth = (
       .send({ error: 'GitHub callback URL not configured' })
   }
 
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${config.clientId}&redirect_uri=${encodeURIComponent(config.callbackUrl)}&scope=read:user`
+  const scopes = encodeURIComponent('repo read:user')
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${config.clientId}&redirect_uri=${encodeURIComponent(config.callbackUrl)}&scope=${scopes}`
   return reply.redirect(githubAuthUrl)
 }

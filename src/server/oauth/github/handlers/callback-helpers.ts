@@ -25,7 +25,11 @@ export const getUserData = (
   }
 ) =>
   config.isMockMode
-    ? Effect.succeed({ ...mockUser, accessToken: 'mock-token' })
+    ? Effect.succeed({
+        ...mockUser,
+        accessToken:
+          process.env.GITHUB_TOKEN || process.env.GITHUB_E2E_KEY || '',
+      })
     : pipe(
         fetchAccessToken(code, config),
         Effect.flatMap(accessToken =>

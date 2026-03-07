@@ -18,6 +18,7 @@ export const deleteFile = (octokit: Octokit, config: GitHubConfig) => {
           path,
           message,
           sha,
+          branch: config.branch,
         })
 
         return data
