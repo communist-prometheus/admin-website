@@ -16,4 +16,5 @@ watch(
 
 <template>
   <RouterView />
+  <SWDebugPanel />
 </template>
