@@ -2,6 +2,7 @@ import { getGitHubConfig } from '@/config/github'
 import type { SWGitConfig } from '@/sw/protocol'
 import { sendSWMessage } from './send-message'
 import { log } from './sw-log'
+import { markSWReady } from './sw-ready'
 
 const MOCK_TOKEN = 'mock-token'
 
@@ -13,23 +14,26 @@ const MOCK_TOKEN = 'mock-token'
 const isMockToken = (token: string): boolean => token === MOCK_TOKEN
 
 /**
- * Send the git config and auth token to the Service Worker.
- * Should be called after the SW is registered and the user is
- * authenticated.
+ * Build SW config from repo settings and token.
  * @param token - GitHub access token
- * @returns Promise that resolves when SW acknowledges
+ * @returns Complete SWGitConfig
+ */
+const buildConfig = (token: string): SWGitConfig => ({
+  ...getGitHubConfig(),
+  token,
+  mock: isMockToken(token),
+})
+
+/**
+ * Send git config and auth token to the Service Worker.
+ * Resolves only after SW finishes repo initialization.
+ * @param token - GitHub access token
  */
 export const initSWWithToken = async (token: string): Promise<void> => {
-  const repoConfig = getGitHubConfig()
-  const config: SWGitConfig = {
-    ...repoConfig,
-    token,
-    mock: isMockToken(token),
-  }
-
   try {
-    await sendSWMessage({ type: 'SW_INIT', config })
-    log('info', 'SW initialized with config')
+    await sendSWMessage({ type: 'SW_INIT', config: buildConfig(token) })
+    markSWReady()
+    log('info', 'SW initialized and ready')
   } catch (e) {
     log('error', 'Failed to init SW', {
       error: e instanceof Error ? e.message : String(e),

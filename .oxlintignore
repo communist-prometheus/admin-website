@@ -1,5 +1,1 @@
-src/server/github/client.ts
-src/server/github/mock-service.ts
-src/server/github/content-service.ts
-src/server/github/routes.ts
 src/types/github-content.ts

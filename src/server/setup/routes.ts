@@ -1,8 +1,6 @@
 /* eslint-disable jsdoc/require-param, jsdoc/require-returns */
 import { Effect } from 'effect'
 import type Fastify from 'fastify'
-import { registerGitHubApiRoutes } from '../api/github/routes'
-import { registerGitHubContentRoutes } from '../github/routes'
 import {
   type GitHubOAuthConfig,
   registerGitHubOAuthRoutes,
@@ -16,7 +14,8 @@ import {
 } from './routes/handlers'
 
 /**
- * Setup routes
+ * Setup routes — only OAuth + SSR remain.
+ * GitHub API is now handled by the Service Worker.
  */
 export const setupRoutes = (
   fastify: ReturnType<typeof Fastify>,
@@ -27,8 +26,6 @@ export const setupRoutes = (
 ) =>
   Effect.sync(() => {
     registerGitHubOAuthRoutes(fastify, oauthConfig)
-    registerGitHubApiRoutes(fastify)
-    registerGitHubContentRoutes(fastify)
 
     if (isProduction) {
       fastify.get('/favicon.ico', handleFavicon(resolveDistPath))

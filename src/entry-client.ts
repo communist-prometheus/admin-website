@@ -5,7 +5,6 @@ import { registerServiceWorker } from './composables/useSWBridge/register-sw'
 
 const { app, router } = createApp(false)
 
-router.isReady().then(() => {
-  app.mount('#app')
-  registerServiceWorker()
-})
+registerServiceWorker().then(() =>
+  router.isReady().then(() => app.mount('#app'))
+)

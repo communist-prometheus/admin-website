@@ -78,7 +78,6 @@ export default [
       'src/router/**/*.ts',
       'scripts/**/*.ts',
       'e2e/**/*.ts',
-      'src/server/github/**/*.ts',
       'src/types/github-content.ts',
     ],
     rules: {

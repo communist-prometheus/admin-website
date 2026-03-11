@@ -1,16 +1,24 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { swReady } from '@/composables/useSWBridge/sw-ready'
 import type { ContentItem, ContentType } from '@/types/content'
 
 const CONTENT_TYPES: readonly ContentType[] = ['blog', 'pages', 'positions']
 
+/**
+ * Fetch content items of a given type from the SW.
+ * Waits for SW readiness before issuing the request.
+ * @param type - Content type to fetch
+ * @returns Array of content items
+ */
 const fetchContentItems = async (
   type: ContentType
 ): Promise<readonly ContentItem[]> => {
   if (typeof globalThis.document === 'undefined') return []
+  await swReady
   const response = await fetch(`/api/github/content/${type}`)
   if (!response.ok) {
-    throw new Error(`Failed to load content: ${response.statusText}`)
+    throw new Error(`Failed to load: ${response.statusText}`)
   }
   const data = await response.json()
   return ((data.items || []) as readonly ContentItem[]).map(
