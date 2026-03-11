@@ -1,18 +1,32 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useSWLogs } from '@/composables/useSWBridge/use-sw-logs'
+import { useSWMetrics } from '@/composables/useSWBridge/use-sw-metrics'
 import { useSWStatus } from '@/composables/useSWBridge/use-sw-status'
 import SWActions from './SWActions.vue'
 import SWLogList from './SWLogList.vue'
+import SWMetrics from './SWMetrics.vue'
 import SWStatusBar from './SWStatusBar.vue'
+import SWTabBar from './SWTabBar.vue'
 
 const visible = ref(false)
+const activeTab = ref<'logs' | 'metrics'>('logs')
 const { entries } = useSWLogs()
-const { status, error, refresh } = useSWStatus()
+const { status, error, refresh: refreshStatus } = useSWStatus()
+const { metrics, refresh: refreshMetrics } = useSWMetrics()
+
+const refreshAll = () => {
+  refreshStatus()
+  refreshMetrics()
+}
+
+const selectTab = (tab: 'logs' | 'metrics') => {
+  activeTab.value = tab
+}
 
 const toggle = () => {
   visible.value = !visible.value
-  if (visible.value) refresh()
+  if (visible.value) refreshAll()
 }
 
 onMounted(() => {
@@ -32,8 +46,16 @@ onMounted(() => {
     data-testid="sw-debug-panel"
   >
     <SWStatusBar :status="status" :error="error" />
-    <SWActions @refresh="refresh" @close="toggle" />
-    <SWLogList :entries="entries" />
+    <SWActions @refresh="refreshAll" @close="toggle" />
+    <SWTabBar
+      :active-tab="activeTab"
+      @select="selectTab"
+    />
+    <SWLogList v-if="activeTab === 'logs'" :entries="entries" />
+    <SWMetrics
+      v-if="activeTab === 'metrics'"
+      :metrics="metrics"
+    />
   </aside>
 </template>
 

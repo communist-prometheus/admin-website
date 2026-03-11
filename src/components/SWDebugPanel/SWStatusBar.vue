@@ -8,13 +8,16 @@ const props = defineProps<{
 }>()
 
 const stateText = computed(
-  () => props.status?.state ?? props.error ?? 'not connected'
+  () => props.status?.state ?? props.error ?? 'offline'
 )
 const stateClass = computed(
   () => props.status?.state ?? (props.error ? 'error' : 'idle')
 )
 const version = computed(
   () => props.status && `v${props.status.version}`
+)
+const sha = computed(() =>
+  props.status?.commitSha?.slice(0, 7)
 )
 </script>
 
@@ -26,6 +29,9 @@ const version = computed(
     </span>
     <span v-if="version" class="sw-version">
       {{ version }}
+    </span>
+    <span v-if="sha" class="sw-sha">
+      {{ sha }}
     </span>
   </header>
 </template>
@@ -77,6 +83,11 @@ const version = computed(
 
 .sw-version {
   color: #666;
+  font-size: 0.7rem;
+}
+
+.sw-sha {
+  color: #80cbc4;
   font-size: 0.7rem;
 }
 </style>
