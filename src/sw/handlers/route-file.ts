@@ -1,0 +1,30 @@
+import { handleFileCreate } from './file-create'
+import { handleFileRead } from './file-read'
+import { handleFileUpdate } from './file-update'
+import { handleTree } from './tree'
+
+/**
+ * Route /api/github/tree and /api/github/file requests.
+ * @param url - Parsed request URL
+ * @param request - Original Request
+ * @returns Response or undefined if not matched
+ */
+export const routeFileRequest = async (
+  url: URL,
+  request: Request
+): Promise<Response | undefined> => {
+  const { pathname } = url
+  const { method } = request
+
+  if (pathname === '/api/github/tree' && method === 'GET') {
+    return handleTree(url)
+  }
+
+  if (pathname !== '/api/github/file') return undefined
+
+  if (method === 'GET') return handleFileRead(url)
+  if (method === 'POST') return handleFileCreate(request)
+  if (method === 'PUT') return handleFileUpdate(request)
+
+  return undefined
+}

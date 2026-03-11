@@ -7,11 +7,6 @@ import type { SWRequest } from './protocol'
 
 type Reply = (data: unknown) => void
 
-const handleNotImpl = (type: string, reply: Reply): void => {
-  log('info', 'git', `${type} not yet implemented`)
-  reply({ ok: false, error: 'Not implemented' })
-}
-
 /**
  * Handle an incoming postMessage from the client.
  * @param msg - The message payload
@@ -24,7 +19,5 @@ export const handleMessage = (msg: SWRequest, reply: Reply): void => {
   else if (msg.type === 'SW_LOG_SUBSCRIBE')
     reply({ entries: getLogEntries() })
   else if (msg.type === 'SW_INVALIDATE') handleInvalidate(reply)
-  else if (msg.type === 'SW_CLONE' || msg.type === 'SW_PULL')
-    handleNotImpl(msg.type, reply)
   else log('warn', 'lifecycle', 'Unknown message type')
 }

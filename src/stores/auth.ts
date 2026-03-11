@@ -1,37 +1,56 @@
 import { Effect, pipe } from 'effect'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import type { Ref } from 'vue'
+import { ref, watch } from 'vue'
 import { checkAuthStatus } from '@/composables/useAuth/check-auth'
 import { getInitialUser } from '@/composables/useAuth/get-initial-user'
+import { initSWWithToken } from '@/composables/useSWBridge/init-sw'
 import type { User } from '@/types/user'
 
 /**
- * Pinia store для управления состоянием аутентификации
- * @returns Реактивное состояние пользователя и методы аутентификации
+ * Send token to Service Worker when user changes.
+ * @param user - Authenticated user or null
+ */
+const syncTokenToSW = (user: User | null): void => {
+  if (user?.accessToken) initSWWithToken(user.accessToken)
+}
+
+/**
+ * Fetch auth status from server and update user ref.
+ * @param user - Reactive user reference
+ */
+const fetchAndSetUser = (user: Ref<User | null>): void => {
+  pipe(
+    checkAuthStatus(),
+    Effect.map(d => (d.authenticated && d.user ? d.user : null)),
+    Effect.tap(u =>
+      Effect.sync(() => {
+        if (u) user.value = u
+      })
+    ),
+    Effect.runPromise
+  )
+}
+
+/**
+ * Pinia store for authentication state management.
+ * @returns Reactive user state and auth methods
  */
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(getInitialUser())
   const loading = ref(false)
   const error = ref<string | null>(null)
 
+  watch(user, syncTokenToSW, { immediate: true })
+
   const checkAuth = () => {
-    if (typeof window === 'undefined' || user.value) return
-    pipe(
-      checkAuthStatus(),
-      Effect.map(data =>
-        data.authenticated && data.user ? data.user : null
-      ),
-      Effect.tap(userData =>
-        Effect.sync(() => {
-          if (userData) user.value = userData
-        })
-      ),
-      Effect.runPromise
-    )
+    if (typeof globalThis.document === 'undefined') return
+    if (user.value) return
+    fetchAndSetUser(user)
   }
 
-  const setUser = (newUser: User | null) => {
-    user.value = newUser
+  const setUser = (u: User | null) => {
+    user.value = u
   }
 
   return { user, loading, error, checkAuth, setUser }
