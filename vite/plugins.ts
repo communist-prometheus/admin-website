@@ -1,7 +1,5 @@
 import vue from '@vitejs/plugin-vue'
 import Components from 'unplugin-vue-components/vite'
-import vueDevTools from 'vite-plugin-vue-devtools'
-import { swPlugin } from './sw-plugin'
 
 /**
  * Create Vite plugin array.
@@ -9,8 +7,6 @@ import { swPlugin } from './sw-plugin'
  */
 export const createPlugins = () => [
   vue(),
-  vueDevTools(),
-  swPlugin(),
   Components({
     dts: 'src/components.d.ts',
     directives: false,

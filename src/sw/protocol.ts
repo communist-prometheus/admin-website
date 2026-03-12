@@ -15,6 +15,8 @@ export type {
   LogLevel,
 } from './log-types'
 export type {
+  SWFetchRequest,
+  SWFetchResponse,
   SWGitConfig,
   SWMetricsResponse,
   SWProgressEvent,

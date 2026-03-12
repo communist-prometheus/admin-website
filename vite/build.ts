@@ -6,10 +6,7 @@ export const buildConfig: BuildOptions = {
   rolldownOptions: {
     input: './src/entry-client.ts',
     output: {
-      entryFileNames: chunk => {
-        if (chunk.name === 'sw') return 'sw.js'
-        return 'assets/[name]-[hash].js'
-      },
+      entryFileNames: 'assets/[name]-[hash].js',
       assetFileNames: assetInfo => {
         if (assetInfo.names.includes('style.css')) return 'assets/style.css'
         return 'assets/[name]-[hash][extname]'
@@ -19,9 +16,7 @@ export const buildConfig: BuildOptions = {
           if (id.includes('vue') || id.includes('vue-router')) {
             return 'vue-vendor'
           }
-          if (id.includes('effect')) {
-            return 'effect-vendor'
-          }
+          if (id.includes('marked')) return 'marked'
           return 'vendor'
         }
       },

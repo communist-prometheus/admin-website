@@ -30,13 +30,19 @@ const buildConfig = (token: string): SWGitConfig => ({
  * @param token - GitHub access token
  */
 export const initSWWithToken = async (token: string): Promise<void> => {
+  if (typeof globalThis.document === 'undefined') {
+    markSWReady()
+    return
+  }
+
   try {
     await sendSWMessage({ type: 'SW_INIT', config: buildConfig(token) })
-    markSWReady()
     log('info', 'SW initialized and ready')
   } catch (e) {
     log('error', 'Failed to init SW', {
       error: e instanceof Error ? e.message : String(e),
     })
+  } finally {
+    markSWReady()
   }
 }

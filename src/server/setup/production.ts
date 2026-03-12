@@ -32,6 +32,8 @@ export const setupProductionAssets = (
             await fastify.register(fastifyStatic, {
               root: resolveDistPath('client/assets'),
               prefix: '/assets/',
+              maxAge: '365d',
+              immutable: true,
             }),
           catch: () => new Error('Failed to register static assets'),
         }),

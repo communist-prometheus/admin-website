@@ -1,4 +1,5 @@
 import { buildStatus } from './build-status'
+import { handleFetchMessage } from './handle-fetch-message'
 import { handleInit } from './handle-init'
 import { handleInvalidate } from './handle-invalidate'
 import { getLogEntries, log } from './logging/logger'
@@ -14,6 +15,7 @@ type Reply = (data: unknown) => void
  */
 export const handleMessage = (msg: SWRequest, reply: Reply): void => {
   if (msg.type === 'SW_INIT') handleInit(msg.config, reply)
+  else if (msg.type === 'SW_FETCH') handleFetchMessage(msg, reply)
   else if (msg.type === 'SW_STATUS') reply(buildStatus())
   else if (msg.type === 'SW_METRICS') reply(getMetrics())
   else if (msg.type === 'SW_LOG_SUBSCRIBE')

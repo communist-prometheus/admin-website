@@ -15,7 +15,7 @@ const handleMockAuth = (request: FastifyRequest, reply: FastifyReply) => {
     username: mockUser.login,
     name: mockUser.name,
     avatar: mockUser.avatar_url,
-    accessToken: process.env.GITHUB_TOKEN || process.env.GITHUB_E2E_KEY || '',
+    accessToken: 'mock-token',
   }
   return reply.type('text/html').send(generateCallbackHtml(mockUser))
 }

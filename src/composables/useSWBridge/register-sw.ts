@@ -11,30 +11,36 @@ const isDev = import.meta.env.DEV
 const getSWUrl = (): string => (isDev ? '/src/sw/main.ts' : '/sw.js')
 
 /**
- * Register the Service Worker and set up lifecycle listeners.
+ * Check if ServiceWorker API is available.
+ * @returns True if SW can be registered
+ */
+const isSWAvailable = (): boolean => {
+  if (typeof navigator === 'undefined') return false
+  return 'serviceWorker' in navigator
+}
+
+/**
+ * Register the Service Worker and wait for activation.
  * No-op during SSR or when SW is not supported.
  * @returns The ServiceWorkerRegistration, or undefined
  */
 export const registerServiceWorker = async (): Promise<
   ServiceWorkerRegistration | undefined
 > => {
-  if (typeof navigator === 'undefined') return undefined
-  if (!('serviceWorker' in navigator)) {
+  if (!isSWAvailable()) {
     swLog('warn', 'ServiceWorker not supported')
     return undefined
   }
 
-  const url = getSWUrl()
-
   try {
-    const reg = await navigator.serviceWorker.register(url, {
-      type: 'module',
-    })
-    swLog('info', 'SW registered', {
-      scope: reg.scope,
+    const url = getSWUrl()
+    const reg = await navigator.serviceWorker.register(
       url,
-    })
+      isDev ? { type: 'module' } : {}
+    )
+    swLog('info', 'SW registered', { scope: reg.scope, url })
     listenForUpdates(reg)
+    await navigator.serviceWorker.ready
     return reg
   } catch (e) {
     swLog('error', 'SW registration failed', { error: e })

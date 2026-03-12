@@ -4,6 +4,16 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { type RenderPageConfig, renderPage } from '../../ssr/page-renderer'
 
 /**
+ * Handle Service Worker script
+ */
+export const handleSW =
+  (resolveDistPath: (path: string) => string) =>
+  async (_request: FastifyRequest, reply: FastifyReply) =>
+    reply
+      .type('application/javascript')
+      .sendFile('sw.js', resolveDistPath('client'))
+
+/**
  * Handle favicon requests
  */
 export const handleFavicon =

@@ -1,31 +1,38 @@
 import type { SWRequest } from '@/sw/protocol'
+import { getActiveWorker } from './get-active-worker'
+import { postWithTimeout } from './post-with-timeout'
+
+const MAX_RETRIES = 4
 
 /**
- * Get the active Service Worker, waiting if needed.
- * @returns Active ServiceWorker instance
+ * Queued tasks for sequential processing.
+ * Serializing messages avoids concurrent MessageChannel
+ * issues in WebKit where ports can be dropped under load.
  */
-const getActiveWorker = async (): Promise<ServiceWorker> => {
-  const sw = navigator.serviceWorker
-  if (!sw) throw new Error('ServiceWorker not supported')
-  const reg = await sw.ready
-  const worker = reg.active ?? sw.controller
-  if (!worker) throw new Error('No active Service Worker')
-  return worker
-}
+let queue: Promise<unknown> = Promise.resolve()
 
 /**
- * Send a message to the active Service Worker and wait for a reply.
- * Uses a MessageChannel for request/response communication.
+ * Send a message to the SW with automatic retry and queuing.
+ * Messages are serialized to avoid WebKit concurrency bugs.
  * @param message - The message to send
  * @returns Promise resolving to the SW's response
  */
-export const sendSWMessage = async <T>(message: SWRequest): Promise<T> => {
-  const worker = await getActiveWorker()
-  return new Promise(resolve => {
-    const channel = new MessageChannel()
-    channel.port1.onmessage = event => {
-      resolve(event.data as T)
+export const sendSWMessage = <T>(message: SWRequest): Promise<T> => {
+  const task = queue.then(async () => {
+    let lastError: Error | undefined
+
+    for (let i = 0; i <= MAX_RETRIES; i++) {
+      try {
+        const worker = await getActiveWorker()
+        return await postWithTimeout<T>(worker, message)
+      } catch (e) {
+        lastError = e instanceof Error ? e : new Error(String(e))
+      }
     }
-    worker.postMessage(message, [channel.port2])
+
+    throw lastError
   })
+
+  queue = task.catch(() => {})
+  return task
 }

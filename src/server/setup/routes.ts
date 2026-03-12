@@ -11,6 +11,7 @@ import {
   handleRobotsTxt,
   handleSitemap,
   handleSsr,
+  handleSW,
 } from './routes/handlers'
 
 /**
@@ -28,6 +29,7 @@ export const setupRoutes = (
     registerGitHubOAuthRoutes(fastify, oauthConfig)
 
     if (isProduction) {
+      fastify.get('/sw.js', handleSW(resolveDistPath))
       fastify.get('/favicon.ico', handleFavicon(resolveDistPath))
       fastify.get('/robots.txt', handleRobotsTxt(resolveDistPath))
       fastify.get('/sitemap.xml', handleSitemap(resolveDistPath))

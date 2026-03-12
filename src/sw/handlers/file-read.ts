@@ -12,8 +12,11 @@ export const handleFileRead = async (url: URL): Promise<Response> => {
   const path = url.searchParams.get('path')
   if (!path) return errorResponse('Path is required', 400)
 
-  const content = await readRepoFile(path)
-  const sha = await computeBlobSha(content)
-
-  return jsonResponse({ path, content, sha })
+  try {
+    const content = await readRepoFile(path)
+    const sha = await computeBlobSha(content)
+    return jsonResponse({ path, content, sha })
+  } catch {
+    return errorResponse(`File not found: ${path}`, 404)
+  }
 }

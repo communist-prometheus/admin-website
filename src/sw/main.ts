@@ -1,7 +1,13 @@
 /**
  * Service Worker entry point.
- * Phase 1: Passthrough mode with logging/observability.
+ * Polyfill Buffer for CJS libs (isomorphic-git deps) that expect
+ * Node.js Buffer global. Must be set before any git operations.
  */
+// biome-ignore lint/style/useNodejsImportProtocol: browser polyfill, not Node.js
+import { Buffer } from 'buffer'
+
+Object.defineProperty(globalThis, 'Buffer', { value: Buffer })
+
 import { registerFetchListener } from './fetch-listener'
 import { registerLifecycle } from './lifecycle'
 import { initLogChannel, log } from './logging/logger'

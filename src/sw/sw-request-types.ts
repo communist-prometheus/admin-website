@@ -9,6 +9,22 @@ export interface SWGitConfig {
   readonly mock?: boolean
 }
 
+/** Proxied fetch request for browsers without SW controller */
+export interface SWFetchRequest {
+  readonly type: 'SW_FETCH'
+  readonly url: string
+  readonly method?: string
+  readonly headers?: Record<string, string>
+  readonly body?: string
+}
+
+/** Response from SW_FETCH proxy */
+export interface SWFetchResponse {
+  readonly status: number
+  readonly body: string
+  readonly headers: Record<string, string>
+}
+
 /** Messages from client to Service Worker */
 export type SWRequest =
   | { readonly type: 'SW_INIT'; readonly config: SWGitConfig }
@@ -16,6 +32,7 @@ export type SWRequest =
   | { readonly type: 'SW_INVALIDATE' }
   | { readonly type: 'SW_METRICS' }
   | { readonly type: 'SW_LOG_SUBSCRIBE' }
+  | SWFetchRequest
 
 /** Service Worker readiness state */
 export type SWState = 'idle' | 'cloning' | 'ready' | 'syncing' | 'error'

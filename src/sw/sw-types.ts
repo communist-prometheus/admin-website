@@ -1,4 +1,6 @@
 export type {
+  SWFetchRequest,
+  SWFetchResponse,
   SWGitConfig,
   SWRequest,
   SWState,
