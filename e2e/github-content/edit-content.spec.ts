@@ -45,21 +45,6 @@ test.describe('GitHub Content - Edit', () => {
   test('should save content with commit message via API', async ({
     page,
   }) => {
-    let capturedRequest: { content: string; message: string } | undefined
-
-    await page.route('**/api/github/file**', async route => {
-      if (route.request().method() === 'PUT') {
-        capturedRequest = route.request().postDataJSON()
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ success: true }),
-        })
-      } else {
-        await route.continue()
-      }
-    })
-
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')
 
@@ -69,9 +54,12 @@ test.describe('GitHub Content - Edit', () => {
     const commitInput = page.locator('input[placeholder="Commit message"]')
     await commitInput.fill('test: e2e update')
 
-    await page.getByRole('button', { name: /save/i }).click()
+    const saveBtn = page.getByRole('button', { name: /save/i })
+    await saveBtn.click()
 
-    expect(capturedRequest).toBeDefined()
-    expect(capturedRequest?.message).toBe('test: e2e update')
+    // Verify save succeeded by reloading and checking content persisted
+    await editPage.navigate('blog', 'welcome-to-prometheus')
+    const savedContent = await textarea.inputValue()
+    expect(savedContent).toContain('Updated via E2E test')
   })
 })

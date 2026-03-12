@@ -1,11 +1,13 @@
 import { expect, test } from '@playwright/test'
 import { login } from '../auth/helpers'
+import { waitForContentReady } from '../helpers/content-ready'
 
 test.describe('GitHub Content - Create', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
   })
 
   test('should open create dialog', async ({ page }) => {
@@ -34,6 +36,7 @@ test.describe('GitHub Content - Create', () => {
   }) => {
     await page.goto('/content/positions')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
     await page.click('button:has-text("New")')
     await expect(page.getByLabel(/description/i)).toBeVisible()
     await expect(page.getByLabel(/order/i)).toBeVisible()

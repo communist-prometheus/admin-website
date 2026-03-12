@@ -36,7 +36,10 @@ const route = useRoute()
   text-decoration: none;
   font-size: clamp(0.875rem, 2vw, 1rem);
   font-weight: 500;
-  padding: 0.5rem 0;
+  padding: 0.5rem 0.25rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
 }

@@ -1,6 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { waitForApiCall } from '../helpers/network'
 
 /**
  * Page object for the content edit page
@@ -13,15 +12,13 @@ export class ContentEditPage {
     type: 'blog' | 'pages' | 'positions',
     slug: string
   ): Promise<void> {
-    const fileResponse = waitForApiCall(this.page, '/api/github/file', {
-      method: 'GET',
-      timeout: 20000,
-    })
     await this.page.goto(`/content/${type}/edit/${slug}`, {
       waitUntil: 'domcontentloaded',
     })
-    await fileResponse
-    await expect(this.getEditorBody()).toBeVisible({ timeout: 10000 })
+    await expect(this.getEditorBody()).toBeVisible({ timeout: 20000 })
+    await expect(this.getEditorBody()).not.toHaveValue('', {
+      timeout: 20000,
+    })
   }
 
   async selectLanguage(lang: 'en' | 'ru' | 'it' | 'es'): Promise<void> {

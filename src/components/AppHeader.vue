@@ -29,6 +29,9 @@ import AppNav from './AppNav.vue'
   color: var(--color-heading);
   text-decoration: none;
   white-space: nowrap;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .logo:hover {

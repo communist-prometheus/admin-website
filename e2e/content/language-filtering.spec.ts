@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { waitForContentReady } from '../helpers/content-ready'
 import { waitForNetworkIdle } from '../helpers/network'
 import { AuthPage } from '../pages/AuthPage'
 
@@ -9,7 +10,7 @@ test.describe('Language Filtering', () => {
     await waitForNetworkIdle(page)
     await authPage.mockLogin()
     await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
   })
 
   test('should display all language filter buttons', async ({ page }) => {
@@ -83,7 +84,7 @@ test.describe('Language Filtering', () => {
 
     await page.click('a[href="/content/positions"]')
     await page.waitForURL('/content/positions')
-    await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     await expect(page.getByRole('button', { name: 'Русский' })).toHaveClass(
       /active/

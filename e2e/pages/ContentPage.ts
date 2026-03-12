@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
+import { waitForContentReady } from '../helpers/content-ready'
 import { waitForNetworkIdle } from '../helpers/network'
 
 export class ContentPage {
@@ -9,6 +10,7 @@ export class ContentPage {
     await this.page.goto(`/content/${contentType}`, {
       waitUntil: 'domcontentloaded',
     })
+    await waitForContentReady(this.page)
     await this.page.waitForSelector('[data-testid="content-list"]', {
       state: 'visible',
       timeout: 20000,

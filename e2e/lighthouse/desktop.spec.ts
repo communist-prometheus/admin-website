@@ -8,10 +8,25 @@ test('should achieve 100 score on desktop', async ({ page }) => {
     page,
     port: 9222,
     thresholds: {
-      performance: 97,
+      performance: 100,
       accessibility: 100,
       'best-practices': 100,
       seo: 100,
+    },
+    config: {
+      extends: 'lighthouse:default',
+      settings: {
+        formFactor: 'desktop',
+        screenEmulation: { disabled: true },
+        throttling: {
+          cpuSlowdownMultiplier: 1,
+          rttMs: 40,
+          throughputKbps: 10240,
+          requestLatencyMs: 0,
+          downloadThroughputKbps: 0,
+          uploadThroughputKbps: 0,
+        },
+      },
     },
   })
 })

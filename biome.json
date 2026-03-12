@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!!**/dist"],
+    "includes": ["**", "!!**/dist", "!!cors-proxy"],
     "ignoreUnknown": false
   },
   "formatter": {
@@ -86,6 +86,7 @@
     {
       "includes": [
         "vite.config.ts",
+        "vite.sw.config.ts",
         "vitest.config.ts",
         "playwright.config.ts",
         "eslint.config.js",

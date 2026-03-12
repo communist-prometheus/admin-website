@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { login } from '../auth/helpers'
+import { waitForContentReady } from '../helpers/content-ready'
 import { ContentEditPage } from '../pages/ContentEditPage'
 import { ContentPage } from '../pages/ContentPage'
 
@@ -12,13 +13,9 @@ test.describe('Content Editing', () => {
     page,
   }) => {
     await page.goto('/content/blog')
-    await page.waitForSelector('[data-testid="content-list"]', {
-      state: 'visible',
-      timeout: 20000,
-    })
+    await waitForContentReady(page)
 
     const refreshBtn = page.locator('[data-testid="refresh-button"]')
-    await expect(refreshBtn).toBeVisible()
     await refreshBtn.click()
 
     await page.waitForSelector('[data-testid="content-list"]', {

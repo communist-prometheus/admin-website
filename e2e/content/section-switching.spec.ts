@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { login } from '../auth/helpers'
+import { waitForContentReady } from '../helpers/content-ready'
 
 test.describe('Content Section Switching', () => {
   test.beforeEach(async ({ page }) => {
@@ -11,6 +12,7 @@ test.describe('Content Section Switching', () => {
   }) => {
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     await expect(page.locator('h1')).toContainText('Blog')
     await expect(page.locator('[data-testid="content-list"]')).toBeVisible()
@@ -21,6 +23,7 @@ test.describe('Content Section Switching', () => {
   }) => {
     await page.goto('/content/positions')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     await expect(page.locator('h1')).toContainText('Positions')
     await expect(page.locator('[data-testid="content-list"]')).toBeVisible()
@@ -31,6 +34,7 @@ test.describe('Content Section Switching', () => {
   }) => {
     await page.goto('/content/pages')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     await expect(page.locator('h1')).toContainText('Pages')
     await expect(page.locator('[data-testid="content-list"]')).toBeVisible()
@@ -52,6 +56,7 @@ test.describe('Content Section Switching', () => {
     await page.click('a[href="/content/positions"]')
     await page.waitForURL('/content/positions')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     expect(blogItems).toBeGreaterThan(0)
   })
@@ -61,10 +66,12 @@ test.describe('Content Section Switching', () => {
   }) => {
     await page.goto('/content/positions')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     await page.click('a[href="/content/pages"]')
     await page.waitForURL('/content/pages')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     await expect(page.locator('[data-testid="content-list"]')).toBeVisible()
   })
@@ -74,6 +81,7 @@ test.describe('Content Section Switching', () => {
   }) => {
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     const firstItem = page.locator('[data-testid="content-item"]').first()
     await firstItem.waitFor({ state: 'visible', timeout: 30000 })

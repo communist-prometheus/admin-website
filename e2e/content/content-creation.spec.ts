@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { login } from '../auth/helpers'
+import { waitForContentReady } from '../helpers/content-ready'
 
 test.describe('Content Creation', () => {
   test.beforeEach(async ({ page }) => {
@@ -9,6 +10,7 @@ test.describe('Content Creation', () => {
   test('should show create button on blog page', async ({ page }) => {
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     await expect(page.getByRole('button', { name: /new/i })).toBeVisible()
   })
@@ -16,6 +18,7 @@ test.describe('Content Creation', () => {
   test('should show create button on positions page', async ({ page }) => {
     await page.goto('/content/positions')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     await expect(page.getByRole('button', { name: /new/i })).toBeVisible()
   })
@@ -23,6 +26,7 @@ test.describe('Content Creation', () => {
   test('should show create button on pages page', async ({ page }) => {
     await page.goto('/content/pages')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     await expect(page.getByRole('button', { name: /new/i })).toBeVisible()
   })
@@ -32,6 +36,7 @@ test.describe('Content Creation', () => {
   }) => {
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
 
     await page.click('button:has-text("New")')
 
@@ -43,6 +48,7 @@ test.describe('Content Creation', () => {
   }) => {
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
     await page.click('button:has-text("New")')
 
     await expect(page.getByLabel(/slug/i)).toBeVisible()
@@ -56,6 +62,7 @@ test.describe('Content Creation', () => {
   }) => {
     await page.goto('/content/positions')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
     await page.click('button:has-text("New")')
 
     await expect(page.getByLabel(/slug/i)).toBeVisible()
@@ -69,6 +76,7 @@ test.describe('Content Creation', () => {
   }) => {
     await page.goto('/content/pages')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
     await page.click('button:has-text("New")')
 
     await expect(page.getByLabel(/slug/i)).toBeVisible()
@@ -80,6 +88,7 @@ test.describe('Content Creation', () => {
   }) => {
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
     await page.click('button:has-text("New")')
 
     await page.click('button:has-text("Create")')
@@ -104,6 +113,7 @@ test.describe('Content Creation', () => {
 
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
     await page.click('button:has-text("New")')
     await expect(page.locator('.create-dialog')).toBeVisible()
 
@@ -134,6 +144,7 @@ test.describe('Content Creation', () => {
 
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
     await page.click('button:has-text("New")')
 
     await page.fill('#slug', 'test-post-2')
