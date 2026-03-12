@@ -1,23 +1,18 @@
-import { Effect, pipe } from 'effect'
+import { swFetch } from '@/composables/useSWBridge/sw-fetch'
 import type { UpdateFileParams } from './types'
 
 /**
- * Update file in GitHub repository
+ * Update file in GitHub repository.
  * @param params - File update parameters
- * @returns Effect with update result
+ * @returns Update result
  */
-export const updateFile = (params: UpdateFileParams) =>
-  pipe(
-    Effect.tryPromise({
-      try: () =>
-        fetch('/api/github/file', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(params),
-        }),
-      catch: () => new Error(`Failed to update file: ${params.path}`),
-    }),
-    Effect.flatMap(res =>
-      Effect.tryPromise(() => res.json() as Promise<{ success: boolean }>)
-    )
-  )
+export const updateFile = async (
+  params: UpdateFileParams
+): Promise<{ readonly success: boolean }> => {
+  const res = await swFetch('/api/github/file', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  })
+  return res.json() as Promise<{ readonly success: boolean }>
+}

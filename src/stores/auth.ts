@@ -1,4 +1,3 @@
-import { Effect, pipe } from 'effect'
 import { defineStore } from 'pinia'
 import type { Ref } from 'vue'
 import { ref, watch } from 'vue'
@@ -19,17 +18,9 @@ const syncTokenToSW = (user: User | null): void => {
  * Fetch auth status from server and update user ref.
  * @param user - Reactive user reference
  */
-const fetchAndSetUser = (user: Ref<User | null>): void => {
-  pipe(
-    checkAuthStatus(),
-    Effect.map(d => (d.authenticated && d.user ? d.user : null)),
-    Effect.tap(u =>
-      Effect.sync(() => {
-        if (u) user.value = u
-      })
-    ),
-    Effect.runPromise
-  )
+const fetchAndSetUser = async (user: Ref<User | null>): Promise<void> => {
+  const data = await checkAuthStatus()
+  if (data.authenticated && data.user) user.value = data.user
 }
 
 /**
