@@ -1,32 +1,32 @@
-import { getGitHubConfig } from '@/config/github'
 import type { SWGitConfig } from '@/sw/protocol'
-import { sendSWMessage } from './send-message'
+import { buildSWConfig } from './build-sw-config'
+import { initViaMessage } from './init-via-message'
 import { log } from './sw-log'
 import { markSWReady } from './sw-ready'
 
-const MOCK_TOKEN = 'mock-token'
-
 /**
- * Detect mock mode from the token value (set by mock OAuth).
- * @param token - Token to check
- * @returns True if token is the mock sentinel value
+ * Try fetch init (fast path, needs controller).
+ * @param config - Git config to send
+ * @returns True if SW confirmed init via fetch
  */
-const isMockToken = (token: string): boolean => token === MOCK_TOKEN
+const tryFetchInit = async (config: SWGitConfig): Promise<boolean> => {
+  try {
+    const res = await fetch('/api/sw/init', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(config),
+    })
+    const d: { ok: boolean } = await res.json()
+    return d.ok
+  } catch {
+    return false
+  }
+}
 
 /**
- * Build SW config from repo settings and token.
- * @param token - GitHub access token
- * @returns Complete SWGitConfig
- */
-const buildConfig = (token: string): SWGitConfig => ({
-  ...getGitHubConfig(),
-  token,
-  mock: isMockToken(token),
-})
-
-/**
- * Send git config and auth token to the Service Worker.
- * Resolves only after SW finishes repo initialization.
+ * Send git config to the SW.
+ * Prefers fetch (intercepted by SW), falls back to
+ * MessageChannel when fetch fails (WebKit activation race).
  * @param token - GitHub access token
  */
 export const initSWWithToken = async (token: string): Promise<void> => {
@@ -34,12 +34,13 @@ export const initSWWithToken = async (token: string): Promise<void> => {
     markSWReady()
     return
   }
-
   try {
-    await sendSWMessage({ type: 'SW_INIT', config: buildConfig(token) })
-    log('info', 'SW initialized and ready')
+    const config = buildSWConfig(token)
+    const hasCtr = !!navigator.serviceWorker.controller
+    const ok = hasCtr && (await tryFetchInit(config))
+    if (!ok) await initViaMessage(config)
   } catch (e) {
-    log('error', 'Failed to init SW', {
+    log('error', 'SW init failed', {
       error: e instanceof Error ? e.message : String(e),
     })
   } finally {

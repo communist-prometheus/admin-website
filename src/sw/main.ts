@@ -1,13 +1,9 @@
 /**
  * Service Worker entry point.
- * Polyfill Buffer for CJS libs (isomorphic-git deps) that expect
- * Node.js Buffer global. Must be set before any git operations.
+ * Buffer polyfill and isomorphic-git are lazy-loaded
+ * via load-git.ts to enable code-splitting. This keeps
+ * the main SW chunk small for fast installation.
  */
-// biome-ignore lint/style/useNodejsImportProtocol: browser polyfill, not Node.js
-import { Buffer } from 'buffer'
-
-Object.defineProperty(globalThis, 'Buffer', { value: Buffer })
-
 import { registerFetchListener } from './fetch-listener'
 import { registerLifecycle } from './lifecycle'
 import { initLogChannel, log } from './logging/logger'

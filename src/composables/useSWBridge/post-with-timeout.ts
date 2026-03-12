@@ -1,11 +1,10 @@
 import type { SWRequest } from '@/sw/protocol'
 
-const ATTEMPT_TIMEOUT = 10_000
+const TIMEOUT = 15_000
 
 /**
- * Send a single message attempt to a ServiceWorker.
- * Uses a MessageChannel and resolves when the SW replies.
- * Rejects after ATTEMPT_TIMEOUT ms to prevent hangs.
+ * Send a message to a ServiceWorker via MessageChannel.
+ * Used for init (when no controller) and data fallback.
  * @param worker - Target ServiceWorker
  * @param message - Request payload
  * @returns Response from the SW
@@ -19,7 +18,7 @@ export const postWithTimeout = <T>(
     const timer = globalThis.setTimeout(() => {
       channel.port1.close()
       reject(new Error(`SW message timeout: ${message.type}`))
-    }, ATTEMPT_TIMEOUT)
+    }, TIMEOUT)
 
     channel.port1.onmessage = event => {
       clearTimeout(timer as unknown as number)

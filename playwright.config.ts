@@ -24,8 +24,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Limit workers to avoid overwhelming WebKit SW MessageChannel */
-  workers: process.env.CI ? 1 : 5,
+  workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -54,7 +53,7 @@ export default defineConfig({
      * Use the production server with mock OAuth enabled for e2e tests
      * Always restart server to ensure MOCK_OAUTH is applied
      */
-    command: 'bun run preview:test',
+    command: 'bun run build:e2e && bun run preview:test',
     port: 3000,
     reuseExistingServer: true,
   },

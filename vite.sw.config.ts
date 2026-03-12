@@ -1,7 +1,14 @@
 import { resolve } from 'node:path'
+import process from 'node:process'
 import type { OutputBundle } from 'rolldown'
 import { defineConfig } from 'vite'
 import { replaceSWVersion } from './vite/sw-version-replace'
+
+/**
+ * When MOCK_OAUTH is set, the SW build tree-shakes
+ * isomorphic-git + buffer (~200KB) via dead code elimination.
+ */
+const isMockMode = !!process.env.MOCK_OAUTH
 
 /**
  * CJS libs (text-encoding polyfill) check `window` or `global`
@@ -33,6 +40,9 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  define: {
+    __MOCK_MODE__: JSON.stringify(isMockMode),
+  },
   build: {
     outDir: 'dist/client',
     emptyOutDir: false,
@@ -41,7 +51,6 @@ export default defineConfig({
       output: {
         format: 'es',
         entryFileNames: 'sw.js',
-        chunkFileNames: 'assets/sw-[name]-[hash].js',
       },
     },
   },

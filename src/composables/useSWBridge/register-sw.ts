@@ -4,8 +4,6 @@ const isDev = import.meta.env.DEV
 
 /**
  * Resolve the Service Worker URL based on environment.
- * Dev: Vite serves the TS source directly.
- * Prod: pre-built sw.js in dist.
  * @returns SW script URL
  */
 const getSWUrl = (): string => (isDev ? '/src/sw/main.ts' : '/sw.js')
@@ -20,8 +18,10 @@ const isSWAvailable = (): boolean => {
 }
 
 /**
- * Register the Service Worker and wait for activation.
- * No-op during SSR or when SW is not supported.
+ * Register the Service Worker.
+ * In production, the SW is pre-registered from the HTML template
+ * for a head start. This call returns the existing registration.
+ * Does NOT wait for activation — content loading gates on swReady.
  * @returns The ServiceWorkerRegistration, or undefined
  */
 export const registerServiceWorker = async (): Promise<
@@ -38,28 +38,10 @@ export const registerServiceWorker = async (): Promise<
       url,
       isDev ? { type: 'module' } : {}
     )
-    swLog('info', 'SW registered', { scope: reg.scope, url })
-    listenForUpdates(reg)
-    await navigator.serviceWorker.ready
+    swLog('info', 'SW registered', { scope: reg.scope })
     return reg
   } catch (e) {
     swLog('error', 'SW registration failed', { error: e })
     return undefined
   }
-}
-
-/**
- * Listen for SW update events and log them.
- * @param reg - The SW registration
- */
-const listenForUpdates = (reg: ServiceWorkerRegistration): void => {
-  reg.addEventListener('updatefound', () => {
-    const newWorker = reg.installing
-    if (!newWorker) return
-
-    swLog('info', 'SW update found')
-    newWorker.addEventListener('statechange', () => {
-      swLog('info', `SW state: ${newWorker.state}`)
-    })
-  })
 }

@@ -1,51 +1,36 @@
 import type { SWFetchResponse } from '@/sw/protocol'
-import { sendSWMessage } from './send-message'
+import { getActiveWorker } from './get-active-worker'
+import { postWithTimeout } from './post-with-timeout'
 import { swReady } from './sw-ready'
 
 /**
- * Check if the Service Worker is the active controller
- * (can intercept fetch events).
- * @returns True if SW controls this page
- */
-const hasSWController = (): boolean => !!navigator.serviceWorker?.controller
-
-/**
- * Fetch via MessageChannel proxy when SW can't intercept.
- * @param url - Absolute URL string
- * @param init - Optional fetch init
+ * Fetch via MessageChannel (bypasses fetch event).
+ * @param url - URL string
+ * @param init - Fetch init options
  * @returns Reconstructed Response
  */
-const fetchViaMessage = async (
+const viaMessage = async (
   url: string,
   init?: RequestInit
 ): Promise<Response> => {
-  const headers = init?.headers
-    ? Object.fromEntries(new Headers(init.headers))
-    : undefined
-  const body =
-    init?.body !== undefined && init?.body !== null
-      ? String(init.body)
-      : undefined
-
-  const result = await sendSWMessage<SWFetchResponse>({
+  const w = await getActiveWorker()
+  const d = await postWithTimeout<SWFetchResponse>(w, {
     type: 'SW_FETCH',
     url,
-    method: init?.method ?? 'GET',
-    headers,
-    body,
+    method: init?.method,
+    headers: init?.headers as Record<string, string>,
+    body: init?.body as string | undefined,
   })
-
-  return new Response(result.body, {
-    status: result.status,
-    headers: result.headers,
+  return new Response(d.body, {
+    status: d.status,
+    headers: d.headers,
   })
 }
 
 /**
- * Fetch wrapper that routes through the Service Worker.
- * Waits for SW initialization before any request.
- * Uses native fetch when SW controls the page (intercepts fetches).
- * Falls back to MessageChannel proxy otherwise (Firefox/WebKit).
+ * Fetch through the Service Worker.
+ * Uses native fetch when controller is set (fast path).
+ * Falls back to MessageChannel for browsers without controller.
  * @param input - URL string or URL object
  * @param init - Optional fetch init options
  * @returns Response from the Service Worker
@@ -55,13 +40,6 @@ export const swFetch = async (
   init?: RequestInit
 ): Promise<Response> => {
   await swReady
-
-  if (hasSWController()) return fetch(input, init)
-
-  const url =
-    typeof input === 'string'
-      ? new URL(input, globalThis.location.origin).href
-      : input.href
-
-  return fetchViaMessage(url, init)
+  if (navigator.serviceWorker.controller) return fetch(input, init)
+  return viaMessage(String(input), init)
 }

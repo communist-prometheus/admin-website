@@ -1,36 +1,55 @@
 import { log } from '../logging/logger'
 import type { SWGitConfig } from '../protocol'
 import { workerState } from '../state'
-import { checkRepoExists } from './check-repo-exists'
-import { cloneRepo } from './clone-repo'
+import { fs, REPO_DIR } from './fs'
 import { initMockRepo } from './init-mock-repo'
+import { markReady } from './mark-ready'
+
+/**
+ * Check if mock repo files exist via FS readdir.
+ * @returns true if REPO_DIR has entries
+ */
+const checkMockReady = async (): Promise<boolean> => {
+  try {
+    const entries = await fs.promises.readdir(REPO_DIR)
+    return entries.length > 0
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Resolve whether the repo already exists.
+ * @param config - SW git configuration
+ * @returns true if repo is present
+ */
+const repoExists = async (config: SWGitConfig): Promise<boolean> => {
+  if (__MOCK_MODE__ || config.mock) return checkMockReady()
+  const { checkRepoExists } = await import('./check-repo-exists')
+  return checkRepoExists()
+}
 
 /**
  * Check if repo exists and initialize if needed.
- * Skips re-init if repo already exists (both modes).
  * @param config - SW git configuration
  */
 export const checkRepoAndSync = async (
   config: SWGitConfig
 ): Promise<void> => {
-  const exists = await checkRepoExists()
-  if (exists) {
+  if (await repoExists(config)) {
     log('info', 'git', 'Repo already exists, reusing')
-    workerState.state = 'ready'
-    workerState.lastSync = Date.now()
+    markReady()
     return
   }
 
   workerState.state = 'cloning'
 
-  if (config.mock) {
-    const sha = await initMockRepo()
-    workerState.commitSha = sha
+  if (__MOCK_MODE__ || config.mock) {
+    await initMockRepo()
   } else {
+    const { cloneRepo } = await import('./clone-repo')
     await cloneRepo(config)
   }
 
-  workerState.state = 'ready'
-  workerState.lastSync = Date.now()
-  log('info', 'lifecycle', 'SW state → ready')
+  markReady('SW state → ready')
 }

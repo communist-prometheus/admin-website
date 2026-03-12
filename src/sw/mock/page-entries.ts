@@ -1,14 +1,5 @@
-/** Mock page file entries for E2E tests */
-export const pageEntries = [
-  {
-    path: 'src/content/pages/manifest.en.md',
-    content: `---
-title: Our Manifest
-lang: en
----
+import { aboutContactEntries } from './pages/about-contact'
+import { manifestEntries } from './pages/manifest'
 
-# Our Manifest
-
-Our principles and values.`,
-  },
-] as const
+/** All mock page entries combined */
+export const pageEntries = [...manifestEntries, ...aboutContactEntries]

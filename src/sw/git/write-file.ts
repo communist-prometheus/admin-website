@@ -1,7 +1,8 @@
-import git from 'isomorphic-git'
 import { log } from '../logging/logger'
 import { recordOp } from '../logging/metrics'
+import { workerState } from '../state'
 import { fs, REPO_DIR } from './fs'
+import { loadGit } from './load-git'
 
 /**
  * Ensure parent directories exist for a given file path.
@@ -22,6 +23,7 @@ const ensureDir = async (filepath: string): Promise<void> => {
 
 /**
  * Write a file to the working tree and stage it.
+ * Skips git staging in mock mode (no .git directory).
  * @param filepath - Path relative to repo root
  * @param content - File content as string
  */
@@ -35,7 +37,10 @@ export const writeAndStage = async (
     mode: 0o644,
     encoding: 'utf8',
   })
-  await git.add({ fs, dir: REPO_DIR, filepath })
+  if (!__MOCK_MODE__ && !workerState.config?.mock) {
+    const git = await loadGit()
+    await git.add({ fs, dir: REPO_DIR, filepath })
+  }
   recordOp('writeFile', Date.now() - start)
   log('debug', 'fs', `wrote + staged ${filepath}`)
 }

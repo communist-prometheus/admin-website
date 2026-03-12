@@ -10,6 +10,7 @@
     "build": "bun run validate && bun run build:client && bun run build:sw && bun run build:server",
     "build:client": "vite build --outDir dist/client --ssrManifest",
     "build:sw": "vite build --config vite.sw.config.ts",
+    "build:e2e": "bun run build:client && cross-env MOCK_OAUTH=true bun run build:sw && bun run build:server",
     "build:server": "vite build --outDir dist/server --ssr src/entry-server.ts",
     "preview": "cross-env NODE_ENV=production bun src/server.ts",
     "preview:test": "cross-env NODE_ENV=production MOCK_OAUTH=true bun src/server.ts",

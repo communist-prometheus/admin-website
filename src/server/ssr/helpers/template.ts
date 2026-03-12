@@ -60,6 +60,11 @@ export const processTemplate = (
     result = result.replace('<head>', `<head>\n  ${headInsert}`)
   }
 
+  const swPreregister =
+    `<script>if('serviceWorker' in navigator)` +
+    `navigator.serviceWorker.register('/sw.js')</script>`
+  result = result.replace('</head>', `${swPreregister}\n</head>`)
+
   const scriptTag = `<script type="module" src="/${entryClient.file}"></script>`
   result = result.replace(
     '<script type="module" src="/src/entry-client.ts"></script>',

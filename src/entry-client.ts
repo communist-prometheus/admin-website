@@ -6,10 +6,10 @@ import { registerServiceWorker } from './composables/useSWBridge/register-sw'
 const { app, router } = createApp(false)
 
 /**
- * Register SW before mounting to ensure it is active
- * when the auth watcher fires initSWWithToken.
- * SW registration is fast (~50ms) and doesn't hurt FCP.
+ * Start SW registration in parallel with app mount.
+ * The SW is pre-registered from the HTML template, so
+ * this call returns the existing registration quickly.
+ * Content loading awaits swReady (resolved by initSWWithToken).
  */
-registerServiceWorker().then(() =>
-  router.isReady().then(() => app.mount('#app'))
-)
+registerServiceWorker()
+router.isReady().then(() => app.mount('#app'))

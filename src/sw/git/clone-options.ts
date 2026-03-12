@@ -1,14 +1,16 @@
-import http from 'isomorphic-git/http/web'
+import type { HttpClient } from 'isomorphic-git'
+
 import { log } from '../logging/logger'
 import type { SWGitConfig } from '../protocol'
 import { fs, REPO_DIR } from './fs'
 
 /**
- * Build isomorphic-git clone options from SW config.
- * @param config - SW git configuration
- * @returns Options object for git.clone()
+ * Build isomorphic-git clone options from config.
+ * @param config - Repository configuration
+ * @param http - HTTP client for isomorphic-git
+ * @returns clone options object
  */
-export const buildCloneOptions = (config: SWGitConfig) => ({
+export const buildCloneOptions = (config: SWGitConfig, http: HttpClient) => ({
   fs,
   http,
   dir: REPO_DIR,

@@ -1,8 +1,8 @@
-import git from 'isomorphic-git'
 import { log } from '../logging/logger'
 import { recordOp } from '../logging/metrics'
 import type { SWGitConfig } from '../protocol'
 import { buildCloneOptions } from './clone-options'
+import { loadGit } from './load-git'
 
 /**
  * Clone the GitHub repository using isomorphic-git.
@@ -15,7 +15,9 @@ export const cloneRepo = async (config: SWGitConfig): Promise<void> => {
     owner: config.owner,
     repo: config.repo,
   })
-  await git.clone(buildCloneOptions(config))
+  const git = await loadGit()
+  const { default: http } = await import('isomorphic-git/http/web')
+  await git.clone(buildCloneOptions(config, http))
   recordOp('clone', Date.now() - start)
   log('info', 'git', 'Clone complete')
 }

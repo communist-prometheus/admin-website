@@ -1,16 +1,8 @@
-/** Mock position file entries for E2E tests */
+import { digitalSovereigntyEntries } from './positions/digital-sovereignty'
+import { governanceEducationEntries } from './positions/governance-education'
+
+/** All mock position entries combined */
 export const positionEntries = [
-  {
-    path: 'src/content/positions/digital-sovereignty.en.md',
-    content: `---
-title: Digital Sovereignty
-description: Technology must serve the people, not corporations.
-order: 1
-lang: en
----
-
-# Digital Sovereignty
-
-We advocate for open-source infrastructure.`,
-  },
-] as const
+  ...digitalSovereigntyEntries,
+  ...governanceEducationEntries,
+]

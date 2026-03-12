@@ -4,7 +4,13 @@ import type { SWGitConfig } from './protocol'
 import { workerState } from './state'
 
 /**
+ * Cached init promise — prevents concurrent repo initialization.
+ */
+let pending: Promise<void> | undefined
+
+/**
  * Handle SW_INIT: store config, initialize git repo, reply when ready.
+ * Deduplicates concurrent init requests via a shared promise.
  * @param config - GitHub config with token
  * @param reply - Response callback (called after repo init)
  */
@@ -15,7 +21,13 @@ export const handleInit = (
   workerState.config = config
   log('info', 'auth', 'Config received', { owner: config.owner })
 
-  checkRepoAndSync(config)
+  if (!pending) {
+    pending = checkRepoAndSync(config).finally(() => {
+      pending = undefined
+    })
+  }
+
+  pending
     .then(() => reply({ ok: true, state: 'ready' }))
     .catch(err => {
       const msg = err instanceof Error ? err.message : String(err)

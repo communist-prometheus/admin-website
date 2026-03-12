@@ -1,14 +1,15 @@
-import git from 'isomorphic-git'
-import http from 'isomorphic-git/http/web'
 import { log } from '../logging/logger'
 import type { SWGitConfig } from '../protocol'
 import { fs, REPO_DIR } from './fs'
+import { loadGit } from './load-git'
 
 /**
  * Push local commits to the remote GitHub repository.
  * @param config - SW git configuration with token
  */
 export const pushToRemote = async (config: SWGitConfig): Promise<void> => {
+  const git = await loadGit()
+  const { default: http } = await import('isomorphic-git/http/web')
   await git.push({
     fs,
     http,
