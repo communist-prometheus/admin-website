@@ -3,8 +3,12 @@ import { workerState } from '../state'
 
 /**
  * Resolve the actual file path for a content item.
- * Supports both flat (slug.lang.md) and nested (slug/slug.lang.md)
- * directory layouts.
+ *
+ * Content layout by type:
+ * - blog:      nested — `blog/{slug}/{slug}.{lang}.md` (+ optional `assets/`)
+ * - pages:     flat   — `pages/{slug}.{lang}.md`
+ * - positions: flat   — `positions/{slug}.{lang}.md`
+ *
  * @param type - Content type (blog, pages, positions)
  * @param slug - Content slug
  * @param lang - Language code
