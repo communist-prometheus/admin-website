@@ -20,8 +20,14 @@ export const createAllAssets = (
   computed(() => {
     const dels = state.pendingDeletes.value
     const cover = state.coverPath.value
+    const urls = state.resolvedUrls.value
     const c = state.committed.value.map(i =>
-      committedToDisplay(i, dels.has(i.path), isCoverMatch(i.name, cover))
+      committedToDisplay(
+        i,
+        dels.has(i.path),
+        isCoverMatch(i.name, cover),
+        urls.get(`./assets/${i.name}`) ?? ''
+      )
     )
     const p = state.pendingAdds.value.map(a =>
       pendingToDisplay(a, slug, isCoverMatch(a.name, cover))

@@ -12,7 +12,7 @@ defineEmits<{
     <h3>Assets</h3>
     <UploadButton
       label="Upload asset"
-      accept="image/*"
+      accept="image/*,video/*"
       :test-id="ASSET_UPLOAD_ID"
       @upload="$emit('upload', $event)"
     />

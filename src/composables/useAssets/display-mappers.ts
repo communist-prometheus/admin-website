@@ -18,17 +18,19 @@ export const isCoverMatch = (
  * @param item - Committed asset
  * @param deleted - Whether pending deletion
  * @param cover - Whether this is the cover
+ * @param resolvedUrl - Resolved blob URL for preview
  * @returns Display item
  */
 export const committedToDisplay = (
   item: AssetItem,
   deleted: boolean,
-  cover: boolean
+  cover: boolean,
+  resolvedUrl: string
 ): AssetDisplay => ({
   name: item.name,
   path: item.path,
   mimeType: item.mimeType,
-  thumbnailUrl: '',
+  thumbnailUrl: resolvedUrl,
   status: deleted ? 'pending-delete' : 'committed',
   isCover: cover,
 })

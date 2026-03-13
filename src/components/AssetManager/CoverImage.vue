@@ -37,12 +37,13 @@ defineEmits<{
   border-radius: var(--radius-md);
   overflow: hidden;
   margin: 0;
+  max-height: 280px;
 }
 
 img {
   width: 100%;
+  height: 280px;
   display: block;
-  max-height: 200px;
   object-fit: cover;
 }
 
@@ -55,5 +56,12 @@ img {
 </style>
 
 <style>
-.cover-image:hover .cover-overlay { opacity: 100%; }
+.cover-image .cover-overlay {
+  opacity: 0%;
+  transition: opacity 0.2s;
+}
+
+.cover-image:hover .cover-overlay {
+  opacity: 100%;
+}
 </style>

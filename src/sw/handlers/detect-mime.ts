@@ -7,6 +7,10 @@ const MIME_MAP: Record<string, string> = {
   webp: 'image/webp',
   avif: 'image/avif',
   ico: 'image/x-icon',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  ogg: 'video/ogg',
+  mov: 'video/quicktime',
 }
 
 const FALLBACK = 'application/octet-stream'

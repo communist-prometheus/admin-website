@@ -24,7 +24,7 @@ defineEmits<{
     </button>
     <UploadButton
       :label="'Upload new cover'"
-      accept="image/*"
+      accept="image/*,video/*"
       :test-id="COVER_UPLOAD_ID"
       @upload="$emit('upload', $event)"
     />
@@ -40,8 +40,6 @@ defineEmits<{
   justify-content: center;
   gap: 1rem;
   background: rgb(0 0 0 / 50%);
-  opacity: 0%;
-  transition: opacity 0.2s;
 }
 
 .overlay-btn {

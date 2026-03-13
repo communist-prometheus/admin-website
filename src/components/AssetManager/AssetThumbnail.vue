@@ -17,6 +17,8 @@ defineEmits<{
 }>()
 
 const isImage = () => props.mimeType.startsWith('image/')
+const isVideo = () => props.mimeType.startsWith('video/')
+const isVisual = () => isImage() || isVideo()
 </script>
 
 <template>
@@ -33,11 +35,18 @@ const isImage = () => props.mimeType.startsWith('image/')
       alt=""
       :aria-label="name"
     />
+    <video
+      v-else-if="isVideo() && thumbnailUrl"
+      :src="thumbnailUrl"
+      :aria-label="name"
+      muted
+      preload="metadata"
+    />
     <span class="name">{{ name }}</span>
     <span v-if="isCover" class="badge">cover</span>
     <AssetActions
       v-if="status !== 'pending-delete'"
-      :show-cover="isImage() && !isCover"
+      :show-cover="isVisual() && !isCover"
       @set-cover="$emit('set-cover')"
       @delete="$emit('delete')"
     />
@@ -56,14 +65,16 @@ const isImage = () => props.mimeType.startsWith('image/')
   opacity: 40%;
 }
 
-img {
+img,
+video {
   width: 100%;
-  max-height: 80px;
+  height: 80px;
   object-fit: contain;
   border-radius: 4px;
+  display: block;
 }
 
-span {
+.name {
   display: block;
   font-size: 0.75rem;
   overflow: hidden;
