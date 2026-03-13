@@ -46,11 +46,13 @@ export default defineConfig({
   build: {
     outDir: 'dist/client',
     emptyOutDir: false,
+    modulePreload: false,
     rolldownOptions: {
       input: { sw: resolve(__dirname, 'src/sw/main.ts') },
       output: {
-        format: 'es',
+        format: 'iife',
         entryFileNames: 'sw.js',
+        inlineDynamicImports: true,
       },
     },
   },
