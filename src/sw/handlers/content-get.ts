@@ -1,8 +1,8 @@
 import { parseFrontmatter } from '../frontmatter'
 import { computeBlobSha } from '../git/blob-sha'
 import { readRepoFile } from '../git/read-file'
-import { workerState } from '../state'
 import { errorResponse, jsonResponse } from './json-response'
+import { resolveContentPath } from './resolve-content-path'
 
 /**
  * Handle GET /api/github/content/:type/:slug/:lang
@@ -16,15 +16,13 @@ export const handleContentGet = async (
   slug: string,
   lang: string
 ): Promise<Response> => {
-  const base = workerState.config?.contentPath ?? 'src/content'
-  const path = `${base}/${type}/${slug}.${lang}.md`
-
-  try {
-    const raw = await readRepoFile(path)
-    const { frontmatter, body } = parseFrontmatter(raw)
-    const sha = await computeBlobSha(raw)
-    return jsonResponse({ type, slug, path, frontmatter, body, sha })
-  } catch {
-    return errorResponse(`File not found: ${path}`, 404)
+  const path = await resolveContentPath(type, slug, lang)
+  if (!path) {
+    return errorResponse(`File not found: ${slug}.${lang}.md`, 404)
   }
+
+  const raw = await readRepoFile(path)
+  const { frontmatter, body } = parseFrontmatter(raw)
+  const sha = await computeBlobSha(raw)
+  return jsonResponse({ type, slug, path, frontmatter, body, sha })
 }

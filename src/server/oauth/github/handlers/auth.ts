@@ -8,14 +8,25 @@ const mockUser = {
   avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4',
 }
 
+/**
+ * Resolve token for mock OAuth.
+ * Uses real GitHub token when available (dev:token mode),
+ * falls back to 'mock-token' for E2E tests.
+ */
+const getMockToken = (): string =>
+  process.env.GITHUB_TOKEN || process.env.GITHUB_E2E_KEY || 'mock-token'
+
 const handleMockAuth = (request: FastifyRequest, reply: FastifyReply) => {
-  request.log.info('🧪 Mock OAuth: Sending mock user via postMessage')
+  const token = getMockToken()
+  request.log.info(
+    `🧪 Mock OAuth: token=${token === 'mock-token' ? 'mock' : 'real'}`
+  )
   // @ts-expect-error - fastify-session typing issue
   request.session.github_user = {
     username: mockUser.login,
     name: mockUser.name,
     avatar: mockUser.avatar_url,
-    accessToken: 'mock-token',
+    accessToken: token,
   }
   return reply.type('text/html').send(generateCallbackHtml(mockUser))
 }

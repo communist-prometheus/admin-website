@@ -1,7 +1,7 @@
 import { commitAndPush } from '../git/commit-and-push'
 import { deleteAndUnstage } from '../git/delete-git-file'
-import { workerState } from '../state'
 import { errorResponse, jsonResponse } from './json-response'
+import { resolveContentPath } from './resolve-content-path'
 
 /**
  * Handle DELETE /api/github/content/:type/:slug/:lang
@@ -20,12 +20,13 @@ export const handleContentDelete = async (
   const { sha } = await request.json()
   if (!sha) return errorResponse('SHA is required', 400)
 
-  const base = workerState.config?.contentPath ?? 'src/content'
-  const path = `${base}/${type}/${slug}.${lang}.md`
-  const message = `Delete ${type}/${slug}.${lang}.md`
+  const path = await resolveContentPath(type, slug, lang)
+  if (!path) {
+    return errorResponse(`File not found: ${slug}.${lang}.md`, 404)
+  }
 
   await deleteAndUnstage(path)
-  await commitAndPush(message)
+  await commitAndPush(`Delete ${type}/${slug}.${lang}.md`)
 
   return jsonResponse({ success: true, path })
 }

@@ -5,6 +5,9 @@ import { createPlugins } from './vite/plugins'
 
 export default defineConfig({
   plugins: createPlugins(),
+  define: {
+    __MOCK_MODE__: JSON.stringify(false),
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

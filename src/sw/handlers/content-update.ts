@@ -3,6 +3,7 @@ import { commitAndPush } from '../git/commit-and-push'
 import { writeAndStage } from '../git/write-file'
 import { workerState } from '../state'
 import { errorResponse, jsonResponse } from './json-response'
+import { resolveContentPath } from './resolve-content-path'
 
 /**
  * Handle POST /api/github/content — create or update content.
@@ -20,7 +21,8 @@ export const handleContentUpdate = async (
   }
 
   const base = workerState.config?.contentPath ?? 'src/content'
-  const path = `${base}/${type}/${slug}.${lang}.md`
+  const existing = await resolveContentPath(type, slug, lang)
+  const path = existing ?? `${base}/${type}/${slug}.${lang}.md`
   const content = serializeFrontmatter(frontmatter, mdBody)
 
   await writeAndStage(path, content)
