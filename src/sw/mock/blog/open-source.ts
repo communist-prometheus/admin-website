@@ -3,7 +3,7 @@ import type { MockEntry } from '../all-entries'
 /** Mock entries for the "open-source-strategy" blog post */
 export const openSourceEntries: readonly MockEntry[] = [
   {
-    path: 'src/content/blog/open-source-strategy.en.md',
+    path: 'src/content/blog/open-source-strategy/open-source-strategy.en.md',
     content: `---
 title: Our Open Source Strategy
 description: How we leverage open-source tools for transparent governance.
@@ -17,7 +17,7 @@ lang: en
 Transparency begins with the tools we use.`,
   },
   {
-    path: 'src/content/blog/open-source-strategy.ru.md',
+    path: 'src/content/blog/open-source-strategy/open-source-strategy.ru.md',
     content: `---
 title: Наша стратегия открытого кода
 description: Как мы используем инструменты с открытым кодом.

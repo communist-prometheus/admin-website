@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { login } from '../auth/helpers'
 import { waitForContentReady } from '../helpers/content-ready'
+import { ContentEditPage } from '../pages/ContentEditPage'
+import { ContentPage } from '../pages/ContentPage'
 
 test.describe('Content Loading', () => {
   test.beforeEach(async ({ page }) => {
@@ -89,6 +91,39 @@ test.describe('Content Loading', () => {
     expect(joined).toContain('Добро пожаловать в Prometheus')
     expect(joined).toContain('стратегия открытого кода')
     expect(joined).toContain('Новости сообщества')
+  })
+
+  test('should load article body when clicking a blog item', async ({
+    page,
+  }) => {
+    const contentPage = new ContentPage(page)
+    await contentPage.navigate('blog')
+    await contentPage.selectItem('Welcome to Prometheus')
+
+    await page.waitForURL(/\/content\/blog\/edit\/welcome-to-prometheus/)
+    const body = page.locator('[data-testid="editor-body"]')
+    await expect(body).toBeVisible({ timeout: 20000 })
+    await expect(body).not.toHaveValue('', { timeout: 20000 })
+
+    const content = await body.inputValue()
+    expect(content).toContain('Welcome to Prometheus')
+    expect(content).toContain('Prometheus')
+  })
+
+  test('should load article body for each blog entry', async ({ page }) => {
+    const entries = [
+      { title: 'Open Source Strategy', slug: 'open-source-strategy' },
+      { title: 'Community Update', slug: 'community-update' },
+      { title: 'Education Platform', slug: 'education-platform' },
+    ]
+
+    for (const entry of entries) {
+      const editPage = new ContentEditPage(page)
+      await editPage.navigate('blog', entry.slug)
+
+      const content = await editPage.getEditorBody().inputValue()
+      expect(content).toContain(entry.title)
+    }
   })
 
   test('should not show loading overlay after content loads', async ({

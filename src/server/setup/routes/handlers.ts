@@ -10,6 +10,7 @@ export const handleSW =
   (resolveDistPath: (path: string) => string) =>
   async (_request: FastifyRequest, reply: FastifyReply) =>
     reply
+      .header('cache-control', 'no-cache, no-store, must-revalidate')
       .type('application/javascript')
       .sendFile('sw.js', resolveDistPath('client'))
 
