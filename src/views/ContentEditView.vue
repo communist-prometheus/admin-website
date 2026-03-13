@@ -1,66 +1,61 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
+import AssetPanel from '@/components/AssetManager/AssetPanel.vue'
+import CoverImage from '@/components/AssetManager/CoverImage.vue'
 import AuthButton from '@/components/AuthButton.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
-import { useContentList } from '@/composables/useContent/useContentList'
-import { useMultiLangEditor } from '@/composables/useContent/useMultiLangEditor'
-import { useUnsavedGuard } from '@/composables/useUnsavedGuard'
-import { useAuthStore } from '@/stores/auth'
-import type { ContentType, Language } from '@/types/content'
-import { getAvailableLanguages } from '@/utils/available-languages'
 import ContentEditHeader from './ContentEditView/ContentEditHeader.vue'
 import ContentEditMain from './ContentEditView/ContentEditMain.vue'
-import { createInitEditor } from './ContentEditView/useEditPageInit'
+import { initEditPage } from './ContentEditView/init-edit-page'
+import { useEditPage } from './ContentEditView/useEditPage'
 
 const props = defineProps<{
   readonly type: string
   readonly slug: string
 }>()
 
-const isAuthenticated = computed(() => !!useAuthStore().user)
-const contentType = computed(() => props.type as ContentType)
-const { items, loadingList, loadContent } = useContentList(contentType)
-const editor = useMultiLangEditor()
-
-const availableLanguages = computed(() =>
-  getAvailableLanguages(items.value, props.slug),
-)
-const buildPath = (lang: Language) =>
-  `src/content/${props.type}/${props.slug}.${lang}.md`
-
-const handleSave = async (message: string) => {
-  await editor.saveCurrentLanguage(buildPath(editor.currentLang.value), message)
-  await loadContent()
+const p = useEditPage(props.type, props.slug)
+const { handleSave } = initEditPage(p)
+const updateBody = (v: string) => { p.editor.bodyContent.value = v }
+const updateFm = (d: Record<string, unknown>) => {
+  p.editor.frontmatterData.value = d
 }
-const updateBody = (v: string) => { editor.bodyContent.value = v }
-const updateFm = (d: Record<string, unknown>) => { editor.frontmatterData.value = d }
-
-const initEditor = createInitEditor({
-  ...editor, loadContent, availableLanguages, buildPath,
-})
-
-useUnsavedGuard(editor.isDirty)
-onMounted(() => { if (isAuthenticated.value) initEditor() })
-watch(isAuthenticated, (auth) => { if (auth) initEditor() })
 </script>
 
 <template>
   <AppLayout>
     <template #header-actions><AuthButton /></template>
     <ContentEditHeader
-      :slug="slug" :content-type="contentType"
-      :current-lang="editor.currentLang.value"
-      :available-languages="availableLanguages"
+      :slug="slug" :content-type="p.contentType.value"
+      :current-lang="p.editor.currentLang.value"
+      :available-languages="p.langs.value"
+    />
+    <CoverImage
+      v-if="p.isBlog.value && !p.editor.loadingFile.value"
+      :cover-url="p.assets.coverUrl.value"
+      @delete-cover="p.ah.onRemoveCover"
+      @upload-cover="p.ah.onUploadCover"
     />
     <ContentEditMain
-      :body-content="editor.bodyContent.value"
-      :frontmatter-data="editor.frontmatterData.value"
-      :content-type="contentType" :loading-file="editor.loadingFile.value"
-      @update:body-content="updateBody" @update:frontmatter="updateFm" @save="handleSave"
+      :body-content="p.editor.bodyContent.value"
+      :frontmatter-data="p.editor.frontmatterData.value"
+      :content-type="p.contentType.value"
+      :loading-file="p.editor.loadingFile.value"
+      :asset-url-map="p.isBlog.value ? p.assets.urlMap.value : undefined"
+      @update:body-content="updateBody"
+      @update:frontmatter="updateFm"
+      @save="handleSave"
+      @paste:image="p.ah.onPasteImage"
     />
-    <LoadingOverlay :show="loadingList" />
+    <AssetPanel
+      v-if="p.isBlog.value && !p.editor.loadingFile.value"
+      :assets="p.assets.allAssets.value"
+      @set-cover="p.ah.onSetCover"
+      @delete-asset="p.ah.onDeleteAsset"
+      @upload-asset="p.ah.onUploadAsset"
+    />
+    <LoadingOverlay :show="p.list.loadingList.value" />
     <ErrorMessage :error="null" />
   </AppLayout>
 </template>

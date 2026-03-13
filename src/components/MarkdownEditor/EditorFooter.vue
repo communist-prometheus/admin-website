@@ -24,8 +24,14 @@ const handleSave = () => {
       v-model="commitMessage"
       type="text"
       placeholder="Commit message"
+      data-testid="commit-message"
     />
-    <button type="button" :disabled="disabled || !commitMessage.trim()" @click="handleSave">
+    <button
+      type="button"
+      data-testid="save-button"
+      :disabled="disabled || !commitMessage.trim()"
+      @click="handleSave"
+    >
       Save
     </button>
   </div>

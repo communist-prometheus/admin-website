@@ -20,7 +20,6 @@ const blogFields: readonly FieldDefinition[] = [
   },
   { key: 'category', label: 'Category', type: 'text', required: true },
   { key: 'pubDate', label: 'Publication Date', type: 'date' },
-  { key: 'image', label: 'Image URL', type: 'text' },
 ]
 
 const positionsFields: readonly FieldDefinition[] = [

@@ -1,5 +1,6 @@
 import { log } from '../logging/logger'
 import { errorResponse } from './json-response'
+import { routeAssetRequest } from './route-asset'
 import { routeContentRequest } from './route-content'
 import { routeFileRequest } from './route-file'
 
@@ -15,6 +16,9 @@ export const routeRequest = async (request: Request): Promise<Response> => {
   try {
     const fileResp = await routeFileRequest(url, request)
     if (fileResp) return fileResp
+
+    const assetResp = await routeAssetRequest(url, request)
+    if (assetResp) return assetResp
 
     const contentResp = await routeContentRequest(url, request)
     if (contentResp) return contentResp

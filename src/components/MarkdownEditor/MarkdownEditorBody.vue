@@ -1,34 +1,69 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
+import { extractImageFile } from './handle-paste-image'
+import { insertAtCursor } from './insert-at-cursor'
 import MarkdownPreview from './MarkdownPreview.vue'
 import PreviewToggle from './PreviewToggle.vue'
 
-defineProps<{
+const props = defineProps<{
   readonly modelValue: string
+  readonly assetUrlMap?: ReadonlyMap<string, string>
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'paste:image': [file: File]
 }>()
 
 const previewing = ref(false)
-const togglePreview = () => { previewing.value = !previewing.value }
+const textareaRef = ref<HTMLTextAreaElement>()
+
+const togglePreview = () => {
+  previewing.value = !previewing.value
+}
+
+const emitValue = (v: string) => {
+  emit('update:modelValue', v)
+}
 
 const handleInput = (event: Event) => {
-  const target = event.target as HTMLTextAreaElement
-  emit('update:modelValue', target.value)
+  if (!(event.target instanceof HTMLTextAreaElement)) return
+  emitValue(event.target.value)
+}
+
+const handlePaste = (event: ClipboardEvent) => {
+  const file = extractImageFile(event)
+  if (!file) return
+  event.preventDefault()
+  const pos = textareaRef.value?.selectionStart ?? 0
+  const tag = `\n![${file.name}](./assets/${file.name})\n`
+  emitValue(insertAtCursor(props.modelValue, pos, tag))
+  emit('paste:image', file)
+  nextTick(() => {
+    const newPos = pos + tag.length
+    textareaRef.value?.setSelectionRange(newPos, newPos)
+  })
 }
 </script>
 
 <template>
   <section class="editor-body">
-    <PreviewToggle :previewing="previewing" @toggle="togglePreview" />
-    <MarkdownPreview v-if="previewing" :content="modelValue" />
+    <PreviewToggle
+      :previewing="previewing"
+      @toggle="togglePreview"
+    />
+    <MarkdownPreview
+      v-if="previewing"
+      :content="modelValue"
+      :asset-url-map="assetUrlMap"
+    />
     <textarea
       v-else
+      ref="textareaRef"
       data-testid="editor-body"
       :value="modelValue"
       @input="handleInput"
+      @paste="handlePaste"
     />
   </section>
 </template>

@@ -2,6 +2,7 @@ import type { ComputedRef } from 'vue'
 import { useGitHubApi } from '../useGitHubApi'
 import { createIsDirty } from './useMultiLangEditor/dirty-check'
 import { createLoadLanguageVersion } from './useMultiLangEditor/load-language'
+import { createMarkSaved } from './useMultiLangEditor/mark-saved'
 import { createSaveCurrentLanguage } from './useMultiLangEditor/save-language'
 import { createEditorState, createReset } from './useMultiLangEditor/state'
 import { createSwitchLanguage } from './useMultiLangEditor/switch-language'
@@ -37,6 +38,7 @@ export const useMultiLangEditor = () => {
       fileSha,
       originalCache
     ),
+    markSaved: createMarkSaved(cache, originalCache, state, fileSha),
     reset: createReset(cache, originalCache, state, fileSha),
   }
 }

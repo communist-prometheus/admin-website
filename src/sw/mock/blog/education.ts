@@ -1,4 +1,5 @@
 import type { MockEntry } from '../all-entries'
+import { educationAssets } from './education-assets'
 
 /** Mock entry for the "education-platform" blog post */
 export const educationEntries: readonly MockEntry[] = [
@@ -16,4 +17,5 @@ lang: en
 
 Knowledge is the foundation of informed participation.`,
   },
+  ...educationAssets,
 ]

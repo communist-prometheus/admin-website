@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import { marked } from 'marked'
+import { Marked } from 'marked'
 import { computed } from 'vue'
+import { createAssetExtension } from './create-asset-renderer'
 
 const props = defineProps<{
   readonly content: string
+  readonly assetUrlMap?: ReadonlyMap<string, string>
 }>()
 
-const html = computed(
-  () => marked.parse(props.content, { async: false }) as string
-)
+const html = computed(() => {
+  const m = new Marked()
+  if (props.assetUrlMap && props.assetUrlMap.size > 0) {
+    m.use(createAssetExtension(props.assetUrlMap))
+  }
+  return m.parse(props.content, { async: false })
+})
 </script>
 
 <template>
@@ -93,4 +99,9 @@ const html = computed(
 }
 
 .markdown-preview strong { font-weight: 700; }
+
+.markdown-preview img {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+}
 </style>

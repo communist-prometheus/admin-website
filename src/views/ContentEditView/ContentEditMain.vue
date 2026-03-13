@@ -9,18 +9,22 @@ defineProps<{
   readonly frontmatterData: Record<string, unknown>
   readonly contentType: ContentType
   readonly loadingFile: boolean
+  readonly assetUrlMap?: ReadonlyMap<string, string>
 }>()
 
 defineEmits<{
   'update:bodyContent': [value: string]
   'update:frontmatter': [data: Record<string, unknown>]
   save: [message: string]
+  'paste:image': [file: File]
 }>()
 </script>
 
 <template>
   <section class="edit-main" data-testid="markdown-editor">
-    <div v-if="loadingFile" class="loading-state">Loading file...</div>
+    <div v-if="loadingFile" class="loading-state">
+      Loading file...
+    </div>
     <template v-else>
       <FrontmatterEditor
         v-if="Object.keys(frontmatterData).length > 0"
@@ -30,9 +34,14 @@ defineEmits<{
       />
       <MarkdownEditorBody
         :model-value="bodyContent"
+        :asset-url-map="assetUrlMap"
         @update:model-value="$emit('update:bodyContent', $event)"
+        @paste:image="$emit('paste:image', $event)"
       />
-      <EditorFooter :disabled="false" @save="$emit('save', $event)" />
+      <EditorFooter
+        :disabled="false"
+        @save="$emit('save', $event)"
+      />
     </template>
   </section>
 </template>

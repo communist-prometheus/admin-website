@@ -1,10 +1,11 @@
 import { handleFileCreate } from './file-create'
 import { handleFileRead } from './file-read'
+import { handleFileStage } from './file-stage'
 import { handleFileUpdate } from './file-update'
 import { handleTree } from './tree'
 
 /**
- * Route /api/github/tree and /api/github/file requests.
+ * Route /api/github/tree, /api/github/file, and stage requests.
  * @param url - Parsed request URL
  * @param request - Original Request
  * @returns Response or undefined if not matched
@@ -18,6 +19,10 @@ export const routeFileRequest = async (
 
   if (pathname === '/api/github/tree' && method === 'GET') {
     return handleTree(url)
+  }
+
+  if (pathname === '/api/github/file/stage' && method === 'PUT') {
+    return handleFileStage(request)
   }
 
   if (pathname !== '/api/github/file') return undefined
