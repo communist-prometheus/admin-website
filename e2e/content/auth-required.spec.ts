@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { waitForNetworkIdle } from '../helpers/network'
 
+test.use({ storageState: { cookies: [], origins: [] } })
+
 test.describe('Authentication Required', () => {
   test('should show login message on blog page without auth', async ({
     page,

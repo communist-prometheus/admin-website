@@ -1,40 +1,22 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { AssetManagerPage } from '../pages/AssetManagerPage'
 
 test.describe('Asset Panel', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-  })
-
-  test('should show asset panel for blog posts', async ({ page }) => {
-    const am = new AssetManagerPage(page)
-    await am.navigateToBlog('welcome-to-prometheus')
-    await am.expectPanelVisible()
-  })
-
-  test('should list committed assets', async ({ page }) => {
+  test('should show panel and list committed assets with names', async ({
+    page,
+  }) => {
     const am = new AssetManagerPage(page)
     await am.navigateToBlog('welcome-to-prometheus')
     await am.expectPanelVisible()
 
     const thumbs = am.getAssetThumbnails()
     await expect(thumbs.first()).toBeVisible({ timeout: 15000 })
-    expect(await thumbs.count()).toBe(2)
-  })
+    expect(await thumbs.count()).toBe(1)
 
-  test('should show asset names', async ({ page }) => {
-    const am = new AssetManagerPage(page)
-    await am.navigateToBlog('welcome-to-prometheus')
-    await am.expectPanelVisible()
-
-    const thumbs = am.getAssetThumbnails()
-    await expect(thumbs.first()).toBeVisible({ timeout: 15000 })
     const names = await thumbs.evaluateAll(els =>
       els.map(e => e.getAttribute('data-name'))
     )
     expect(names).toContain('hero.svg')
-    expect(names).toContain('banner.svg')
   })
 
   test('should mark cover asset with badge', async ({ page }) => {
@@ -50,15 +32,16 @@ test.describe('Asset Panel', () => {
     expect(await coverThumb.count()).toBe(1)
   })
 
-  test('should show delete button on each asset', async ({ page }) => {
+  test('should show delete and set-cover buttons', async ({ page }) => {
     const am = new AssetManagerPage(page)
     await am.navigateToBlog('welcome-to-prometheus')
     await am.expectPanelVisible()
 
     const thumbs = am.getAssetThumbnails()
     await expect(thumbs.first()).toBeVisible({ timeout: 15000 })
-    const deleteBtns = am.getDeleteAssetBtns()
-    expect(await deleteBtns.count()).toBe(2)
+
+    expect(await am.getDeleteAssetBtns().count()).toBe(1)
+    expect(await am.getSetCoverBtns().count()).toBe(0)
   })
 
   test('should mark asset as deleted when delete clicked', async ({
@@ -71,8 +54,7 @@ test.describe('Asset Panel', () => {
     const thumbs = am.getAssetThumbnails()
     await expect(thumbs.first()).toBeVisible({ timeout: 15000 })
 
-    const delBtns = am.getDeleteAssetBtns()
-    await delBtns.first().click()
+    await am.getDeleteAssetBtns().first().click()
 
     const deleted = page.locator(
       '[data-testid="asset-thumbnail"][data-status="pending-delete"]'
@@ -91,30 +73,15 @@ test.describe('Asset Panel', () => {
     await expect(panel).toHaveCount(0)
   })
 
-  test('should show set-as-cover button on non-cover assets', async ({
-    page,
-  }) => {
-    const am = new AssetManagerPage(page)
-    await am.navigateToBlog('welcome-to-prometheus')
-    await am.expectPanelVisible()
-
-    const thumbs = am.getAssetThumbnails()
-    await expect(thumbs.first()).toBeVisible({ timeout: 15000 })
-
-    const setCoverBtns = am.getSetCoverBtns()
-    expect(await setCoverBtns.count()).toBe(1)
-  })
-
   test('should set asset as cover when button clicked', async ({ page }) => {
     const am = new AssetManagerPage(page)
-    await am.navigateToBlog('welcome-to-prometheus')
+    await am.navigateToBlog('media-showcase')
     await am.expectPanelVisible()
 
     const thumbs = am.getAssetThumbnails()
     await expect(thumbs.first()).toBeVisible({ timeout: 15000 })
 
-    const setCoverBtn = am.getSetCoverBtns().first()
-    await setCoverBtn.click()
+    await am.getSetCoverBtns().first().click()
 
     const badges = page.locator('[data-testid="asset-thumbnail"] .badge')
     await expect(badges).toHaveCount(1, { timeout: 5000 })

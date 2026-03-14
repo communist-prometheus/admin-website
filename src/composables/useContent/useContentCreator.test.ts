@@ -28,9 +28,9 @@ describe('useContentCreator', () => {
     })
 
     expect(mockCreate).toHaveBeenCalledWith(
-      'src/content/blog/test-post.en.md',
+      'src/content/blog/test-post/index.en.md',
       expect.stringContaining('title: Test Post'),
-      'Create test-post.en.md'
+      'Create index.en.md'
     )
   })
 

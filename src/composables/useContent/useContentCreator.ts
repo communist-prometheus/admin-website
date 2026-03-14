@@ -27,8 +27,13 @@ export const useContentCreator = (
     },
     initialContent = ''
   ) => {
-    const fileName = `${data.slug}.${data.lang}.md`
-    const filePath = `${getRootPath()}/${fileName}`
+    const isBlog = getContentType() === 'blog'
+    const fileName = isBlog
+      ? `index.${data.lang}.md`
+      : `${data.slug}.${data.lang}.md`
+    const filePath = isBlog
+      ? `${getRootPath()}/${data.slug}/${fileName}`
+      : `${getRootPath()}/${fileName}`
 
     const frontmatter = buildFrontmatter(getContentType(), data)
     const content = stringifyFrontmatter(frontmatter, initialContent)

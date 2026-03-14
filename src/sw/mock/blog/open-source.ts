@@ -1,33 +1,39 @@
 import type { MockEntry } from '../all-entries'
+import { openSourceAssets } from './open-source-assets'
+import { openSourceTranslations } from './open-source-translations'
 
-/** Mock entries for the "open-source-strategy" blog post */
+/** Mock entries for the "open-source-collaboration" blog post */
 export const openSourceEntries: readonly MockEntry[] = [
   {
-    path: 'src/content/blog/open-source-strategy/open-source-strategy.en.md',
+    path: 'src/content/blog/open-source-collaboration/index.en.md',
     content: `---
-title: Our Open Source Strategy
-description: How we leverage open-source tools for transparent governance.
-category: Technology
-pubDate: 2024-02-10
+title: The Power of Open Source Collaboration
+description: How open source communities drive innovation.
+category: Community
+pubDate: 2024-02-05
+image: ./assets/cover.jpg
 lang: en
 ---
 
-# Our Open Source Strategy
+# The Power of Open Source Collaboration
 
-Transparency begins with the tools we use.`,
+Open source is more than a development model.`,
   },
   {
-    path: 'src/content/blog/open-source-strategy/open-source-strategy.ru.md',
+    path: 'src/content/blog/open-source-collaboration/index.ru.md',
     content: `---
-title: Наша стратегия открытого кода
-description: Как мы используем инструменты с открытым кодом.
-category: Technology
-pubDate: 2024-02-10
+title: Сила открытого сотрудничества
+description: Как сообщества открытого кода стимулируют инновации.
+category: Сообщество
+pubDate: 2024-02-05
+image: ./assets/cover.jpg
 lang: ru
 ---
 
-# Наша стратегия открытого кода
+# Сила открытого сотрудничества
 
-Прозрачность начинается с инструментов.`,
+Открытый исходный код — это больше, чем модель разработки.`,
   },
+  ...openSourceAssets,
+  ...openSourceTranslations,
 ]

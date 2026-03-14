@@ -1,13 +1,8 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { ContentEditPage } from '../pages/ContentEditPage'
 import { ContentPage } from '../pages/ContentPage'
 
 test.describe('Content Edit Page', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-  })
-
   test('clicking content item navigates to edit page', async ({ page }) => {
     const contentPage = new ContentPage(page)
     await contentPage.navigate('blog')

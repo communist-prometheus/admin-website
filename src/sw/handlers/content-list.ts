@@ -4,7 +4,7 @@ import { listFilesUnder } from '../git/list-files'
 import { readRepoFile } from '../git/read-file'
 import { workerState } from '../state'
 import { jsonResponse } from './json-response'
-import { basename, parseSlug } from './parse-slug'
+import { parseSlugFromPath } from './parse-slug'
 
 /**
  * Build a ContentItem from a file path and its content.
@@ -16,7 +16,7 @@ const buildItem = async (type: string, filepath: string) => {
   const raw = await readRepoFile(filepath)
   const { frontmatter, body } = parseFrontmatter(raw)
   const sha = await computeBlobSha(raw)
-  const slug = parseSlug(basename(filepath))
+  const slug = parseSlugFromPath(filepath)
 
   return { type, slug, path: filepath, frontmatter, body, sha }
 }

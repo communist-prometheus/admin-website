@@ -3,6 +3,8 @@ import { waitForNetworkIdle } from '../helpers/network'
 import { AuthPage } from '../pages/AuthPage'
 import { login } from './helpers'
 
+test.use({ storageState: { cookies: [], origins: [] } })
+
 test.describe('Login Flow', () => {
   test('should show login button when not authenticated', async ({
     page,

@@ -1,5 +1,4 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { AssetManagerPage } from '../pages/AssetManagerPage'
 
 const EDITOR = '[data-testid="editor-body"]'
@@ -34,13 +33,9 @@ const dispatchPaste = (page: import('@playwright/test').Page, name: string) =>
   )
 
 test.describe('Asset Paste Image', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-  })
-
   test('should add pasted image to asset panel', async ({ page }) => {
     const am = new AssetManagerPage(page)
-    await am.navigateToBlog('education-platform')
+    await am.navigateToBlog('media-showcase')
     await am.expectPanelVisible()
 
     const initialCount = await am.getAssetCount()
@@ -54,7 +49,7 @@ test.describe('Asset Paste Image', () => {
 
   test('should insert markdown reference on paste', async ({ page }) => {
     const am = new AssetManagerPage(page)
-    await am.navigateToBlog('education-platform')
+    await am.navigateToBlog('media-showcase')
     await am.expectPanelVisible()
 
     const editor = am.getEditorBody()

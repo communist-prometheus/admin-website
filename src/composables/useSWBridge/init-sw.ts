@@ -1,32 +1,19 @@
-import type { SWGitConfig } from '@/sw/protocol'
 import { buildSWConfig } from './build-sw-config'
 import { initViaMessage } from './init-via-message'
 import { log } from './sw-log'
 import { markSWReady } from './sw-ready'
+import { tryFetchInit } from './try-fetch-init'
+
+const RETRIES = 5
+const DELAY = 2_000
+
+/** @returns Promise that resolves after ms */
+const wait = (ms: number): Promise<void> =>
+  new Promise(r => globalThis.setTimeout(r, ms))
 
 /**
- * Try fetch init (fast path, needs controller).
- * @param config - Git config to send
- * @returns True if SW confirmed init via fetch
- */
-const tryFetchInit = async (config: SWGitConfig): Promise<boolean> => {
-  try {
-    const res = await fetch('/api/sw/init', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(config),
-    })
-    const d: { ok: boolean } = await res.json()
-    return d.ok
-  } catch {
-    return false
-  }
-}
-
-/**
- * Send git config to the SW.
- * Prefers fetch (intercepted by SW), falls back to
- * MessageChannel when fetch fails (WebKit activation race).
+ * Send git config to the SW with retry.
+ * Marks ready only on success or after all retries exhaust.
  * @param token - GitHub access token
  */
 export const initSWWithToken = async (token: string): Promise<void> => {
@@ -34,16 +21,20 @@ export const initSWWithToken = async (token: string): Promise<void> => {
     markSWReady()
     return
   }
-  try {
-    const config = buildSWConfig(token)
-    const hasCtr = !!navigator.serviceWorker.controller
-    const ok = hasCtr && (await tryFetchInit(config))
-    if (!ok) await initViaMessage(config)
-  } catch (e) {
-    log('error', 'SW init failed', {
-      error: e instanceof Error ? e.message : String(e),
-    })
-  } finally {
-    markSWReady()
+  const config = buildSWConfig(token)
+  for (let i = 0; i < RETRIES; i++) {
+    try {
+      const hasCtr = !!navigator.serviceWorker.controller
+      const ok = hasCtr && (await tryFetchInit(config))
+      if (!ok) await initViaMessage(config)
+      markSWReady()
+      return
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      log('warn', `SW init ${i + 1}/${RETRIES}: ${msg}`)
+      if (i < RETRIES - 1) await wait(DELAY)
+    }
   }
+  log('error', 'SW init exhausted retries')
+  markSWReady()
 }

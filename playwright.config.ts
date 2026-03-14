@@ -6,11 +6,14 @@ import 'dotenv/config'
 
 process.env.MOCK_OAUTH = 'true'
 
+const STORAGE_STATE = 'e2e/.auth/state.json'
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
   testDir: './e2e',
+  globalSetup: './e2e/auth/setup.ts',
   /* Maximum time one test can run for. */
   timeout: 30 * 1000,
   expect: {
@@ -39,6 +42,9 @@ export default defineConfig({
 
     /* Run tests headless by default */
     headless: true,
+
+    /* Pre-authenticated state from global setup */
+    storageState: STORAGE_STATE,
   },
 
   /* Configure projects for major browsers */
@@ -50,10 +56,11 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     /**
-     * Use the production server with mock OAuth enabled for e2e tests
-     * Always restart server to ensure MOCK_OAUTH is applied
+     * Kill stale server, then build and start fresh.
+     * Prevents reuseExistingServer from using a stale instance.
      */
-    command: 'bun run build:e2e && bun run preview:test',
+    command:
+      'bun scripts/kill-port.ts 3000 && bun run build:e2e && bun run preview:test',
     port: 3000,
     reuseExistingServer: true,
   },

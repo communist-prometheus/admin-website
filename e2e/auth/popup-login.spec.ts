@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { waitForContentReady } from '../helpers/content-ready'
 
+test.use({ storageState: { cookies: [], origins: [] } })
+
 test.describe('Popup Login Flow', () => {
   test('should load content after popup login without reload', async ({
     page,

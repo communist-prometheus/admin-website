@@ -1,12 +1,7 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 test.describe('Markdown Preview', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-  })
-
   test('preview toggle is visible in editor', async ({ page }) => {
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')

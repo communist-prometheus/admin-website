@@ -11,6 +11,55 @@ This project implements Server-Side Rendering (SSR) with client-side hydration:
 - **Build**: Vite bundles both client and server code
 - **Development**: Integrated Vite dev server with HMR
 
+## Content Repository Structure
+
+This admin manages content in the [public-website](https://github.com/communist-prometheus/public-website) repository (`develop` branch). The content directory layout:
+
+```
+src/content/
+  blog/                              ← nested: slug/index.lang.md + assets/
+    {slug}/
+      index.{en|ru|it|es}.md         ← article content per language
+      assets/                        ← optional media (images, video, audio)
+        cover.jpg
+        hero.svg
+        demo.mp4
+        sample.m4a
+  pages/                             ← flat: slug.lang.md
+    {slug}.{en|ru|it|es}.md
+  positions/                         ← flat: slug.lang.md
+    {slug}.{en|ru|it|es}.md
+```
+
+Key points:
+- Blog articles use **`index.{lang}.md`** inside a slug directory (NOT `{slug}.{lang}.md`)
+- Media assets (images, video, audio, PDF) live in `{slug}/assets/`
+- Pages and positions use flat files: `{slug}.{lang}.md`
+- Supported languages: `en`, `ru`, `it`, `es`
+- Frontmatter may reference assets via `image: ./assets/file`
+- Body may embed assets via `![alt](./assets/file)` or `<video>`/`<audio>` HTML
+
+### Current Content (develop branch)
+
+| Section | Articles | Languages | Assets |
+|---------|----------|-----------|--------|
+| blog/astro-framework | Why Choose Astro Framework | en, ru, it, es | — |
+| blog/media-showcase | Rich Media in Blog Posts | en, ru, it, es | architecture.svg, cover.jpg, demo.mp4, landscape.jpg, sample.m4a |
+| blog/modern-web-development | Modern Web Development Best Practices | en, ru, it, es | — |
+| blog/open-source-collaboration | The Power of Open Source Collaboration | en, ru, it, es | cover.jpg |
+| blog/welcome-to-prometheus | Welcome to Prometheus | en, ru, it, es | hero.svg |
+| pages/manifest | Our Manifest | en, ru, it, es | — |
+| positions/digital-sovereignty | Digital Sovereignty | en, ru, it, es | — |
+| positions/knowledge-access | Universal Knowledge Access | en, ru, it, es | — |
+
+### Service Worker Data Flow
+
+- **`dev:token`**: Builds SW without mock mode → clones real repo via `GITHUB_E2E_KEY` token → pulls latest on each init
+- **`build:e2e`**: Builds SW with `MOCK_OAUTH=true` → uses hardcoded mock entries (no GitHub API)
+- **Production**: SW clones via user's OAuth token through CORS proxy
+
+Mock entries in `src/sw/mock/` MUST mirror the production content structure above.
+
 ## Code Style
 
 ### Effect.js Functional Programming

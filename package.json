@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "prepare": "husky",
-    "dev": "bun src/server.ts",
-    "dev:token": "cross-env MOCK_OAUTH=true bun src/server.ts",
+    "dev": "bun run build:sw && bun src/server.ts",
+    "dev:token": "bun run build:sw && cross-env MOCK_OAUTH=true bun src/server.ts",
     "validate": "bun run type-check && bun run check:ci && bun run lint:sonar && bun run lint:jsdoc && bun run lint:vue-depth && bun run lint:css",
     "build": "bun run validate && bun run build:client && bun run build:sw && bun run build:server",
     "build:client": "vite build --outDir dist/client --ssrManifest",

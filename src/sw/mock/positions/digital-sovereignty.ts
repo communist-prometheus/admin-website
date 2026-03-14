@@ -1,4 +1,5 @@
 import type { MockEntry } from '../all-entries'
+import { sovereigntyTranslations } from './digital-sovereignty-translations'
 
 /** Mock entries for the "digital-sovereignty" position */
 export const digitalSovereigntyEntries: readonly MockEntry[] = [
@@ -28,4 +29,5 @@ lang: ru
 
 Мы выступаем за инфраструктуру с открытым кодом.`,
   },
+  ...sovereigntyTranslations,
 ]

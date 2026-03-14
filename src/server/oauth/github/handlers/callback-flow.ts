@@ -1,6 +1,7 @@
 /* eslint-disable jsdoc/require-param, jsdoc/require-returns */
 import { Effect, pipe } from 'effect'
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { saveSession } from '../utils'
 import {
   getUserData,
   handleMockRedirect,
@@ -28,8 +29,11 @@ export const executeCallbackFlow = (
     Effect.flatMap(userData =>
       config.isMockMode
         ? handleMockRedirect(request, reply)
-        : Effect.succeed(
-            reply.type('text/html').send(generateCallbackHtml(userData))
+        : pipe(
+            saveSession(request),
+            Effect.map(() =>
+              reply.type('text/html').send(generateCallbackHtml(userData))
+            )
           )
     ),
     Effect.catchAll(error => {

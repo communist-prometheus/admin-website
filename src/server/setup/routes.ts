@@ -28,8 +28,9 @@ export const setupRoutes = (
   Effect.sync(() => {
     registerGitHubOAuthRoutes(fastify, oauthConfig)
 
+    fastify.get('/sw.js', handleSW(resolveDistPath))
+
     if (isProduction) {
-      fastify.get('/sw.js', handleSW(resolveDistPath))
       fastify.get('/favicon.ico', handleFavicon(resolveDistPath))
       fastify.get('/robots.txt', handleRobotsTxt(resolveDistPath))
       fastify.get('/sitemap.xml', handleSitemap(resolveDistPath))

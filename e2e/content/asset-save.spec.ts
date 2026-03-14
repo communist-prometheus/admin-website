@@ -1,12 +1,7 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { AssetManagerPage } from '../pages/AssetManagerPage'
 
 test.describe('Asset Transactional Save', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-  })
-
   test('should show save button with assets pending', async ({ page }) => {
     const am = new AssetManagerPage(page)
     await am.navigateToBlog('welcome-to-prometheus')

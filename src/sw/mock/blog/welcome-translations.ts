@@ -3,26 +3,28 @@ import type { MockEntry } from '../all-entries'
 /** Italian and Spanish translations of the welcome post */
 export const welcomeTranslations: readonly MockEntry[] = [
   {
-    path: 'src/content/blog/welcome-to-prometheus/welcome-to-prometheus.it.md',
+    path: 'src/content/blog/welcome-to-prometheus/index.it.md',
     content: `---
-title: Benvenuti in Prometheus
+title: Benvenuti su Prometheus
 description: Scoprite la nostra visione per una piattaforma moderna.
-category: Announcement
+category: Annuncio
 pubDate: 2024-01-15
+image: ./assets/hero.svg
 lang: it
 ---
 
-# Benvenuti in Prometheus
+# Benvenuti su Prometheus
 
 Siamo entusiasti di presentare **Prometheus**.`,
   },
   {
-    path: 'src/content/blog/welcome-to-prometheus/welcome-to-prometheus.es.md',
+    path: 'src/content/blog/welcome-to-prometheus/index.es.md',
     content: `---
 title: Bienvenidos a Prometheus
 description: Descubre nuestra visión para una plataforma moderna.
-category: Announcement
+category: Anuncio
 pubDate: 2024-01-15
+image: ./assets/hero.svg
 lang: es
 ---
 

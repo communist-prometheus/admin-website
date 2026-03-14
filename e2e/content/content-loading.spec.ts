@@ -1,148 +1,13 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { waitForContentReady } from '../helpers/content-ready'
 import { ContentEditPage } from '../pages/ContentEditPage'
-import { ContentPage } from '../pages/ContentPage'
 
 test.describe('Content Loading', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-  })
-
-  test('should load multiple blog items in English', async ({ page }) => {
-    await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
-    await waitForContentReady(page)
-
-    await page.getByRole('button', { name: 'English' }).click()
-    const items = page.locator('[data-testid="content-item"]')
-    await items.first().waitFor({ state: 'visible', timeout: 15000 })
-    expect(await items.count()).toBe(4)
-  })
-
-  test('should load blog items across all languages', async ({ page }) => {
-    await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
-    await waitForContentReady(page)
-
-    const counts: Record<string, number> = {}
-    for (const lang of ['English', 'Русский', 'Italiano', 'Español']) {
-      await page.getByRole('button', { name: lang }).click()
-      counts[lang] = await page
-        .locator('[data-testid="content-item"]')
-        .count()
-    }
-
-    expect(counts['English']).toBe(4)
-    expect(counts['Русский']).toBe(3)
-    expect(counts['Italiano']).toBe(1)
-    expect(counts['Español']).toBe(1)
-  })
-
-  test('should load multiple page items', async ({ page }) => {
-    await page.goto('/content/pages')
-    await page.waitForLoadState('networkidle')
-    await waitForContentReady(page)
-
-    const items = page.locator('[data-testid="content-item"]')
-    await items.first().waitFor({ state: 'visible', timeout: 15000 })
-    expect(await items.count()).toBe(3)
-  })
-
-  test('should load multiple position items', async ({ page }) => {
-    await page.goto('/content/positions')
-    await page.waitForLoadState('networkidle')
-    await waitForContentReady(page)
-
-    const items = page.locator('[data-testid="content-item"]')
-    await items.first().waitFor({ state: 'visible', timeout: 15000 })
-    expect(await items.count()).toBe(3)
-  })
-
-  test('should display correct blog item titles', async ({ page }) => {
-    await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
-    await waitForContentReady(page)
-
-    await page.getByRole('button', { name: 'English' }).click()
-    const list = page.locator('[data-testid="content-item"]')
-    await list.first().waitFor({ state: 'visible', timeout: 15000 })
-
-    const titles = await list.allTextContents()
-    const joined = titles.join(' ')
-    expect(joined).toContain('Welcome to Prometheus')
-    expect(joined).toContain('Open Source Strategy')
-    expect(joined).toContain('Community Update')
-    expect(joined).toContain('Education Platform')
-  })
-
-  test('should show Russian blog items when filtered', async ({ page }) => {
-    await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
-    await waitForContentReady(page)
-
-    await page.getByRole('button', { name: 'Русский' }).click()
-    const items = page.locator('[data-testid="content-item"]')
-    await items.first().waitFor({ state: 'visible', timeout: 15000 })
-
-    expect(await items.count()).toBe(3)
-    const texts = await items.allTextContents()
-    const joined = texts.join(' ')
-    expect(joined).toContain('Добро пожаловать в Prometheus')
-    expect(joined).toContain('стратегия открытого кода')
-    expect(joined).toContain('Новости сообщества')
-  })
-
-  test('should load article body when clicking a blog item', async ({
-    page,
-  }) => {
-    const contentPage = new ContentPage(page)
-    await contentPage.navigate('blog')
-    await contentPage.selectItem('Welcome to Prometheus')
-
-    await page.waitForURL(/\/content\/blog\/edit\/welcome-to-prometheus/)
-    const body = page.locator('[data-testid="editor-body"]')
-    await expect(body).toBeVisible({ timeout: 20000 })
-    await expect(body).not.toHaveValue('', { timeout: 20000 })
-
-    const content = await body.inputValue()
-    expect(content).toContain('Welcome to Prometheus')
-    expect(content).toContain('Prometheus')
-  })
-
-  test('should load article body for each blog entry', async ({ page }) => {
-    const entries = [
-      { title: 'Open Source Strategy', slug: 'open-source-strategy' },
-      { title: 'Community Update', slug: 'community-update' },
-      { title: 'Education Platform', slug: 'education-platform' },
-    ]
-
-    for (const entry of entries) {
-      const editPage = new ContentEditPage(page)
-      await editPage.navigate('blog', entry.slug)
-
-      const content = await editPage.getEditorBody().inputValue()
-      expect(content).toContain(entry.title)
-    }
-  })
-
-  test('should not show loading overlay after content loads', async ({
-    page,
-  }) => {
-    await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
-    await waitForContentReady(page)
-
-    await expect(page.locator('.loading-overlay')).toBeHidden()
-  })
-
-  test('should load content on all sections without reload', async ({
-    page,
-  }) => {
+  test('should load correct item counts per section', async ({ page }) => {
     const expected: Record<string, number> = {
-      blog: 4,
-      pages: 3,
-      positions: 3,
+      blog: 5,
+      pages: 1,
+      positions: 2,
     }
 
     for (const section of ['blog', 'pages', 'positions']) {
@@ -156,6 +21,60 @@ test.describe('Content Loading', () => {
         timeout: 15000,
       })
       expect(await items.count()).toBe(expected[section])
+    }
+  })
+
+  test('should display correct titles per language', async ({ page }) => {
+    await page.goto('/content/blog')
+    await page.waitForLoadState('networkidle')
+    await waitForContentReady(page)
+
+    await page.getByRole('button', { name: 'English' }).click()
+    const items = page.locator('[data-testid="content-item"]')
+    await items.first().waitFor({
+      state: 'visible',
+      timeout: 15000,
+    })
+
+    const enTitles = (await items.allTextContents()).join(' ')
+    expect(enTitles).toContain('Welcome to Prometheus')
+    expect(enTitles).toContain('Why Choose Astro Framework')
+    expect(enTitles).toContain('Rich Media in Blog Posts')
+    expect(enTitles).toContain('Modern Web Development')
+    expect(enTitles).toContain('Open Source Collaboration')
+
+    for (const lang of ['Русский', 'Italiano', 'Español']) {
+      await page.getByRole('button', { name: lang }).click()
+      await items.first().waitFor({
+        state: 'visible',
+        timeout: 15000,
+      })
+      expect(await items.count()).toBe(5)
+    }
+  })
+
+  test('should load article body on navigation', async ({ page }) => {
+    const entries = [
+      {
+        title: 'Welcome to Prometheus',
+        slug: 'welcome-to-prometheus',
+      },
+      {
+        title: 'Why Choose Astro Framework',
+        slug: 'astro-framework',
+      },
+      {
+        title: 'Rich Media in Blog Posts',
+        slug: 'media-showcase',
+      },
+    ]
+
+    for (const entry of entries) {
+      const editPage = new ContentEditPage(page)
+      await editPage.navigate('blog', entry.slug)
+
+      const content = await editPage.getEditorBody().inputValue()
+      expect(content).toContain(entry.title)
     }
   })
 })

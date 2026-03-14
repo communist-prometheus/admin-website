@@ -2,6 +2,8 @@ import { test } from '@playwright/test'
 import { waitForNetworkIdle } from './helpers/network'
 import { AuthPage } from './pages/AuthPage'
 
+test.use({ storageState: { cookies: [], origins: [] } })
+
 test('visits the app root url', async ({ page }) => {
   const authPage = new AuthPage(page)
 

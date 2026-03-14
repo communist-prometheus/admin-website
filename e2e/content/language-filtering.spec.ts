@@ -1,14 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { waitForContentReady } from '../helpers/content-ready'
-import { waitForNetworkIdle } from '../helpers/network'
-import { AuthPage } from '../pages/AuthPage'
 
 test.describe('Language Filtering', () => {
   test.beforeEach(async ({ page }) => {
-    const authPage = new AuthPage(page)
-    await page.goto('/')
-    await waitForNetworkIdle(page)
-    await authPage.mockLogin()
     await page.goto('/content/blog')
     await waitForContentReady(page)
   })

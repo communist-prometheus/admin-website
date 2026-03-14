@@ -1,11 +1,9 @@
 import { test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { ContentPage } from '../pages/ContentPage'
 import { CreateDialog } from '../pages/CreateDialog'
 
 test.describe('Create Content Dialog', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page)
     const contentPage = new ContentPage(page)
     await contentPage.navigate('blog')
   })

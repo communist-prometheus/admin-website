@@ -1,4 +1,6 @@
 /* eslint-disable jsdoc/require-param, jsdoc/require-returns */
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { Effect } from 'effect'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { type RenderPageConfig, renderPage } from '../../ssr/page-renderer'
@@ -8,11 +10,13 @@ import { type RenderPageConfig, renderPage } from '../../ssr/page-renderer'
  */
 export const handleSW =
   (resolveDistPath: (path: string) => string) =>
-  async (_request: FastifyRequest, reply: FastifyReply) =>
-    reply
+  async (_request: FastifyRequest, reply: FastifyReply) => {
+    const file = readFileSync(resolve(resolveDistPath('client'), 'sw.js'))
+    return reply
       .header('cache-control', 'no-cache, no-store, must-revalidate')
       .type('application/javascript')
-      .sendFile('sw.js', resolveDistPath('client'))
+      .send(file)
+  }
 
 /**
  * Handle favicon requests

@@ -1,12 +1,7 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { waitForContentReady } from '../helpers/content-ready'
 
 test.describe('Content Section Switching', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-  })
-
   test('should load blog content when navigating to /content/blog', async ({
     page,
   }) => {

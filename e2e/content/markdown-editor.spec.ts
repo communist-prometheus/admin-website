@@ -1,12 +1,7 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 test.describe('Markdown Editor', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-  })
-
   test('should display editor with textarea when navigating to edit page', async ({
     page,
   }) => {

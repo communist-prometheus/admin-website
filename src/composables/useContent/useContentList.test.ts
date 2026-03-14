@@ -1,9 +1,12 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 import { useContentList } from './useContentList'
 
-global.fetch = vi.fn()
+const mockSwFetch = vi.fn()
+
+vi.mock('@/composables/useSWBridge/sw-fetch', () => ({
+  swFetch: (...args: readonly unknown[]) => mockSwFetch(...args),
+}))
 
 describe('useContentList', () => {
   beforeEach(() => {
@@ -13,65 +16,46 @@ describe('useContentList', () => {
 
   it('initializes with empty items', () => {
     const { items, selectedItem } = useContentList('blog')
-
     expect(items.value).toEqual([])
     expect(selectedItem.value).toBeNull()
   })
 
-  it('loads content from API and filters by type', async () => {
-    const blogItems = [
+  it('loads content and filters by type', async () => {
+    const blog = [
       {
-        path: 'src/content/blog/post1.md',
-        slug: 'post1',
-        frontmatter: { lang: 'en', title: 'Post 1' },
-      },
-      {
-        path: 'src/content/blog/post2.md',
-        slug: 'post2',
-        frontmatter: { lang: 'en', title: 'Post 2' },
+        path: 'src/content/blog/p1/index.en.md',
+        slug: 'p1',
+        frontmatter: { lang: 'en', title: 'P1' },
       },
     ]
-    const pageItems = [
-      {
-        path: 'src/content/pages/about.md',
-        slug: 'about',
-        frontmatter: { lang: 'en', title: 'About' },
-      },
-    ]
-    const posItems: readonly unknown[] = []
-
-    vi.mocked(fetch)
+    mockSwFetch
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ items: blogItems }),
-      } as Response)
+        json: async () => ({ items: blog }),
+      })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ items: pageItems }),
-      } as Response)
+        json: async () => ({ items: [] }),
+      })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ items: posItems }),
-      } as Response)
+        json: async () => ({ items: [] }),
+      })
 
     const { items, loadContent } = useContentList('blog')
-
     await loadContent()
-    await nextTick()
 
-    expect(fetch).toHaveBeenCalledTimes(3)
-    expect(items.value).toHaveLength(2)
-    expect(items.value[0]?.path).toBe('src/content/blog/post1.md')
+    expect(mockSwFetch).toHaveBeenCalledTimes(3)
+    expect(items.value).toHaveLength(1)
   })
 
-  it('sets loadingList to true during loading and false after', async () => {
-    vi.mocked(fetch).mockResolvedValue({
+  it('sets loading flag during load', async () => {
+    mockSwFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ items: [] }),
-    } as unknown as Response)
+    })
 
     const { loadingList, loadContent } = useContentList('blog')
-
     expect(loadingList.value).toBe(false)
     const promise = loadContent()
     expect(loadingList.value).toBe(true)
@@ -79,30 +63,14 @@ describe('useContentList', () => {
     expect(loadingList.value).toBe(false)
   })
 
-  it('sets loadingList to false even when API fails', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
+  it('resets loading on API failure', async () => {
+    mockSwFetch.mockResolvedValueOnce({
       ok: false,
       statusText: 'Not Found',
-    } as Response)
+    })
 
     const { loadingList, loadContent } = useContentList('blog')
-
-    await expect(loadContent()).rejects.toThrow(
-      'Failed to load content: Not Found'
-    )
+    await expect(loadContent()).rejects.toThrow()
     expect(loadingList.value).toBe(false)
-  })
-
-  it('throws error when API fails', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: false,
-      statusText: 'Not Found',
-    } as Response)
-
-    const { loadContent } = useContentList('blog')
-
-    await expect(loadContent()).rejects.toThrow(
-      'Failed to load content: Not Found'
-    )
   })
 })

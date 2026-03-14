@@ -22,7 +22,11 @@ export const handleContentUpdate = async (
 
   const base = workerState.config?.contentPath ?? 'src/content'
   const existing = await resolveContentPath(type, slug, lang)
-  const path = existing ?? `${base}/${type}/${slug}.${lang}.md`
+  const isBlog = type === 'blog'
+  const newPath = isBlog
+    ? `${base}/${type}/${slug}/index.${lang}.md`
+    : `${base}/${type}/${slug}.${lang}.md`
+  const path = existing ?? newPath
   const content = serializeFrontmatter(frontmatter, mdBody)
 
   await writeAndStage(path, content)

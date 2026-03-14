@@ -5,7 +5,7 @@ import { welcomeTranslations } from './welcome-translations'
 /** Mock entries for the "welcome-to-prometheus" blog post */
 export const welcomeEntries: readonly MockEntry[] = [
   {
-    path: 'src/content/blog/welcome-to-prometheus/welcome-to-prometheus.en.md',
+    path: 'src/content/blog/welcome-to-prometheus/index.en.md',
     content: `---
 title: Welcome to Prometheus
 description: Discover our vision for a modern knowledge sharing platform.
@@ -22,11 +22,11 @@ lang: en
 We're excited to introduce **Prometheus** - a modern platform.`,
   },
   {
-    path: 'src/content/blog/welcome-to-prometheus/welcome-to-prometheus.ru.md',
+    path: 'src/content/blog/welcome-to-prometheus/index.ru.md',
     content: `---
 title: Добро пожаловать в Prometheus
 description: Откройте для себя наше видение современной платформы.
-category: Announcement
+category: Объявление
 pubDate: 2024-01-15
 image: ./assets/hero.svg
 lang: ru

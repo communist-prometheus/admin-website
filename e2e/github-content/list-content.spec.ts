@@ -1,12 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { ContentPage } from '../pages/ContentPage'
 
 test.describe('GitHub Content - List', () => {
   let contentPage: ContentPage
 
   test.beforeEach(async ({ page }) => {
-    await login(page)
     contentPage = new ContentPage(page)
     await contentPage.navigate('blog')
   })

@@ -1,10 +1,8 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { waitForContentReady } from '../helpers/content-ready'
 
 test.describe('GitHub Content - Create', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page)
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
     await waitForContentReady(page)

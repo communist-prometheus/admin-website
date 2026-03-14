@@ -1,14 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { waitForContentReady } from '../helpers/content-ready'
 import { ContentEditPage } from '../pages/ContentEditPage'
 import { ContentPage } from '../pages/ContentPage'
 
 test.describe('Content Editing', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-  })
-
   test('should show refresh button that reloads content', async ({
     page,
   }) => {

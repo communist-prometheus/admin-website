@@ -1,46 +1,33 @@
+import process from 'node:process'
 import { devices } from '@playwright/test'
 import { LIGHTHOUSE_TEST_PATTERN } from './playwright.config.constants'
+import { lighthouseProjects } from './playwright.config.lighthouse'
 
-export const projects = [
-  {
-    name: 'chromium',
-    use: {
-      ...devices['Desktop Chrome'],
-    },
-    testIgnore: [LIGHTHOUSE_TEST_PATTERN],
-  },
-  {
-    name: 'firefox',
-    use: {
-      ...devices['Desktop Firefox'],
-    },
-    testIgnore: [LIGHTHOUSE_TEST_PATTERN],
-  },
-  {
-    name: 'webkit',
-    use: {
-      ...devices['Desktop Safari'],
-    },
-    testIgnore: [LIGHTHOUSE_TEST_PATTERN],
-  },
-  {
-    name: 'lighthouse-desktop',
-    testMatch: ['**/lighthouse/desktop.spec.ts'],
-    use: {
-      ...devices['Desktop Chrome'],
-      launchOptions: {
-        args: ['--remote-debugging-port=9222'],
-      },
-    },
-  },
-  {
-    name: 'lighthouse-mobile',
-    testMatch: ['**/lighthouse/mobile.spec.ts'],
-    use: {
-      ...devices['Desktop Chrome'],
-      launchOptions: {
-        args: ['--remote-debugging-port=9223'],
-      },
-    },
-  },
+const allBrowsers = process.env.BROWSERS === 'all'
+
+const ignore = [LIGHTHOUSE_TEST_PATTERN]
+
+/**
+ * Build a browser project config.
+ * @param name - Browser name
+ * @param device - Device descriptor key
+ * @returns Playwright project config
+ */
+const browser = (name: string, device: string) => ({
+  name,
+  use: { ...devices[device] },
+  testIgnore: ignore,
+})
+
+/** Browser projects: Chromium-only locally, all on CI */
+const browserProjects = [
+  browser('chromium', 'Desktop Chrome'),
+  ...(allBrowsers
+    ? [
+        browser('firefox', 'Desktop Firefox'),
+        browser('webkit', 'Desktop Safari'),
+      ]
+    : []),
 ]
+
+export const projects = [...browserProjects, ...lighthouseProjects]

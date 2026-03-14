@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 
 test('should verify mock OAuth authenticates user', async ({ page }) => {
-  await login(page)
   await page.goto('/')
 
   const response = await page.request.get('/api/auth/user')

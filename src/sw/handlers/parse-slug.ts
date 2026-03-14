@@ -1,18 +1,15 @@
 const LANG_SUFFIX = /\.(en|ru|it|es)\.md$/
 
 /**
- * Extract slug from a content filename.
- * E.g. "welcome-to-prometheus.en.md" → "welcome-to-prometheus"
- * @param filename - File name with lang and .md extension
+ * Extract slug from a content file path.
+ * Blog uses index files: `blog/my-post/index.en.md` → `my-post`
+ * Pages/positions are flat: `pages/manifest.en.md` → `manifest`
+ * @param filepath - Repo-relative file path
  * @returns Slug string
  */
-export const parseSlug = (filename: string): string =>
-  filename.replace(LANG_SUFFIX, '')
-
-/**
- * Extract the filename from a full path.
- * @param filepath - Full file path
- * @returns Last segment of the path
- */
-export const basename = (filepath: string): string =>
-  filepath.split('/').pop() ?? filepath
+export const parseSlugFromPath = (filepath: string): string => {
+  const parts = filepath.split('/')
+  const filename = parts.pop() ?? ''
+  const stripped = filename.replace(LANG_SUFFIX, '')
+  return stripped === 'index' ? (parts.pop() ?? stripped) : stripped
+}

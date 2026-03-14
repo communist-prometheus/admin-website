@@ -9,15 +9,15 @@ import { positionEntries } from './position-entries'
  *
  * ```
  * src/content/
- *   blog/                          ← nested: slug/slug.lang.md
+ *   blog/                          <- nested: slug/index.lang.md
  *     {slug}/
- *       {slug}.{en|ru|it|es}.md
- *       assets/                    ← optional media (images, SVGs)
+ *       index.{en|ru|it|es}.md
+ *       assets/                    <- optional media
  *         cover.jpg
  *         hero.svg
- *   pages/                         ← flat: slug.lang.md
+ *   pages/                         <- flat: slug.lang.md
  *     {slug}.{en|ru|it|es}.md
- *   positions/                     ← flat: slug.lang.md
+ *   positions/                     <- flat: slug.lang.md
  *     {slug}.{en|ru|it|es}.md
  * ```
  *

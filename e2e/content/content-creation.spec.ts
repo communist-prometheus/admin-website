@@ -1,12 +1,7 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { waitForContentReady } from '../helpers/content-ready'
 
 test.describe('Content Creation', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-  })
-
   test('should show create button on blog page', async ({ page }) => {
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')

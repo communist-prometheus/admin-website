@@ -1,12 +1,7 @@
 import { expect, test } from '@playwright/test'
-import { login } from '../auth/helpers'
 import { AssetManagerPage } from '../pages/AssetManagerPage'
 
 test.describe('Asset Cover Image', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page)
-  })
-
   test('should show cover image for blog with image frontmatter', async ({
     page,
   }) => {
@@ -62,7 +57,7 @@ test.describe('Asset Cover Image', () => {
     page,
   }) => {
     const am = new AssetManagerPage(page)
-    await am.navigateToBlog('education-platform')
+    await am.navigateToBlog('astro-framework')
     await am.expectCoverVisible()
 
     const noCover = am.getCoverImage().locator('.no-cover')

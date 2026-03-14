@@ -3,6 +3,8 @@ import { waitForNetworkIdle } from '../helpers/network'
 import { AuthPage } from '../pages/AuthPage'
 import { login } from './helpers'
 
+test.use({ storageState: { cookies: [], origins: [] } })
+
 test('should logout and show login button again', async ({ page }) => {
   const authPage = new AuthPage(page)
 

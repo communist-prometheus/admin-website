@@ -5,7 +5,7 @@ const CONTENT_PATH_RE =
 
 /**
  * Resolve a flat content path to its actual nested location.
- * E.g. `src/content/blog/slug.en.md` → `src/content/blog/slug/slug.en.md`
+ * Tries both `slug/index.lang.md` and `slug/slug.lang.md`.
  * @param flatPath - Path as constructed by the editor
  * @returns Actual path or undefined if not found
  */
@@ -15,10 +15,12 @@ export const resolveFilePath = async (
   const m = flatPath.match(CONTENT_PATH_RE)
   if (!m) return undefined
 
-  const [, base, type] = m
-  const filename = flatPath.split('/').pop()
-  if (!filename) return undefined
-
+  const [, base, type, slug, lang] = m
   const files = await listFilesUnder(`${base}${type}`)
-  return files.find(f => f.endsWith(`/${filename}`))
+  const candidates = [
+    `${base}${type}/${slug}/index.${lang}.md`,
+    `${base}${type}/${slug}/${slug}.${lang}.md`,
+    `${base}${type}/${slug}.${lang}.md`,
+  ]
+  return candidates.find(c => files.includes(c))
 }
