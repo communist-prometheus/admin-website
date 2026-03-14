@@ -1,10 +1,12 @@
 /**
- * Check if a MIME type is a visual media type.
+ * Check if a MIME type is a supported media type.
  * @param type - MIME type string
- * @returns Whether it is image or video
+ * @returns Whether it is image, video or audio
  */
 const isMedia = (type: string): boolean =>
-  type.startsWith('image/') || type.startsWith('video/')
+  type.startsWith('image/') ||
+  type.startsWith('video/') ||
+  type.startsWith('audio/')
 
 /**
  * Extract a media file from a ClipboardEvent.

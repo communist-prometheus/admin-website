@@ -11,6 +11,15 @@ const MIME_MAP: Record<string, string> = {
   webm: 'video/webm',
   ogg: 'video/ogg',
   mov: 'video/quicktime',
+  mp3: 'audio/mpeg',
+  m4a: 'audio/mp4',
+  wav: 'audio/wav',
+  flac: 'audio/flac',
+  aac: 'audio/aac',
+  opus: 'audio/opus',
+  pdf: 'application/pdf',
+  json: 'application/json',
+  xml: 'application/xml',
 }
 
 const FALLBACK = 'application/octet-stream'

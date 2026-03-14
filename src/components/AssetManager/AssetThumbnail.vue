@@ -18,6 +18,7 @@ defineEmits<{
 
 const isImage = () => props.mimeType.startsWith('image/')
 const isVideo = () => props.mimeType.startsWith('video/')
+const isAudio = () => props.mimeType.startsWith('audio/')
 const isVisual = () => isImage() || isVideo()
 </script>
 
@@ -42,6 +43,14 @@ const isVisual = () => isImage() || isVideo()
       muted
       preload="metadata"
     />
+    <audio
+      v-else-if="isAudio() && thumbnailUrl"
+      :src="thumbnailUrl"
+      :aria-label="name"
+      controls
+      preload="metadata"
+    />
+    <span v-else class="file-icon" aria-hidden="true">📄</span>
     <span class="name">{{ name }}</span>
     <span v-if="isCover" class="badge">cover</span>
     <AssetActions
@@ -74,6 +83,19 @@ video {
   object-fit: contain;
   border-radius: 4px;
   display: block;
+}
+
+audio {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  font-size: 2.5rem;
 }
 
 .name {
