@@ -3,8 +3,12 @@
  * Scoped via .markdown-preview class selector.
  */
 .markdown-preview {
-  max-width: 800px;
   line-height: 1.8;
+}
+
+.markdown-preview > * {
+  max-width: 800px;
+  margin-inline: auto;
 }
 
 .markdown-preview h1 {
