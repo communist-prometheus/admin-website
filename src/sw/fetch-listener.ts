@@ -1,49 +1,47 @@
-import { handleInit } from './handle-init'
+import { autoRecover } from './auto-recover'
+import { handleInitRequest } from './handle-init-request'
 import { routeRequest } from './handlers/route'
 import { log } from './logging/logger'
-import type { SWGitConfig } from './protocol'
 import { workerState } from './state'
 
 declare const self: ServiceWorkerGlobalScope
 
 /**
- * Handle POST /api/sw/init — initialize the SW with config.
- * Accepted even when state !== 'ready' (this is how we GET to ready).
- * @param request - Incoming init request
- * @returns JSON response
+ * Auto-recover from SW restart, then route the request.
+ * @param request - The intercepted fetch request
+ * @returns Routed response or 503 if recovery fails
  */
-const handleInitRequest = (request: Request): Promise<Response> =>
-  request.json().then(
-    (config: SWGitConfig) =>
-      new Promise<Response>(resolve => {
-        handleInit(config, data => {
-          resolve(
-            new Response(JSON.stringify(data), {
-              headers: { 'content-type': 'application/json' },
-            })
-          )
-        })
-      })
-  )
+const recoverAndRoute = async (request: Request): Promise<Response> => {
+  const ok = await autoRecover()
+  if (ok) return routeRequest(request)
+  return new Response(JSON.stringify({ error: 'SW not ready' }), {
+    status: 503,
+    headers: { 'content-type': 'application/json' },
+  })
+}
 
 /**
  * Register the fetch event listener.
  * Intercepts /api/sw/init always (for initialization).
- * Intercepts /api/github/* only when the SW is ready.
+ * Auto-recovers from browser-triggered SW restarts.
  */
 export const registerFetchListener = (): void => {
   self.addEventListener('fetch', event => {
-    const url = new URL(event.request.url)
+    const { pathname } = new URL(event.request.url)
 
-    if (url.pathname === '/api/sw/init' && event.request.method === 'POST') {
+    if (pathname === '/api/sw/init') {
       event.respondWith(handleInitRequest(event.request))
       return
     }
 
-    if (!url.pathname.startsWith('/api/github/')) return
-    if (workerState.state !== 'ready') return
+    if (!pathname.startsWith('/api/github/')) return
 
-    log('debug', 'cache', `intercept ${event.request.method} ${url.pathname}`)
+    if (workerState.state !== 'ready') {
+      event.respondWith(recoverAndRoute(event.request))
+      return
+    }
+
+    log('debug', 'cache', `intercept ${event.request.method} ${pathname}`)
     event.respondWith(routeRequest(event.request))
   })
 }

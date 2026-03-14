@@ -1,3 +1,4 @@
+import { saveConfig } from './git/persist-config'
 import { checkRepoAndSync } from './git/sync-repo'
 import { log } from './logging/logger'
 import type { SWGitConfig } from './protocol'
@@ -22,9 +23,11 @@ export const handleInit = (
   log('info', 'auth', 'Config received', { owner: config.owner })
 
   if (!pending) {
-    pending = checkRepoAndSync(config).finally(() => {
-      pending = undefined
-    })
+    pending = checkRepoAndSync(config)
+      .then(() => saveConfig(config))
+      .finally(() => {
+        pending = undefined
+      })
   }
 
   pending
