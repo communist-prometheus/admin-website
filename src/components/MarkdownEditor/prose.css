@@ -1,66 +1,64 @@
 /**
- * Prose styles matching the public website content rendering.
+ * Prose styles mirroring public-website blog/[...slug].astro.
+ * Uses the same CSS variables from _variables.scss.
  * Scoped via .markdown-preview class selector.
  */
 .markdown-preview {
-  line-height: 1.8;
-}
-
-.markdown-preview > * {
   max-width: 800px;
   margin-inline: auto;
+  line-height: 1.8;
 }
 
 .markdown-preview h1 {
   font-size: clamp(1.5rem, 4vw, 2rem);
   font-weight: 700;
   line-height: 1.2;
-  margin: 0 0 1rem;
+  margin: 0 0 var(--spacing-sm);
 }
 
 .markdown-preview h2 {
   font-size: 1.75rem;
   font-weight: 600;
-  margin-top: 3rem;
-  margin-bottom: 1.5rem;
+  margin-top: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 .markdown-preview h3 {
   font-size: 1.375rem;
   font-weight: 600;
-  margin-top: 2rem;
-  margin-bottom: 1rem;
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
 }
 
 .markdown-preview p {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-md);
   line-height: 1.8;
 }
 
 .markdown-preview ul,
 .markdown-preview ol {
-  margin-bottom: 1.5rem;
-  padding-left: 2rem;
+  margin-bottom: var(--spacing-md);
+  padding-left: var(--spacing-lg);
 }
 
 .markdown-preview li {
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--spacing-xs);
 }
 
 .markdown-preview code {
-  background: var(--color-background-soft);
+  background: var(--color-surface);
   padding: 0.2em 0.4em;
-  border-radius: 0.5rem;
-  font-family: ui-monospace, "Cascadia Code", monospace;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
   font-size: 0.875em;
 }
 
 .markdown-preview pre {
-  background: var(--color-background-soft);
-  padding: 1.5rem;
-  border-radius: 0.75rem;
+  background: var(--color-surface);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
   overflow-x: auto;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-md);
 }
 
 .markdown-preview pre code {
@@ -69,21 +67,22 @@
 }
 
 .markdown-preview blockquote {
-  border-left: 4px solid var(--color-accent, #42b883);
-  padding-left: 1.5rem;
+  border-left: 4px solid var(--color-accent);
+  padding-left: var(--spacing-md);
   margin-left: 0;
-  margin-bottom: 1.5rem;
-  color: var(--color-text-secondary, #999);
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-secondary);
   font-style: italic;
 }
 
 .markdown-preview a {
-  color: var(--color-accent, #42b883);
+  color: var(--color-accent);
   text-decoration: underline;
+  transition: color var(--transition-fast);
 }
 
 .markdown-preview a:hover {
-  opacity: 80%;
+  color: var(--color-accent-hover);
 }
 
 .markdown-preview strong {
@@ -93,8 +92,8 @@
 .markdown-preview img {
   width: 100%;
   height: auto;
-  margin-block: 2rem;
-  border-radius: 0.75rem;
+  margin-block: var(--spacing-lg);
+  border-radius: var(--radius-md);
 }
 
 .markdown-preview picture {
@@ -103,29 +102,29 @@
 
 .markdown-preview video {
   width: 100%;
-  margin-block: 2rem;
-  border-radius: 0.75rem;
-  background: var(--color-background-soft);
+  margin-block: var(--spacing-lg);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .markdown-preview audio {
   width: 100%;
-  margin-block: 2rem;
+  margin-block: var(--spacing-lg);
 }
 
 .markdown-preview figure {
-  margin: 2rem 0;
+  margin: var(--spacing-lg) 0;
 }
 
 .markdown-preview figcaption {
   text-align: center;
   font-size: 0.875rem;
-  color: var(--color-text-secondary, #999);
-  margin-top: 0.5rem;
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-xs);
 }
 
 .markdown-preview hr {
   border: none;
   border-top: 1px solid var(--color-border);
-  margin: 2rem 0;
+  margin: var(--spacing-lg) 0;
 }
