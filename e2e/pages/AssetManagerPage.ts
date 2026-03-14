@@ -48,6 +48,13 @@ export class AssetManagerPage {
     return this.page.locator('[data-testid="asset-thumbnail"]')
   }
 
+  /** Get a specific asset thumbnail by file name */
+  getThumbByName(name: string): Locator {
+    return this.page.locator(
+      `[data-testid="asset-thumbnail"][data-name="${name}"]`
+    )
+  }
+
   getUploadAssetBtn(): Locator {
     return this.page.locator('[data-testid="asset-upload-btn"]')
   }

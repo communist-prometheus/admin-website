@@ -27,6 +27,7 @@ const isVisual = () => isImage() || isVideo()
     :data-testid="ASSET_THUMB_ID"
     :data-status="status"
     :data-name="name"
+    :data-mime="mimeType"
     class="thumb"
     :class="{ deleted: status === 'pending-delete' }"
   >
