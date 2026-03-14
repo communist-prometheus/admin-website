@@ -55,10 +55,12 @@ const isVisual = () => isImage() || isVideo()
 
 <style scoped>
 .thumb {
+  position: relative;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 0.5rem;
   text-align: center;
+  background: var(--color-background-soft);
 }
 
 .thumb.deleted {
@@ -68,7 +70,7 @@ const isVisual = () => isImage() || isVideo()
 img,
 video {
   width: 100%;
-  height: 80px;
+  height: 120px;
   object-fit: contain;
   border-radius: 4px;
   display: block;
@@ -90,6 +92,17 @@ video {
   font-size: 0.625rem;
   padding: 0.1rem 0.3rem;
   border-radius: 3px;
-  margin-left: 0.25rem;
+  margin-top: 0.25rem;
+}
+</style>
+
+<style>
+.thumb .actions {
+  opacity: 0%;
+  transition: opacity 0.2s;
+}
+
+.thumb:hover .actions {
+  opacity: 100%;
 }
 </style>

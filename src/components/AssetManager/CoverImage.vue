@@ -37,14 +37,14 @@ defineEmits<{
   border-radius: var(--radius-md);
   overflow: hidden;
   margin: 0;
-  max-height: 280px;
+  background: var(--color-background-soft);
 }
 
 img {
   width: 100%;
-  height: 280px;
+  max-height: 200px;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .no-cover {

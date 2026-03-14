@@ -27,8 +27,8 @@ defineEmits<{
 <style scoped>
 .asset-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
   list-style: none;
   padding: 0;
   margin: 0;

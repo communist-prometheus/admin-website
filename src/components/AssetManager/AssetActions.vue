@@ -34,17 +34,18 @@ defineEmits<{
 <style scoped>
 .actions {
   display: flex;
-  gap: 0.25rem;
+  justify-content: center;
+  gap: 0.375rem;
   list-style: none;
   padding: 0;
-  margin: 0.25rem 0 0;
+  margin: 0.375rem 0 0;
 }
 
 button {
-  font-size: 0.7rem;
-  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
   border: 1px solid var(--color-border);
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--color-background);
   color: var(--color-text);
   cursor: pointer;
