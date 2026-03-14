@@ -13,13 +13,19 @@ export const setupProductionAssets = (
 ) =>
   pipe(
     Effect.tryPromise({
-      try: async () =>
+      try: async () => {
         await fastify.register(fastifyStatic, {
           root: resolveDistPath('client/assets'),
           prefix: '/assets/',
           maxAge: '365d',
           immutable: true,
-        }),
+        })
+        await fastify.register(fastifyStatic, {
+          root: resolveDistPath('client/media'),
+          prefix: '/media/',
+          decorateReply: false,
+        })
+      },
       catch: () => new Error('Failed to register static assets'),
     }),
     Effect.map(() => ({
