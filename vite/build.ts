@@ -7,10 +7,7 @@ export const buildConfig: BuildOptions = {
     input: './src/entry-client.ts',
     output: {
       entryFileNames: 'assets/[name]-[hash].js',
-      assetFileNames: assetInfo => {
-        if (assetInfo.names.includes('style.css')) return 'assets/style.css'
-        return 'assets/[name]-[hash][extname]'
-      },
+      assetFileNames: 'assets/[name]-[hash][extname]',
       manualChunks: id => {
         if (id.includes('node_modules')) {
           if (id.includes('vue') || id.includes('vue-router')) {
