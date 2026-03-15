@@ -60,30 +60,19 @@ test.describe('Content Editing', () => {
     expect(newContent).toContain('## Test Edit')
   })
 
-  test('should show save button with commit message input', async ({
-    page,
-  }) => {
+  test('should show save button', async ({ page }) => {
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')
-
-    const commitInput = page.locator('input[placeholder="Commit message"]')
-    await expect(commitInput).toBeVisible()
 
     const saveBtn = page.getByRole('button', {
       name: /save/i,
     })
     await expect(saveBtn).toBeVisible()
-    await expect(saveBtn).toBeDisabled()
-
-    await commitInput.fill('test commit')
-    await expect(saveBtn).toBeEnabled()
   })
 
-  test('should send save request with commit message', async ({ page }) => {
+  test('should send save request', async ({ page }) => {
     await page.route('**/api/github/file**', async route => {
       if (route.request().method() === 'PUT') {
-        const body = route.request().postDataJSON()
-        expect(body.message).toBe('test: update content')
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -99,9 +88,6 @@ test.describe('Content Editing', () => {
 
     const textarea = editPage.getEditorBody()
     await textarea.fill('# Updated Content')
-
-    const commitInput = page.locator('input[placeholder="Commit message"]')
-    await commitInput.fill('test: update content')
 
     await page.getByRole('button', { name: /save/i }).click()
   })

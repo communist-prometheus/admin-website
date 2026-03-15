@@ -2,6 +2,7 @@
 import EditorFooter from '@/components/MarkdownEditor/EditorFooter.vue'
 import FrontmatterEditor from '@/components/MarkdownEditor/FrontmatterEditor.vue'
 import MarkdownEditorBody from '@/components/MarkdownEditor/MarkdownEditorBody.vue'
+import type { AssetDisplay } from '@/composables/useAssets/types'
 import type { ContentType } from '@/types/content'
 
 defineProps<{
@@ -10,13 +11,15 @@ defineProps<{
   readonly contentType: ContentType
   readonly loadingFile: boolean
   readonly assetUrlMap?: ReadonlyMap<string, string>
+  readonly assets?: readonly AssetDisplay[]
 }>()
 
 defineEmits<{
   'update:bodyContent': [value: string]
   'update:frontmatter': [data: Record<string, unknown>]
-  save: [message: string]
+  save: []
   'paste:image': [file: File]
+  'upload-asset': [file: File]
 }>()
 </script>
 
@@ -35,12 +38,14 @@ defineEmits<{
       <MarkdownEditorBody
         :model-value="bodyContent"
         :asset-url-map="assetUrlMap"
+        :assets="assets"
         @update:model-value="$emit('update:bodyContent', $event)"
         @paste:image="$emit('paste:image', $event)"
+        @upload-asset="$emit('upload-asset', $event)"
       />
       <EditorFooter
         :disabled="false"
-        @save="$emit('save', $event)"
+        @save="$emit('save')"
       />
     </template>
   </section>

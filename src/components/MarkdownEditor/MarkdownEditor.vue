@@ -16,7 +16,7 @@ defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   'update:frontmatter': [data: Record<string, unknown>]
-  save: [message: string]
+  save: []
 }>()
 </script>
 
@@ -36,7 +36,7 @@ const emit = defineEmits<{
       :model-value="modelValue"
       @update:model-value="emit('update:modelValue', $event)"
     />
-    <EditorFooter v-if="filePath && !loading" :disabled="false" @save="emit('save', $event)" />
+    <EditorFooter v-if="filePath && !loading" :disabled="false" @save="emit('save')" />
   </div>
 </template>
 

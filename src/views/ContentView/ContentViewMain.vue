@@ -12,6 +12,7 @@ defineProps<{
 const emit = defineEmits<{
   select: [item: ContentItem]
   create: []
+  delete: [item: ContentItem]
 }>()
 </script>
 
@@ -24,6 +25,7 @@ const emit = defineEmits<{
       :loading="loading"
       @select="emit('select', $event)"
       @create="isAuthenticated ? emit('create') : undefined"
+      @delete="emit('delete', $event)"
     />
     <p v-if="!isAuthenticated" class="auth-required">
       Please log in to edit content

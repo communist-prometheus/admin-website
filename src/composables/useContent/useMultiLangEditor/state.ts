@@ -10,6 +10,7 @@ export const createEditorState = () => {
   const cache = new Map<Language, EditorDraft>()
   const originalCache = new Map<Language, EditorDraft>()
   const fileSha = ref('')
+  const saveVersion = ref(0)
   const state: MultiLangEditorState = {
     currentLang: ref<Language>('en'),
     frontmatterData: ref<Record<string, unknown>>({}),
@@ -17,7 +18,7 @@ export const createEditorState = () => {
     loadingFile: ref(false),
     isDirty: undefined as unknown as ComputedRef<boolean>,
   }
-  return { cache, originalCache, fileSha, state }
+  return { cache, originalCache, fileSha, saveVersion, state }
 }
 
 /**

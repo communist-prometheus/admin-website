@@ -1,48 +1,60 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
-import { extractImageFile } from './handle-paste-image'
-import { insertAtCursor } from './insert-at-cursor'
+import { ref } from 'vue'
+import type { AssetDisplay } from '@/composables/useAssets/types'
+import CommandPanel from './CommandPanel.vue'
+import { buildDropTag, extractDropFile } from './handle-drop'
+import { handleKeyboard } from './handle-keyboard'
+import { buildPasteTag, extractMediaFile } from './handle-paste'
+import { insertUploadTag } from './handle-upload'
 import MarkdownPreview from './MarkdownPreview.vue'
 import PreviewToggle from './PreviewToggle.vue'
+import { execBlock, execMedia, execWrap } from './use-commands'
 
 const props = defineProps<{
   readonly modelValue: string
   readonly assetUrlMap?: ReadonlyMap<string, string>
+  readonly assets?: readonly AssetDisplay[]
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   'paste:image': [file: File]
+  'upload-asset': [file: File]
 }>()
 
 const previewing = ref(false)
 const textareaRef = ref<HTMLTextAreaElement>()
-
-const togglePreview = () => {
-  previewing.value = !previewing.value
-}
-
-const emitValue = (v: string) => {
-  emit('update:modelValue', v)
-}
+const emitUpload = (f: File) => emit('upload-asset', f)
 
 const handleInput = (event: Event) => {
   if (!(event.target instanceof HTMLTextAreaElement)) return
-  emitValue(event.target.value)
+  emit('update:modelValue', event.target.value)
+}
+
+const wrap = (pre: string, suf: string) => {
+  if (textareaRef.value) execWrap(textareaRef.value, pre, suf)
 }
 
 const handlePaste = (event: ClipboardEvent) => {
-  const file = extractImageFile(event)
-  if (!file) return
+  const file = extractMediaFile(event)
+  if (!file || !textareaRef.value) return
   event.preventDefault()
-  const pos = textareaRef.value?.selectionStart ?? 0
-  const tag = `\n![${file.name}](./assets/${file.name})\n`
-  emitValue(insertAtCursor(props.modelValue, pos, tag))
+  document.execCommand('insertText', false, buildPasteTag(file))
   emit('paste:image', file)
-  nextTick(() => {
-    const newPos = pos + tag.length
-    textareaRef.value?.setSelectionRange(newPos, newPos)
-  })
+}
+
+const handleDrop = (event: DragEvent) => {
+  const file = extractDropFile(event)
+  if (!file || !textareaRef.value) return
+  event.preventDefault()
+  document.execCommand('insertText', false, buildDropTag(file))
+  emitUpload(file)
+}
+
+const handleUpload = (file: File) => {
+  if (!textareaRef.value) return
+  insertUploadTag(textareaRef.value, file)
+  emitUpload(file)
 }
 </script>
 
@@ -50,20 +62,31 @@ const handlePaste = (event: ClipboardEvent) => {
   <section class="editor-body">
     <PreviewToggle
       :previewing="previewing"
-      @toggle="togglePreview"
+      @toggle="() => { previewing = !previewing }"
     />
     <MarkdownPreview
       v-if="previewing"
       :content="modelValue"
       :asset-url-map="assetUrlMap"
     />
+    <CommandPanel
+      v-if="!previewing"
+      :assets="assets"
+      @wrap="wrap"
+      @block="p => textareaRef && execBlock(textareaRef, p)"
+      @insert-media="t => textareaRef && execMedia(textareaRef, t)"
+      @upload-asset="handleUpload"
+    />
     <textarea
-      v-else
+      v-if="!previewing"
       ref="textareaRef"
       data-testid="editor-body"
       :value="modelValue"
       @input="handleInput"
       @paste="handlePaste"
+      @drop="handleDrop"
+      @dragover.prevent
+      @keydown="e => handleKeyboard(e, wrap)"
     />
   </section>
 </template>

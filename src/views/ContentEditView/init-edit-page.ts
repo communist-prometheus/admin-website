@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { buildInitAll } from './build-init-deps'
 import { createHandleSave } from './create-handle-save'
 import { setupLifecycle } from './setup-lifecycle'
@@ -11,7 +12,7 @@ type Page = ReturnType<typeof useEditPage>
  * @returns Save handler
  */
 export const initEditPage = (page: Page) => {
-  const { editor, isBlog, list } = page
+  const { editor, isBlog, list, slug } = page
   const initAll = buildInitAll(page)
   const handleSave = createHandleSave({
     isBlog,
@@ -19,7 +20,9 @@ export const initEditPage = (page: Page) => {
     buildPath: page.buildPath,
     currentLang: editor.currentLang,
     saveCurrentLanguage: editor.saveCurrentLanguage,
-    loadContent: list.loadContent,
+    reloadContent: list.reloadContent,
+    title: computed(() => String(editor.frontmatterData.value.title ?? slug)),
+    contentTypeName: page.contentType,
   })
   setupLifecycle(page, initAll)
 

@@ -24,15 +24,17 @@ test.describe('Content Edit Page', () => {
     expect(content).toContain('Welcome to Prometheus')
   })
 
-  test('edit page shows current language as read-only badge', async ({
+  test('edit page shows language selector with English active', async ({
     page,
   }) => {
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')
 
-    const badge = page.locator('[data-testid="current-language"]')
-    await expect(badge).toBeVisible()
-    await expect(badge).toHaveText('English')
+    const selector = page.locator('[data-testid="language-selector"]')
+    await expect(selector).toBeVisible()
+
+    const activeBtn = selector.locator('button.active')
+    await expect(activeBtn).toHaveText('English')
   })
 
   test('back button returns to list', async ({ page }) => {

@@ -29,9 +29,11 @@ export const createIsDirty = (
   cache: Map<Language, EditorDraft>,
   originalCache: Map<Language, EditorDraft>,
   state: MultiLangEditorState,
-  fileSha: Ref<string>
+  fileSha: Ref<string>,
+  saveVersion: Ref<number>
 ): ComputedRef<boolean> =>
   computed(() => {
+    void saveVersion.value
     snapshotDraft(
       cache,
       state.currentLang.value,

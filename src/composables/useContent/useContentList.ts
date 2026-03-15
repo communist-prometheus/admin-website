@@ -25,10 +25,15 @@ export const useContentList = (
     await store.ensureLoaded()
   }
 
+  const reloadContent = async () => {
+    await store.loadAll()
+  }
+
   return {
     items,
     selectedItem,
     loadingList: computed(() => store.loading),
     loadContent,
+    reloadContent,
   }
 }

@@ -70,4 +70,33 @@ export class ContentEditPage {
       `[data-testid="language-selector"] [data-lang="${lang}"]`
     )
   }
+
+  getCommandPanel(): Locator {
+    return this.page.locator('[data-testid="command-panel"]')
+  }
+
+  clickCmd(testId: string): Promise<void> {
+    return this.page.locator(`[data-testid="${testId}"]`).click()
+  }
+
+  async fillAndSelect(
+    text: string,
+    start: number,
+    end: number
+  ): Promise<void> {
+    const ta = this.getEditorBody()
+    await ta.focus()
+    await ta.fill(text)
+    await ta.evaluate(
+      (el, r) => {
+        const t = el as HTMLTextAreaElement
+        t.setSelectionRange(r.start, r.end)
+      },
+      { start, end }
+    )
+  }
+
+  getPreviewContent(): Locator {
+    return this.page.locator('[data-testid="markdown-preview"]')
+  }
 }

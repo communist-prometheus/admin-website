@@ -14,7 +14,7 @@ import { createSwitchLanguage } from './useMultiLangEditor/switch-language'
 export const useMultiLangEditor = () => {
   const { getFile, update } = useGitHubApi()
   const ctx = createEditorState()
-  const { cache, originalCache, fileSha, state } = ctx
+  const { cache, originalCache, fileSha, saveVersion, state } = ctx
 
   const loadLang = createLoadLanguageVersion(
     getFile,
@@ -23,7 +23,13 @@ export const useMultiLangEditor = () => {
     state,
     fileSha
   )
-  const isDirty = createIsDirty(cache, originalCache, state, fileSha)
+  const isDirty = createIsDirty(
+    cache,
+    originalCache,
+    state,
+    fileSha,
+    saveVersion
+  )
   ;(state as { isDirty: ComputedRef<boolean> }).isDirty = isDirty
 
   return {
@@ -36,9 +42,16 @@ export const useMultiLangEditor = () => {
       cache,
       state,
       fileSha,
-      originalCache
+      originalCache,
+      saveVersion
     ),
-    markSaved: createMarkSaved(cache, originalCache, state, fileSha),
+    markSaved: createMarkSaved(
+      cache,
+      originalCache,
+      state,
+      fileSha,
+      saveVersion
+    ),
     reset: createReset(cache, originalCache, state, fileSha),
   }
 }

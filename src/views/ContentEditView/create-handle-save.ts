@@ -10,7 +10,9 @@ interface HandleSaveDeps {
     path: string,
     message: string
   ) => Promise<void>
-  readonly loadContent: () => Promise<void>
+  readonly reloadContent: () => Promise<void>
+  readonly title: ComputedRef<string>
+  readonly contentTypeName: ComputedRef<string>
 }
 
 /**
@@ -18,12 +20,12 @@ interface HandleSaveDeps {
  * @param deps - Dependencies for saving
  * @returns Async save handler
  */
-export const createHandleSave =
-  (deps: HandleSaveDeps) => async (message: string) => {
-    if (deps.isBlog.value) await deps.blogSave(message)
-    else {
-      const path = deps.buildPath(deps.currentLang.value)
-      await deps.saveCurrentLanguage(path, message)
-    }
-    await deps.loadContent()
+export const createHandleSave = (deps: HandleSaveDeps) => async () => {
+  const message = `updated ${deps.title.value} in ${deps.contentTypeName.value}`
+  if (deps.isBlog.value) await deps.blogSave(message)
+  else {
+    const path = deps.buildPath(deps.currentLang.value)
+    await deps.saveCurrentLanguage(path, message)
   }
+  await deps.reloadContent()
+}

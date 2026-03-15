@@ -1,0 +1,88 @@
+<script setup lang="ts">
+import type { AssetDisplay } from '@/composables/useAssets/types'
+import { buildMediaTag } from './build-media-tag'
+import CmdButton from './CommandPanel/CmdButton.vue'
+import MediaPicker from './CommandPanel/MediaPicker.vue'
+import { BLOCK_CMDS, WRAP_CMDS } from './command-defs'
+import { COMMAND_PANEL_ID } from './test-ids'
+
+defineProps<{
+  readonly assets?: readonly AssetDisplay[]
+}>()
+
+const emit = defineEmits<{
+  wrap: [pre: string, suf: string]
+  block: [prefix: string]
+  'insert-media': [tag: string]
+  'upload-asset': [file: File]
+}>()
+
+const onMedia = (a: AssetDisplay) => {
+  emit('insert-media', buildMediaTag(a.name, a.mimeType))
+}
+</script>
+
+<template>
+  <nav
+    :data-testid="COMMAND_PANEL_ID"
+    class="command-panel"
+    aria-label="Formatting toolbar"
+  >
+    <CmdButton
+      v-for="c in WRAP_CMDS"
+      :key="c.label"
+      :label="c.label"
+      :title="c.title"
+      :test-id="c.testId"
+      @click="$emit('wrap', c.pre, c.suf)"
+    />
+    <span class="sep" aria-hidden="true" />
+    <CmdButton
+      v-for="c in BLOCK_CMDS"
+      :key="c.label"
+      :label="c.label"
+      :title="c.title"
+      @click="$emit('block', c.prefix)"
+    />
+    <CmdButton
+      label="{ }"
+      title="Code block"
+      @click="$emit('block', '```\n')"
+    />
+    <CmdButton
+      label="―"
+      title="Horizontal rule"
+      @click="$emit('block', '---\n')"
+    />
+    <span
+      v-if="assets"
+      class="sep"
+      aria-hidden="true"
+    />
+    <MediaPicker
+      v-if="assets"
+      :assets="assets"
+      @select="onMedia"
+      @upload="$emit('upload-asset', $event)"
+    />
+  </nav>
+</template>
+
+<style scoped>
+.command-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background-soft);
+  flex-wrap: wrap;
+}
+
+.sep {
+  width: 1px;
+  height: 1.25rem;
+  background: var(--color-border);
+}
+</style>

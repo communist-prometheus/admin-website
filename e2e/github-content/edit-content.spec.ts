@@ -22,14 +22,9 @@ test.describe('GitHub Content - Edit', () => {
     expect(content).toContain('Test Content')
   })
 
-  test('should show commit message input and save button', async ({
-    page,
-  }) => {
+  test('should show save button', async ({ page }) => {
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')
-
-    const commitInput = page.locator('input[placeholder="Commit message"]')
-    await expect(commitInput).toBeVisible()
 
     const saveBtn = page.getByRole('button', {
       name: /save/i,
@@ -45,9 +40,6 @@ test.describe('GitHub Content - Edit', () => {
 
     const textarea = editPage.getEditorBody()
     await textarea.fill('# Updated via E2E test')
-
-    const commitInput = page.locator('input[placeholder="Commit message"]')
-    await commitInput.fill('test: e2e update')
 
     const saveBtn = page.getByRole('button', { name: /save/i })
     await saveBtn.click()

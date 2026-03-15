@@ -8,7 +8,7 @@ import { resolveContentPath } from './resolve-content-path'
  * @param type - Content type
  * @param slug - Content slug
  * @param lang - Language code
- * @param request - Incoming Request (body contains sha)
+ * @param request - Incoming Request (body may contain sha)
  * @returns JSON response with { success, path }
  */
 export const handleContentDelete = async (
@@ -17,8 +17,7 @@ export const handleContentDelete = async (
   lang: string,
   request: Request
 ): Promise<Response> => {
-  const { sha } = await request.json()
-  if (!sha) return errorResponse('SHA is required', 400)
+  await request.json().catch(() => ({}))
 
   const path = await resolveContentPath(type, slug, lang)
   if (!path) {

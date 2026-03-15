@@ -15,6 +15,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [item: ContentItem]
   create: []
+  delete: [item: ContentItem]
 }>()
 
 const filteredItems = computed(() =>
@@ -37,6 +38,7 @@ const filteredItems = computed(() =>
       :item="item"
       :selected="selectedPath === item.path"
       @click="emit('select', item)"
+      @delete="emit('delete', item)"
     />
   </div>
 </template>

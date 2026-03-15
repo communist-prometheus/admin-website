@@ -1,7 +1,6 @@
-import { handleContentDelete } from './content-delete'
-import { handleContentGet } from './content-get'
-import { handleContentList } from './content-list'
+import { handleContentRename } from './content-rename'
 import { handleContentUpdate } from './content-update'
+import { dispatchContent } from './dispatch-content'
 import { matchContent } from './match-content'
 
 /**
@@ -17,24 +16,12 @@ export const routeContentRequest = async (
   const { pathname } = url
   const { method } = request
 
-  if (pathname === '/api/github/content' && method === 'POST') {
+  if (pathname === '/api/github/content' && method === 'POST')
     return handleContentUpdate(request)
-  }
+  if (pathname === '/api/github/content/rename' && method === 'POST')
+    return handleContentRename(request)
 
   const match = matchContent(pathname)
   if (!match) return undefined
-
-  if (match.kind === 'list' && method === 'GET') {
-    return handleContentList(match.type)
-  }
-
-  if (match.kind === 'item' && method === 'GET') {
-    return handleContentGet(match.type, match.slug, match.lang)
-  }
-
-  if (match.kind === 'item' && method === 'DELETE') {
-    return handleContentDelete(match.type, match.slug, match.lang, request)
-  }
-
-  return undefined
+  return dispatchContent(match, method, request)
 }

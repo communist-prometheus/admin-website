@@ -11,14 +11,6 @@ test.describe('Asset Transactional Save', () => {
     await expect(saveBtn).toBeVisible({ timeout: 10000 })
   })
 
-  test('should have commit message input', async ({ page }) => {
-    const am = new AssetManagerPage(page)
-    await am.navigateToBlog('welcome-to-prometheus')
-
-    const commitInput = page.locator('[data-testid="commit-message"]')
-    await expect(commitInput).toBeVisible({ timeout: 10000 })
-  })
-
   test('should show upload button in asset panel', async ({ page }) => {
     const am = new AssetManagerPage(page)
     await am.navigateToBlog('welcome-to-prometheus')

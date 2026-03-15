@@ -16,7 +16,8 @@ export const createMarkSaved =
     cache: Map<Language, EditorDraft>,
     originalCache: Map<Language, EditorDraft>,
     state: MultiLangEditorState,
-    fileSha: Ref<string>
+    fileSha: Ref<string>,
+    saveVersion: Ref<number>
   ): (() => void) =>
   (): void => {
     const draft: EditorDraft = {
@@ -28,4 +29,5 @@ export const createMarkSaved =
     const lang = state.currentLang.value
     cache.set(lang, draft)
     originalCache.set(lang, { ...draft })
+    saveVersion.value += 1
   }

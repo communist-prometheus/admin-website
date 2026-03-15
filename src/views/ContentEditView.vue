@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
 import AssetPanel from '@/components/AssetManager/AssetPanel.vue'
 import CoverImage from '@/components/AssetManager/CoverImage.vue'
 import AuthButton from '@/components/AuthButton.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import { renameContent } from '@/composables/useGitHubApi/rename-content'
+import type { Language } from '@/types/content'
 import ContentEditHeader from './ContentEditView/ContentEditHeader.vue'
 import ContentEditMain from './ContentEditView/ContentEditMain.vue'
 import { initEditPage } from './ContentEditView/init-edit-page'
@@ -15,11 +18,27 @@ const props = defineProps<{
   readonly slug: string
 }>()
 
+const router = useRouter()
 const p = useEditPage(props.type, props.slug)
 const { handleSave } = initEditPage(p)
 const updateBody = (v: string) => { p.editor.bodyContent.value = v }
 const updateFm = (d: Record<string, unknown>) => {
   p.editor.frontmatterData.value = d
+}
+
+const handleSwitchLang = (lang: Language) => {
+  const available = p.langs.value
+  if (available.has(lang)) {
+    p.editor.switchLanguage(lang, p.buildPath(lang))
+  } else {
+    p.editor.switchLanguage(lang)
+  }
+}
+
+const handleRename = async (newSlug: string) => {
+  await renameContent(props.type, props.slug, newSlug)
+  const url = `/content/${props.type}/edit/${newSlug}`
+  globalThis.location.replace(url)
 }
 </script>
 
@@ -30,6 +49,8 @@ const updateFm = (d: Record<string, unknown>) => {
       :slug="slug" :content-type="p.contentType.value"
       :current-lang="p.editor.currentLang.value"
       :available-languages="p.langs.value"
+      @switch-lang="handleSwitchLang"
+      @rename="handleRename"
     />
     <CoverImage
       v-if="p.isBlog.value && !p.editor.loadingFile.value"
@@ -43,10 +64,12 @@ const updateFm = (d: Record<string, unknown>) => {
       :content-type="p.contentType.value"
       :loading-file="p.editor.loadingFile.value"
       :asset-url-map="p.isBlog.value ? p.assets.urlMap.value : undefined"
+      :assets="p.isBlog.value ? p.assets.allAssets.value : undefined"
       @update:body-content="updateBody"
       @update:frontmatter="updateFm"
       @save="handleSave"
       @paste:image="p.ah.onPasteImage"
+      @upload-asset="p.ah.onUploadAsset"
     />
     <AssetPanel
       v-if="p.isBlog.value && !p.editor.loadingFile.value"

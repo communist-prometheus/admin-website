@@ -26,6 +26,7 @@ export const createPageState = (type: string, slug: string) => {
     `src/content/${type}/${slug}.${lang}.md`
 
   return {
+    slug,
     isAuth,
     contentType,
     isBlog,

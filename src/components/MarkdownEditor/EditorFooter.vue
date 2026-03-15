@@ -1,36 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
 defineProps<{
   readonly disabled: boolean
 }>()
 
 const emit = defineEmits<{
-  save: [message: string]
+  save: []
 }>()
-
-const commitMessage = ref('')
-
-const handleSave = () => {
-  if (!commitMessage.value.trim()) return
-  emit('save', commitMessage.value)
-  commitMessage.value = ''
-}
 </script>
 
 <template>
   <div class="editor-footer">
-    <input
-      v-model="commitMessage"
-      type="text"
-      placeholder="Commit message"
-      data-testid="commit-message"
-    />
     <button
       type="button"
       data-testid="save-button"
-      :disabled="disabled || !commitMessage.trim()"
-      @click="handleSave"
+      :disabled="disabled"
+      @click="emit('save')"
     >
       Save
     </button>
@@ -43,16 +27,7 @@ const handleSave = () => {
   gap: clamp(0.5rem, 2vw, 1rem);
   padding: clamp(0.75rem, 2vw, 1rem);
   border-top: 1px solid var(--color-border);
-}
-
-input {
-  flex: 1;
-  padding: clamp(0.5rem, 1.5vw, 0.75rem) clamp(0.75rem, 2vw, 1rem);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-background);
-  color: var(--color-text);
-  font-size: clamp(0.875rem, 2vw, 1rem);
+  justify-content: flex-end;
 }
 
 button {

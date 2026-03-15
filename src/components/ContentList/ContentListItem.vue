@@ -9,7 +9,7 @@ const props = defineProps<{
   readonly selected: boolean
 }>()
 
-const emit = defineEmits<{ click: [] }>()
+const emit = defineEmits<{ click: []; delete: [] }>()
 
 const formattedDate = computed(() => {
   if (!('pubDate' in props.item.frontmatter)) return undefined
@@ -62,6 +62,14 @@ const description = computed(() =>
       :category="category"
       :order="order"
     />
+    <button
+      type="button"
+      class="delete-btn"
+      data-testid="delete-item-btn"
+      @click.stop="emit('delete')"
+    >
+      Delete
+    </button>
   </div>
 </template>
 
@@ -90,5 +98,21 @@ const description = computed(() =>
   color: var(--color-text-secondary);
   font-size: clamp(0.875rem, 2vw, 1rem);
   line-height: 1.5;
+}
+
+.delete-btn {
+  display: none;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-error, #e53935);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-error, #e53935);
+  font-size: clamp(0.75rem, 1.5vw, 0.8rem);
+  cursor: pointer;
+  align-self: flex-end;
+}
+
+.content-item:hover .delete-btn {
+  display: block;
 }
 </style>

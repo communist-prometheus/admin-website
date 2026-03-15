@@ -13,6 +13,7 @@ type UpdateFn = ReturnType<typeof useGitHubApi>['update']
  * @param state - Editor state
  * @param fileSha - File SHA ref
  * @param originalCache - Original draft cache for clean state
+ * @param saveVersion - Reactive counter to trigger isDirty re-eval
  * @returns Async function that saves by path and message
  */
 export const createSaveCurrentLanguage =
@@ -21,7 +22,8 @@ export const createSaveCurrentLanguage =
     cache: Map<Language, EditorDraft>,
     state: MultiLangEditorState,
     fileSha: Ref<string>,
-    originalCache: Map<Language, EditorDraft>
+    originalCache: Map<Language, EditorDraft>,
+    saveVersion: Ref<number>
   ) =>
   async (path: string, message: string): Promise<void> => {
     const fullContent = stringifyFrontmatter(
@@ -38,4 +40,5 @@ export const createSaveCurrentLanguage =
     const lang = state.currentLang.value
     cache.set(lang, draft)
     originalCache.set(lang, { ...draft })
+    saveVersion.value += 1
   }
