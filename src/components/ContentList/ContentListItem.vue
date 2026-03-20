@@ -52,6 +52,8 @@ const description = computed(() =>
     <ItemHeader
       :title="item.frontmatter.title"
       :lang="item.lang"
+      show-delete
+      @delete="emit('delete')"
     />
     <p
       v-if="description"
@@ -64,14 +66,6 @@ const description = computed(() =>
       :category="category"
       :order="order"
     />
-    <button
-      type="button"
-      class="delete-btn"
-      data-testid="delete-item-btn"
-      @click.stop="emit('delete')"
-    >
-      Delete
-    </button>
   </div>
 </template>
 
@@ -93,6 +87,10 @@ const description = computed(() =>
 .content-item:hover {
   background: var(--color-background-soft);
   border-color: var(--color-heading);
+
+  :deep(.delete-btn) {
+    visibility: visible;
+  }
 }
 
 .item-description {
@@ -102,19 +100,4 @@ const description = computed(() =>
   line-height: 1.5;
 }
 
-.delete-btn {
-  display: none;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid var(--color-error, #e53935);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-error, #e53935);
-  font-size: clamp(0.75rem, 1.5vw, 0.8rem);
-  cursor: pointer;
-  align-self: flex-end;
-}
-
-.content-item:hover .delete-btn {
-  display: block;
-}
 </style>

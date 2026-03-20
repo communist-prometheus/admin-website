@@ -4,12 +4,24 @@ import type { Language } from '@/types/content'
 defineProps<{
   title: string
   lang: Language
+  showDelete?: boolean
 }>()
+
+const emit = defineEmits<{ delete: [] }>()
 </script>
 
 <template>
   <div class="item-header">
     <h3>{{ title }}</h3>
+    <button
+      v-if="showDelete"
+      type="button"
+      class="delete-btn"
+      data-testid="delete-item-btn"
+      @click.stop="emit('delete')"
+    >
+      Delete
+    </button>
     <span class="lang-badge">{{ lang }}</span>
   </div>
 </template>
@@ -28,6 +40,18 @@ h3 {
   font-size: clamp(1rem, 2vw, 1.125rem);
   font-weight: 600;
   flex: 1;
+}
+
+.delete-btn {
+  visibility: hidden;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--color-error, #e53935);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-error, #e53935);
+  font-size: clamp(0.75rem, 1.5vw, 0.8rem);
+  cursor: pointer;
+  line-height: 1;
 }
 
 .lang-badge {
