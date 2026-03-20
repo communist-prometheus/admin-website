@@ -25,6 +25,9 @@ const emit = defineEmits<{ click: [] }>()
 
 <style scoped>
 .user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--border-radius-sm);
   border: var(--border-width) solid var(--color-border);

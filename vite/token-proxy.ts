@@ -1,38 +1,46 @@
 import type { Plugin } from 'vite'
-
-const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
+import { api } from '../src/api/app'
 
 /**
- * Vite dev server proxy for GitHub token exchange.
- * Injects GITHUB_CLIENT_SECRET from server .env.
- * The secret never reaches the browser.
+ * Vite dev server plugin: mount shared Hono API app.
+ * Passes GITHUB_CLIENT_SECRET from process.env as binding.
  * @returns Vite plugin
  */
 export const tokenProxyPlugin = (): Plugin => ({
-  name: 'github-token-proxy',
+  name: 'api-proxy',
   configureServer(server) {
-    server.middlewares.use('/api/oauth/token', async (req, res) => {
+    server.middlewares.use(async (req, res, next) => {
+      const url = req.url ?? ''
+      if (!url.startsWith('/api/')) return next()
+
+      const headers = new Headers()
+      for (const [k, v] of Object.entries(req.headers)) {
+        if (v) headers.set(k, Array.isArray(v) ? v[0] : v)
+      }
+
       const chunks: Buffer[] = []
       for await (const chunk of req) {
         chunks.push(chunk as Buffer)
       }
-      const body = new URLSearchParams(Buffer.concat(chunks).toString())
-      const secret = process.env.GITHUB_CLIENT_SECRET
-      if (secret) body.set('client_secret', secret)
 
-      const gh = await fetch(GITHUB_TOKEN_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Accept: 'application/json',
-        },
-        body: body.toString(),
+      const request = new Request(`http://localhost${url}`, {
+        method: req.method,
+        headers,
+        body:
+          req.method !== 'GET' && req.method !== 'HEAD'
+            ? Buffer.concat(chunks)
+            : undefined,
       })
 
-      res.writeHead(gh.status, {
-        'Content-Type': 'application/json',
+      const response = await api.fetch(request, {
+        GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET ?? '',
       })
-      res.end(await gh.text())
+
+      res.writeHead(response.status, {
+        'Content-Type':
+          response.headers.get('Content-Type') ?? 'application/json',
+      })
+      res.end(await response.text())
     })
   },
 })
