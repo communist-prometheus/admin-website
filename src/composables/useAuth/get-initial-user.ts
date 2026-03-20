@@ -1,22 +1,22 @@
-import { inject } from 'vue'
-import type { InitialState, User } from '@/types/user'
+import type { User } from '@/types/user'
+import { fetchGitHubUser } from './fetch-github-user'
 import { getMockUser } from './mock-user'
+import { loadToken } from './token-storage'
 
 /**
- * Get initial user from SSR state or mock
- * @returns User or null
+ * Get initial user from localStorage token or mock.
+ * In mock mode, requires token in localStorage to return user.
+ * @returns Promise resolving to User or null
  */
-export const getInitialUser = (): User | null => {
+export const getInitialUser = async (): Promise<User | null> => {
+  const token = loadToken()
+  if (!token) return null
   if (import.meta.env.VITE_MOCK_AUTH === 'true') {
     return getMockUser()
   }
-  const ssrState = inject<InitialState | null>('initialState', null)
-  if (ssrState?.user) return ssrState.user
-  if (typeof window !== 'undefined') {
-    const initialState = (
-      globalThis as unknown as { __INITIAL_STATE__?: InitialState }
-    ).__INITIAL_STATE__
-    return initialState?.user || null
+  try {
+    return await fetchGitHubUser(token)
+  } catch {
+    return null
   }
-  return null
 }

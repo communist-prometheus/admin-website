@@ -1,8 +1,3 @@
-export const AUTH_ENDPOINTS = {
-  github: '/api/auth/github',
-  status: '/api/test/status',
-} as const
-
 export const BUTTON_NAMES = {
   login: 'Login',
   logout: 'Logout',

@@ -117,7 +117,7 @@ Run the development server with SSR and HMR:
 npm run dev
 ```
 
-Server will start at `http://localhost:3000`
+Server will start at `http://localhost:5173`
 
 ## Production
 

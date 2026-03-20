@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process'
 import process from 'node:process'
 
-const port = process.argv[2] ?? '3000'
+const port = process.argv[2] ?? '5173'
 
 /**
  * Kill any process listening on the given port.

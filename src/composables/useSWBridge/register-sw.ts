@@ -10,11 +10,23 @@ const isSWAvailable = (): boolean => {
 }
 
 /**
+ * Check if sw.js exists before attempting registration.
+ * Avoids noisy errors in dev mode where SW is not built.
+ * @returns True if sw.js responds with a JS content type
+ */
+const swScriptExists = async (): Promise<boolean> => {
+  try {
+    const res = await fetch('/sw.js', { method: 'HEAD' })
+    const ct = res.headers.get('content-type') ?? ''
+    return ct.includes('javascript')
+  } catch {
+    return false
+  }
+}
+
+/**
  * Register the Service Worker.
- * Always uses the pre-built /sw.js (IIFE bundle with polyfills).
- * In production, the SW is pre-registered from the HTML template
- * for a head start. This call returns the existing registration.
- * Does NOT wait for activation — content loading gates on swReady.
+ * Skips registration in dev when sw.js is not built.
  * @returns The ServiceWorkerRegistration, or undefined
  */
 export const registerServiceWorker = async (): Promise<
@@ -22,6 +34,11 @@ export const registerServiceWorker = async (): Promise<
 > => {
   if (!isSWAvailable()) {
     swLog('warn', 'ServiceWorker not supported')
+    return undefined
+  }
+
+  if (!(await swScriptExists())) {
+    swLog('warn', 'sw.js not found, skipping registration')
     return undefined
   }
 

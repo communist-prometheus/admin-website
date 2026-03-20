@@ -22,9 +22,7 @@ const { loading: oauthLoading, openPopup } = useOAuthPopup(
 const loading = computed(() => authLoading || oauthLoading.value)
 
 const handleLogout = () => {
-  if (typeof globalThis !== 'undefined') {
-    globalThis.location.href = '/api/auth/logout'
-  }
+  authStore.logout()
 }
 
 const handleDifferentAccount = () => {

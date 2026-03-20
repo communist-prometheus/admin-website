@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { waitForNetworkIdle } from '../helpers/network'
-import { ContentEditPage } from '../pages/ContentEditPage'
 import { AssetManagerPage } from '../pages/AssetManagerPage'
+import { ContentEditPage } from '../pages/ContentEditPage'
 
 const SLUG = 'media-showcase'
 
@@ -116,9 +116,9 @@ test.describe('Rename Slug', () => {
 
     // Navigate back to list
     await page.locator('[data-testid="back-button"]').click()
-    await expect(
-      page.locator('[data-testid="content-list"]')
-    ).toBeVisible({ timeout: 10000 })
+    await expect(page.locator('[data-testid="content-list"]')).toBeVisible({
+      timeout: 10000,
+    })
 
     // Count items with "Rich Media" title (should be exactly 1)
     const items = page.locator('[data-testid="content-item"]')

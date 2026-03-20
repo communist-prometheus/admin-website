@@ -1,4 +1,6 @@
 import type { User } from '@/types/user'
+import { fetchGitHubUser } from './fetch-github-user'
+import { loadToken } from './token-storage'
 
 /**
  * Auth status response shape.
@@ -9,10 +11,16 @@ interface AuthStatus {
 }
 
 /**
- * Check authentication status via API.
+ * Check authentication status via localStorage token.
  * @returns Auth status with optional user
  */
 export const checkAuthStatus = async (): Promise<AuthStatus> => {
-  const res = await fetch('/api/auth/user')
-  return res.json() as Promise<AuthStatus>
+  const token = loadToken()
+  if (!token) return { authenticated: false }
+  try {
+    const user = await fetchGitHubUser(token)
+    return { authenticated: true, user }
+  } catch {
+    return { authenticated: false }
+  }
 }

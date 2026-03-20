@@ -3,21 +3,19 @@ import { waitForContentReady } from '../helpers/content-ready'
 
 test.use({ storageState: { cookies: [], origins: [] } })
 
-test.describe('Popup Login Flow', () => {
-  test('should load content after popup login without reload', async ({
+test.describe('Login Flow', () => {
+  test('should load content after login without full reload', async ({
     page,
   }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
 
-    const popupPromise = page.waitForEvent('popup')
-    await page.getByRole('button', { name: /login/i }).click()
-    const popup = await popupPromise
+    await expect(page.getByRole('button', { name: /login/i })).toBeVisible()
 
-    await popup.waitForLoadState('load')
-    await popup.waitForEvent('close', { timeout: 5000 }).catch(() => {})
-
+    await page.evaluate(() => localStorage.setItem('gh_token', 'mock-token'))
+    await page.reload()
     await page.waitForLoadState('networkidle')
+
     await expect(
       page.getByRole('button', { name: /test user/i })
     ).toBeVisible({ timeout: 10000 })
@@ -27,24 +25,21 @@ test.describe('Popup Login Flow', () => {
     await waitForContentReady(page)
 
     const items = page.locator('[data-testid="content-item"]')
-    await items.first().waitFor({ state: 'visible', timeout: 15000 })
+    await items.first().waitFor({
+      state: 'visible',
+      timeout: 15000,
+    })
     expect(await items.count()).toBeGreaterThanOrEqual(1)
   })
 
-  test('should initialize SW with token after popup login', async ({
-    page,
-  }) => {
+  test('should initialize SW with token after login', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
 
-    const popupPromise = page.waitForEvent('popup')
-    await page.getByRole('button', { name: /login/i }).click()
-    const popup = await popupPromise
-
-    await popup.waitForLoadState('load')
-    await popup.waitForEvent('close', { timeout: 5000 }).catch(() => {})
-
+    await page.evaluate(() => localStorage.setItem('gh_token', 'mock-token'))
+    await page.reload()
     await page.waitForLoadState('networkidle')
+
     await expect(
       page.getByRole('button', { name: /test user/i })
     ).toBeVisible({ timeout: 10000 })

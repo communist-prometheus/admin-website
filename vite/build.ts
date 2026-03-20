@@ -4,7 +4,6 @@ export const buildConfig: BuildOptions = {
   manifest: true,
   cssCodeSplit: false,
   rolldownOptions: {
-    input: './src/entry-client.ts',
     output: {
       entryFileNames: 'assets/[name]-[hash].js',
       assetFileNames: 'assets/[name]-[hash][extname]',

@@ -1,11 +1,11 @@
+import { clearToken } from '@/composables/useAuth/token-storage'
+
 /**
  * Authentication service
  */
 export const AuthService = {
   logout: () => {
-    if (typeof globalThis !== 'undefined') {
-      globalThis.location.href = '/api/auth/logout'
-    }
+    clearToken()
   },
 
   openDifferentAccountDialog: () => {

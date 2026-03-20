@@ -1,25 +1,15 @@
 import { ref } from 'vue'
 import type { User } from '@/types/user'
+import { buildAuthorizeUrl } from './useOAuthPopup/authorize-url'
 import {
   createMessageHandler,
   createPopupMonitor,
 } from './useOAuthPopup/handlers'
-
-const createPopupWindow = () => {
-  const width = 600
-  const height = 700
-  const left = (globalThis.screen.width - width) / 2
-  const top = (globalThis.screen.height - height) / 2
-  return globalThis.open(
-    '/api/auth/github',
-    'github-oauth',
-    `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no`
-  )
-}
+import { createPopupWindow } from './useOAuthPopup/popup-window'
 
 /**
  * Vue composable for GitHub OAuth popup window flow.
- * @param onSuccess - Callback when OAuth succeeds with user data
+ * @param onSuccess - Callback when OAuth succeeds with user
  * @param onError - Optional callback when OAuth fails
  * @returns Loading state and popup opener function
  */
@@ -28,10 +18,11 @@ export const useOAuthPopup = (
   onError?: (error: string) => void
 ) => {
   const loading = ref(false)
-  const openPopup = () => {
+  const openPopup = async () => {
     if (typeof globalThis === 'undefined') return
     loading.value = true
-    const popup = createPopupWindow()
+    const url = await buildAuthorizeUrl()
+    const popup = createPopupWindow(url)
     const cleanup = () => {
       loading.value = false
       globalThis.removeEventListener('message', handleMessage)

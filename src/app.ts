@@ -1,29 +1,20 @@
 import { createPinia } from 'pinia'
-import { createSSRApp } from 'vue'
+import { createApp as vueCreateApp } from 'vue'
 import type { Router } from 'vue-router'
-import {
-  createMemoryHistory,
-  createRouter,
-  createWebHistory,
-} from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import { routes } from './router'
 
 /**
- * Creates Vue application instance with router for SSR or client.
- * @param isSSR - Whether running in SSR mode (uses memory history) or client (web history)
+ * Creates Vue application instance with router.
  * @returns Object containing app instance and router
  */
-export const createApp = (isSSR: boolean) => {
-  const app = createSSRApp(App)
+export const createApp = () => {
+  const app = vueCreateApp(App)
   const pinia = createPinia()
 
-  const history = isSSR
-    ? createMemoryHistory(import.meta.env.BASE_URL)
-    : createWebHistory(import.meta.env.BASE_URL)
-
   const router: Router = createRouter({
-    history,
+    history: createWebHistory(import.meta.env.BASE_URL),
     routes,
   })
 

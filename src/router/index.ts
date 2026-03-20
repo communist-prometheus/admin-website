@@ -8,6 +8,11 @@ export const routes: RouteRecordRaw[] = [
     component: HomeView,
   },
   {
+    path: '/auth/github/callback',
+    name: 'auth-callback',
+    component: () => import('../views/AuthCallbackView.vue'),
+  },
+  {
     path: '/about',
     name: 'about',
     component: () => import('../views/AboutView.vue'),

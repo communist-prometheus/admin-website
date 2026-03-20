@@ -35,7 +35,7 @@ export default defineConfig({
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     actionTimeout: 0,
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:5173',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -60,8 +60,9 @@ export default defineConfig({
      * Prevents reuseExistingServer from using a stale instance.
      */
     command:
-      'bun scripts/kill-port.ts 3000 && bun run build:e2e && bun run preview:test',
-    port: 3000,
+      'bun scripts/kill-port.ts 5173 && bun run build:e2e && bun run preview:test',
+    env: { VITE_MOCK_AUTH: 'true' },
+    port: 5173,
     reuseExistingServer: true,
   },
 })

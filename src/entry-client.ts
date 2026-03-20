@@ -3,7 +3,7 @@ import './assets/styles/index.scss'
 import { createApp } from './app'
 import { registerServiceWorker } from './composables/useSWBridge/register-sw'
 
-const { app, router } = createApp(false)
+const { app, router } = createApp()
 
 /**
  * Start SW registration in parallel with app mount.
