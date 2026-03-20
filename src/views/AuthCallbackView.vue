@@ -7,6 +7,7 @@ import {
   loadAndClearVerifier,
   saveToken,
 } from '@/composables/useAuth/token-storage'
+import { loadRedirect } from '@/router/auth-guard'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -46,7 +47,7 @@ onMounted(async () => {
 
     const user = await fetchGitHubUser(token)
     authStore.setUser(user)
-    router.push('/')
+    router.push(loadRedirect() ?? '/')
   } catch (e) {
     status.value =
       e instanceof Error ? e.message : 'Auth failed'

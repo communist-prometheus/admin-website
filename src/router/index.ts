@@ -20,24 +20,28 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/content/blog',
     name: 'content-blog',
+    meta: { requiresAuth: true },
     component: () => import('../views/ContentView.vue'),
     props: { contentType: 'blog' },
   },
   {
     path: '/content/pages',
     name: 'content-pages',
+    meta: { requiresAuth: true },
     component: () => import('../views/ContentView.vue'),
     props: { contentType: 'pages' },
   },
   {
     path: '/content/positions',
     name: 'content-positions',
+    meta: { requiresAuth: true },
     component: () => import('../views/ContentView.vue'),
     props: { contentType: 'positions' },
   },
   {
     path: '/content/:type/edit/:slug',
     name: 'content-edit',
+    meta: { requiresAuth: true },
     component: () => import('../views/ContentEditView.vue'),
     props: true,
   },

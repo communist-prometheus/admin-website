@@ -4,6 +4,7 @@ import type { Router } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import { routes } from './router'
+import { installAuthGuard } from './router/auth-guard'
 
 /**
  * Creates Vue application instance with router.
@@ -17,6 +18,8 @@ export const createApp = () => {
     history: createWebHistory(import.meta.env.BASE_URL),
     routes,
   })
+
+  installAuthGuard(router)
 
   app.use(pinia)
   app.use(router)

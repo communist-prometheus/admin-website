@@ -1,24 +1,51 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const auth = useAuthStore()
 </script>
 
 <template>
   <nav class="app-nav">
-    <RouterLink to="/" :class="{ active: route.path === '/' }">
+    <RouterLink
+      to="/"
+      :class="{ active: route.path === '/' }"
+    >
       Home
     </RouterLink>
-    <RouterLink to="/content/blog" :class="{ active: route.path.startsWith('/content/blog') }">
-      Blog
-    </RouterLink>
-    <RouterLink to="/content/positions" :class="{ active: route.path.startsWith('/content/positions') }">
-      Positions
-    </RouterLink>
-    <RouterLink to="/content/pages" :class="{ active: route.path.startsWith('/content/pages') }">
-      Pages
-    </RouterLink>
-    <RouterLink to="/about" :class="{ active: route.path === '/about' }">
+    <template v-if="auth.user">
+      <RouterLink
+        to="/content/blog"
+        :class="{
+          active: route.path.startsWith('/content/blog'),
+        }"
+      >
+        Blog
+      </RouterLink>
+      <RouterLink
+        to="/content/positions"
+        :class="{
+          active: route.path.startsWith(
+            '/content/positions'
+          ),
+        }"
+      >
+        Positions
+      </RouterLink>
+      <RouterLink
+        to="/content/pages"
+        :class="{
+          active: route.path.startsWith('/content/pages'),
+        }"
+      >
+        Pages
+      </RouterLink>
+    </template>
+    <RouterLink
+      to="/about"
+      :class="{ active: route.path === '/about' }"
+    >
       About
     </RouterLink>
   </nav>
