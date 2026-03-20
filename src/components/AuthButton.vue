@@ -36,17 +36,27 @@ const handleDifferentAccount = () => {
 </script>
 
 <template>
-  <LoginButton
-    v-if="!authStore.user"
-    :loading="loading"
-    @click="openPopup"
-  />
-  <UserMenu
-    v-else
-    :user="authStore.user"
-    :show="showDropdown"
-    @toggle="toggleDropdown"
-    @logout="handleLogout"
-    @different-account="handleDifferentAccount"
-  />
+  <div class="auth-slot">
+    <LoginButton
+      v-if="!authStore.user"
+      :loading="loading"
+      @click="openPopup"
+    />
+    <UserMenu
+      v-else
+      :user="authStore.user"
+      :show="showDropdown"
+      @toggle="toggleDropdown"
+      @logout="handleLogout"
+      @different-account="handleDifferentAccount"
+    />
+  </div>
 </template>
+
+<style scoped>
+.auth-slot {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 120px;
+}
+</style>

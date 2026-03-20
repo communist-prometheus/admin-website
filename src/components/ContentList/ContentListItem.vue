@@ -30,7 +30,9 @@ const category = computed(() =>
 )
 
 const order = computed(() =>
-  'order' in props.item.frontmatter ? props.item.frontmatter.order : undefined
+  'order' in props.item.frontmatter
+    ? Number(props.item.frontmatter.order)
+    : undefined
 )
 
 const description = computed(() =>
