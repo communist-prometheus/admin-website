@@ -19,7 +19,9 @@ const { loading: oauthLoading, openPopup } = useOAuthPopup(
   }
 )
 
-const loading = computed(() => authLoading || oauthLoading.value)
+const loading = computed(
+  () => authLoading.value || oauthLoading.value
+)
 
 const handleLogout = () => {
   authStore.logout()

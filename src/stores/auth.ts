@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { getInitialUser } from '@/composables/useAuth/get-initial-user'
-import { clearToken } from '@/composables/useAuth/token-storage'
+import { clearToken, loadToken } from '@/composables/useAuth/token-storage'
 import { initSWWithToken } from '@/composables/useSWBridge/init-sw'
 import type { User } from '@/types/user'
 
@@ -15,11 +15,12 @@ const syncTokenToSW = (user: User | null): void => {
 
 /**
  * Pinia store for authentication state management.
+ * Starts loading=true if token exists to prevent CLS.
  * @returns Reactive user state and auth methods
  */
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
-  const loading = ref(false)
+  const loading = ref(!!loadToken())
   const error = ref<string | null>(null)
 
   watch(user, syncTokenToSW, { immediate: true })
@@ -42,7 +43,15 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = () => {
     clearToken()
     user.value = null
+    loading.value = false
   }
 
-  return { user, loading, error, checkAuth, setUser, logout }
+  return {
+    user,
+    loading,
+    error,
+    checkAuth,
+    setUser,
+    logout,
+  }
 })

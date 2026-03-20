@@ -1,18 +1,20 @@
 import { onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 
 /**
  * Authentication composable
- * @returns User state and auth methods from Pinia store
+ * @returns Reactive user state and auth methods
  */
 export const useAuth = () => {
   const store = useAuthStore()
+  const { loading } = storeToRefs(store)
 
   onMounted(store.checkAuth)
 
   return {
     user: store.user,
-    loading: store.loading,
+    loading,
     error: store.error,
     checkAuth: store.checkAuth,
   }
