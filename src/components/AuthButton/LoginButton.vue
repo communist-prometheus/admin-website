@@ -38,19 +38,32 @@ const emit = defineEmits<{ click: [] }>()
   font-size: var(--font-size-sm);
 }
 
-.avatar-skeleton {
+.avatar-skeleton,
+.name-skeleton {
   display: block;
+  border-radius: var(--radius-sm);
+  background: var(--color-background-mute);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.avatar-skeleton {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--color-background-mute);
 }
 
 .name-skeleton {
-  display: block;
   width: 80px;
   height: 1em;
-  border-radius: var(--radius-sm);
-  background: var(--color-background-mute);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 </style>

@@ -1,3 +1,5 @@
+import { clearProfile } from './profile-cache'
+
 const TOKEN_KEY = 'gh_token'
 const VERIFIER_KEY = 'pkce_verifier'
 
@@ -21,6 +23,7 @@ export const loadToken = (): string | undefined =>
  */
 export const clearToken = (): void => {
   localStorage.removeItem(TOKEN_KEY)
+  clearProfile()
 }
 
 /**

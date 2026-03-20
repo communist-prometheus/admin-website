@@ -27,10 +27,10 @@ const authStore = useAuthStore()
       <WelcomeDescription />
     </WelcomeSection>
 
-    <DashboardSection v-else-if="authStore.user">
+    <DashboardSection v-else>
       <DashboardHeading />
       <DashboardDescription />
-      <ContentGrid>
+      <ContentGrid v-if="authStore.user">
         <ContentCard>
           <ContentCardTitle title="Blog Posts" />
           <ContentCardDescription description="Create and edit blog articles" />

@@ -1,20 +1,16 @@
 import type { User } from '@/types/user'
 import { fetchGitHubUser } from './fetch-github-user'
-import { getMockUser } from './mock-user'
 import { saveProfile } from './profile-cache'
 import { loadToken } from './token-storage'
 
 /**
- * Get initial user from localStorage token or mock.
- * Saves profile to cache on successful fetch.
- * @returns Promise resolving to User or null
+ * Revalidate user by fetching fresh profile from GitHub.
+ * Updates the profile cache on success.
+ * @returns Fresh User or undefined on failure
  */
-export const getInitialUser = async (): Promise<User | null> => {
+export const revalidateUser = async (): Promise<User | undefined> => {
   const token = loadToken()
-  if (!token) return null
-  if (import.meta.env.VITE_MOCK_AUTH === 'true') {
-    return getMockUser()
-  }
+  if (!token) return undefined
   try {
     const user = await fetchGitHubUser(token)
     saveProfile({
@@ -24,6 +20,6 @@ export const getInitialUser = async (): Promise<User | null> => {
     })
     return user
   } catch {
-    return null
+    return undefined
   }
 }
