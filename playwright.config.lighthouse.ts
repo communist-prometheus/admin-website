@@ -15,5 +15,9 @@ const lh = (name: string, port: number) => ({
   },
 })
 
-/** Lighthouse projects: desktop + mobile */
-export const lighthouseProjects = [lh('desktop', 9222), lh('mobile', 9223)]
+/** Lighthouse projects: desktop, mobile, desktop-auth */
+export const lighthouseProjects = [
+  lh('desktop', 9222),
+  lh('mobile', 9223),
+  lh('desktop-auth', 9224),
+]
