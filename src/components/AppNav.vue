@@ -14,7 +14,7 @@ const auth = useAuthStore()
     >
       Home
     </RouterLink>
-    <template v-if="auth.user">
+    <template v-if="auth.user || auth.loading">
       <RouterLink
         to="/content/blog"
         :class="{

@@ -22,12 +22,12 @@ const authStore = useAuthStore()
       <AuthButton />
     </template>
 
-    <WelcomeSection v-if="!authStore.user">
+    <WelcomeSection v-if="!authStore.user && !authStore.loading">
       <WelcomeHeading />
       <WelcomeDescription />
     </WelcomeSection>
 
-    <DashboardSection v-else>
+    <DashboardSection v-else-if="authStore.user">
       <DashboardHeading />
       <DashboardDescription />
       <ContentGrid>
