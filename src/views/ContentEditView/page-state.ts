@@ -3,7 +3,7 @@ import { useAssets } from '@/composables/useAssets/useAssets'
 import { useContentList } from '@/composables/useContent/useContentList'
 import { useMultiLangEditor } from '@/composables/useContent/useMultiLangEditor'
 import { useAuthStore } from '@/stores/auth'
-import { flatFile } from '@/config/content-paths'
+import { blogFile, flatFile } from '@/config/content-paths'
 import type { ContentType, Language } from '@/types/content'
 import { getAvailableLanguages } from '@/utils/available-languages'
 import { createAssetHandlers } from './asset-handlers'
@@ -23,7 +23,8 @@ export const createPageState = (type: string, slug: string) => {
   const assets = useAssets(slug, undefined)
   const ah = createAssetHandlers(assets)
   const langs = computed(() => getAvailableLanguages(list.items.value, slug))
-  const buildPath = (lang: Language) => flatFile(type, slug, lang)
+  const buildPath = (lang: Language) =>
+    type === 'blog' ? blogFile(slug, lang) : flatFile(type, slug, lang)
 
   return {
     slug,
