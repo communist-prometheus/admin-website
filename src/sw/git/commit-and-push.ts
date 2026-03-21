@@ -26,7 +26,10 @@ export const commitAndPush = async (message: string): Promise<string> => {
     fs,
     dir: REPO_DIR,
     message,
-    author: { name: 'Admin', email: 'admin@prometheus.org' },
+    author: {
+      name: config.authorName ?? 'Admin',
+      email: config.authorEmail ?? 'admin@prometheus.org',
+    },
   })
 
   log('info', 'git', `committed ${sha.slice(0, 7)}`)

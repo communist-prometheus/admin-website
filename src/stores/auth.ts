@@ -13,7 +13,11 @@ import type { User } from '@/types/user'
  * @param user - Authenticated user or null
  */
 const syncTokenToSW = (user: User | null): void => {
-  if (user?.accessToken) initSWWithToken(user.accessToken)
+  if (user?.accessToken)
+    initSWWithToken(user.accessToken, {
+      name: user.name,
+      username: user.username,
+    })
 }
 
 /**

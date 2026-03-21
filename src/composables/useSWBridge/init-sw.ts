@@ -1,3 +1,4 @@
+import type { SWAuthor } from './build-sw-config'
 import { buildSWConfig } from './build-sw-config'
 import { initViaMessage } from './init-via-message'
 import { log } from './sw-log'
@@ -15,13 +16,17 @@ const wait = (ms: number): Promise<void> =>
  * Send git config to the SW with retry.
  * Marks ready only on success or after all retries exhaust.
  * @param token - GitHub access token
+ * @param author - Optional git commit author info
  */
-export const initSWWithToken = async (token: string): Promise<void> => {
+export const initSWWithToken = async (
+  token: string,
+  author?: SWAuthor
+): Promise<void> => {
   if (typeof globalThis.document === 'undefined') {
     markSWReady()
     return
   }
-  const config = buildSWConfig(token)
+  const config = buildSWConfig(token, author)
   for (let i = 0; i < RETRIES; i++) {
     try {
       const hasCtr = !!navigator.serviceWorker.controller
