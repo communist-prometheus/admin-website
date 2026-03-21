@@ -1,6 +1,7 @@
 import { computeBlobSha } from '../git/blob-sha'
 import { listFilesUnder } from '../git/list-files'
 import { readRepoFile } from '../git/read-file'
+import { workerState } from '../state'
 import { jsonResponse } from './json-response'
 
 /**
@@ -10,7 +11,8 @@ import { jsonResponse } from './json-response'
  * @returns JSON response with tree items
  */
 export const handleTree = async (url: URL): Promise<Response> => {
-  const path = url.searchParams.get('path') || 'src/content'
+  const fallback = workerState.config?.contentPath || '.'
+  const path = url.searchParams.get('path') || fallback
   const files = await listFilesUnder(path)
 
   const items = await Promise.all(

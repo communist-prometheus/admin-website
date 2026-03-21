@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { getGitHubConfig } from '@/config/github'
 import type { GitHubTreeItem } from '@/composables/useGitHubApi'
 import { useGitHubApi } from '@/composables/useGitHubApi'
 import FileTreeItem from './FileTreeItem.vue'
@@ -9,7 +10,7 @@ const props = withDefaults(
     readonly rootPath?: string
   }>(),
   {
-    rootPath: 'src/content',
+    rootPath: getGitHubConfig().contentPath || '.',
   }
 )
 

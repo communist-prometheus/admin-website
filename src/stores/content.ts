@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { isTypePath } from '@/config/content-paths'
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
 import type { ContentItem, ContentType } from '@/types/content'
 
@@ -54,9 +55,7 @@ export const useContentStore = defineStore('content', () => {
   }
 
   const itemsByType = (type: ContentType) =>
-    computed(() =>
-      allItems.value.filter(item => item.path.startsWith(`${type}/`))
-    )
+    computed(() => allItems.value.filter(item => isTypePath(item.path, type)))
 
   return { allItems, loading, loaded, loadAll, ensureLoaded, itemsByType }
 })

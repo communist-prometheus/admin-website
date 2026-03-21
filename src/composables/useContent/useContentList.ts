@@ -1,12 +1,10 @@
 import { computed, type Ref, ref, toValue } from 'vue'
+import { isTypePath } from '@/config/content-paths'
 import { useContentStore } from '@/stores/content'
 import type { ContentItem, ContentType } from '@/types/content'
 
-const matchesType = (item: ContentItem, type: ContentType): boolean =>
-  item.path.startsWith(`${type}/`) || item.path.includes(`/${type}/`)
-
 /**
- * Content list composable — reads from the global content store
+ * Content list composable — reads from the global store.
  * @param contentType - Type of content to list
  * @returns Content list interface
  */
@@ -16,24 +14,14 @@ export const useContentList = (
   const store = useContentStore()
 
   const items = computed(() =>
-    store.allItems.filter(item => matchesType(item, toValue(contentType)))
+    store.allItems.filter(item => isTypePath(item.path, toValue(contentType)))
   )
-
-  const selectedItem = ref<ContentItem | null>(null)
-
-  const loadContent = async () => {
-    await store.ensureLoaded()
-  }
-
-  const reloadContent = async () => {
-    await store.loadAll()
-  }
 
   return {
     items,
-    selectedItem,
+    selectedItem: ref<ContentItem | null>(null),
     loadingList: computed(() => store.loading),
-    loadContent,
-    reloadContent,
+    loadContent: () => store.ensureLoaded(),
+    reloadContent: () => store.loadAll(),
   }
 }

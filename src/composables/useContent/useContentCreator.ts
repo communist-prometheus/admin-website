@@ -1,3 +1,4 @@
+import { blogFile, flatFile } from '@/config/content-paths'
 import type { ContentType, Language } from '@/types/content'
 import { stringifyFrontmatter } from '@/utils/frontmatter'
 import { useGitHubApi } from '../useGitHubApi'
@@ -14,7 +15,6 @@ export const useContentCreator = (
 
   const getContentType = () =>
     typeof contentType === 'function' ? contentType() : contentType
-  const getRootPath = () => `src/content/${getContentType()}`
 
   const createContent = async (
     data: {
@@ -27,15 +27,14 @@ export const useContentCreator = (
     },
     initialContent = ''
   ) => {
-    const isBlog = getContentType() === 'blog'
-    const fileName = isBlog
-      ? `index.${data.lang}.md`
-      : `${data.slug}.${data.lang}.md`
+    const type = getContentType()
+    const isBlog = type === 'blog'
     const filePath = isBlog
-      ? `${getRootPath()}/${data.slug}/${fileName}`
-      : `${getRootPath()}/${fileName}`
+      ? blogFile(data.slug, data.lang)
+      : flatFile(type, data.slug, data.lang)
 
-    const frontmatter = buildFrontmatter(getContentType(), data)
+    const fileName = filePath.split('/').pop() ?? ''
+    const frontmatter = buildFrontmatter(type, data)
     const content = stringifyFrontmatter(frontmatter, initialContent)
 
     await create(filePath, content, `Create ${fileName}`)
