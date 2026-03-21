@@ -16,9 +16,9 @@ export interface GitHubRepoConfig {
  */
 export const getGitHubConfig = (): GitHubRepoConfig => ({
   owner: import.meta.env.VITE_GITHUB_OWNER ?? 'communist-prometheus',
-  repo: import.meta.env.VITE_GITHUB_REPO ?? 'public-website',
+  repo: import.meta.env.VITE_GITHUB_REPO ?? 'public-website-content',
   branch: import.meta.env.VITE_GITHUB_BRANCH ?? 'develop',
-  contentPath: import.meta.env.VITE_GITHUB_CONTENT_PATH ?? 'src/content',
+  contentPath: import.meta.env.VITE_GITHUB_CONTENT_PATH ?? '',
   corsProxy:
     import.meta.env.VITE_CORS_PROXY ?? 'https://cors.isomorphic-git.org',
 })

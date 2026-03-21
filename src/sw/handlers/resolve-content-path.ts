@@ -1,11 +1,11 @@
 import { listFilesUnder } from '../git/list-files'
-import { workerState } from '../state'
+import { contentBase } from './content-base'
 
 /**
  * Resolve the actual file path for a content item.
  *
  * Content layout by type:
- * - blog:      nested — `blog/{slug}/index.{lang}.md` (+ optional `assets/`)
+ * - blog:      nested — `blog/{slug}/index.{lang}.md`
  * - pages:     flat   — `pages/{slug}.{lang}.md`
  * - positions: flat   — `positions/{slug}.{lang}.md`
  *
@@ -19,11 +19,11 @@ export const resolveContentPath = async (
   slug: string,
   lang: string
 ): Promise<string | undefined> => {
-  const base = workerState.config?.contentPath ?? 'src/content'
+  const base = contentBase(type)
   const candidates = [
-    `${base}/${type}/${slug}/index.${lang}.md`,
-    `${base}/${type}/${slug}.${lang}.md`,
+    `${base}/${slug}/index.${lang}.md`,
+    `${base}/${slug}.${lang}.md`,
   ]
-  const files = await listFilesUnder(`${base}/${type}`)
+  const files = await listFilesUnder(base)
   return candidates.find(c => files.includes(c))
 }

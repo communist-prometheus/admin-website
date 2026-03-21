@@ -2,7 +2,7 @@ import { deleteAndUnstage } from '../git/delete-git-file'
 import { listFilesUnder } from '../git/list-files'
 import { readRepoFile } from '../git/read-file'
 import { writeAndStage } from '../git/write-file'
-import { workerState } from '../state'
+import { contentBase } from './content-base'
 
 /**
  * Rename a flat slug: rename all `{old}.*.md` to `{new}.*.md`.
@@ -16,8 +16,7 @@ export const renameFlatSlug = async (
   oldSlug: string,
   newSlug: string
 ): Promise<number> => {
-  const base = workerState.config?.contentPath ?? 'src/content'
-  const dir = `${base}/${type}`
+  const dir = contentBase(type)
   const all = await listFilesUnder(dir)
   const matching = all.filter(f => {
     const name = f.split('/').pop() ?? ''

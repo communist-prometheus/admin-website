@@ -1,7 +1,7 @@
 import { commitAndPush } from '../git/commit-and-push'
 import { deleteAndUnstage } from '../git/delete-git-file'
 import { listFilesUnder } from '../git/list-files'
-import { workerState } from '../state'
+import { contentBase } from './content-base'
 import { errorResponse, jsonResponse } from './json-response'
 
 /**
@@ -14,9 +14,7 @@ export const handleContentDeleteAll = async (
   type: string,
   slug: string
 ): Promise<Response> => {
-  const base = workerState.config?.contentPath ?? 'src/content'
-  const prefix = `${base}/${type}`
-  const all = await listFilesUnder(prefix)
+  const all = await listFilesUnder(contentBase(type))
   const matching = findSlugFiles(all, type, slug)
 
   if (matching.length === 0)

@@ -1,7 +1,7 @@
 import { serializeFrontmatter } from '../frontmatter'
 import { commitAndPush } from '../git/commit-and-push'
 import { writeAndStage } from '../git/write-file'
-import { workerState } from '../state'
+import { contentBase } from './content-base'
 import { errorResponse, jsonResponse } from './json-response'
 import { resolveContentPath } from './resolve-content-path'
 
@@ -20,12 +20,12 @@ export const handleContentUpdate = async (
     return errorResponse('Missing required fields', 400)
   }
 
-  const base = workerState.config?.contentPath ?? 'src/content'
+  const base = contentBase(type)
   const existing = await resolveContentPath(type, slug, lang)
   const isBlog = type === 'blog'
   const newPath = isBlog
-    ? `${base}/${type}/${slug}/index.${lang}.md`
-    : `${base}/${type}/${slug}.${lang}.md`
+    ? `${base}/${slug}/index.${lang}.md`
+    : `${base}/${slug}.${lang}.md`
   const path = existing ?? newPath
   const content = serializeFrontmatter(frontmatter, mdBody)
 

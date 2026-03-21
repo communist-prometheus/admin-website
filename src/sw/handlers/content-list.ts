@@ -2,8 +2,8 @@ import { parseFrontmatter } from '../frontmatter'
 import { computeBlobSha } from '../git/blob-sha'
 import { listFilesUnder } from '../git/list-files'
 import { readRepoFile } from '../git/read-file'
-import { workerState } from '../state'
 import { jsonResponse } from './json-response'
+import { contentBase } from './content-base'
 import { parseSlugFromPath } from './parse-slug'
 
 /**
@@ -27,8 +27,7 @@ const buildItem = async (type: string, filepath: string) => {
  * @returns JSON response with { items: ContentItem[] }
  */
 export const handleContentList = async (type: string): Promise<Response> => {
-  const contentPath = workerState.config?.contentPath ?? 'src/content'
-  const files = await listFilesUnder(`${contentPath}/${type}`)
+  const files = await listFilesUnder(contentBase(type))
   const mdFiles = files.filter(f => f.endsWith('.md'))
   const items = await Promise.all(mdFiles.map(f => buildItem(type, f)))
   return jsonResponse({ items })
