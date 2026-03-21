@@ -55,9 +55,7 @@ export const useContentStore = defineStore('content', () => {
 
   const itemsByType = (type: ContentType) =>
     computed(() =>
-      allItems.value.filter(item =>
-        item.path.startsWith(`src/content/${type}/`)
-      )
+      allItems.value.filter(item => item.path.startsWith(`${type}/`))
     )
 
   return { allItems, loading, loaded, loadAll, ensureLoaded, itemsByType }

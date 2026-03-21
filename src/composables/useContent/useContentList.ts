@@ -3,7 +3,7 @@ import { useContentStore } from '@/stores/content'
 import type { ContentItem, ContentType } from '@/types/content'
 
 const matchesType = (item: ContentItem, type: ContentType): boolean =>
-  item.path.startsWith(`src/content/${type}/`)
+  item.path.startsWith(`${type}/`) || item.path.includes(`/${type}/`)
 
 /**
  * Content list composable — reads from the global content store
