@@ -28,7 +28,7 @@ describe('useContentCreator', () => {
     })
 
     expect(mockCreate).toHaveBeenCalledWith(
-      'src/content/blog/test-post/index.en.md',
+      'blog/test-post/index.en.md',
       expect.stringContaining('title: Test Post'),
       'Create index.en.md'
     )
@@ -46,7 +46,7 @@ describe('useContentCreator', () => {
     })
 
     expect(mockCreate).toHaveBeenCalledWith(
-      'src/content/pages/about.ru.md',
+      'pages/about.ru.md',
       expect.stringContaining('title: О нас'),
       'Create about.ru.md'
     )
@@ -66,7 +66,7 @@ describe('useContentCreator', () => {
     })
 
     expect(mockCreate).toHaveBeenCalledWith(
-      'src/content/positions/developer.en.md',
+      'positions/developer.en.md',
       expect.stringContaining('order: 1'),
       'Create developer.en.md'
     )

@@ -23,7 +23,7 @@ describe('useContentList', () => {
   it('loads content and filters by type', async () => {
     const blog = [
       {
-        path: 'src/content/blog/p1/index.en.md',
+        path: 'blog/p1/index.en.md',
         slug: 'p1',
         frontmatter: { lang: 'en', title: 'P1' },
       },

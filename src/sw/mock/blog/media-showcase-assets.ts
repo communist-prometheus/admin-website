@@ -15,7 +15,7 @@ const STUB_VIDEO = 'AAAA'
 /** Minimal audio stub */
 const STUB_AUDIO = 'AAAA'
 
-const BASE = 'src/content/blog/media-showcase/assets'
+const BASE = 'blog/media-showcase/assets'
 
 /** Mock assets for the media-showcase blog post */
 export const mediaShowcaseAssets: readonly MockEntry[] = [

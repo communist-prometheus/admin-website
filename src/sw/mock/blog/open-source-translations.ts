@@ -3,7 +3,7 @@ import type { MockEntry } from '../all-entries'
 /** Italian and Spanish translations of the open-source post */
 export const openSourceTranslations: readonly MockEntry[] = [
   {
-    path: 'src/content/blog/open-source-collaboration/index.it.md',
+    path: 'blog/open-source-collaboration/index.it.md',
     content: `---
 title: Il potere della collaborazione open source
 description: Come le comunità open source guidano l'innovazione.
@@ -18,7 +18,7 @@ lang: it
 L'open source è più di un modello di sviluppo.`,
   },
   {
-    path: 'src/content/blog/open-source-collaboration/index.es.md',
+    path: 'blog/open-source-collaboration/index.es.md',
     content: `---
 title: El poder de la colaboración open source
 description: Cómo las comunidades de código abierto impulsan la innovación.

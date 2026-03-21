@@ -4,7 +4,7 @@ import { sovereigntyTranslations } from './digital-sovereignty-translations'
 /** Mock entries for the "digital-sovereignty" position */
 export const digitalSovereigntyEntries: readonly MockEntry[] = [
   {
-    path: 'src/content/positions/digital-sovereignty.en.md',
+    path: 'positions/digital-sovereignty.en.md',
     content: `---
 title: Digital Sovereignty
 description: Technology must serve the people, not corporations.
@@ -17,7 +17,7 @@ lang: en
 We advocate for open-source infrastructure.`,
   },
   {
-    path: 'src/content/positions/digital-sovereignty.ru.md',
+    path: 'positions/digital-sovereignty.ru.md',
     content: `---
 title: Цифровой суверенитет
 description: Технологии должны служить людям, а не корпорациям.

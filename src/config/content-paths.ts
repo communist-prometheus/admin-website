@@ -70,7 +70,5 @@ export const assetFile = (slug: string, filename: string): string =>
  * @param type - Content type
  * @returns True if path is under the type directory
  */
-export const isTypePath = (path: string, type: string): boolean => {
-  const prefix = typePath(type)
-  return path.startsWith(`${prefix}/`) || path.includes(`/${type}/`)
-}
+export const isTypePath = (path: string, type: string): boolean =>
+  path.startsWith(`${typePath(type)}/`)

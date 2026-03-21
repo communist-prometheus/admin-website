@@ -3,7 +3,7 @@ import type { ContentItem } from '@/types/content'
 import { getAvailableLanguages } from './available-languages'
 
 const makeItem = (slug: string, lang: ContentItem['lang']): ContentItem => ({
-  path: `src/content/blog/${slug}.${lang}.md`,
+  path: `blog/${slug}.${lang}.md`,
   slug,
   lang,
   frontmatter: { title: slug, lang },

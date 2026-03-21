@@ -2,15 +2,28 @@ import type { User } from '@/types/user'
 import { fetchGitHubUser } from './fetch-github-user'
 import { getMockUser } from './mock-user'
 import { saveProfile } from './profile-cache'
-import { loadToken } from './token-storage'
+import { loadToken, saveToken } from './token-storage'
 
 /**
- * Get initial user from localStorage token or mock.
+ * Resolve token: dev injected, or from localStorage.
+ * @returns Token string or undefined
+ */
+const resolveToken = (): string | undefined => {
+  const devToken = import.meta.env.VITE_DEV_TOKEN as string | undefined
+  if (devToken) {
+    saveToken(devToken)
+    return devToken
+  }
+  return loadToken()
+}
+
+/**
+ * Get initial user from token or mock.
  * Saves profile to cache on successful fetch.
  * @returns Promise resolving to User or null
  */
 export const getInitialUser = async (): Promise<User | null> => {
-  const token = loadToken()
+  const token = resolveToken()
   if (!token) return null
   if (import.meta.env.VITE_MOCK_AUTH === 'true') {
     return getMockUser()

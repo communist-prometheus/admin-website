@@ -6,6 +6,7 @@
   "scripts": {
     "prepare": "husky",
     "dev": "bun run build:sw && bun scripts/copy-sw-dev.ts && vite",
+    "dev:token": "bun run build:sw && bun scripts/copy-sw-dev.ts && bun scripts/dev-token.ts",
     "validate": "bun run type-check && bun run check:ci && bun run lint:sonar && bun run lint:jsdoc && bun run lint:vue-depth && bun run lint:css",
     "build": "bun run validate && bun run build:client && bun run build:sw",
     "build:client": "vite build --outDir dist/client",

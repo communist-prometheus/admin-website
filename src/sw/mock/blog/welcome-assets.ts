@@ -9,7 +9,7 @@ const HERO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">
 /** Mock asset for the welcome-to-prometheus blog post */
 export const welcomeAssets: readonly MockEntry[] = [
   {
-    path: 'src/content/blog/welcome-to-prometheus/assets/hero.svg',
+    path: 'blog/welcome-to-prometheus/assets/hero.svg',
     content: HERO_SVG,
   },
 ]

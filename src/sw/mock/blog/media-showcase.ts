@@ -5,7 +5,7 @@ import { mediaShowcaseTranslations } from './media-showcase-translations'
 /** Mock entries for the "media-showcase" blog post */
 export const mediaShowcaseEntries: readonly MockEntry[] = [
   {
-    path: 'src/content/blog/media-showcase/index.en.md',
+    path: 'blog/media-showcase/index.en.md',
     content: `---
 title: Rich Media in Blog Posts
 description: A showcase of media types supported in Prometheus blog.

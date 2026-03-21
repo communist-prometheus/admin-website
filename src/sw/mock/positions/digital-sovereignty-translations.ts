@@ -3,7 +3,7 @@ import type { MockEntry } from '../all-entries'
 /** Italian and Spanish translations of the digital-sovereignty position */
 export const sovereigntyTranslations: readonly MockEntry[] = [
   {
-    path: 'src/content/positions/digital-sovereignty.it.md',
+    path: 'positions/digital-sovereignty.it.md',
     content: `---
 title: Sovranità Digitale
 description: La tecnologia deve servire le persone, non le corporazioni.
@@ -16,7 +16,7 @@ lang: it
 Sosteniamo l'infrastruttura open-source.`,
   },
   {
-    path: 'src/content/positions/digital-sovereignty.es.md',
+    path: 'positions/digital-sovereignty.es.md',
     content: `---
 title: Soberanía Digital
 description: La tecnología debe servir a las personas, no a las corporaciones.

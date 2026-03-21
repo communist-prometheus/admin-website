@@ -5,7 +5,7 @@ import { openSourceTranslations } from './open-source-translations'
 /** Mock entries for the "open-source-collaboration" blog post */
 export const openSourceEntries: readonly MockEntry[] = [
   {
-    path: 'src/content/blog/open-source-collaboration/index.en.md',
+    path: 'blog/open-source-collaboration/index.en.md',
     content: `---
 title: The Power of Open Source Collaboration
 description: How open source communities drive innovation.
@@ -20,7 +20,7 @@ lang: en
 Open source is more than a development model.`,
   },
   {
-    path: 'src/content/blog/open-source-collaboration/index.ru.md',
+    path: 'blog/open-source-collaboration/index.ru.md',
     content: `---
 title: Сила открытого сотрудничества
 description: Как сообщества открытого кода стимулируют инновации.

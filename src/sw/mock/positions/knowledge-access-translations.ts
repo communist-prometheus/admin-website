@@ -3,7 +3,7 @@ import type { MockEntry } from '../all-entries'
 /** Italian and Spanish translations of the knowledge-access position */
 export const knowledgeTranslations: readonly MockEntry[] = [
   {
-    path: 'src/content/positions/knowledge-access.it.md',
+    path: 'positions/knowledge-access.it.md',
     content: `---
 title: Accesso Universale alla Conoscenza
 description: L'istruzione e la conoscenza dovrebbero essere liberamente disponibili.
@@ -16,7 +16,7 @@ lang: it
 L'apprendimento dovrebbe essere collaborativo.`,
   },
   {
-    path: 'src/content/positions/knowledge-access.es.md',
+    path: 'positions/knowledge-access.es.md',
     content: `---
 title: Acceso Universal al Conocimiento
 description: La educación y el conocimiento deben estar disponibles libremente.

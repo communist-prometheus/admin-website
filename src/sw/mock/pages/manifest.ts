@@ -4,7 +4,7 @@ import { manifestTranslations } from './manifest-translations'
 /** Mock entries for the "manifest" page */
 export const manifestEntries: readonly MockEntry[] = [
   {
-    path: 'src/content/pages/manifest.en.md',
+    path: 'pages/manifest.en.md',
     content: `---
 title: Our Manifest
 description: Our mission, core principles, and commitment.
@@ -16,7 +16,7 @@ lang: en
 Our principles and values.`,
   },
   {
-    path: 'src/content/pages/manifest.ru.md',
+    path: 'pages/manifest.ru.md',
     content: `---
 title: Наш манифест
 description: Наша миссия, основные принципы и приверженность.

@@ -4,7 +4,7 @@ import { astroTranslations } from './astro-framework-translations'
 /** Mock entries for the "astro-framework" blog post */
 export const astroFrameworkEntries: readonly MockEntry[] = [
   {
-    path: 'src/content/blog/astro-framework/index.en.md',
+    path: 'blog/astro-framework/index.en.md',
     content: `---
 title: Why Choose Astro Framework
 description: Learn about Astro's unique approach to building fast websites.
@@ -18,7 +18,7 @@ lang: en
 Astro is a modern web framework with a fresh approach.`,
   },
   {
-    path: 'src/content/blog/astro-framework/index.ru.md',
+    path: 'blog/astro-framework/index.ru.md',
     content: `---
 title: Почему выбрать фреймворк Astro
 description: Узнайте об уникальном подходе Astro к созданию быстрых сайтов.

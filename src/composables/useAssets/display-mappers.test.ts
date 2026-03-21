@@ -23,7 +23,7 @@ describe('isCoverMatch', () => {
 
 describe('committedToDisplay', () => {
   const item: AssetItem = {
-    path: 'src/content/blog/test/assets/hero.svg',
+    path: 'blog/test/assets/hero.svg',
     name: 'hero.svg',
     mimeType: 'image/svg+xml',
   }
@@ -58,7 +58,7 @@ describe('pendingToDisplay', () => {
     const result = pendingToDisplay(asset, 'my-post', false)
     expect(result).toEqual({
       name: 'new.png',
-      path: 'src/content/blog/my-post/assets/new.png',
+      path: 'blog/my-post/assets/new.png',
       mimeType: 'image/png',
       thumbnailUrl: 'blob:y',
       status: 'pending-add',

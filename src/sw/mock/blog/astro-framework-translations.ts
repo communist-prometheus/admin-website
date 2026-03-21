@@ -3,7 +3,7 @@ import type { MockEntry } from '../all-entries'
 /** Italian and Spanish translations of the astro-framework post */
 export const astroTranslations: readonly MockEntry[] = [
   {
-    path: 'src/content/blog/astro-framework/index.it.md',
+    path: 'blog/astro-framework/index.it.md',
     content: `---
 title: Perché Scegliere il Framework Astro
 description: Scopri l'approccio unico di Astro per siti web veloci.
@@ -17,7 +17,7 @@ lang: it
 Astro è un framework web moderno con un approccio innovativo.`,
   },
   {
-    path: 'src/content/blog/astro-framework/index.es.md',
+    path: 'blog/astro-framework/index.es.md',
     content: `---
 title: Por Qué Elegir el Framework Astro
 description: Descubre el enfoque único de Astro para sitios web rápidos.

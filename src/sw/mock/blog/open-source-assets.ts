@@ -3,7 +3,7 @@ import type { MockEntry } from '../all-entries'
 /** Stub JPEG (1x1 white pixel, enough for MIME detection) */
 const STUB_JPG = '\xff\xd8\xff\xe0'
 
-const BASE = 'src/content/blog/open-source-collaboration/assets'
+const BASE = 'blog/open-source-collaboration/assets'
 
 /** Mock asset for the open-source-collaboration blog post */
 export const openSourceAssets: readonly MockEntry[] = [

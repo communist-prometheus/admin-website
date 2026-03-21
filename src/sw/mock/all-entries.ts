@@ -8,7 +8,7 @@ import { positionEntries } from './position-entries'
  * Expected content directory structure (mirrors public-website):
  *
  * ```
- * src/content/
+ *
  *   blog/                          <- nested: slug/index.lang.md
  *     {slug}/
  *       index.{en|ru|it|es}.md
