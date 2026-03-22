@@ -1,6 +1,6 @@
 /**
  * Get the token exchange endpoint URL.
- * Dev: Vite proxy at /api/github/token.
+ * Dev: Vite proxy at /api/oauth/token.
  * Prod: VITE_TOKEN_PROXY env or same relative path.
  * @returns Token endpoint URL
  */

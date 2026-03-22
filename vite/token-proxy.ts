@@ -11,7 +11,7 @@ export const tokenProxyPlugin = (): Plugin => ({
   configureServer(server) {
     server.middlewares.use(async (req, res, next) => {
       const url = req.url ?? ''
-      if (!url.startsWith('/api/')) return next()
+      if (!url.startsWith('/api/oauth/')) return next()
 
       const headers = new Headers()
       for (const [k, v] of Object.entries(req.headers)) {
