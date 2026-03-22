@@ -62,7 +62,7 @@ test.describe('Asset Panel', () => {
     await expect(deleted).toHaveCount(1, { timeout: 5000 })
   })
 
-  test('should not show asset panel for pages', async ({ page }) => {
+  test('should show asset panel for pages', async ({ page }) => {
     await page.goto('/content/pages/edit/manifest', {
       waitUntil: 'domcontentloaded',
     })
@@ -70,7 +70,7 @@ test.describe('Asset Panel', () => {
     await expect(body).toBeVisible({ timeout: 20000 })
 
     const panel = page.locator('[data-testid="asset-panel"]')
-    await expect(panel).toHaveCount(0)
+    await expect(panel).toHaveCount(1)
   })
 
   test('should set asset as cover when button clicked', async ({ page }) => {

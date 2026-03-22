@@ -42,7 +42,7 @@ test.describe('Asset Cover Image', () => {
     await expect(noCover).toBeVisible({ timeout: 5000 })
   })
 
-  test('should not show cover for non-blog content', async ({ page }) => {
+  test('should show cover for all folder-based content', async ({ page }) => {
     await page.goto('/content/pages/edit/manifest', {
       waitUntil: 'domcontentloaded',
     })
@@ -50,7 +50,7 @@ test.describe('Asset Cover Image', () => {
     await expect(body).toBeVisible({ timeout: 20000 })
 
     const cover = page.locator('[data-testid="cover-image"]')
-    await expect(cover).toHaveCount(0)
+    await expect(cover).toHaveCount(1)
   })
 
   test('should show no-cover text for blog without image', async ({

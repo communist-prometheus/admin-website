@@ -21,7 +21,7 @@ test.describe('Asset Transactional Save', () => {
     })
   })
 
-  test('should show cover and panel for blog only', async ({ page }) => {
+  test('should show cover and panel for all folder-based types', async ({ page }) => {
     const am = new AssetManagerPage(page)
     await am.navigateToBlog('welcome-to-prometheus')
 
@@ -34,7 +34,7 @@ test.describe('Asset Transactional Save', () => {
     const body = page.locator('[data-testid="editor-body"]')
     await expect(body).toBeVisible({ timeout: 20000 })
 
-    await expect(page.locator('[data-testid="cover-image"]')).toHaveCount(0)
-    await expect(page.locator('[data-testid="asset-panel"]')).toHaveCount(0)
+    await expect(page.locator('[data-testid="cover-image"]')).toHaveCount(1)
+    await expect(page.locator('[data-testid="asset-panel"]')).toHaveCount(1)
   })
 })
