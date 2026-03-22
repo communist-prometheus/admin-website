@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useSettingsStore } from '@/stores/settings'
 import type { Language } from '@/types/content'
-import { LANGUAGES } from '@/types/content'
 
 const props = defineProps<{
   readonly modelValue: Language
@@ -11,32 +12,30 @@ const emit = defineEmits<{
   'update:modelValue': [value: Language]
 }>()
 
-const labels: Record<Language, string> = {
-  en: 'English',
-  ru: 'Русский',
-  it: 'Italiano',
-  es: 'Español',
-}
+const settings = useSettingsStore()
+onMounted(() => settings.ensureLoaded())
 
 const langButtonClass = (code: Language) => ({
   active: props.modelValue === code,
   exists: props.availableLanguages?.has(code) ?? false,
-  dimmed: props.availableLanguages !== undefined && !props.availableLanguages.has(code),
+  dimmed:
+    props.availableLanguages !== undefined &&
+    !props.availableLanguages.has(code),
 })
 </script>
 
 <template>
   <div class="language-selector" data-testid="language-selector">
     <button
-      v-for="code in LANGUAGES"
-      :key="code"
+      v-for="entry in settings.languages"
+      :key="entry.code"
       type="button"
       class="lang-button"
-      :class="langButtonClass(code)"
-      :data-lang="code"
-      @click="emit('update:modelValue', code)"
+      :class="langButtonClass(entry.code)"
+      :data-lang="entry.code"
+      @click="emit('update:modelValue', entry.code)"
     >
-      {{ labels[code] }}
+      {{ entry.label }}
     </button>
   </div>
 </template>

@@ -5,6 +5,8 @@ const navItems = [
   { path: '/content/blog', label: 'Blog' },
   { path: '/content/positions', label: 'Positions' },
   { path: '/content/pages', label: 'Pages' },
+  { path: '/content/common', label: 'Common' },
+  { path: '/settings', label: 'Settings' },
 ] as const
 </script>
 

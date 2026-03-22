@@ -46,6 +46,12 @@ export const routes: RouteRecordRaw[] = [
     props: { contentType: 'common' },
   },
   {
+    path: '/settings',
+    name: 'settings',
+    meta: { requiresAuth: true },
+    component: () => import('../views/SettingsView/SettingsView.vue'),
+  },
+  {
     path: '/content/:type/edit/:slug',
     name: 'content-edit',
     meta: { requiresAuth: true },

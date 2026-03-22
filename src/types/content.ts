@@ -1,12 +1,14 @@
 /**
- * All supported content languages
+ * Supported content languages.
+ * Runtime values are loaded from settings/languages.json via the settings store.
+ * This constant provides a compile-time fallback.
  */
 export const LANGUAGES = ['en', 'ru', 'it', 'es'] as const
 
 /**
- * Supported content languages
+ * Language code type — string to support dynamic languages from settings
  */
-export type Language = (typeof LANGUAGES)[number]
+export type Language = string
 
 /**
  * Frontmatter metadata for blog posts
