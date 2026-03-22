@@ -41,6 +41,16 @@ const auth = useAuthStore()
       >
         Pages
       </RouterLink>
+      <RouterLink
+        to="/content/common"
+        :class="{
+          active: route.path.startsWith(
+            '/content/common'
+          ),
+        }"
+      >
+        Common
+      </RouterLink>
     </template>
     <RouterLink
       to="/about"
