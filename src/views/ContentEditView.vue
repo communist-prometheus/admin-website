@@ -49,6 +49,7 @@ const handleRename = async (newSlug: string) => {
       :slug="slug" :content-type="p.contentType.value"
       :current-lang="p.editor.currentLang.value"
       :available-languages="p.langs.value"
+      :renameable="p.contentType.value !== 'pages' && p.contentType.value !== 'common'"
       @switch-lang="handleSwitchLang"
       @rename="handleRename"
     />

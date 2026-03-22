@@ -10,6 +10,8 @@ const props = defineProps<{
   readonly selectedLang: Language
   readonly selectedPath: string | null
   readonly loading?: boolean
+  readonly hideCreate?: boolean
+  readonly hideDelete?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -25,7 +27,7 @@ const filteredItems = computed(() =>
 
 <template>
   <div class="content-list" data-testid="content-list">
-    <ContentListHeader @create="emit('create')" />
+    <ContentListHeader v-if="!hideCreate" @create="emit('create')" />
     <div v-if="loading" class="loading">Loading content...</div>
     <ContentListEmpty
       v-else-if="filteredItems.length === 0"
@@ -37,6 +39,7 @@ const filteredItems = computed(() =>
       :key="item.path"
       :item="item"
       :selected="selectedPath === item.path"
+      :hide-delete="hideDelete"
       @click="emit('select', item)"
       @delete="emit('delete', item)"
     />

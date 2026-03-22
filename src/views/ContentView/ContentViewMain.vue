@@ -7,6 +7,8 @@ defineProps<{
   readonly selectedLang: Language
   readonly isAuthenticated: boolean
   readonly loading?: boolean
+  readonly hideCreate?: boolean
+  readonly hideDelete?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -23,6 +25,8 @@ const emit = defineEmits<{
       :selected-lang="selectedLang"
       :selected-path="null"
       :loading="loading"
+      :hide-create="hideCreate"
+      :hide-delete="hideDelete"
       @select="emit('select', $event)"
       @create="isAuthenticated ? emit('create') : undefined"
       @delete="emit('delete', $event)"

@@ -10,18 +10,21 @@ import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import { useContentCreator } from '@/composables/useContent/useContentCreator'
 import { useContentList } from '@/composables/useContent/useContentList'
 import { useAuthStore } from '@/stores/auth'
-import type { ContentItem, Language } from '@/types/content'
+import type { ContentItem, ContentType, Language } from '@/types/content'
 import ContentViewHeader from './ContentView/ContentViewHeader.vue'
 import ContentViewMain from './ContentView/ContentViewMain.vue'
 import { createDeleteHandlers } from './ContentView/create-delete-handlers'
 
+const FIXED_STRUCTURE_TYPES: ReadonlySet<ContentType> = new Set(['pages', 'common'])
+
 const props = defineProps<{
-  readonly contentType: 'blog' | 'pages' | 'positions'
+  readonly contentType: ContentType
 }>()
 
 const router = useRouter()
 const authStore = useAuthStore()
 const isAuthenticated = computed(() => !!authStore.user)
+const isFixedStructure = computed(() => FIXED_STRUCTURE_TYPES.has(props.contentType))
 
 const contentTypeRef = computed(() => props.contentType)
 const { items, loadingList, loadContent, reloadContent } =
@@ -81,6 +84,8 @@ const handleDeleteLang = () => {
       :selected-lang="selectedLang"
       :is-authenticated="isAuthenticated"
       :loading="loadingList"
+      :hide-create="isFixedStructure"
+      :hide-delete="isFixedStructure"
       @select="handleSelect"
       @create="openCreateDialog"
       @delete="item => { deleteTarget = item }"
@@ -90,6 +95,7 @@ const handleDeleteLang = () => {
     <ErrorMessage :error="error" />
 
     <CreateContentDialog
+      v-if="!isFixedStructure"
       :show="showCreateDialog"
       :content-type="contentType"
       :lang="selectedLang"
@@ -98,6 +104,7 @@ const handleDeleteLang = () => {
     />
 
     <DeleteConfirmDialog
+      v-if="!isFixedStructure"
       :show="showDeleteDialog"
       :slug="deleteTarget?.slug ?? ''"
       :current-lang="selectedLang"

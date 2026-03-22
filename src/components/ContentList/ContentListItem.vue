@@ -7,6 +7,7 @@ import ItemMeta from './ItemMeta.vue'
 const props = defineProps<{
   readonly item: ContentItem
   readonly selected: boolean
+  readonly hideDelete?: boolean
 }>()
 
 const emit = defineEmits<{ click: []; delete: [] }>()
@@ -52,7 +53,7 @@ const description = computed(() =>
     <ItemHeader
       :title="item.frontmatter.title"
       :lang="item.lang"
-      show-delete
+      :show-delete="!hideDelete"
       @delete="emit('delete')"
     />
     <p

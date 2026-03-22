@@ -8,6 +8,7 @@ defineProps<{
   readonly contentType: ContentType
   readonly currentLang: Language
   readonly availableLanguages: ReadonlySet<Language>
+  readonly renameable?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -27,9 +28,11 @@ const emit = defineEmits<{
         &larr; Back
       </RouterLink>
       <EditableSlug
+        v-if="renameable !== false"
         :slug="slug"
         @rename="emit('rename', $event)"
       />
+      <h1 v-else data-testid="slug-title">{{ slug }}</h1>
     </nav>
     <LanguageSelector
       :model-value="currentLang"
