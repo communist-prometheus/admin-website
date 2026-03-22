@@ -11,7 +11,8 @@ import type { AssetState } from './state'
  * @returns Async loader function
  */
 export const createLoadCommitted =
-  (type: string, slug: string, state: AssetState) => async (): Promise<void> => {
+  (type: string, slug: string, state: AssetState) =>
+  async (): Promise<void> => {
     state.loading.value = true
     try {
       const prefix = buildAssetsPrefix(type, slug)

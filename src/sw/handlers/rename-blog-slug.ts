@@ -31,5 +31,7 @@ export const renameNestedSlug = async (
 }
 
 /** @deprecated Use renameNestedSlug instead */
-export const renameBlogSlug = (oldSlug: string, newSlug: string): Promise<number> =>
-  renameNestedSlug('blog', oldSlug, newSlug)
+export const renameBlogSlug = (
+  oldSlug: string,
+  newSlug: string
+): Promise<number> => renameNestedSlug('blog', oldSlug, newSlug)

@@ -21,7 +21,9 @@ test.describe('Asset Transactional Save', () => {
     })
   })
 
-  test('should show cover and panel for all folder-based types', async ({ page }) => {
+  test('should show cover and panel for all folder-based types', async ({
+    page,
+  }) => {
     const am = new AssetManagerPage(page)
     await am.navigateToBlog('welcome-to-prometheus')
 

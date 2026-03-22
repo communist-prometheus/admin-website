@@ -38,24 +38,25 @@ const basePageFields: readonly FieldDefinition[] = [
   { key: 'description', label: 'Description', type: 'textarea' },
 ]
 
-const pageFieldsBySlug: Readonly<Record<string, readonly FieldDefinition[]>> = {
-  home: [
-    ...basePageFields,
-    { key: 'heroTitle', label: 'Hero Title', type: 'text' },
-    { key: 'latestNews', label: 'Latest News Label', type: 'text' },
-    { key: 'viewAllPosts', label: 'View All Posts Label', type: 'text' },
-  ],
-  'blog-listing': [
-    ...basePageFields,
-    { key: 'heading', label: 'Heading', type: 'text' },
-    { key: 'allCategory', label: 'All Category Label', type: 'text' },
-  ],
-  'positions-listing': [
-    ...basePageFields,
-    { key: 'heading', label: 'Heading', type: 'text' },
-  ],
-  manifest: basePageFields,
-}
+const pageFieldsBySlug: Readonly<Record<string, readonly FieldDefinition[]>> =
+  {
+    home: [
+      ...basePageFields,
+      { key: 'heroTitle', label: 'Hero Title', type: 'text' },
+      { key: 'latestNews', label: 'Latest News Label', type: 'text' },
+      { key: 'viewAllPosts', label: 'View All Posts Label', type: 'text' },
+    ],
+    'blog-listing': [
+      ...basePageFields,
+      { key: 'heading', label: 'Heading', type: 'text' },
+      { key: 'allCategory', label: 'All Category Label', type: 'text' },
+    ],
+    'positions-listing': [
+      ...basePageFields,
+      { key: 'heading', label: 'Heading', type: 'text' },
+    ],
+    manifest: basePageFields,
+  }
 
 const menuFields: readonly FieldDefinition[] = [
   { key: 'title', label: 'Title', type: 'text', required: true },
@@ -74,12 +75,16 @@ const labelsFields: readonly FieldDefinition[] = [
   { key: 'backToList', label: 'Back To List', type: 'text', required: true },
 ]
 
-const commonFieldsBySlug: Readonly<Record<string, readonly FieldDefinition[]>> = {
+const commonFieldsBySlug: Readonly<
+  Record<string, readonly FieldDefinition[]>
+> = {
   menu: menuFields,
   labels: labelsFields,
 }
 
-const fieldsByContentType: Readonly<Record<ContentType, readonly FieldDefinition[]>> = {
+const fieldsByContentType: Readonly<
+  Record<ContentType, readonly FieldDefinition[]>
+> = {
   blog: blogFields,
   positions: positionsFields,
   pages: basePageFields,
@@ -92,8 +97,13 @@ const fieldsByContentType: Readonly<Record<ContentType, readonly FieldDefinition
  * @param slug - Optional content slug for page/common-specific fields
  * @returns Array of field definitions
  */
-export const getFields = (type: ContentType, slug?: string): readonly FieldDefinition[] => {
-  if (slug && type === 'pages') return pageFieldsBySlug[slug] ?? basePageFields
-  if (slug && type === 'common') return commonFieldsBySlug[slug] ?? labelsFields
+export const getFields = (
+  type: ContentType,
+  slug?: string
+): readonly FieldDefinition[] => {
+  if (slug && type === 'pages')
+    return pageFieldsBySlug[slug] ?? basePageFields
+  if (slug && type === 'common')
+    return commonFieldsBySlug[slug] ?? labelsFields
   return fieldsByContentType[type] ?? []
 }

@@ -16,7 +16,11 @@ import { createCoverUrl, createUrlMap } from './url-map'
  * @param initialCover - Initial cover path from frontmatter
  * @returns Asset manager interface
  */
-export const useAssets = (type: string, slug: string, initialCover: string | undefined) => {
+export const useAssets = (
+  type: string,
+  slug: string,
+  initialCover: string | undefined
+) => {
   const state = createAssetState(initialCover)
   const urlMap = createUrlMap(state)
   const resetPending = createResetPending(state)

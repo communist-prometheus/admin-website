@@ -7,8 +7,11 @@ import { assetDir, assetFile } from '@/config/content-paths'
  * @param filename - Asset filename
  * @returns Full path like blog/{slug}/assets/{filename}
  */
-export const buildAssetPath = (type: string, slug: string, filename: string): string =>
-  assetFile(type, slug, filename)
+export const buildAssetPath = (
+  type: string,
+  slug: string,
+  filename: string
+): string => assetFile(type, slug, filename)
 
 /**
  * Build the assets directory prefix for listing.
@@ -16,4 +19,5 @@ export const buildAssetPath = (type: string, slug: string, filename: string): st
  * @param slug - Content slug
  * @returns Directory prefix
  */
-export const buildAssetsPrefix = (type: string, slug: string): string => assetDir(type, slug)
+export const buildAssetsPrefix = (type: string, slug: string): string =>
+  assetDir(type, slug)

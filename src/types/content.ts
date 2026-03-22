@@ -72,7 +72,12 @@ export type ContentType = 'blog' | 'positions' | 'pages' | 'common'
 /**
  * Content types that use folder-based structure (slug/index.{lang}.md)
  */
-export const NESTED_TYPES: ReadonlySet<ContentType> = new Set(['blog', 'positions', 'pages', 'common'])
+export const NESTED_TYPES: ReadonlySet<ContentType> = new Set([
+  'blog',
+  'positions',
+  'pages',
+  'common',
+])
 
 /**
  * Represents a content item with metadata
