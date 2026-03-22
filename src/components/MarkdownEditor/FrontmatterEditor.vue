@@ -6,13 +6,14 @@ import { getFields } from './frontmatter-fields'
 const props = defineProps<{
   readonly frontmatter: Record<string, unknown>
   readonly contentType: ContentType
+  readonly slug?: string
 }>()
 
 const emit = defineEmits<{
   'update:frontmatter': [data: Record<string, unknown>]
 }>()
 
-const fields = () => getFields(props.contentType)
+const fields = () => getFields(props.contentType, props.slug)
 
 const handleFieldUpdate = (key: string, value: unknown) => {
   emit('update:frontmatter', { ...props.frontmatter, [key]: value })

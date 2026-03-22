@@ -9,6 +9,7 @@ defineProps<{
   readonly bodyContent: string
   readonly frontmatterData: Record<string, unknown>
   readonly contentType: ContentType
+  readonly slug?: string
   readonly loadingFile: boolean
   readonly assetUrlMap?: ReadonlyMap<string, string>
   readonly assets?: readonly AssetDisplay[]
@@ -33,6 +34,7 @@ defineEmits<{
         v-if="Object.keys(frontmatterData).length > 0"
         :frontmatter="frontmatterData"
         :content-type="contentType"
+        :slug="slug"
         @update:frontmatter="$emit('update:frontmatter', $event)"
       />
       <MarkdownEditorBody

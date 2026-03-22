@@ -62,6 +62,7 @@ const handleRename = async (newSlug: string) => {
       :body-content="p.editor.bodyContent.value"
       :frontmatter-data="p.editor.frontmatterData.value"
       :content-type="p.contentType.value"
+      :slug="p.slug"
       :loading-file="p.editor.loadingFile.value"
       :asset-url-map="p.hasAssets.value ? p.assets.urlMap.value : undefined"
       :assets="p.hasAssets.value ? p.assets.allAssets.value : undefined"

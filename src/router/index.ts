@@ -39,6 +39,13 @@ export const routes: RouteRecordRaw[] = [
     props: { contentType: 'positions' },
   },
   {
+    path: '/content/common',
+    name: 'content-common',
+    meta: { requiresAuth: true },
+    component: () => import('../views/ContentView.vue'),
+    props: { contentType: 'common' },
+  },
+  {
     path: '/content/:type/edit/:slug',
     name: 'content-edit',
     meta: { requiresAuth: true },
