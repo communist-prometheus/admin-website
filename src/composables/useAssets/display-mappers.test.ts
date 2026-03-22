@@ -55,7 +55,7 @@ describe('pendingToDisplay', () => {
   }
 
   it('maps pending asset to display item', () => {
-    const result = pendingToDisplay(asset, 'my-post', false)
+    const result = pendingToDisplay(asset, 'blog', 'my-post', false)
     expect(result).toEqual({
       name: 'new.png',
       path: 'blog/my-post/assets/new.png',

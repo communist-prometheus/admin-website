@@ -35,13 +35,41 @@ export interface PositionFrontmatter {
  */
 export interface PageFrontmatter {
   readonly title: string
+  readonly description?: string
+  readonly lang: Language
+  readonly heroTitle?: string
+  readonly latestNews?: string
+  readonly viewAllPosts?: string
+  readonly heading?: string
+  readonly allCategory?: string
+  readonly readMore?: string
+  readonly viewAll?: string
+  readonly backToList?: string
+}
+
+/**
+ * Frontmatter metadata for navigation translations
+ */
+export interface NavFrontmatter {
+  readonly title: string
+  readonly home: string
+  readonly blog: string
+  readonly positions: string
+  readonly manifest: string
+  readonly menu: string
+  readonly copyright: string
   readonly lang: Language
 }
 
 /**
  * Available content types
  */
-export type ContentType = 'blog' | 'positions' | 'pages'
+export type ContentType = 'blog' | 'positions' | 'pages' | 'nav'
+
+/**
+ * Content types that use folder-based structure (slug/index.{lang}.md)
+ */
+export const NESTED_TYPES: ReadonlySet<ContentType> = new Set(['blog', 'positions', 'pages'])
 
 /**
  * Represents a content item with metadata
@@ -54,4 +82,5 @@ export interface ContentItem {
     | BlogFrontmatter
     | PositionFrontmatter
     | PageFrontmatter
+    | NavFrontmatter
 }

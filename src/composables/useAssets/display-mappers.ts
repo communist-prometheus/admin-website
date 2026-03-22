@@ -44,11 +44,12 @@ export const committedToDisplay = (
  */
 export const pendingToDisplay = (
   asset: PendingAsset,
+  type: string,
   slug: string,
   cover: boolean
 ): AssetDisplay => ({
   name: asset.name,
-  path: buildAssetPath(slug, asset.name),
+  path: buildAssetPath(type, slug, asset.name),
   mimeType: asset.mimeType,
   thumbnailUrl: asset.blobUrl,
   status: 'pending-add',

@@ -32,12 +32,14 @@ export const handleContentDeleteAll = async (
  * @param slug - Slug to match
  * @returns Matching file paths
  */
+const NESTED_TYPES = new Set(['blog', 'positions', 'pages'])
+
 const findSlugFiles = (
   files: readonly string[],
   type: string,
   slug: string
 ): readonly string[] =>
-  type === 'blog'
+  NESTED_TYPES.has(type)
     ? files.filter(f => f.includes(`/${slug}/`))
     : files.filter(f => {
         const name = f.split('/').pop() ?? ''

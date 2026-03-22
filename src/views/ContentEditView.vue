@@ -53,7 +53,7 @@ const handleRename = async (newSlug: string) => {
       @rename="handleRename"
     />
     <CoverImage
-      v-if="p.isBlog.value && !p.editor.loadingFile.value"
+      v-if="p.hasAssets.value && !p.editor.loadingFile.value"
       :cover-url="p.assets.coverUrl.value"
       @delete-cover="p.ah.onRemoveCover"
       @upload-cover="p.ah.onUploadCover"
@@ -63,8 +63,8 @@ const handleRename = async (newSlug: string) => {
       :frontmatter-data="p.editor.frontmatterData.value"
       :content-type="p.contentType.value"
       :loading-file="p.editor.loadingFile.value"
-      :asset-url-map="p.isBlog.value ? p.assets.urlMap.value : undefined"
-      :assets="p.isBlog.value ? p.assets.allAssets.value : undefined"
+      :asset-url-map="p.hasAssets.value ? p.assets.urlMap.value : undefined"
+      :assets="p.hasAssets.value ? p.assets.allAssets.value : undefined"
       @update:body-content="updateBody"
       @update:frontmatter="updateFm"
       @save="handleSave"
@@ -72,7 +72,7 @@ const handleRename = async (newSlug: string) => {
       @upload-asset="p.ah.onUploadAsset"
     />
     <AssetPanel
-      v-if="p.isBlog.value && !p.editor.loadingFile.value"
+      v-if="p.hasAssets.value && !p.editor.loadingFile.value"
       :assets="p.assets.allAssets.value"
       @set-cover="p.ah.onSetCover"
       @delete-asset="p.ah.onDeleteAsset"

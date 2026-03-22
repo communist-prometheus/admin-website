@@ -3,8 +3,9 @@ import { useAssets } from '@/composables/useAssets/useAssets'
 import { useContentList } from '@/composables/useContent/useContentList'
 import { useMultiLangEditor } from '@/composables/useContent/useMultiLangEditor'
 import { useAuthStore } from '@/stores/auth'
-import { blogFile, flatFile } from '@/config/content-paths'
+import { contentFile } from '@/config/content-paths'
 import type { ContentType, Language } from '@/types/content'
+import { NESTED_TYPES } from '@/types/content'
 import { getAvailableLanguages } from '@/utils/available-languages'
 import { createAssetHandlers } from './asset-handlers'
 
@@ -17,20 +18,22 @@ import { createAssetHandlers } from './asset-handlers'
 export const createPageState = (type: string, slug: string) => {
   const isAuth = computed(() => !!useAuthStore().user)
   const contentType = computed(() => type as ContentType)
+  const hasAssets = computed(() => NESTED_TYPES.has(contentType.value))
   const isBlog = computed(() => contentType.value === 'blog')
   const list = useContentList(contentType)
   const editor = useMultiLangEditor()
-  const assets = useAssets(slug, undefined)
+  const assets = useAssets(type, slug, undefined)
   const ah = createAssetHandlers(assets)
   const langs = computed(() => getAvailableLanguages(list.items.value, slug))
   const buildPath = (lang: Language) =>
-    type === 'blog' ? blogFile(slug, lang) : flatFile(type, slug, lang)
+    contentFile(type as ContentType, slug, lang)
 
   return {
     slug,
     isAuth,
     contentType,
     isBlog,
+    hasAssets,
     list,
     editor,
     assets,

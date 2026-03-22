@@ -2,7 +2,7 @@ import type { ComputedRef, Ref } from 'vue'
 
 interface InitAllDeps {
   readonly initEditor: () => Promise<void>
-  readonly isBlog: ComputedRef<boolean>
+  readonly hasAssets: ComputedRef<boolean>
   readonly frontmatterData: Ref<Record<string, unknown>>
   readonly coverPath: Ref<string | undefined>
   readonly loadAssets: () => Promise<void>
@@ -15,7 +15,7 @@ interface InitAllDeps {
  */
 export const createInitAll = (deps: InitAllDeps) => async () => {
   await deps.initEditor()
-  if (!deps.isBlog.value) return
+  if (!deps.hasAssets.value) return
   const img = deps.frontmatterData.value.image
   deps.coverPath.value = typeof img === 'string' ? img : undefined
   await deps.loadAssets()

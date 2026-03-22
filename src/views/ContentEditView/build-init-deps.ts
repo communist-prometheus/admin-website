@@ -10,7 +10,7 @@ type Page = ReturnType<typeof useEditPage>
  * @returns Async init function
  */
 export const buildInitAll = (page: Page) => {
-  const { editor, list, langs, assets, isBlog } = page
+  const { editor, list, langs, assets, hasAssets } = page
   const initEditor = createInitEditor({
     ...editor,
     loadContent: list.loadContent,
@@ -19,7 +19,7 @@ export const buildInitAll = (page: Page) => {
   })
   return createInitAll({
     initEditor,
-    isBlog,
+    hasAssets,
     frontmatterData: editor.frontmatterData,
     coverPath: assets.coverPath,
     loadAssets: assets.loadAssets,

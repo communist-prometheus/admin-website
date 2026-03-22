@@ -1,4 +1,4 @@
-import { blogFile, flatFile } from '@/config/content-paths'
+import { contentFile } from '@/config/content-paths'
 import type { ContentType, Language } from '@/types/content'
 import { stringifyFrontmatter } from '@/utils/frontmatter'
 import { useGitHubApi } from '../useGitHubApi'
@@ -28,10 +28,7 @@ export const useContentCreator = (
     initialContent = ''
   ) => {
     const type = getContentType()
-    const isBlog = type === 'blog'
-    const filePath = isBlog
-      ? blogFile(data.slug, data.lang)
-      : flatFile(type, data.slug, data.lang)
+    const filePath = contentFile(type, data.slug, data.lang)
 
     const fileName = filePath.split('/').pop() ?? ''
     const frontmatter = buildFrontmatter(type, data)
@@ -67,6 +64,15 @@ const buildFrontmatter = (
   if (contentType === 'positions') {
     frontmatter.description = data.description || ''
     frontmatter.order = data.order || 1
+  }
+
+  if (contentType === 'nav') {
+    frontmatter.home = ''
+    frontmatter.blog = ''
+    frontmatter.positions = ''
+    frontmatter.manifest = ''
+    frontmatter.menu = ''
+    frontmatter.copyright = ''
   }
 
   return frontmatter

@@ -10,12 +10,13 @@ import { createAssetState } from './state'
 import { createCoverUrl, createUrlMap } from './url-map'
 
 /**
- * Asset management composable for blog articles.
- * @param slug - Blog article slug
+ * Asset management composable for content items with folder-based structure.
+ * @param type - Content type (blog, pages, positions)
+ * @param slug - Content slug
  * @param initialCover - Initial cover path from frontmatter
  * @returns Asset manager interface
  */
-export const useAssets = (slug: string, initialCover: string | undefined) => {
+export const useAssets = (type: string, slug: string, initialCover: string | undefined) => {
   const state = createAssetState(initialCover)
   const urlMap = createUrlMap(state)
   const resetPending = createResetPending(state)
@@ -25,11 +26,11 @@ export const useAssets = (slug: string, initialCover: string | undefined) => {
 
   return {
     ...state,
-    allAssets: createAllAssets(slug, state),
+    allAssets: createAllAssets(type, slug, state),
     urlMap,
     coverUrl: createCoverUrl(state, urlMap),
     isDirty: createIsDirty(state),
-    loadAssets: createLoadCommitted(slug, state),
+    loadAssets: createLoadCommitted(type, slug, state),
     addAsset: createAddAsset(state),
     removeAsset: createRemoveAsset(state),
     setCover: createSetCover(state),

@@ -1,17 +1,19 @@
 import { assetDir, assetFile } from '@/config/content-paths'
 
 /**
- * Build the full path for an asset in a blog article.
- * @param slug - Blog article slug
+ * Build the full path for an asset in a content item.
+ * @param type - Content type
+ * @param slug - Content slug
  * @param filename - Asset filename
  * @returns Full path like blog/{slug}/assets/{filename}
  */
-export const buildAssetPath = (slug: string, filename: string): string =>
-  assetFile(slug, filename)
+export const buildAssetPath = (type: string, slug: string, filename: string): string =>
+  assetFile(type, slug, filename)
 
 /**
  * Build the assets directory prefix for listing.
- * @param slug - Blog article slug
+ * @param type - Content type
+ * @param slug - Content slug
  * @returns Directory prefix
  */
-export const buildAssetsPrefix = (slug: string): string => assetDir(slug)
+export const buildAssetsPrefix = (type: string, slug: string): string => assetDir(type, slug)

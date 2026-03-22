@@ -2,7 +2,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { Language } from '@/types/content'
 
 interface HandleSaveDeps {
-  readonly isBlog: ComputedRef<boolean>
+  readonly hasAssets: ComputedRef<boolean>
   readonly blogSave: (message: string) => Promise<void>
   readonly buildPath: (lang: Language) => string
   readonly currentLang: Ref<Language>
@@ -22,7 +22,7 @@ interface HandleSaveDeps {
  */
 export const createHandleSave = (deps: HandleSaveDeps) => async () => {
   const message = `updated ${deps.title.value} in ${deps.contentTypeName.value}`
-  if (deps.isBlog.value) await deps.blogSave(message)
+  if (deps.hasAssets.value) await deps.blogSave(message)
   else {
     const path = deps.buildPath(deps.currentLang.value)
     await deps.saveCurrentLanguage(path, message)

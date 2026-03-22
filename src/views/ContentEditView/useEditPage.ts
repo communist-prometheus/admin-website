@@ -17,6 +17,7 @@ export const useEditPage = (type: string, slug: string) => {
     body: () => editor.bodyContent.value,
     buildPath: () => state.buildPath(editor.currentLang.value),
     markSaved: editor.markSaved,
+    type,
     slug,
   })
 

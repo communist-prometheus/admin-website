@@ -4,7 +4,7 @@ import { isTypePath } from '@/config/content-paths'
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
 import type { ContentItem, ContentType } from '@/types/content'
 
-const CONTENT_TYPES: readonly ContentType[] = ['blog', 'pages', 'positions']
+const CONTENT_TYPES: readonly ContentType[] = ['blog', 'pages', 'positions', 'nav']
 
 /**
  * Fetch content items of a given type from the SW.

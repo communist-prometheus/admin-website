@@ -8,6 +8,7 @@ import type { PendingAsset } from './types'
  * Parameters for a transactional save operation.
  */
 export interface SaveParams {
+  readonly type: string
   readonly slug: string
   readonly articlePath: string
   readonly articleContent: string
@@ -24,7 +25,7 @@ export interface SaveParams {
 export const transactionalSave = async (
   params: SaveParams
 ): Promise<string> => {
-  await flushAdds(params.slug, params.pendingAdds)
+  await flushAdds(params.type, params.slug, params.pendingAdds)
   await flushDeletes(params.pendingDeletes)
   await stageFile(params.articlePath, params.articleContent)
   const result = await commitStaged(params.message)

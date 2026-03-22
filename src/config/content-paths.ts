@@ -1,5 +1,7 @@
 import { getGitHubConfig } from './github'
 
+const NESTED_TYPES = new Set(['blog', 'positions', 'pages'])
+
 /**
  * Join content root with segments, skipping empty root.
  * @param segments - Path segments to join
@@ -16,53 +18,74 @@ const root = (): string => getGitHubConfig().contentPath
 
 /**
  * Path to a content type directory.
- * @param type - blog, pages, or positions
+ * @param type - blog, pages, positions, or nav
  * @returns e.g. "blog" or "src/content/blog"
  */
 export const typePath = (type: string): string => join(root(), type)
 
 /**
- * Path to a blog article directory.
- * @param slug - Article slug
- * @returns e.g. "blog/my-post"
+ * Path to a nested content item directory.
+ * @param type - Content type (blog, pages, positions)
+ * @param slug - Content slug
+ * @returns e.g. "blog/my-post" or "positions/digital-sovereignty"
  */
-export const blogDir = (slug: string): string => join(root(), 'blog', slug)
+export const nestedDir = (type: string, slug: string): string =>
+  join(root(), type, slug)
 
 /**
- * Path to a blog article file.
- * @param slug - Article slug
+ * Path to a nested content item file.
+ * @param type - Content type (blog, pages, positions)
+ * @param slug - Content slug
  * @param lang - Language code
- * @returns e.g. "blog/my-post/index.en.md"
+ * @returns e.g. "blog/my-post/index.en.md" or "pages/home/index.en.md"
  */
-export const blogFile = (slug: string, lang: string): string =>
-  join(root(), 'blog', slug, `index.${lang}.md`)
+export const nestedFile = (type: string, slug: string, lang: string): string =>
+  join(root(), type, slug, `index.${lang}.md`)
 
 /**
- * Path to a flat content file (pages/positions).
+ * Path to a flat content file (nav).
  * @param type - Content type
  * @param slug - Content slug
  * @param lang - Language code
- * @returns e.g. "pages/manifest.en.md"
+ * @returns e.g. "nav/index.en.md"
  */
 export const flatFile = (type: string, slug: string, lang: string): string =>
   join(root(), type, `${slug}.${lang}.md`)
 
 /**
- * Path to blog assets directory.
- * @param slug - Article slug
- * @returns e.g. "blog/my-post/assets"
+ * Path to a content file, dispatching by type.
+ * @param type - Content type
+ * @param slug - Content slug
+ * @param lang - Language code
+ * @returns Nested or flat file path
  */
-export const assetDir = (slug: string): string =>
-  join(root(), 'blog', slug, 'assets')
+export const contentFile = (type: string, slug: string, lang: string): string =>
+  NESTED_TYPES.has(type) ? nestedFile(type, slug, lang) : flatFile(type, slug, lang)
 
 /**
- * Path to a specific blog asset file.
- * @param slug - Article slug
+ * Path to an assets directory for a content item.
+ * @param type - Content type (blog, pages, positions)
+ * @param slug - Content slug
+ * @returns e.g. "blog/my-post/assets"
+ */
+export const assetDir = (type: string, slug: string): string =>
+  join(root(), type, slug, 'assets')
+
+/**
+ * Path to a specific asset file.
+ * @param type - Content type
+ * @param slug - Content slug
  * @param filename - Asset filename
  * @returns e.g. "blog/my-post/assets/hero.svg"
  */
-export const assetFile = (slug: string, filename: string): string =>
-  join(root(), 'blog', slug, 'assets', filename)
+export const assetFile = (type: string, slug: string, filename: string): string =>
+  join(root(), type, slug, 'assets', filename)
+
+/**
+ * Legacy aliases for backward compatibility
+ */
+export const blogDir = (slug: string): string => nestedDir('blog', slug)
+export const blogFile = (slug: string, lang: string): string => nestedFile('blog', slug, lang)
 
 /**
  * Check if a path belongs to a content type.

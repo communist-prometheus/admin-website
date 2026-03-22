@@ -46,9 +46,9 @@ describe('useContentCreator', () => {
     })
 
     expect(mockCreate).toHaveBeenCalledWith(
-      'pages/about.ru.md',
+      'pages/about/index.ru.md',
       expect.stringContaining('title: О нас'),
-      'Create about.ru.md'
+      'Create index.ru.md'
     )
   })
 
@@ -66,9 +66,9 @@ describe('useContentCreator', () => {
     })
 
     expect(mockCreate).toHaveBeenCalledWith(
-      'positions/developer.en.md',
+      'positions/developer/index.en.md',
       expect.stringContaining('order: 1'),
-      'Create developer.en.md'
+      'Create index.en.md'
     )
   })
 })

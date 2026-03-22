@@ -12,10 +12,10 @@ type Page = ReturnType<typeof useEditPage>
  * @returns Save handler
  */
 export const initEditPage = (page: Page) => {
-  const { editor, isBlog, list, slug } = page
+  const { editor, hasAssets, list, slug } = page
   const initAll = buildInitAll(page)
   const handleSave = createHandleSave({
-    isBlog,
+    hasAssets,
     blogSave: page.blogSave,
     buildPath: page.buildPath,
     currentLang: editor.currentLang,

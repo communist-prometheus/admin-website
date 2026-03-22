@@ -4,22 +4,23 @@ import { stringifyFrontmatter } from '@/utils/frontmatter/stringify'
 
 type Assets = ReturnType<typeof useAssets>
 
-interface BlogSaveDeps {
+interface AssetSaveDeps {
   readonly assets: Assets
   readonly frontmatter: () => Record<string, unknown>
   readonly body: () => string
   readonly buildPath: () => string
   readonly markSaved: () => void
+  readonly type: string
   readonly slug: string
 }
 
 /**
- * Create a blog-specific save handler with transactional commit.
- * @param deps - Dependencies for blog save
+ * Create a save handler with transactional commit for content with assets.
+ * @param deps - Dependencies for save
  * @returns Async save function accepting commit message
  */
 export const createBlogSave =
-  (deps: BlogSaveDeps) =>
+  (deps: AssetSaveDeps) =>
   async (message: string): Promise<void> => {
     const fm = { ...deps.frontmatter() }
     const cover = deps.assets.coverPath.value
@@ -27,6 +28,7 @@ export const createBlogSave =
     else delete fm.image
     const content = stringifyFrontmatter(fm, deps.body())
     await transactionalSave({
+      type: deps.type,
       slug: deps.slug,
       articlePath: deps.buildPath(),
       articleContent: content,

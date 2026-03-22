@@ -41,11 +41,15 @@ describe('useContentList', () => {
         ok: true,
         json: async () => ({ items: [] }),
       })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ items: [] }),
+      })
 
     const { items, loadContent } = useContentList('blog')
     await loadContent()
 
-    expect(mockSwFetch).toHaveBeenCalledTimes(3)
+    expect(mockSwFetch).toHaveBeenCalledTimes(4)
     expect(items.value).toHaveLength(1)
   })
 

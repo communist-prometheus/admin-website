@@ -5,6 +5,8 @@ import { contentBase } from './content-base'
 import { errorResponse, jsonResponse } from './json-response'
 import { resolveContentPath } from './resolve-content-path'
 
+const NESTED_TYPES = new Set(['blog', 'positions', 'pages'])
+
 /**
  * Handle POST /api/github/content — create or update content.
  * @param request - Incoming Request
@@ -22,8 +24,8 @@ export const handleContentUpdate = async (
 
   const base = contentBase(type)
   const existing = await resolveContentPath(type, slug, lang)
-  const isBlog = type === 'blog'
-  const newPath = isBlog
+  const isNested = NESTED_TYPES.has(type)
+  const newPath = isNested
     ? `${base}/${slug}/index.${lang}.md`
     : `${base}/${slug}.${lang}.md`
   const path = existing ?? newPath
