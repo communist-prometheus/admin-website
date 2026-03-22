@@ -32,7 +32,7 @@ export const handleContentDeleteAll = async (
  * @param slug - Slug to match
  * @returns Matching file paths
  */
-const NESTED_TYPES = new Set(['blog', 'positions', 'pages'])
+const NESTED_TYPES = new Set(['blog', 'positions', 'pages', 'common'])
 
 const findSlugFiles = (
   files: readonly string[],

@@ -66,13 +66,10 @@ const buildFrontmatter = (
     frontmatter.order = data.order || 1
   }
 
-  if (contentType === 'nav') {
-    frontmatter.home = ''
-    frontmatter.blog = ''
-    frontmatter.positions = ''
-    frontmatter.manifest = ''
-    frontmatter.menu = ''
-    frontmatter.copyright = ''
+  if (contentType === 'common') {
+    frontmatter.readMore = ''
+    frontmatter.viewAll = ''
+    frontmatter.backToList = ''
   }
 
   return frontmatter

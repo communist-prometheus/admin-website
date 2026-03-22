@@ -5,7 +5,7 @@ import { contentBase } from './content-base'
 import { errorResponse, jsonResponse } from './json-response'
 import { resolveContentPath } from './resolve-content-path'
 
-const NESTED_TYPES = new Set(['blog', 'positions', 'pages'])
+const NESTED_TYPES = new Set(['blog', 'positions', 'pages', 'common'])
 
 /**
  * Handle POST /api/github/content — create or update content.

@@ -3,7 +3,7 @@ import { errorResponse, jsonResponse } from './json-response'
 import { renameNestedSlug } from './rename-blog-slug'
 import { renameFlatSlug } from './rename-flat-slug'
 
-const NESTED_TYPES = new Set(['blog', 'positions', 'pages'])
+const NESTED_TYPES = new Set(['blog', 'positions', 'pages', 'common'])
 
 /**
  * Handle POST /api/github/content/rename

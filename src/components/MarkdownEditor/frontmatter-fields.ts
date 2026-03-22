@@ -56,11 +56,24 @@ const navFields: readonly FieldDefinition[] = [
   { key: 'copyright', label: 'Copyright', type: 'text', required: true },
 ]
 
+const commonFields: readonly FieldDefinition[] = [
+  { key: 'title', label: 'Title', type: 'text', required: true },
+  { key: 'readMore', label: 'Read More', type: 'text' },
+  { key: 'viewAll', label: 'View All', type: 'text' },
+  { key: 'backToList', label: 'Back To List', type: 'text' },
+  { key: 'home', label: 'Home', type: 'text' },
+  { key: 'blog', label: 'Blog', type: 'text' },
+  { key: 'positions', label: 'Positions', type: 'text' },
+  { key: 'manifest', label: 'Manifest', type: 'text' },
+  { key: 'menu', label: 'Menu', type: 'text' },
+  { key: 'copyright', label: 'Copyright', type: 'text' },
+]
+
 const fieldsByContentType: Record<ContentType, readonly FieldDefinition[]> = {
   blog: blogFields,
   positions: positionsFields,
   pages: pagesFields,
-  nav: navFields,
+  common: commonFields,
 }
 
 /**

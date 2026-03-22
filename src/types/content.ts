@@ -48,28 +48,31 @@ export interface PageFrontmatter {
 }
 
 /**
- * Frontmatter metadata for navigation translations
+ * Frontmatter metadata for common translations (menu, labels)
  */
-export interface NavFrontmatter {
+export interface CommonFrontmatter {
   readonly title: string
-  readonly home: string
-  readonly blog: string
-  readonly positions: string
-  readonly manifest: string
-  readonly menu: string
-  readonly copyright: string
   readonly lang: Language
+  readonly home?: string
+  readonly blog?: string
+  readonly positions?: string
+  readonly manifest?: string
+  readonly menu?: string
+  readonly copyright?: string
+  readonly readMore?: string
+  readonly viewAll?: string
+  readonly backToList?: string
 }
 
 /**
  * Available content types
  */
-export type ContentType = 'blog' | 'positions' | 'pages' | 'nav'
+export type ContentType = 'blog' | 'positions' | 'pages' | 'common'
 
 /**
  * Content types that use folder-based structure (slug/index.{lang}.md)
  */
-export const NESTED_TYPES: ReadonlySet<ContentType> = new Set(['blog', 'positions', 'pages'])
+export const NESTED_TYPES: ReadonlySet<ContentType> = new Set(['blog', 'positions', 'pages', 'common'])
 
 /**
  * Represents a content item with metadata
@@ -82,5 +85,5 @@ export interface ContentItem {
     | BlogFrontmatter
     | PositionFrontmatter
     | PageFrontmatter
-    | NavFrontmatter
+    | CommonFrontmatter
 }

@@ -44,8 +44,8 @@ const authStore = useAuthStore()
           <ContentCardDescription description="Update job openings" />
         </ContentCard>
         <ContentCard>
-          <ContentCardTitle title="Navigation" />
-          <ContentCardDescription description="Edit navigation translations" />
+          <ContentCardTitle title="Common" />
+          <ContentCardDescription description="Shared labels and navigation translations" />
         </ContentCard>
       </ContentGrid>
     </DashboardSection>
