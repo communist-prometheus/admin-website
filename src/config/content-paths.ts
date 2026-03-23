@@ -94,9 +94,18 @@ export const assetFile = (
 ): string => join(root(), type, slug, 'assets', filename)
 
 /**
- * Legacy aliases for backward compatibility
+ * Legacy alias for backward compatibility: blog directory path.
+ * @param slug - Blog slug
+ * @returns Path to the blog directory
  */
 export const blogDir = (slug: string): string => nestedDir('blog', slug)
+
+/**
+ * Legacy alias for backward compatibility: blog file path.
+ * @param slug - Blog slug
+ * @param lang - Language code
+ * @returns Path to the blog file
+ */
 export const blogFile = (slug: string, lang: string): string =>
   nestedFile('blog', slug, lang)
 

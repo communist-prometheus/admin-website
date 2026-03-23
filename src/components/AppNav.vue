@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import AppNavAuth from './AppNavAuth.vue'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -14,52 +15,7 @@ const auth = useAuthStore()
     >
       Home
     </RouterLink>
-    <template v-if="auth.user || auth.loading">
-      <RouterLink
-        to="/content/blog"
-        :class="{
-          active: route.path.startsWith('/content/blog'),
-        }"
-      >
-        Blog
-      </RouterLink>
-      <RouterLink
-        to="/content/positions"
-        :class="{
-          active: route.path.startsWith(
-            '/content/positions'
-          ),
-        }"
-      >
-        Positions
-      </RouterLink>
-      <RouterLink
-        to="/content/pages"
-        :class="{
-          active: route.path.startsWith('/content/pages'),
-        }"
-      >
-        Pages
-      </RouterLink>
-      <RouterLink
-        to="/content/common"
-        :class="{
-          active: route.path.startsWith(
-            '/content/common'
-          ),
-        }"
-      >
-        Common
-      </RouterLink>
-      <RouterLink
-        to="/settings"
-        :class="{
-          active: route.path.startsWith('/settings'),
-        }"
-      >
-        Settings
-      </RouterLink>
-    </template>
+    <AppNavAuth v-if="auth.user || auth.loading" />
     <RouterLink
       to="/about"
       :class="{ active: route.path === '/about' }"

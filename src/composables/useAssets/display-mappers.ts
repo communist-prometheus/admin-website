@@ -38,6 +38,7 @@ export const committedToDisplay = (
 /**
  * Map a pending asset to a display item.
  * @param asset - Pending asset
+ * @param type - Content type
  * @param slug - Blog slug
  * @param cover - Whether this is the cover
  * @returns Display item

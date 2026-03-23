@@ -9,6 +9,7 @@ import type { EditorDraft, MultiLangEditorState } from './types'
  * @param originalCache - Original draft cache
  * @param state - Editor state
  * @param fileSha - File SHA ref
+ * @param saveVersion - Reactive counter incremented on save
  * @returns Function that marks current language clean
  */
 export const createMarkSaved =

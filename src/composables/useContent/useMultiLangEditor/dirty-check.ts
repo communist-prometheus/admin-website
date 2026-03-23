@@ -23,6 +23,7 @@ const isDraftModified = (
  * @param originalCache - Original (saved) draft cache
  * @param state - Editor state
  * @param fileSha - Current file SHA ref
+ * @param saveVersion - Reactive counter incremented on save
  * @returns Computed boolean indicating unsaved changes
  */
 export const createIsDirty = (

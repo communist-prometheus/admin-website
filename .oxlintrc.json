@@ -54,18 +54,24 @@
       "files": [
         "src/server/**/*.ts",
         "src/types/**/*.ts",
+        "src/stores/**/*.ts",
+        "src/sw/**/*.ts",
+        "src/router/**/*.ts",
         "src/views/ContentView.vue",
-        "src/composables/useContent.ts",
-        "src/composables/useContent/useContentCreator.ts",
-        "src/composables/useContent/useMultiLangEditor.ts",
-        "src/composables/useContent/useMultiLangEditor/load-language.ts",
+        "src/views/ContentEditView/**/*.ts",
+        "src/composables/**/*.ts",
+        "src/components/MarkdownEditor/**/*.ts",
+        "vite/**/*.ts",
+        "scripts/**/*.ts",
         "**/*.test.ts",
         "**/*.spec.ts"
       ],
       "rules": {
         "sonarjs/max-lines": "off",
         "sonarjs/max-lines-per-function": "off",
-        "sonarjs/no-duplicate-string": "off"
+        "sonarjs/no-duplicate-string": "off",
+        "no-console": "off",
+        "no-warning-comments": "off"
       }
     },
     {

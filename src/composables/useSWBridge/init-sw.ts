@@ -8,7 +8,11 @@ import { tryFetchInit } from './try-fetch-init'
 const RETRIES = 5
 const DELAY = 2_000
 
-/** @returns Promise that resolves after ms */
+/**
+ * Delay execution for a given number of milliseconds.
+ * @param ms - Milliseconds to wait
+ * @returns Promise that resolves after ms
+ */
 const wait = (ms: number): Promise<void> =>
   new Promise(r => globalThis.setTimeout(r, ms))
 

@@ -30,7 +30,13 @@ export const renameNestedSlug = async (
   return files.length
 }
 
-/** @deprecated Use renameNestedSlug instead */
+/**
+ * Rename a blog slug folder (legacy wrapper).
+ * @param oldSlug - Current blog slug
+ * @param newSlug - New blog slug
+ * @returns Number of files moved
+ * @deprecated Use renameNestedSlug instead
+ */
 export const renameBlogSlug = (
   oldSlug: string,
   newSlug: string
