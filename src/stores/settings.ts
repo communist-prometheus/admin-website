@@ -9,37 +9,30 @@ export interface LanguageEntry {
 
 const LANGUAGES_PATH = 'settings/languages.json'
 
-const fetchLanguages = async (): Promise<readonly LanguageEntry[]> => {
+interface FileData {
+  readonly content: string
+  readonly sha: string
+}
+
+const fetchFile = async (): Promise<FileData | undefined> => {
   const res = await swFetch(
     `/api/github/file?path=${encodeURIComponent(LANGUAGES_PATH)}`
   )
-  if (!res.ok) return []
-  const data = await res.json()
+  if (!res.ok) return undefined
+  return res.json() as Promise<FileData>
+}
+
+const parseLanguages = (content: string): readonly LanguageEntry[] => {
   try {
-    return JSON.parse(data.content) as readonly LanguageEntry[]
+    return JSON.parse(content) as readonly LanguageEntry[]
   } catch {
     return []
   }
 }
 
-const saveLanguages = async (
-  languages: readonly LanguageEntry[]
-): Promise<boolean> => {
-  const content = JSON.stringify(languages, null, 2) + '\n'
-  const res = await swFetch('/api/github/file', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      path: LANGUAGES_PATH,
-      content,
-      message: 'Update languages configuration',
-    }),
-  })
-  return res.ok
-}
-
 export const useSettingsStore = defineStore('settings', () => {
   const languages = ref<readonly LanguageEntry[]>([])
+  const fileSha = ref('')
   const loading = ref(false)
   const loaded = ref(false)
 
@@ -48,7 +41,11 @@ export const useSettingsStore = defineStore('settings', () => {
   const loadLanguages = async () => {
     loading.value = true
     try {
-      languages.value = await fetchLanguages()
+      const file = await fetchFile()
+      if (file) {
+        languages.value = parseLanguages(file.content)
+        fileSha.value = file.sha
+      }
       loaded.value = true
     } finally {
       loading.value = false
@@ -60,9 +57,23 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   const updateLanguages = async (entries: readonly LanguageEntry[]) => {
-    const ok = await saveLanguages(entries)
-    if (ok) languages.value = entries
-    return ok
+    const content = JSON.stringify(entries, null, 2) + '\n'
+    const res = await swFetch('/api/github/file', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path: LANGUAGES_PATH,
+        content,
+        sha: fileSha.value,
+        message: 'Update languages configuration',
+      }),
+    })
+    if (res.ok) {
+      languages.value = entries
+      const data = await res.json()
+      fileSha.value = data.content?.sha ?? fileSha.value
+    }
+    return res.ok
   }
 
   return {

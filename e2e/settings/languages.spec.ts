@@ -85,4 +85,103 @@ test.describe('Settings - Languages', () => {
     await expect(saveBtn).toBeVisible()
     await expect(saveBtn).toHaveText('Save')
   })
+
+  test('should save languages and persist after reload', async ({ page }) => {
+    await page.goto('/settings', { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('[data-testid="language-row"]', {
+      timeout: 20000,
+    })
+
+    const initialCount = await page
+      .locator('[data-testid="language-row"]')
+      .count()
+
+    // Add a new language
+    await page.locator('[data-testid="add-language"]').click()
+    const newRow = page.locator('[data-testid="language-row"]').last()
+    await newRow.locator('[data-testid="language-code"]').fill('de')
+    await newRow.locator('[data-testid="language-label"]').fill('Deutsch')
+
+    // Save
+    await page.locator('[data-testid="save-languages"]').click()
+
+    // Wait for save to complete (button text reverts from "Saving..." to "Save")
+    await expect(page.locator('[data-testid="save-languages"]')).toHaveText(
+      'Save',
+      { timeout: 10000 }
+    )
+
+    // Reload page completely
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('[data-testid="language-row"]', {
+      timeout: 20000,
+    })
+
+    // Verify new language persisted
+    await expect(page.locator('[data-testid="language-row"]')).toHaveCount(
+      initialCount + 1
+    )
+    const lastCode = page
+      .locator('[data-testid="language-row"]')
+      .last()
+      .locator('[data-testid="language-code"]')
+    await expect(lastCode).toHaveValue('de')
+
+    // Clean up: remove the added language and save again
+    await page
+      .locator('[data-testid="remove-language"]')
+      .last()
+      .click()
+    await page.locator('[data-testid="save-languages"]').click()
+    await expect(page.locator('[data-testid="save-languages"]')).toHaveText(
+      'Save',
+      { timeout: 10000 }
+    )
+  })
+
+  test('should remove a language, save, and verify removal persists', async ({
+    page,
+  }) => {
+    await page.goto('/settings', { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('[data-testid="language-row"]', {
+      timeout: 20000,
+    })
+
+    const initialCount = await page
+      .locator('[data-testid="language-row"]')
+      .count()
+
+    // Remove last language
+    await page
+      .locator('[data-testid="remove-language"]')
+      .last()
+      .click()
+    await page.locator('[data-testid="save-languages"]').click()
+    await expect(page.locator('[data-testid="save-languages"]')).toHaveText(
+      'Save',
+      { timeout: 10000 }
+    )
+
+    // Reload
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('[data-testid="language-row"]', {
+      timeout: 20000,
+    })
+
+    // Verify removal persisted
+    await expect(page.locator('[data-testid="language-row"]')).toHaveCount(
+      initialCount - 1
+    )
+
+    // Restore: add back the language and save
+    await page.locator('[data-testid="add-language"]').click()
+    const newRow = page.locator('[data-testid="language-row"]').last()
+    await newRow.locator('[data-testid="language-code"]').fill('es')
+    await newRow.locator('[data-testid="language-label"]').fill('Español')
+    await page.locator('[data-testid="save-languages"]').click()
+    await expect(page.locator('[data-testid="save-languages"]')).toHaveText(
+      'Save',
+      { timeout: 10000 }
+    )
+  })
 })
