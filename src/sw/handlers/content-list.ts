@@ -2,8 +2,8 @@ import { parseFrontmatter } from '../frontmatter'
 import { computeBlobSha } from '../git/blob-sha'
 import { listFilesUnder } from '../git/list-files'
 import { readRepoFile } from '../git/read-file'
-import { jsonResponse } from './json-response'
 import { contentBase } from './content-base'
+import { jsonResponse } from './json-response'
 import { parseSlugFromPath } from './parse-slug'
 
 /**

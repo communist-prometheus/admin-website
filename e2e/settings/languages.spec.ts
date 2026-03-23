@@ -65,10 +65,7 @@ test.describe('Settings - Languages', () => {
       .locator('[data-testid="language-row"]')
       .count()
 
-    await page
-      .locator('[data-testid="remove-language"]')
-      .last()
-      .click()
+    await page.locator('[data-testid="remove-language"]').last().click()
 
     await expect(page.locator('[data-testid="language-row"]')).toHaveCount(
       initialCount - 1
@@ -128,10 +125,7 @@ test.describe('Settings - Languages', () => {
     await expect(lastCode).toHaveValue('de')
 
     // Clean up: remove the added language and save again
-    await page
-      .locator('[data-testid="remove-language"]')
-      .last()
-      .click()
+    await page.locator('[data-testid="remove-language"]').last().click()
     await page.locator('[data-testid="save-languages"]').click()
     await expect(page.locator('[data-testid="save-languages"]')).toHaveText(
       'Save',
@@ -152,10 +146,7 @@ test.describe('Settings - Languages', () => {
       .count()
 
     // Remove last language
-    await page
-      .locator('[data-testid="remove-language"]')
-      .last()
-      .click()
+    await page.locator('[data-testid="remove-language"]').last().click()
     await page.locator('[data-testid="save-languages"]').click()
     await expect(page.locator('[data-testid="save-languages"]')).toHaveText(
       'Save',

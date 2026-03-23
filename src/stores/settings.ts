@@ -36,7 +36,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const loading = ref(false)
   const loaded = ref(false)
 
-  const languageCodes = computed(() => languages.value.map((l) => l.code))
+  const languageCodes = computed(() => languages.value.map(l => l.code))
 
   const loadLanguages = async () => {
     loading.value = true
@@ -57,7 +57,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   const updateLanguages = async (entries: readonly LanguageEntry[]) => {
-    const content = JSON.stringify(entries, null, 2) + '\n'
+    const content = `${JSON.stringify(entries, null, 2)}\n`
     const res = await swFetch('/api/github/file', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

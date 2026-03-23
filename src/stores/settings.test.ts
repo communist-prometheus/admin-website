@@ -24,7 +24,8 @@ describe('useSettingsStore', () => {
     mockSwFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        content: '[{"code":"en","label":"English"},{"code":"ru","label":"Русский"}]',
+        content:
+          '[{"code":"en","label":"English"},{"code":"ru","label":"Русский"}]',
         sha: 'abc123',
       }),
     })
@@ -41,7 +42,8 @@ describe('useSettingsStore', () => {
     mockSwFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        content: '[{"code":"en","label":"English"},{"code":"it","label":"Italiano"}]',
+        content:
+          '[{"code":"en","label":"English"},{"code":"it","label":"Italiano"}]',
         sha: 'def456',
       }),
     })
@@ -93,8 +95,8 @@ describe('useSettingsStore', () => {
     // Verify PUT was called with SHA
     const putCall = mockSwFetch.mock.calls[1]
     expect(putCall).toBeDefined()
-    expect(putCall![0]).toBe('/api/github/file')
-    const body = JSON.parse(putCall![1].body)
+    expect(putCall?.[0]).toBe('/api/github/file')
+    const body = JSON.parse(putCall?.[1].body)
     expect(body.sha).toBe('sha1')
     expect(body.path).toBe('settings/languages.json')
   })

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { isTypePath } from '@/config/content-paths'
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
+import { isTypePath } from '@/config/content-paths'
 import type { ContentItem, ContentType } from '@/types/content'
 
 const CONTENT_TYPES: readonly ContentType[] = [

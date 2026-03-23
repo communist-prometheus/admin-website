@@ -21,7 +21,7 @@ export const resetSWData = async (page: Page): Promise<void> => {
       dbs.map(
         db =>
           new Promise<void>((resolve, reject) => {
-            const req = globalThis.indexedDB.deleteDatabase(db.name!)
+            const req = globalThis.indexedDB.deleteDatabase(db.name ?? '')
             req.onsuccess = () => resolve()
             req.onerror = () => reject(req.error)
           })
