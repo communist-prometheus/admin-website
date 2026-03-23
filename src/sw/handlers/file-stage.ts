@@ -1,6 +1,5 @@
 import { listFilesUnder } from '../git/list-files'
 import { writeAndStage } from '../git/write-file'
-import { workerState } from '../state'
 import { errorResponse, jsonResponse } from './json-response'
 
 const FLAT_RE = /^(src\/content\/)([^/]+)\/([^/]+)\.(en|ru|it|es)\.md$/

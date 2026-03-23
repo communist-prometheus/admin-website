@@ -92,8 +92,9 @@ describe('useSettingsStore', () => {
 
     // Verify PUT was called with SHA
     const putCall = mockSwFetch.mock.calls[1]
-    expect(putCall[0]).toBe('/api/github/file')
-    const body = JSON.parse(putCall[1].body)
+    expect(putCall).toBeDefined()
+    expect(putCall![0]).toBe('/api/github/file')
+    const body = JSON.parse(putCall![1].body)
     expect(body.sha).toBe('sha1')
     expect(body.path).toBe('settings/languages.json')
   })
