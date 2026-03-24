@@ -12,10 +12,7 @@ interface WorkerEnv extends Env {
  * Routes /api/* to Hono, everything else to static assets.
  */
 export default {
-  async fetch(
-    request: Request,
-    env: WorkerEnv
-  ): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url)
 
     if (url.pathname.startsWith('/api/')) {

@@ -93,7 +93,8 @@
         "e2e/auth/setup.ts",
         "eslint.config.js",
         "eslint-plugin-no-div.js",
-        "src/router/index.ts"
+        "src/router/index.ts",
+        "worker.ts"
       ],
       "linter": {
         "rules": {
