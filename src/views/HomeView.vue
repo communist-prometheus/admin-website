@@ -1,16 +1,8 @@
 <script setup lang="ts">
-import ContentCard from '@/components/ContentCard/ContentCard.vue'
-import ContentCardDescription from '@/components/ContentCard/ContentCardDescription.vue'
-import ContentCardTitle from '@/components/ContentCard/ContentCardTitle.vue'
-import ContentGrid from '@/components/ContentGrid/ContentGrid.vue'
-import DashboardDescription from '@/components/DashboardDescription/DashboardDescription.vue'
-import DashboardHeading from '@/components/DashboardHeading/DashboardHeading.vue'
-import DashboardSection from '@/components/DashboardSection/DashboardSection.vue'
-import WelcomeDescription from '@/components/WelcomeDescription/WelcomeDescription.vue'
-import WelcomeHeading from '@/components/WelcomeHeading/WelcomeHeading.vue'
-import WelcomeSection from '@/components/WelcomeSection/WelcomeSection.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthStore } from '@/stores/auth'
+import HomeDashboard from './HomeView/HomeDashboard.vue'
+import HomeWelcome from './HomeView/HomeWelcome.vue'
 
 useAuth()
 const authStore = useAuthStore()
@@ -18,36 +10,7 @@ const authStore = useAuthStore()
 
 <template>
   <AppLayout>
-    <template #header-actions>
-      <AuthButton />
-    </template>
-
-    <WelcomeSection v-if="!authStore.user && !authStore.loading">
-      <WelcomeHeading />
-      <WelcomeDescription />
-    </WelcomeSection>
-
-    <DashboardSection v-else>
-      <DashboardHeading />
-      <DashboardDescription />
-      <ContentGrid v-if="authStore.user">
-        <ContentCard>
-          <ContentCardTitle title="Blog Posts" />
-          <ContentCardDescription description="Create and edit blog articles" />
-        </ContentCard>
-        <ContentCard>
-          <ContentCardTitle title="Pages" />
-          <ContentCardDescription description="Manage static pages" />
-        </ContentCard>
-        <ContentCard>
-          <ContentCardTitle title="Positions" />
-          <ContentCardDescription description="Update job openings" />
-        </ContentCard>
-        <ContentCard>
-          <ContentCardTitle title="Common" />
-          <ContentCardDescription description="Shared labels and navigation translations" />
-        </ContentCard>
-      </ContentGrid>
-    </DashboardSection>
+    <HomeWelcome v-if="!authStore.user && !authStore.loading" />
+    <HomeDashboard v-else :show-grid="!!authStore.user" />
   </AppLayout>
 </template>

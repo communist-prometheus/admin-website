@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import EditorFooter from '@/components/MarkdownEditor/EditorFooter.vue'
-import FrontmatterEditor from '@/components/MarkdownEditor/FrontmatterEditor.vue'
-import MarkdownEditorBody from '@/components/MarkdownEditor/MarkdownEditorBody.vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import type { ContentType } from '@/types/content'
+import ContentEditMainBody from './ContentEditMainBody.vue'
 
 defineProps<{
   readonly bodyContent: string
@@ -26,30 +24,23 @@ defineEmits<{
 
 <template>
   <section class="edit-main" data-testid="markdown-editor">
-    <div v-if="loadingFile" class="loading-state">
+    <p v-if="loadingFile" class="loading-state">
       Loading file...
-    </div>
-    <template v-else>
-      <FrontmatterEditor
-        v-if="Object.keys(frontmatterData).length > 0"
-        :frontmatter="frontmatterData"
-        :content-type="contentType"
-        :slug="slug"
-        @update:frontmatter="$emit('update:frontmatter', $event)"
-      />
-      <MarkdownEditorBody
-        :model-value="bodyContent"
-        :asset-url-map="assetUrlMap"
-        :assets="assets"
-        @update:model-value="$emit('update:bodyContent', $event)"
-        @paste:image="$emit('paste:image', $event)"
-        @upload-asset="$emit('upload-asset', $event)"
-      />
-      <EditorFooter
-        :disabled="false"
-        @save="$emit('save')"
-      />
-    </template>
+    </p>
+    <ContentEditMainBody
+      v-else
+      :body-content="bodyContent"
+      :frontmatter-data="frontmatterData"
+      :content-type="contentType"
+      :slug="slug"
+      :asset-url-map="assetUrlMap"
+      :assets="assets"
+      @update:body-content="$emit('update:bodyContent', $event)"
+      @update:frontmatter="$emit('update:frontmatter', $event)"
+      @save="$emit('save')"
+      @paste:image="$emit('paste:image', $event)"
+      @upload-asset="$emit('upload-asset', $event)"
+    />
   </section>
 </template>
 

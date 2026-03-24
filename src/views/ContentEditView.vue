@@ -3,7 +3,6 @@ import { useRouter } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
 import AssetPanel from '@/components/AssetManager/AssetPanel.vue'
 import CoverImage from '@/components/AssetManager/CoverImage.vue'
-import AuthButton from '@/components/AuthButton.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import { renameContent } from '@/composables/useGitHubApi/rename-content'
@@ -44,7 +43,6 @@ const handleRename = async (newSlug: string) => {
 
 <template>
   <AppLayout>
-    <template #header-actions><AuthButton /></template>
     <ContentEditHeader
       :slug="slug" :content-type="p.contentType.value"
       :current-lang="p.editor.currentLang.value"

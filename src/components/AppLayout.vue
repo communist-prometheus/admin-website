@@ -3,13 +3,14 @@ import { useSlots } from 'vue'
 import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
 import AppMain from './AppMain.vue'
+import AuthButton from './AuthButton.vue'
 
 const slots = useSlots()
 </script>
 
 <template>
   <AppHeader v-slot:actions>
-    <slot name="header-actions" />
+    <AuthButton />
   </AppHeader>
 
   <AppMain>

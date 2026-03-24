@@ -36,14 +36,14 @@ defineEmits<{ add: []; save: [] }>()
 .save-btn {
   padding: 0.5rem 1.5rem;
   background: var(--color-accent);
-  color: var(--color-on-accent, white);
+  color: var(--color-on-accent, #fff);
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-weight: 600;
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 50%;
     cursor: not-allowed;
   }
 }

@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
-import AuthButton from '@/components/AuthButton.vue'
 import DeleteConfirmDialog from '@/components/ContentList/DeleteConfirmDialog.vue'
 import CreateContentDialog from '@/components/CreateContentDialog/CreateContentDialog.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
@@ -70,10 +69,6 @@ const handleDeleteLang = () => {
 
 <template>
   <AppLayout>
-    <template #header-actions>
-      <AuthButton />
-    </template>
-
     <ContentViewHeader
       v-model="selectedLang"
       :content-type="contentType"

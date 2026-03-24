@@ -60,10 +60,11 @@ const emit = defineEmits<{ click: [] }>()
 @keyframes pulse {
   0%,
   100% {
-    opacity: 1;
+    opacity: 100%;
   }
+
   50% {
-    opacity: 0.4;
+    opacity: 40%;
   }
 }
 </style>

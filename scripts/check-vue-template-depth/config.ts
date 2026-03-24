@@ -5,7 +5,7 @@ export interface Config {
 
 export const config: Config = {
   maxDepth: 2,
-  excludePatterns: ['src/components/icons/**/*.vue', 'src/views/**/*.vue'],
+  excludePatterns: ['src/components/icons/**/*.vue'],
 } as const
 
 const normalizePathSeparators = (path: string): string =>
