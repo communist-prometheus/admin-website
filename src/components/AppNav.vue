@@ -32,7 +32,7 @@ const auth = useAuthStore()
   align-items: center;
 }
 
-.app-nav a {
+.app-nav :deep(a) {
   color: var(--color-text);
   text-decoration: none;
   font-size: clamp(0.875rem, 2vw, 1rem);
@@ -45,12 +45,12 @@ const auth = useAuthStore()
   transition: all 0.2s ease;
 }
 
-.app-nav a:hover {
+.app-nav :deep(a):hover {
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
 }
 
-.app-nav .active {
+.app-nav :deep(.active) {
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
 }
