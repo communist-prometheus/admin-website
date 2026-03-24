@@ -1,38 +1,49 @@
+import { Effect, pipe } from 'effect'
+import { ValidationError } from '../../errors'
 import { writeAndStage } from '../../git/io/write-file'
 import { commitAndPush } from '../../git/remote/commit-and-push'
 import { serializeFrontmatter } from '../shared/frontmatter'
 import { errorResponse, jsonResponse } from '../shared/json-response'
-import { contentBase } from './base'
+import { parseBody } from '../shared/parse-body'
+import { newFilePath } from './base'
 import { resolveContentPath } from './resolve-path'
-
-const NESTED_TYPES = new Set(['blog', 'positions', 'pages', 'common'])
+import type { UpdateBody } from './update-body'
+import { isValidUpdate } from './update-body'
 
 /**
- * Handle POST /api/github/content — create or update content.
- * @param request - Incoming Request
- * @returns JSON response with { success, path }
+ * Resolve path, write content, commit, return response.
+ * @param b - Validated update body
+ * @returns Effect yielding JSON Response
  */
-export const handleContentUpdate = async (
-  request: Request
-): Promise<Response> => {
-  const body = await request.json()
-  const { type, slug, lang, frontmatter, body: mdBody, message } = body
+const writeContent = (b: UpdateBody) =>
+  pipe(
+    Effect.promise(() => resolveContentPath(b.type, b.slug, b.lang)),
+    Effect.map(p => p ?? newFilePath(b.type, b.slug, b.lang)),
+    Effect.tap(path =>
+      Effect.tryPromise(() =>
+        writeAndStage(path, serializeFrontmatter(b.frontmatter, b.body))
+      )
+    ),
+    Effect.tap(() => Effect.tryPromise(() => commitAndPush(b.message))),
+    Effect.map(path => jsonResponse({ success: true, path }))
+  )
 
-  if (!type || !slug || !lang || !message) {
-    return errorResponse('Missing required fields', 400)
-  }
-
-  const base = contentBase(type)
-  const existing = await resolveContentPath(type, slug, lang)
-  const isNested = NESTED_TYPES.has(type)
-  const newPath = isNested
-    ? `${base}/${slug}/index.${lang}.md`
-    : `${base}/${slug}.${lang}.md`
-  const path = existing ?? newPath
-  const content = serializeFrontmatter(frontmatter, mdBody)
-
-  await writeAndStage(path, content)
-  await commitAndPush(message)
-
-  return jsonResponse({ success: true, path })
-}
+/**
+ * Handle POST /api/github/content — create or update.
+ * @param request - Incoming Request
+ * @returns JSON response with success and path
+ */
+export const handleContentUpdate = (request: Request): Promise<Response> =>
+  pipe(
+    parseBody(request),
+    Effect.filterOrFail(
+      isValidUpdate,
+      () => new ValidationError({ message: 'Missing required fields' })
+    ),
+    Effect.flatMap(writeContent),
+    Effect.catchTag('ValidationError', e =>
+      Effect.succeed(errorResponse(e.message, 400))
+    ),
+    Effect.catchAll(e => Effect.succeed(errorResponse(String(e), 500))),
+    Effect.runPromise
+  )
