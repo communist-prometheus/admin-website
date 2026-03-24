@@ -1,3 +1,4 @@
+import { Match } from 'effect'
 import { getLogEntries, log } from '../../logging/logger'
 import { getMetrics } from '../../logging/metrics'
 import type { SWRequest } from '../../protocol'
@@ -12,14 +13,17 @@ type Reply = (data: unknown) => void
  * Handle an incoming postMessage from the client.
  * @param msg - The message payload
  * @param reply - Callback to send response via MessagePort
+ * @returns void
  */
-export const handleMessage = (msg: SWRequest, reply: Reply): void => {
-  if (msg.type === 'SW_INIT') handleInit(msg.config, reply)
-  else if (msg.type === 'SW_FETCH') handleFetchMessage(msg, reply)
-  else if (msg.type === 'SW_STATUS') reply(buildStatus())
-  else if (msg.type === 'SW_METRICS') reply(getMetrics())
-  else if (msg.type === 'SW_LOG_SUBSCRIBE')
-    reply({ entries: getLogEntries() })
-  else if (msg.type === 'SW_INVALIDATE') handleInvalidate(reply)
-  else log('warn', 'lifecycle', 'Unknown message type')
-}
+export const handleMessage = (msg: SWRequest, reply: Reply): void =>
+  Match.value(msg).pipe(
+    Match.when({ type: 'SW_INIT' }, m => handleInit(m.config, reply)),
+    Match.when({ type: 'SW_FETCH' }, m => handleFetchMessage(m, reply)),
+    Match.when({ type: 'SW_STATUS' }, () => reply(buildStatus())),
+    Match.when({ type: 'SW_METRICS' }, () => reply(getMetrics())),
+    Match.when({ type: 'SW_LOG_SUBSCRIBE' }, () =>
+      reply({ entries: getLogEntries() })
+    ),
+    Match.when({ type: 'SW_INVALIDATE' }, () => handleInvalidate(reply)),
+    Match.orElse(() => log('warn', 'lifecycle', 'Unknown message type'))
+  )

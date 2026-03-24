@@ -1,34 +1,28 @@
-import { computeBlobSha } from '../../git/blob-sha'
+import { Effect, pipe } from 'effect'
 import { listFilesUnder } from '../../git/io/list-files'
-import { readRepoFile } from '../../git/io/read-file'
-import { parseFrontmatter } from '../shared/frontmatter'
 import { jsonResponse } from '../shared/json-response'
-import { parseSlugFromPath } from '../shared/parse-slug'
 import { contentBase } from './base'
+import { buildItem } from './build-item'
 
 /**
- * Build a ContentItem from a file path and its content.
- * @param type - Content type (blog, pages, positions)
- * @param filepath - Full file path
- * @returns ContentItem matching server response format
+ * Check if a filename has a markdown extension.
+ * @param f - Filename to check
+ * @returns Whether the file is markdown
  */
-const buildItem = async (type: string, filepath: string) => {
-  const raw = await readRepoFile(filepath)
-  const { frontmatter, body } = parseFrontmatter(raw)
-  const sha = await computeBlobSha(raw)
-  const slug = parseSlugFromPath(filepath)
-
-  return { type, slug, path: filepath, frontmatter, body, sha }
-}
+const isMd = (f: string): boolean => f.endsWith('.md')
 
 /**
  * Handle GET /api/github/content/:type
  * @param type - Content type from URL
- * @returns JSON response with { items: ContentItem[] }
+ * @returns JSON response with items array
  */
-export const handleContentList = async (type: string): Promise<Response> => {
-  const files = await listFilesUnder(contentBase(type))
-  const mdFiles = files.filter(f => f.endsWith('.md'))
-  const items = await Promise.all(mdFiles.map(f => buildItem(type, f)))
-  return jsonResponse({ items })
-}
+export const handleContentList = (type: string): Promise<Response> =>
+  pipe(
+    Effect.tryPromise(() => listFilesUnder(contentBase(type))),
+    Effect.map(files => files.filter(isMd)),
+    Effect.flatMap(mdFiles =>
+      Effect.forEach(mdFiles, f => buildItem(type, f))
+    ),
+    Effect.map(items => jsonResponse({ items })),
+    Effect.runPromise
+  )

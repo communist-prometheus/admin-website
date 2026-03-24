@@ -1,7 +1,7 @@
-import { computeBlobSha } from '../../git/blob-sha'
-import { readRepoFile } from '../../git/io/read-file'
-import { parseFrontmatter } from '../shared/frontmatter'
+import { Effect, pipe } from 'effect'
+import { NotFoundError } from '../../errors'
 import { errorResponse, jsonResponse } from '../shared/json-response'
+import { buildItem } from './build-item'
 import { resolveContentPath } from './resolve-path'
 
 /**
@@ -11,18 +11,21 @@ import { resolveContentPath } from './resolve-path'
  * @param lang - Language code
  * @returns JSON response with ContentItem
  */
-export const handleContentGet = async (
+export const handleContentGet = (
   type: string,
   slug: string,
   lang: string
-): Promise<Response> => {
-  const path = await resolveContentPath(type, slug, lang)
-  if (!path) {
-    return errorResponse(`File not found: ${slug}.${lang}.md`, 404)
-  }
-
-  const raw = await readRepoFile(path)
-  const { frontmatter, body } = parseFrontmatter(raw)
-  const sha = await computeBlobSha(raw)
-  return jsonResponse({ type, slug, path, frontmatter, body, sha })
-}
+): Promise<Response> =>
+  pipe(
+    Effect.promise(() => resolveContentPath(type, slug, lang)),
+    Effect.filterOrFail(
+      (path): path is string => path !== undefined,
+      () => new NotFoundError({ resource: `${slug}.${lang}.md` })
+    ),
+    Effect.flatMap(path => buildItem(type, path)),
+    Effect.map(jsonResponse),
+    Effect.catchTag('NotFoundError', e =>
+      Effect.succeed(errorResponse(`File not found: ${e.resource}`, 404))
+    ),
+    Effect.runPromise
+  )
