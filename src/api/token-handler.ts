@@ -15,7 +15,10 @@ export const tokenHandler = async (
   const secret = c.env.GITHUB_CLIENT_SECRET
   if (!secret) {
     return c.json(
-      { error: 'server_config', error_description: 'GITHUB_CLIENT_SECRET not configured' },
+      {
+        error: 'server_config',
+        error_description: 'GITHUB_CLIENT_SECRET not configured',
+      },
       500
     )
   }
