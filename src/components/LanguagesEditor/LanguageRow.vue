@@ -14,13 +14,15 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <LanguageCodeInput
-    :value="entry.code"
-    @input="emit('update:code', $event)"
-  />
-  <LanguageLabelInput
-    :value="entry.label"
-    @input="emit('update:label', $event)"
-  />
-  <RemoveButton @click="emit('remove')" />
+  <tr data-testid="language-row">
+    <LanguageCodeInput
+      :value="entry.code"
+      @input="emit('update:code', $event)"
+    />
+    <LanguageLabelInput
+      :value="entry.label"
+      @input="emit('update:label', $event)"
+    />
+    <RemoveButton @click="emit('remove')" />
+  </tr>
 </template>

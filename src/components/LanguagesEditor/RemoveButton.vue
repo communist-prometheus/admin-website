@@ -3,14 +3,16 @@ defineEmits<{ click: [] }>()
 </script>
 
 <template>
-  <button
-    type="button"
-    class="remove-btn"
-    data-testid="remove-language"
-    @click="$emit('click')"
-  >
-    &times;
-  </button>
+  <td>
+    <button
+      type="button"
+      class="remove-btn"
+      data-testid="remove-language"
+      @click="$emit('click')"
+    >
+      &times;
+    </button>
+  </td>
 </template>
 
 <style scoped>

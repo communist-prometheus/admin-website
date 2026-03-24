@@ -4,15 +4,17 @@ const emit = defineEmits<{ input: [value: string] }>()
 </script>
 
 <template>
-  <input
-    :value="value"
-    type="text"
-    placeholder="en"
-    maxlength="5"
-    class="code-input"
-    data-testid="language-code"
-    @input="emit('input', ($event.target as HTMLInputElement).value)"
-  />
+  <td>
+    <input
+      :value="value"
+      type="text"
+      placeholder="en"
+      maxlength="5"
+      class="code-input"
+      data-testid="language-code"
+      @input="emit('input', ($event.target as HTMLInputElement).value)"
+    />
+  </td>
 </template>
 
 <style scoped>

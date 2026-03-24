@@ -17,8 +17,8 @@ export const tokenHandler = async (
     return c.json(
       {
         error: 'server_config',
-        error_description: 'GITHUB_CLIENT_SECRET not configured',
-        debug_env_keys: Object.keys(c.env),
+        error_description:
+          'GITHUB_CLIENT_SECRET not configured',
       },
       500
     )

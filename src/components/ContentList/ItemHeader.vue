@@ -12,15 +12,25 @@ const emit = defineEmits<{ delete: [] }>()
 </script>
 
 <template>
-  <h3>{{ title }}</h3>
-  <DeleteButton
-    v-if="showDelete"
-    @click="emit('delete')"
-  />
-  <span class="lang-badge">{{ lang }}</span>
+  <header class="item-header">
+    <h3>{{ title }}</h3>
+    <DeleteButton
+      v-if="showDelete"
+      @click="emit('delete')"
+    />
+    <span class="lang-badge">{{ lang }}</span>
+  </header>
 </template>
 
 <style scoped>
+.item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(0.5rem, 1vw, 1rem);
+  margin-bottom: clamp(0.375rem, 1vw, 0.5rem);
+}
+
 h3 {
   margin: 0;
   font-size: clamp(1rem, 2vw, 1.125rem);
