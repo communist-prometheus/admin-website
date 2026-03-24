@@ -4,10 +4,10 @@
  * via load-git.ts to enable code-splitting. This keeps
  * the main SW chunk small for fast installation.
  */
-import { registerFetchListener } from './fetch-listener'
-import { registerLifecycle } from './lifecycle'
+import { registerFetchListener } from './core/fetch-listener'
+import { registerLifecycle } from './core/lifecycle'
+import { registerMessageListener } from './core/messaging/message-listener'
 import { initLogChannel, log } from './logging/logger'
-import { registerMessageListener } from './message-listener'
 import { SW_VERSION } from './protocol'
 
 initLogChannel()

@@ -1,8 +1,8 @@
 import { log } from '../logging/logger'
-import { errorResponse } from './json-response'
-import { routeAssetRequest } from './route-asset'
-import { routeContentRequest } from './route-content'
-import { routeFileRequest } from './route-file'
+import { routeAssetRequest } from './asset/route'
+import { routeContentRequest } from './content/route'
+import { routeFileRequest } from './file/route'
+import { errorResponse } from './shared/json-response'
 
 /**
  * Route an intercepted /api/github/* request to a handler.

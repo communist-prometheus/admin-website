@@ -8,12 +8,12 @@ export {
   SW_PROGRESS_CHANNEL,
   SW_STATE_CHANNEL,
   SW_VERSION,
-} from './channels'
+} from './protocol/channels'
 export type {
   LogCategory,
   LogEntry,
   LogLevel,
-} from './log-types'
+} from './protocol/log-types'
 export type {
   SWFetchRequest,
   SWFetchResponse,
@@ -23,4 +23,4 @@ export type {
   SWRequest,
   SWState,
   SWStatusResponse,
-} from './sw-types'
+} from './protocol/sw-types'
