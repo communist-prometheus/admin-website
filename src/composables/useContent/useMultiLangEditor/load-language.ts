@@ -1,8 +1,7 @@
 import type { Ref } from 'vue'
 import type { Language } from '@/types/content'
-import { parseFrontmatter } from '@/utils/frontmatter/parse'
 import type { useGitHubApi } from '../../useGitHubApi'
-import { setLoadedDraft } from './set-loaded-draft'
+import { applyLoadedFile } from './apply-loaded-file'
 import type { EditorDraft, MultiLangEditorState } from './types'
 
 type GetFileFn = ReturnType<typeof useGitHubApi>['getFile']
@@ -28,18 +27,7 @@ export const createLoadLanguageVersion =
     state.loadingFile.value = true
     try {
       const file = await getFile(path)
-      const parsed = parseFrontmatter(file.content)
-      state.frontmatterData.value = { ...parsed.frontmatter }
-      state.bodyContent.value = parsed.content
-      fileSha.value = file.sha
-      setLoadedDraft(
-        cache,
-        originalCache,
-        state.currentLang.value,
-        parsed.frontmatter,
-        parsed.content,
-        file.sha
-      )
+      applyLoadedFile(file, cache, originalCache, state, fileSha)
     } finally {
       state.loadingFile.value = false
     }

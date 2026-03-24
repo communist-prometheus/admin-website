@@ -2,8 +2,11 @@ import { ref } from 'vue'
 import type { Language } from '@/types/content'
 import type { EditorDraft, MultiLangEditorState } from './types'
 
+/** Return type of createEditorState */
+export type EditorContext = ReturnType<typeof createEditorState>
+
 /**
- * Creates the initial reactive state for the multi-lang editor
+ * Creates initial reactive state for multi-lang editor
  * @returns Editor state including caches and reactive refs
  */
 export const createEditorState = () => {

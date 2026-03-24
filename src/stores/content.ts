@@ -1,73 +1,21 @@
-import { Schema } from 'effect'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { swFetch } from '@/composables/useSWBridge/sw-fetch'
 import { isTypePath } from '@/config/content-paths'
 import type { ContentItem, ContentType } from '@/types/content'
-import type { ContentItemRaw } from '@/validation/schemas/content-item'
-import { ContentListResponseSchema } from '@/validation/schemas/content-item'
-
-const CONTENT_TYPES: readonly ContentType[] = [
-  'blog',
-  'pages',
-  'positions',
-  'common',
-]
+import { createLoadAll } from './content-load-all'
 
 /**
- * Map a raw validated content item to a ContentItem.
- * @param item - Raw content item from schema validation
- * @returns Mapped content item
- */
-const toContentItem = (item: ContentItemRaw): ContentItem => ({
-  path: item.path,
-  slug: item.slug,
-  lang: String(item.frontmatter.lang ?? ''),
-  frontmatter: item.frontmatter,
-})
-
-/**
- * Fetch content items of a given type from the SW.
- * Waits for SW readiness before issuing the request.
- * @param type - Content type to fetch
- * @returns Array of content items
- */
-const fetchContentItems = async (
-  type: ContentType
-): Promise<readonly ContentItem[]> => {
-  if (typeof globalThis.document === 'undefined') return []
-  const response = await swFetch(`/api/github/content/${type}`)
-  if (!response.ok) {
-    throw new Error(`Failed to load: ${response.statusText}`)
-  }
-  const json: unknown = await response.json()
-  const data = Schema.decodeUnknownSync(ContentListResponseSchema)(json)
-  return data.items.map(toContentItem)
-}
-
-/**
- * Global content store — loaded once on auth, consumed by all views
+ * Global content store — loaded once on auth,
+ * consumed by all views
  */
 export const useContentStore = defineStore('content', () => {
   const allItems = ref<readonly ContentItem[]>([])
   const loading = ref(false)
   const loaded = ref(false)
-
-  const loadAll = async () => {
-    loading.value = true
-    try {
-      const results = await Promise.all(CONTENT_TYPES.map(fetchContentItems))
-      allItems.value = results.flat()
-      loaded.value = true
-    } finally {
-      loading.value = false
-    }
-  }
-
+  const loadAll = createLoadAll(allItems, loading, loaded)
   const ensureLoaded = async () => {
     if (!loaded.value) await loadAll()
   }
-
   const itemsByType = (type: ContentType) =>
     computed(() => allItems.value.filter(item => isTypePath(item.path, type)))
 
