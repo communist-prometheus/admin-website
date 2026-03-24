@@ -12,8 +12,16 @@ const TOKEN_URL = 'https://github.com/login/oauth/access_token'
 export const tokenHandler = async (
   c: Context<{ Bindings: Env }>
 ): Promise<Response> => {
+  const secret = c.env.GITHUB_CLIENT_SECRET
+  if (!secret) {
+    return c.json(
+      { error: 'server_config', error_description: 'GITHUB_CLIENT_SECRET not configured' },
+      500
+    )
+  }
+
   const body = new URLSearchParams(await c.req.text())
-  body.set('client_secret', c.env.GITHUB_CLIENT_SECRET)
+  body.set('client_secret', secret)
 
   const gh = await fetch(TOKEN_URL, {
     method: 'POST',
