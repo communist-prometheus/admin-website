@@ -7,7 +7,7 @@ import AppNav from './AppNav.vue'
   <header class="app-header">
     <RouterLink to="/" class="logo">Prometheus</RouterLink>
     <AppNav />
-    <slot name="actions" />
+    <slot />
   </header>
 </template>
 

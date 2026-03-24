@@ -9,7 +9,7 @@ const slots = useSlots()
 </script>
 
 <template>
-  <AppHeader v-slot:actions>
+  <AppHeader>
     <AuthButton />
   </AppHeader>
 
@@ -19,6 +19,8 @@ const slots = useSlots()
 
   <AppFooter>
     <slot v-if="slots.footer" name="footer" />
-    <span v-else>© {{ new Date().getFullYear() }} Admin Panel. All rights reserved.</span>
+    <span v-else>
+      © {{ new Date().getFullYear() }} Admin Panel. All rights reserved.
+    </span>
   </AppFooter>
 </template>
