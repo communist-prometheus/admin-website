@@ -73,6 +73,7 @@
     "oxlint": "1.48.0",
     "playwright-lighthouse": "^4.0.0",
     "postcss-html": "^1.8.1",
+    "sass-embedded": "^1.98.0",
     "stylelint": "^17.3.0",
     "stylelint-config-recommended-vue": "^1.6.1",
     "stylelint-config-standard": "^40.0.0",
