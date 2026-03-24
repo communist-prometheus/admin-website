@@ -52,6 +52,7 @@
     },
     {
       "files": [
+        "src/api/**/*.ts",
         "src/server/**/*.ts",
         "src/types/**/*.ts",
         "src/stores/**/*.ts",
