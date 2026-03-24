@@ -1,10 +1,8 @@
 import { ref } from 'vue'
 import type { User } from '@/types/user'
 import { buildAuthorizeUrl } from './useOAuthPopup/authorize-url'
-import {
-  createMessageHandler,
-  createPopupMonitor,
-} from './useOAuthPopup/handlers'
+import { createMessageHandler } from './useOAuthPopup/handlers'
+import { createPopupMonitor } from './useOAuthPopup/popup-monitor'
 import { createPopupWindow } from './useOAuthPopup/popup-window'
 
 /**

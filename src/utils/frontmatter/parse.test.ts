@@ -26,10 +26,11 @@ Content`
 
     const result = parseFrontmatter(markdown)
 
-    expect(result.frontmatter.date).toBeInstanceOf(Date)
-    expect((result.frontmatter.date as Date).toISOString()).toContain(
-      '2024-01-15'
-    )
+    const date = result.frontmatter.date
+    expect(date).toBeInstanceOf(Date)
+    if (date instanceof Date) {
+      expect(date.toISOString()).toContain('2024-01-15')
+    }
   })
 
   it('parses frontmatter with boolean values', () => {

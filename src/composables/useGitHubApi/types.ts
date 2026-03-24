@@ -1,35 +1,8 @@
-/** GitHub tree item */
-export interface GitHubTreeItem {
-  path: string
-  mode: string
-  type: 'blob' | 'tree'
-  sha: string
-  size?: number
-  url: string
-}
-
-/** GitHub tree response */
-export interface GitHubTreeResponse {
-  sha: string
-  url: string
-  tree: readonly GitHubTreeItem[]
-  truncated: boolean
-}
-
-/** GitHub file content */
-export interface GitHubFileContent {
-  name: string
-  path: string
-  sha: string
-  size: number
-  url: string
-  html_url: string
-  git_url: string
-  download_url: string
-  type: 'file'
-  content: string
-  encoding: 'base64'
-}
+export type {
+  GitHubFileContent,
+  GitHubTreeItem,
+  GitHubTreeResponse,
+} from '@/validation/schemas/github-api'
 
 /** Parameters for creating a file */
 export interface CreateFileParams {

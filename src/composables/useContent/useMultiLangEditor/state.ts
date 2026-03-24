@@ -1,4 +1,4 @@
-import { type ComputedRef, ref } from 'vue'
+import { ref } from 'vue'
 import type { Language } from '@/types/content'
 import type { EditorDraft, MultiLangEditorState } from './types'
 
@@ -16,7 +16,7 @@ export const createEditorState = () => {
     frontmatterData: ref<Record<string, unknown>>({}),
     bodyContent: ref(''),
     loadingFile: ref(false),
-    isDirty: undefined as unknown as ComputedRef<boolean>,
+    isDirty: undefined,
   }
   return { cache, originalCache, fileSha, saveVersion, state }
 }

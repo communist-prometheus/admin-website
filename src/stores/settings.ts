@@ -1,16 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import type { LanguageEntry } from '@/validation/schemas/languages'
 import {
   fetchLanguagesFile,
   parseLanguages,
   saveLanguagesFile,
 } from './settings-api'
 
-/** Language entry with code and display label. */
-export interface LanguageEntry {
-  readonly code: string
-  readonly label: string
-}
+export type { LanguageEntry } from '@/validation/schemas/languages'
 
 /** Pinia store for application language settings. */
 export const useSettingsStore = defineStore('settings', () => {

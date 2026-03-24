@@ -1,8 +1,8 @@
 /**
  * Parsed markdown content with frontmatter
  */
-export interface ParsedContent<T = Record<string, unknown>> {
-  readonly frontmatter: T
+export interface ParsedContent {
+  readonly frontmatter: Record<string, unknown>
   readonly content: string
 }
 
@@ -34,17 +34,15 @@ const parseFrontmatterLines = (text: string): Record<string, unknown> => {
  * @param markdown - Markdown content with frontmatter
  * @returns Parsed content with frontmatter and body
  */
-export const parseFrontmatter = <T = Record<string, unknown>>(
-  markdown: string
-): ParsedContent<T> => {
+export const parseFrontmatter = (markdown: string): ParsedContent => {
   const match = markdown.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
 
   if (!match) {
-    return { frontmatter: {} as T, content: markdown }
+    return { frontmatter: {}, content: markdown }
   }
 
   const [, frontmatterText = '', content = ''] = match
   const frontmatter = parseFrontmatterLines(frontmatterText)
 
-  return { frontmatter: frontmatter as T, content: content.trim() }
+  return { frontmatter, content: content.trim() }
 }

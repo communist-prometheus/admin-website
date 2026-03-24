@@ -1,5 +1,7 @@
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
-import type { GitHubTreeResponse } from './types'
+import { decodeResponse } from '@/validation/decode-response'
+import type { GitHubTreeResponse } from '@/validation/schemas/github-api'
+import { GitHubTreeResponseSchema } from '@/validation/schemas/github-api'
 
 /**
  * Fetch tree from GitHub repository.
@@ -10,5 +12,5 @@ export const fetchTree = async (path = ''): Promise<GitHubTreeResponse> => {
   const res = await swFetch(
     `/api/github/tree?path=${encodeURIComponent(path)}`
   )
-  return res.json() as Promise<GitHubTreeResponse>
+  return decodeResponse(GitHubTreeResponseSchema)(res)
 }

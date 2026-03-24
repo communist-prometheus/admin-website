@@ -1,6 +1,8 @@
 import { fetchGitHubUser } from '@/composables/useAuth/fetch-github-user'
 import { saveToken } from '@/composables/useAuth/token-storage'
 import type { User } from '@/types/user'
+import { decodeOrUndefined } from '@/validation/decode'
+import { OAuthMessageSchema } from '@/validation/schemas/oauth-message'
 
 /**
  * Handle received token: save and fetch user profile.
@@ -38,31 +40,12 @@ export const createMessageHandler =
   (event: MessageEvent) => {
     if (typeof globalThis.location === 'undefined') return
     if (event.origin !== globalThis.location.origin) return
-    if (event.data.type === 'github-oauth-success') {
-      handleToken(event.data.token as string, onSuccess, onError).finally(
-        cleanup
-      )
-    } else if (event.data.type === 'github-oauth-error') {
-      onError?.((event.data.error as string) || 'Authentication failed')
+    const msg = decodeOrUndefined(OAuthMessageSchema)(event.data)
+    if (!msg) return
+    if (msg.type === 'github-oauth-success') {
+      handleToken(msg.token, onSuccess, onError).finally(cleanup)
+    } else {
+      onError?.(msg.error ?? 'Authentication failed')
       cleanup()
     }
   }
-
-/**
- * Creates interval monitor to detect popup window close.
- * @param popup - Popup window instance to monitor
- * @param onClose - Callback when popup closes
- * @returns Interval ID for the monitor
- */
-export const createPopupMonitor = (
-  popup: Window | null,
-  onClose: () => void
-) => {
-  const checkPopup = setInterval(() => {
-    if (popup?.closed) {
-      clearInterval(checkPopup)
-      onClose()
-    }
-  }, 500)
-  return checkPopup
-}

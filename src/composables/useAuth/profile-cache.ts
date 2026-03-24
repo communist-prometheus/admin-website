@@ -1,13 +1,10 @@
-const PROFILE_KEY = 'gh_user_profile'
+import { parseJsonAs } from '@/validation/decode'
+import type { CachedProfile } from '@/validation/schemas/user'
+import { CachedProfileSchema } from '@/validation/schemas/user'
 
-/**
- * Cached user profile without access token.
- */
-export interface CachedProfile {
-  readonly username: string
-  readonly name: string
-  readonly avatar: string
-}
+export type { CachedProfile } from '@/validation/schemas/user'
+
+const PROFILE_KEY = 'gh_user_profile'
 
 /**
  * Save user profile to localStorage.
@@ -24,7 +21,7 @@ export const saveProfile = (profile: CachedProfile): void => {
 export const loadProfile = (): CachedProfile | undefined => {
   const raw = localStorage.getItem(PROFILE_KEY)
   if (!raw) return undefined
-  return JSON.parse(raw) as CachedProfile
+  return parseJsonAs(CachedProfileSchema)(raw)
 }
 
 /**

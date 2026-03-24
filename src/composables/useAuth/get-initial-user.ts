@@ -9,7 +9,7 @@ import { loadToken, saveToken } from './token-storage'
  * @returns Token string or undefined
  */
 const resolveToken = (): string | undefined => {
-  const devToken = import.meta.env.VITE_DEV_TOKEN as string | undefined
+  const devToken = import.meta.env.VITE_DEV_TOKEN
   if (devToken) {
     saveToken(devToken)
     return devToken

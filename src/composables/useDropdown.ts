@@ -13,7 +13,8 @@ export const useDropdown = () => {
 
   const close = (event: MouseEvent) => {
     if (typeof window === 'undefined') return
-    const target = event.target as HTMLElement
+    const target = event.target
+    if (!(target instanceof HTMLElement)) return
     if (!target.closest('.auth-dropdown')) {
       show.value = false
     }

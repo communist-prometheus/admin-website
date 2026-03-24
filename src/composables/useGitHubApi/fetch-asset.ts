@@ -1,5 +1,7 @@
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
-import type { AssetContent } from './asset-types'
+import { decodeResponse } from '@/validation/decode-response'
+import type { AssetContent } from '@/validation/schemas/asset'
+import { AssetContentSchema } from '@/validation/schemas/asset'
 
 /**
  * Fetch a single asset as base64 from the SW.
@@ -10,5 +12,5 @@ export const fetchAsset = async (path: string): Promise<AssetContent> => {
   const res = await swFetch(
     `/api/github/asset?path=${encodeURIComponent(path)}`
   )
-  return res.json() as Promise<AssetContent>
+  return decodeResponse(AssetContentSchema)(res)
 }

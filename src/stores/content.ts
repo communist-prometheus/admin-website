@@ -1,8 +1,11 @@
+import { Schema } from 'effect'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
 import { isTypePath } from '@/config/content-paths'
 import type { ContentItem, ContentType } from '@/types/content'
+import type { ContentItemRaw } from '@/validation/schemas/content-item'
+import { ContentListResponseSchema } from '@/validation/schemas/content-item'
 
 const CONTENT_TYPES: readonly ContentType[] = [
   'blog',
@@ -10,6 +13,18 @@ const CONTENT_TYPES: readonly ContentType[] = [
   'positions',
   'common',
 ]
+
+/**
+ * Map a raw validated content item to a ContentItem.
+ * @param item - Raw content item from schema validation
+ * @returns Mapped content item
+ */
+const toContentItem = (item: ContentItemRaw): ContentItem => ({
+  path: item.path,
+  slug: item.slug,
+  lang: String(item.frontmatter.lang ?? ''),
+  frontmatter: item.frontmatter,
+})
 
 /**
  * Fetch content items of a given type from the SW.
@@ -25,15 +40,9 @@ const fetchContentItems = async (
   if (!response.ok) {
     throw new Error(`Failed to load: ${response.statusText}`)
   }
-  const data = await response.json()
-  return ((data.items || []) as readonly ContentItem[]).map(
-    (item: ContentItem): ContentItem => ({
-      path: item.path,
-      slug: item.slug,
-      lang: item.frontmatter.lang,
-      frontmatter: item.frontmatter,
-    })
-  )
+  const json: unknown = await response.json()
+  const data = Schema.decodeUnknownSync(ContentListResponseSchema)(json)
+  return data.items.map(toContentItem)
 }
 
 /**

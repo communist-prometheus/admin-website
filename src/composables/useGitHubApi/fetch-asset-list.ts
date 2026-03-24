@@ -1,9 +1,12 @@
+import { Schema } from 'effect'
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
-import type { AssetItem } from './asset-types'
+import { decodeResponse } from '@/validation/decode-response'
+import type { AssetItem } from '@/validation/schemas/asset'
+import { AssetItemSchema } from '@/validation/schemas/asset'
 
 /**
  * Fetch the list of assets under a given prefix.
- * @param prefix - Directory prefix (e.g. src/content/blog/slug/assets)
+ * @param prefix - Directory prefix
  * @returns Array of asset items
  */
 export const fetchAssetList = async (
@@ -12,5 +15,5 @@ export const fetchAssetList = async (
   const res = await swFetch(
     `/api/github/assets?prefix=${encodeURIComponent(prefix)}`
   )
-  return res.json() as Promise<readonly AssetItem[]>
+  return decodeResponse(Schema.Array(AssetItemSchema))(res)
 }

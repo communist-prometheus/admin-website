@@ -20,10 +20,10 @@ export const postWithTimeout = <T>(
       reject(new Error(`SW message timeout: ${message.type}`))
     }, TIMEOUT)
 
-    channel.port1.onmessage = event => {
-      clearTimeout(timer as unknown as number)
+    channel.port1.onmessage = (event: MessageEvent<T>) => {
+      clearTimeout(timer)
       channel.port1.close()
-      resolve(event.data as T)
+      resolve(event.data)
     }
     worker.postMessage(message, [channel.port2])
   })

@@ -1,4 +1,6 @@
-import type { SWGitConfig } from '../protocol'
+import { parseJsonAs } from '@/validation/decode'
+import type { SWGitConfig } from '@/validation/schemas/sw-config'
+import { SWGitConfigSchema } from '@/validation/schemas/sw-config'
 import { fs } from './fs'
 
 const CONFIG_PATH = '/.sw-config.json'
@@ -20,7 +22,7 @@ export const saveConfig = async (config: SWGitConfig): Promise<void> => {
 export const loadConfig = async (): Promise<SWGitConfig | undefined> => {
   try {
     const raw = await fs.promises.readFile(CONFIG_PATH, 'utf8')
-    return JSON.parse(raw as string) as SWGitConfig
+    return parseJsonAs(SWGitConfigSchema)(raw)
   } catch {
     return undefined
   }

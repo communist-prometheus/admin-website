@@ -1,4 +1,3 @@
-import type { ComputedRef } from 'vue'
 import { useGitHubApi } from '../useGitHubApi'
 import { createIsDirty } from './useMultiLangEditor/dirty-check'
 import { createLoadLanguageVersion } from './useMultiLangEditor/load-language'
@@ -30,7 +29,7 @@ export const useMultiLangEditor = () => {
     fileSha,
     saveVersion
   )
-  ;(state as { isDirty: ComputedRef<boolean> }).isDirty = isDirty
+  state.isDirty = isDirty
 
   return {
     ...state,

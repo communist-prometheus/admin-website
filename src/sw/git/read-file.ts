@@ -15,5 +15,5 @@ export const readRepoFile = async (filepath: string): Promise<string> => {
   })
   recordOp('readFile', Date.now() - start)
   log('debug', 'fs', `read ${filepath}`)
-  return data as string
+  return String(data)
 }

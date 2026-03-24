@@ -9,6 +9,7 @@ import {
 } from '@/composables/useAuth/token-storage'
 import { loadRedirect } from '@/router/auth-guard'
 import { useAuthStore } from '@/stores/auth'
+import { extractString } from '@/validation/extract-string'
 
 const router = useRouter()
 const route = useRoute()
@@ -29,7 +30,7 @@ const notifyOpener = (token: string) => {
 
 onMounted(async () => {
   try {
-    const code = route.query.code as string | undefined
+    const code = extractString(route.query.code)
     const verifier = loadAndClearVerifier()
 
     if (!code || !verifier) {

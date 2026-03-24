@@ -45,12 +45,6 @@
   },
   "overrides": [
     {
-      "files": ["src/server/utils/logger.ts"],
-      "rules": {
-        "no-console": "off"
-      }
-    },
-    {
       "files": [
         "src/api/**/*.ts",
         "src/server/**/*.ts",

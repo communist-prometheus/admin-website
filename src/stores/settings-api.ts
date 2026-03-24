@@ -1,12 +1,12 @@
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
-import type { LanguageEntry } from './settings'
+import { parseJsonAs } from '@/validation/decode'
+import { decodeResponse } from '@/validation/decode-response'
+import type { FileData } from '@/validation/schemas/api-response'
+import { FileDataSchema } from '@/validation/schemas/api-response'
+import type { LanguageEntry } from '@/validation/schemas/languages'
+import { LanguageArraySchema } from '@/validation/schemas/languages'
 
 const LANGUAGES_PATH = 'settings/languages.json'
-
-interface FileData {
-  readonly content: string
-  readonly sha: string
-}
 
 /**
  * Fetch the languages JSON file from the SW.
@@ -17,7 +17,7 @@ export const fetchLanguagesFile = async (): Promise<FileData | undefined> => {
     `/api/github/file?path=${encodeURIComponent(LANGUAGES_PATH)}`
   )
   if (!res.ok) return undefined
-  return res.json() as Promise<FileData>
+  return decodeResponse(FileDataSchema)(res)
 }
 
 /**
@@ -25,13 +25,8 @@ export const fetchLanguagesFile = async (): Promise<FileData | undefined> => {
  * @param content - Raw JSON string
  * @returns Parsed language entries
  */
-export const parseLanguages = (content: string): readonly LanguageEntry[] => {
-  try {
-    return JSON.parse(content) as readonly LanguageEntry[]
-  } catch {
-    return []
-  }
-}
+export const parseLanguages = (content: string): readonly LanguageEntry[] =>
+  parseJsonAs(LanguageArraySchema)(content) ?? []
 
 /**
  * Save languages file via SW API.

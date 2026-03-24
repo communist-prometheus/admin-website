@@ -1,4 +1,6 @@
 import type { SWFetchResponse } from '@/sw/protocol'
+import { normalizeHeaders } from '@/validation/normalize-headers'
+import { serializeBody } from '@/validation/serialize-body'
 import { getActiveWorker } from './get-active-worker'
 import { postWithTimeout } from './post-with-timeout'
 import { swReady } from './sw-ready'
@@ -18,8 +20,8 @@ const viaMessage = async (
     type: 'SW_FETCH',
     url,
     method: init?.method,
-    headers: init?.headers as Record<string, string>,
-    body: init?.body as string | undefined,
+    headers: normalizeHeaders(init?.headers),
+    body: serializeBody(init?.body),
   })
   return new Response(d.body, {
     status: d.status,
