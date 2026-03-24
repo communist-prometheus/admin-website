@@ -1,6 +1,26 @@
+import { Duration, Effect } from 'effect'
 import type { SWRequest } from '@/sw/protocol'
 
-const TIMEOUT = 15_000
+const TIMEOUT = Duration.seconds(15)
+
+/**
+ * Listen for a single MessageChannel response.
+ * @param worker - Target ServiceWorker
+ * @param message - Request payload
+ * @returns Effect yielding the SW response data
+ */
+const listen = <T>(
+  worker: ServiceWorker,
+  message: SWRequest
+): Effect.Effect<T, never> =>
+  Effect.async<T>(resume => {
+    const ch = new MessageChannel()
+    ch.port1.onmessage = (e: MessageEvent<T>) => {
+      ch.port1.close()
+      resume(Effect.succeed(e.data))
+    }
+    worker.postMessage(message, [ch.port2])
+  })
 
 /**
  * Send a message to a ServiceWorker via MessageChannel.
@@ -13,17 +33,11 @@ export const postWithTimeout = <T>(
   worker: ServiceWorker,
   message: SWRequest
 ): Promise<T> =>
-  new Promise((resolve, reject) => {
-    const channel = new MessageChannel()
-    const timer = globalThis.setTimeout(() => {
-      channel.port1.close()
-      reject(new Error(`SW message timeout: ${message.type}`))
-    }, TIMEOUT)
-
-    channel.port1.onmessage = (event: MessageEvent<T>) => {
-      clearTimeout(timer)
-      channel.port1.close()
-      resolve(event.data)
-    }
-    worker.postMessage(message, [channel.port2])
-  })
+  Effect.runPromise(
+    listen<T>(worker, message).pipe(
+      Effect.timeoutFail({
+        duration: TIMEOUT,
+        onTimeout: () => new Error(`SW message timeout: ${message.type}`),
+      })
+    )
+  )
