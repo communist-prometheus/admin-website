@@ -50,7 +50,7 @@ onMounted(loadTree)
 </script>
 
 <template>
-  <div class="file-tree">
+  <nav class="file-tree">
     <p v-if="message">{{ message }}</p>
     <FileTreeItem
       v-for="item in items"
@@ -60,7 +60,7 @@ onMounted(loadTree)
       :is-selected="selectedPath === item.path"
       @select="handleSelect"
     />
-  </div>
+  </nav>
 </template>
 
 <style scoped>

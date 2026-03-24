@@ -3,7 +3,7 @@ const emit = defineEmits<{ create: [] }>()
 </script>
 
 <template>
-  <div class="list-header">
+  <header class="list-header">
     <h2>Content Files</h2>
     <button
       type="button"
@@ -13,7 +13,7 @@ const emit = defineEmits<{ create: [] }>()
     >
       + New
     </button>
-  </div>
+  </header>
 </template>
 
 <style scoped>

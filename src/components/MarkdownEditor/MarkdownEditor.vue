@@ -21,9 +21,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="markdown-editor" data-testid="markdown-editor">
+  <section class="markdown-editor" data-testid="markdown-editor">
     <p v-if="!filePath">Select a file to edit</p>
-    <div v-else-if="loading" class="loading-state">Loading file...</div>
+    <output v-else-if="loading" class="loading-state">Loading file...</output>
     <EditorHeader v-else :file-path="filePath" />
     <FrontmatterEditor
       v-if="filePath && !loading && frontmatter && contentType"
@@ -37,7 +37,7 @@ const emit = defineEmits<{
       @update:model-value="emit('update:modelValue', $event)"
     />
     <EditorFooter v-if="filePath && !loading" :disabled="false" @save="emit('save')" />
-  </div>
+  </section>
 </template>
 
 <style scoped>

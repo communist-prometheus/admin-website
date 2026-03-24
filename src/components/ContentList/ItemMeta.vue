@@ -7,7 +7,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="item-meta">
+  <footer class="item-meta">
     <span
       v-if="date"
       class="meta-date"
@@ -26,7 +26,7 @@ defineProps<{
     >
       Order: {{ order }}
     </span>
-  </div>
+  </footer>
 </template>
 
 <style scoped>

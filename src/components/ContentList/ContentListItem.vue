@@ -42,7 +42,7 @@ const description = computed(() => {
 </script>
 
 <template>
-  <div
+  <article
     class="content-item"
     :class="{ selected }"
     data-testid="content-item"
@@ -65,7 +65,7 @@ const description = computed(() => {
       :category="category"
       :order="order"
     />
-  </div>
+  </article>
 </template>
 
 <style scoped>

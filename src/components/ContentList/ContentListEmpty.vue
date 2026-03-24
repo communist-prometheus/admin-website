@@ -5,9 +5,9 @@ defineProps<{ lang: Language }>()
 </script>
 
 <template>
-  <div class="empty-state">
+  <output class="empty-state">
     <p>No content found for {{ lang }}</p>
-  </div>
+  </output>
 </template>
 
 <style scoped>

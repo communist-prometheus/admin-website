@@ -5,12 +5,12 @@ defineProps<{
 </script>
 
 <template>
-  <div
+  <output
     v-if="show"
     class="loading-overlay"
   >
     <p>Loading...</p>
-  </div>
+  </output>
 </template>
 
 <style scoped>

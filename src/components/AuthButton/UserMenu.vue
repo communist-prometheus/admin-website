@@ -8,7 +8,7 @@ const emit = defineEmits<{ logout: []; differentAccount: []; toggle: [] }>()
 </script>
 
 <template>
-  <div class="auth-dropdown">
+  <nav class="auth-dropdown">
     <UserMenuButton
       :user="user"
       @click="emit('toggle')"
@@ -18,7 +18,7 @@ const emit = defineEmits<{ logout: []; differentAccount: []; toggle: [] }>()
       @logout="emit('logout')"
       @different-account="emit('differentAccount')"
     />
-  </div>
+  </nav>
 </template>
 
 <style scoped>

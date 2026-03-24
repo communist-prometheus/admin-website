@@ -25,7 +25,7 @@ const langButtonClass = (code: Language) => ({
 </script>
 
 <template>
-  <div class="language-selector" data-testid="language-selector">
+  <fieldset class="language-selector" data-testid="language-selector">
     <button
       v-for="entry in settings.languages"
       :key="entry.code"
@@ -37,7 +37,7 @@ const langButtonClass = (code: Language) => ({
     >
       {{ entry.label }}
     </button>
-  </div>
+  </fieldset>
 </template>
 
 <style scoped>
