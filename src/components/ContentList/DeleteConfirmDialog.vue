@@ -15,7 +15,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div
+  <section
     v-if="show"
     class="dialog-overlay"
     data-testid="delete-dialog"
@@ -49,7 +49,7 @@ const emit = defineEmits<{
     >
       Cancel
     </button>
-  </div>
+  </section>
 </template>
 
 <style scoped>

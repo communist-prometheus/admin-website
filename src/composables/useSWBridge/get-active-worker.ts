@@ -1,40 +1,47 @@
-const ACTIVATION_TIMEOUT = 10_000
+import { Effect } from 'effect'
+import { waitActivated } from './wait-activated'
+
+/**
+ * Pick the pending worker from a registration.
+ * @param reg - ServiceWorkerRegistration to inspect
+ * @returns Effect yielding the installing or waiting worker
+ */
+const pendingWorker = (
+  reg: ServiceWorkerRegistration
+): Effect.Effect<ServiceWorker, Error> => {
+  const w = reg.installing ?? reg.waiting
+  return w ? Effect.succeed(w) : Effect.fail(new Error('No SW worker found'))
+}
+
+/**
+ * Resolve the active worker from current registration.
+ * @param reg - ServiceWorkerRegistration to inspect
+ * @returns Effect yielding the active ServiceWorker
+ */
+const fromReg = (
+  reg: ServiceWorkerRegistration
+): Effect.Effect<ServiceWorker, Error> =>
+  reg.active
+    ? Effect.succeed(reg.active)
+    : pendingWorker(reg).pipe(Effect.flatMap(waitActivated))
 
 /**
  * Get the active Service Worker.
- * Avoids navigator.serviceWorker.ready which can hang
- * indefinitely when the SW is stuck in 'installing'.
- * Instead watches the registration's statechange events.
+ * Checks controller first, then resolves from registration.
  * @returns Active ServiceWorker instance
  */
-export const getActiveWorker = async (): Promise<ServiceWorker> => {
-  const sw = navigator.serviceWorker
-  if (!sw) throw new Error('ServiceWorker not supported')
-
-  if (sw.controller) return sw.controller
-
-  const regs = await sw.getRegistrations()
-  const reg = regs[0]
-  if (!reg) throw new Error('No SW registration')
-
-  if (reg.active) return reg.active
-
-  const worker = reg.installing ?? reg.waiting
-  if (!worker) throw new Error('No SW worker found')
-
-  return new Promise<ServiceWorker>((resolve, reject) => {
-    const timer = globalThis.setTimeout(() => {
-      reject(new Error('SW activation timeout'))
-    }, ACTIVATION_TIMEOUT)
-
-    const check = (): void => {
-      if (worker.state === 'activated') {
-        globalThis.clearTimeout(timer)
-        resolve(worker)
-      }
-    }
-
-    worker.addEventListener('statechange', check)
-    check()
-  })
-}
+export const getActiveWorker = async (): Promise<ServiceWorker> =>
+  Effect.runPromise(
+    navigator.serviceWorker.controller
+      ? Effect.succeed(navigator.serviceWorker.controller)
+      : Effect.tryPromise({
+          try: () => navigator.serviceWorker.getRegistrations(),
+          catch: () => new Error('ServiceWorker not supported'),
+        }).pipe(
+          Effect.flatMap(regs =>
+            regs[0]
+              ? fromReg(regs[0])
+              : Effect.fail(new Error('No SW registration'))
+          )
+        )
+  )

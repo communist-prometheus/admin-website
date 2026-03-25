@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { GitHubTreeItem } from '@/composables/useGitHubApi'
 import { useGitHubApi } from '@/composables/useGitHubApi'
 import { getGitHubConfig } from '@/config/github'
+import type { SWTreeItem } from '@/validation/schemas/sw-api'
 import FileTreeItem from './FileTreeItem.vue'
 
 const props = withDefaults(
@@ -15,11 +15,11 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  select: [item: GitHubTreeItem]
+  select: [item: SWTreeItem]
 }>()
 
 const { getTree, loading, error } = useGitHubApi()
-const items = ref<readonly GitHubTreeItem[]>([])
+const items = ref<readonly SWTreeItem[]>([])
 const selectedPath = ref<string | null>(null)
 
 const message = computed(() => {
@@ -32,7 +32,7 @@ const message = computed(() => {
 const loadTree = async () => {
   try {
     const result = await getTree(props.rootPath)
-    items.value = result.tree.filter(item => item.type === 'blob')
+    items.value = result.tree.filter(item => item.type === 'file')
   } catch {
     // Error already captured in error ref from useGitHubApi
   }
@@ -50,7 +50,7 @@ onMounted(loadTree)
 </script>
 
 <template>
-  <div class="file-tree">
+  <nav class="file-tree">
     <p v-if="message">{{ message }}</p>
     <FileTreeItem
       v-for="item in items"
@@ -60,7 +60,7 @@ onMounted(loadTree)
       :is-selected="selectedPath === item.path"
       @select="handleSelect"
     />
-  </div>
+  </nav>
 </template>
 
 <style scoped>

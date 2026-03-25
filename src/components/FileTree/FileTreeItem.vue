@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { GitHubTreeItem } from '@/composables/useGitHubApi'
+import type { SWTreeItem } from '@/validation/schemas/sw-api'
 
 const props = defineProps<{
-  readonly item: GitHubTreeItem
+  readonly item: SWTreeItem
   readonly isSelected: boolean
 }>()
 

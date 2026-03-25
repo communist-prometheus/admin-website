@@ -17,8 +17,13 @@ const displayValue = (): string => {
 }
 
 const handleInput = (event: Event) => {
-  const raw = (event.target as HTMLInputElement).value
-  emit('update', parseFieldValue(props.field.type, raw))
+  const target = event.target
+  if (
+    !(target instanceof HTMLInputElement) &&
+    !(target instanceof HTMLTextAreaElement)
+  )
+    return
+  emit('update', parseFieldValue(props.field.type, target.value))
 }
 </script>
 

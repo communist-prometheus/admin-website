@@ -5,6 +5,7 @@ const MOBILE_VIEWPORT = { width: 390, height: 844 }
 
 const LIGHTHOUSE_CONFIG = {
   thresholds: {
+    performance: 90,
     accessibility: 100,
     'best-practices': 100,
     seo: 100,

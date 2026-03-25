@@ -1,6 +1,11 @@
 <script setup lang="ts">
 defineProps<{ readonly value: string }>()
 const emit = defineEmits<{ input: [value: string] }>()
+
+const handleInput = (event: Event) => {
+  const target = event.target
+  if (target instanceof HTMLInputElement) emit('input', target.value)
+}
 </script>
 
 <template>
@@ -12,7 +17,7 @@ const emit = defineEmits<{ input: [value: string] }>()
       maxlength="5"
       class="code-input"
       data-testid="language-code"
-      @input="emit('input', ($event.target as HTMLInputElement).value)"
+      @input="handleInput"
     />
   </td>
 </template>

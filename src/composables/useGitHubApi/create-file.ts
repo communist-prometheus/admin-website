@@ -1,4 +1,7 @@
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
+import { decodeResponse } from '@/validation/decode-response'
+import type { SuccessResponse } from '@/validation/schemas/api-response'
+import { SuccessResponseSchema } from '@/validation/schemas/api-response'
 import type { CreateFileParams } from './types'
 
 /**
@@ -8,11 +11,11 @@ import type { CreateFileParams } from './types'
  */
 export const createFile = async (
   params: CreateFileParams
-): Promise<{ readonly success: boolean }> => {
+): Promise<SuccessResponse> => {
   const res = await swFetch('/api/github/file', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   })
-  return res.json() as Promise<{ readonly success: boolean }>
+  return decodeResponse(SuccessResponseSchema)(res)
 }

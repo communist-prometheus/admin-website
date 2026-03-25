@@ -12,46 +12,44 @@ const props = defineProps<{
 
 const emit = defineEmits<{ click: []; delete: [] }>()
 
+const fm = computed(() => props.item.frontmatter)
+
 const formattedDate = computed(() => {
-  if (!('pubDate' in props.item.frontmatter)) return undefined
-  const date = props.item.frontmatter.pubDate
+  const date = fm.value.pubDate
   if (!date) return undefined
-  const dateObj = typeof date === 'string' ? new Date(date) : date
+  const d = date instanceof Date ? date : new Date(String(date))
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  }).format(dateObj)
+  }).format(d)
 })
 
-const category = computed(() =>
-  'category' in props.item.frontmatter
-    ? props.item.frontmatter.category
-    : undefined
-)
+const category = computed(() => {
+  const v = fm.value.category
+  return typeof v === 'string' ? v : undefined
+})
 
-const order = computed(() =>
-  'order' in props.item.frontmatter
-    ? Number(props.item.frontmatter.order)
-    : undefined
-)
+const order = computed(() => {
+  const v = fm.value.order
+  return typeof v === 'number' ? v : undefined
+})
 
-const description = computed(() =>
-  'description' in props.item.frontmatter
-    ? props.item.frontmatter.description
-    : undefined
-)
+const description = computed(() => {
+  const v = fm.value.description
+  return typeof v === 'string' ? v : undefined
+})
 </script>
 
 <template>
-  <div
+  <article
     class="content-item"
     :class="{ selected }"
     data-testid="content-item"
     @click="emit('click')"
   >
     <ItemHeader
-      :title="item.frontmatter.title"
+      :title="String(item.frontmatter.title ?? '')"
       :lang="item.lang"
       :show-delete="!hideDelete"
       @delete="emit('delete')"
@@ -67,7 +65,7 @@ const description = computed(() =>
       :category="category"
       :order="order"
     />
-  </div>
+  </article>
 </template>
 
 <style scoped>

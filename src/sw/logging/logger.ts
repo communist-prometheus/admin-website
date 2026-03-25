@@ -1,7 +1,7 @@
 import type { LogCategory, LogEntry, LogLevel } from '../protocol'
 import { SW_LOG_CHANNEL } from '../protocol'
-import type { RingBuffer } from './ring-buffer'
-import { createRingBuffer } from './ring-buffer'
+import type { RingBuffer } from './ring-buffer/ring-buffer'
+import { createRingBuffer } from './ring-buffer/ring-buffer'
 
 const LOG_CAPACITY = 1000
 

@@ -1,28 +1,32 @@
+import { Effect, Option } from 'effect'
+import { swContainer, swScriptExists } from './check-sw-available'
 import { log as swLog } from './sw-log'
 
-/**
- * Check if ServiceWorker API is available.
- * @returns True if SW can be registered
- */
-const isSWAvailable = (): boolean => {
-  if (typeof navigator === 'undefined') return false
-  return 'serviceWorker' in navigator
-}
+const logSync = (
+  level: 'info' | 'warn' | 'error',
+  msg: string,
+  data?: Record<string, unknown>
+) => Effect.sync(() => swLog(level, msg, data))
 
-/**
- * Check if sw.js exists before attempting registration.
- * Avoids noisy errors in dev mode where SW is not built.
- * @returns True if sw.js responds with a JS content type
- */
-const swScriptExists = async (): Promise<boolean> => {
-  try {
-    const res = await fetch('/sw.js', { method: 'HEAD' })
-    const ct = res.headers.get('content-type') ?? ''
-    return ct.includes('javascript')
-  } catch {
-    return false
-  }
-}
+const doRegister: Effect.Effect<
+  ServiceWorkerRegistration | undefined,
+  never
+> = Effect.tryPromise({
+  try: () => navigator.serviceWorker.register('/sw.js'),
+  catch: e => e,
+}).pipe(
+  Effect.tap(r => logSync('info', 'SW registered', { scope: r.scope })),
+  Effect.catchAll(e => {
+    swLog('error', 'SW registration failed', { error: e })
+    return Effect.succeed(undefined)
+  })
+)
+
+const skipLog = (msg: string) =>
+  Effect.sync<undefined>(() => {
+    swLog('warn', msg)
+    return undefined
+  })
 
 /**
  * Register the Service Worker.
@@ -31,23 +35,17 @@ const swScriptExists = async (): Promise<boolean> => {
  */
 export const registerServiceWorker = async (): Promise<
   ServiceWorkerRegistration | undefined
-> => {
-  if (!isSWAvailable()) {
-    swLog('warn', 'ServiceWorker not supported')
-    return undefined
-  }
-
-  if (!(await swScriptExists())) {
-    swLog('warn', 'sw.js not found, skipping registration')
-    return undefined
-  }
-
-  try {
-    const reg = await navigator.serviceWorker.register('/sw.js')
-    swLog('info', 'SW registered', { scope: reg.scope })
-    return reg
-  } catch (e) {
-    swLog('error', 'SW registration failed', { error: e })
-    return undefined
-  }
-}
+> =>
+  Effect.runPromise(
+    Option.match(swContainer(), {
+      onNone: () => skipLog('ServiceWorker not supported'),
+      onSome: () =>
+        swScriptExists.pipe(
+          Effect.flatMap(exists =>
+            exists
+              ? doRegister
+              : skipLog('sw.js not found, skipping registration')
+          )
+        ),
+    })
+  )

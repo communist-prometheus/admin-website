@@ -4,23 +4,16 @@ import { buildPasteTag, extractMediaFile } from './handle-paste'
 /**
  * Stub clipboardData since jsdom lacks DataTransfer.
  * @param type - MIME type of the file to add
- * @returns ClipboardEvent with stubbed clipboardData
+ * @returns Paste-like object with stubbed clipboardData
  */
-const makeClipboardEvent = (type?: string): ClipboardEvent => {
-  const evt = new Event('paste', {
-    bubbles: true,
-    cancelable: true,
-  }) as ClipboardEvent
-
-  if (type) {
-    const file = new File(['data'], 'test-file', { type })
-    const items = [{ type, getAsFile: () => file }]
-    Object.defineProperty(evt, 'clipboardData', {
-      value: { items },
-      writable: false,
-    })
+const makeClipboardEvent = (type?: string) => {
+  if (!type) return { clipboardData: undefined }
+  const file = new File(['data'], 'test-file', { type })
+  return {
+    clipboardData: {
+      items: [{ type, getAsFile: () => file }],
+    },
   }
-  return evt
 }
 
 describe('extractMediaFile', () => {

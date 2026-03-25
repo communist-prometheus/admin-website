@@ -1,5 +1,25 @@
 import type { Plugin } from 'vite'
-import { api } from '../src/api/app'
+import { forwardToApi, readBody, toHeaders } from './proxy-helpers'
+
+const NO_BODY = new Set(['GET', 'HEAD'])
+
+/**
+ * Build a Web API Request from a Node.js incoming message.
+ * @param req - Node.js incoming message
+ * @returns Web API Request
+ */
+const buildRequest = async (
+  req: import('node:http').IncomingMessage
+): Promise<Request> => {
+  const url = req.url ?? ''
+  const raw = NO_BODY.has(req.method ?? '') ? undefined : await readBody(req)
+  const body = raw ? raw.toString() : undefined
+  return new Request(`http://localhost${url}`, {
+    method: req.method,
+    headers: toHeaders(req.headers),
+    body,
+  })
+}
 
 /**
  * Vite dev server plugin: mount shared Hono API app.
@@ -12,35 +32,8 @@ export const tokenProxyPlugin = (): Plugin => ({
     server.middlewares.use(async (req, res, next) => {
       const url = req.url ?? ''
       if (!url.startsWith('/api/oauth/')) return next()
-
-      const headers = new Headers()
-      for (const [k, v] of Object.entries(req.headers)) {
-        if (v) headers.set(k, Array.isArray(v) ? v[0] : v)
-      }
-
-      const chunks: Buffer[] = []
-      for await (const chunk of req) {
-        chunks.push(chunk as Buffer)
-      }
-
-      const request = new Request(`http://localhost${url}`, {
-        method: req.method,
-        headers,
-        body:
-          req.method !== 'GET' && req.method !== 'HEAD'
-            ? Buffer.concat(chunks)
-            : undefined,
-      })
-
-      const response = await api.fetch(request, {
-        GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET ?? '',
-      })
-
-      res.writeHead(response.status, {
-        'Content-Type':
-          response.headers.get('Content-Type') ?? 'application/json',
-      })
-      res.end(await response.text())
+      const request = await buildRequest(req)
+      await forwardToApi(request, res)
     })
   },
 })

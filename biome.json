@@ -92,7 +92,6 @@
         "playwright.config.ts",
         "e2e/auth/setup.ts",
         "eslint.config.js",
-        "eslint-plugin-no-div.js",
         "src/router/index.ts",
         "worker.ts"
       ],
@@ -111,38 +110,6 @@
       },
       "formatter": {
         "enabled": false
-      }
-    },
-    {
-      "includes": ["src/components/TheWelcome.vue"],
-      "formatter": {
-        "enabled": false
-      },
-      "linter": {
-        "enabled": false
-      },
-      "assist": {
-        "enabled": false
-      }
-    },
-    {
-      "includes": ["src/server/utils/logger.ts"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noConsole": "off"
-          }
-        }
-      }
-    },
-    {
-      "includes": ["eslint-plugin-vue-template-depth.js"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noDefaultExport": "off"
-          }
-        }
       }
     },
     {

@@ -9,7 +9,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="editor-footer">
+  <footer class="editor-footer">
     <button
       type="button"
       data-testid="save-button"
@@ -18,7 +18,7 @@ const emit = defineEmits<{
     >
       Save
     </button>
-  </div>
+  </footer>
 </template>
 
 <style scoped>

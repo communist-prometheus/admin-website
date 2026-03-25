@@ -70,6 +70,9 @@ const onMedia = (a: AssetDisplay) => {
 
 <style scoped>
 .command-panel {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   gap: 0.25rem;

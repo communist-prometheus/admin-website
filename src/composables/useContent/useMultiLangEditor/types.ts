@@ -15,5 +15,5 @@ export interface MultiLangEditorState {
   readonly frontmatterData: Ref<Record<string, unknown>>
   readonly bodyContent: Ref<string>
   readonly loadingFile: Ref<boolean>
-  readonly isDirty: ComputedRef<boolean>
+  isDirty: ComputedRef<boolean> | undefined
 }

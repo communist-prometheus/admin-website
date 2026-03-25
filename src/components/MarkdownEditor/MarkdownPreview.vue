@@ -33,7 +33,7 @@ const html = computed(() => {
   border-radius: var(--radius-md);
   background: var(--color-background);
   color: var(--color-text);
-  font-size: clamp(0.875rem, 2vw, 1rem);
+  font-size: 1rem;
   overflow: auto;
 }
 </style>

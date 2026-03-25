@@ -1,0 +1,29 @@
+import { computeBlobSha } from '../../git/blob-sha'
+import { writeAndStage } from '../../git/io/write-file'
+import { commitAndPush } from '../../git/remote/commit-and-push'
+import { errorResponse, jsonResponse } from '../shared/json-response'
+
+/**
+ * Handle POST /api/github/file — create new file.
+ * @param request - Incoming Request
+ * @returns JSON response with new SHA
+ */
+export const handleFileCreate = async (
+  request: Request
+): Promise<Response> => {
+  const body = await request.json()
+  const { path, content, message } = body
+
+  if (!path || !content || !message) {
+    return errorResponse('Missing required fields', 400)
+  }
+
+  await writeAndStage(path, content)
+  const commitSha = await commitAndPush(message)
+  const blobSha = await computeBlobSha(content)
+
+  return jsonResponse({
+    content: { sha: blobSha },
+    commit: { sha: commitSha },
+  })
+}

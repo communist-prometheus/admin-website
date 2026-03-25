@@ -1,14 +1,17 @@
 import process from 'node:process'
 import { devices } from '@playwright/test'
-import { LIGHTHOUSE_TEST_PATTERN } from './playwright.config.constants'
+import {
+  LIGHTHOUSE_TEST_PATTERN,
+  MOBILE_TEST_PATTERN,
+} from './playwright.config.constants'
 import { lighthouseProjects } from './playwright.config.lighthouse'
 
 const allBrowsers = process.env.BROWSERS === 'all'
 
-const ignore = [LIGHTHOUSE_TEST_PATTERN]
+const desktopIgnore = [LIGHTHOUSE_TEST_PATTERN, MOBILE_TEST_PATTERN]
 
 /**
- * Build a browser project config.
+ * Build a desktop browser project config.
  * @param name - Browser name
  * @param device - Device descriptor key
  * @returns Playwright project config
@@ -16,10 +19,10 @@ const ignore = [LIGHTHOUSE_TEST_PATTERN]
 const browser = (name: string, device: string) => ({
   name,
   use: { ...devices[device] },
-  testIgnore: ignore,
+  testIgnore: desktopIgnore,
 })
 
-/** Browser projects: Chromium-only locally, all on CI */
+/** Desktop browser projects: Chromium-only locally, all on CI */
 const browserProjects = [
   browser('chromium', 'Desktop Chrome'),
   ...(allBrowsers
@@ -30,4 +33,23 @@ const browserProjects = [
     : []),
 ]
 
-export const projects = [...browserProjects, ...lighthouseProjects]
+/** Mobile Chromium runs all tests except lighthouse and mobile-specific */
+const mobileGeneral = {
+  name: 'mobile-chromium',
+  use: { ...devices['iPhone 12 Pro'] },
+  testIgnore: desktopIgnore,
+}
+
+/** Mobile-specific tests only (e2e/mobile/) */
+const mobileSpecific = {
+  name: 'mobile-specific',
+  use: { ...devices['iPhone 12 Pro'] },
+  testMatch: '**/mobile/**',
+}
+
+export const projects = [
+  ...browserProjects,
+  mobileGeneral,
+  mobileSpecific,
+  ...lighthouseProjects,
+]

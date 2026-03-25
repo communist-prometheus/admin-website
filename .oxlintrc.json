@@ -45,42 +45,23 @@
   },
   "overrides": [
     {
-      "files": ["src/server/utils/logger.ts"],
+      "files": ["**/*.test.ts", "**/*.spec.ts", "e2e/**/*.ts"],
+      "rules": {
+        "sonarjs/max-lines": "off",
+        "sonarjs/max-lines-per-function": "off",
+        "sonarjs/no-duplicate-string": "off"
+      }
+    },
+    {
+      "files": ["scripts/**/*.ts"],
       "rules": {
         "no-console": "off"
       }
     },
     {
-      "files": [
-        "src/api/**/*.ts",
-        "src/server/**/*.ts",
-        "src/types/**/*.ts",
-        "src/stores/**/*.ts",
-        "src/sw/**/*.ts",
-        "src/router/**/*.ts",
-        "src/views/ContentView.vue",
-        "src/views/ContentEditView/**/*.ts",
-        "src/composables/**/*.ts",
-        "src/components/MarkdownEditor/**/*.ts",
-        "vite/**/*.ts",
-        "scripts/**/*.ts",
-        "**/*.test.ts",
-        "**/*.spec.ts"
-      ],
+      "files": ["vite/**/*.ts", "src/api/**/*.ts"],
       "rules": {
-        "sonarjs/max-lines": "off",
-        "sonarjs/max-lines-per-function": "off",
-        "sonarjs/no-duplicate-string": "off",
-        "no-console": "off",
-        "no-warning-comments": "off"
-      }
-    },
-    {
-      "files": ["e2e/**/*.ts"],
-      "rules": {
-        "sonarjs/max-lines": "off",
-        "sonarjs/max-lines-per-function": "off",
-        "sonarjs/no-duplicate-string": "off"
+        "no-console": "off"
       }
     }
   ],

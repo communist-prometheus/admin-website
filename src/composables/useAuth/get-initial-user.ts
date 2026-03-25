@@ -1,3 +1,4 @@
+import { Effect, Option, pipe } from 'effect'
 import type { User } from '@/types/user'
 import { fetchGitHubUser } from './fetch-github-user'
 import { getMockUser } from './mock-user'
@@ -5,38 +6,50 @@ import { saveProfile } from './profile-cache'
 import { loadToken, saveToken } from './token-storage'
 
 /**
- * Resolve token: dev injected, or from localStorage.
- * @returns Token string or undefined
+ * Resolve auth token from dev env or localStorage.
+ * @returns Token Option from dev env or localStorage
  */
-const resolveToken = (): string | undefined => {
-  const devToken = import.meta.env.VITE_DEV_TOKEN as string | undefined
-  if (devToken) {
-    saveToken(devToken)
-    return devToken
-  }
-  return loadToken()
-}
+const resolveToken = (): Option.Option<string> =>
+  pipe(
+    Option.fromNullable(import.meta.env.VITE_DEV_TOKEN),
+    Option.tap(t => {
+      saveToken(t)
+      return Option.some(t)
+    }),
+    Option.orElse(() => Option.fromNullable(loadToken()))
+  )
+
+const isMockAuth = () => import.meta.env.VITE_MOCK_AUTH === 'true'
+
+const fetchAndCache = (token: string) =>
+  Effect.tryPromise(() => fetchGitHubUser(token)).pipe(
+    Effect.tap(u =>
+      Effect.sync(() =>
+        saveProfile({
+          username: u.username,
+          name: u.name,
+          avatar: u.avatar,
+        })
+      )
+    )
+  )
 
 /**
  * Get initial user from token or mock.
  * Saves profile to cache on successful fetch.
  * @returns Promise resolving to User or null
  */
-export const getInitialUser = async (): Promise<User | null> => {
-  const token = resolveToken()
-  if (!token) return null
-  if (import.meta.env.VITE_MOCK_AUTH === 'true') {
-    return getMockUser()
-  }
-  try {
-    const user = await fetchGitHubUser(token)
-    saveProfile({
-      username: user.username,
-      name: user.name,
-      avatar: user.avatar,
-    })
-    return user
-  } catch {
-    return null
-  }
-}
+export const getInitialUser = (): Promise<User | null> =>
+  pipe(
+    resolveToken(),
+    Option.match({
+      onNone: () => Effect.succeed<User | null>(null),
+      onSome: token =>
+        isMockAuth()
+          ? Effect.sync<User>(() => getMockUser())
+          : fetchAndCache(token).pipe(
+              Effect.catchAll(() => Effect.succeed<User | null>(null))
+            ),
+    }),
+    Effect.runPromise
+  )

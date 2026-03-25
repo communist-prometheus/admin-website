@@ -1,41 +1,14 @@
 import type { Ref } from 'vue'
 import { ref, toValue } from 'vue'
 import type { ContentType } from '@/types/content'
+import {
+  createContentHandler,
+  createSaveHandler,
+} from './useContent/save-handler'
+import { createSelectHandler } from './useContent/select-handler'
 import { useContentCreator } from './useContent/useContentCreator'
 import { useContentEditor } from './useContent/useContentEditor'
 import { useContentList } from './useContent/useContentList'
-
-const createSelectHandler =
-  (
-    list: ReturnType<typeof useContentList>,
-    editor: ReturnType<typeof useContentEditor>
-  ) =>
-  async (item: typeof list.selectedItem.value) => {
-    if (!item) return
-    list.selectedItem.value = item
-    await editor.selectItem(item)
-  }
-
-const createSaveHandler =
-  (
-    list: ReturnType<typeof useContentList>,
-    editor: ReturnType<typeof useContentEditor>
-  ) =>
-  async (message: string) => {
-    if (!list.selectedItem.value) return
-    await editor.saveContent(list.selectedItem.value.path, message)
-    await list.loadContent()
-  }
-
-const createContentHandler =
-  (
-    list: ReturnType<typeof useContentList>,
-    creator: ReturnType<typeof useContentCreator>
-  ) =>
-  async (...args: Parameters<typeof creator.createContent>) => {
-    await creator.createContent(...args)
-    await list.loadContent()
-  }
 
 /**
  * Main content management composable

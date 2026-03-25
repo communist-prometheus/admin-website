@@ -6,16 +6,14 @@ import { buildDropTag, extractDropFile } from './handle-drop'
  * @param file - File to include in the drag event
  * @returns DragEvent with stubbed dataTransfer
  */
-const makeDragEvent = (file?: File): DragEvent => {
-  const evt = new Event('drop') as DragEvent
-  if (file) {
-    Object.defineProperty(evt, 'dataTransfer', {
-      value: { files: [file] },
-      writable: false,
-    })
-  }
-  return evt
-}
+/**
+ * Stub dataTransfer since jsdom lacks DataTransfer.
+ * @param file - File to include in the drag event
+ * @returns Drop-like object with stubbed dataTransfer
+ */
+const makeDragEvent = (file?: File) => ({
+  dataTransfer: file ? { files: [file] } : undefined,
+})
 
 describe('extractDropFile', () => {
   it('returns file from drag event', () => {

@@ -10,16 +10,29 @@ const isMedia = (type: string): boolean =>
   type.startsWith('video/') ||
   type.startsWith('audio/')
 
+/** Minimal clipboard item shape. */
+interface ClipboardItemLike {
+  readonly type: string
+  getAsFile(): File | null
+}
+
+/** Minimal shape needed from a paste-like event. */
+interface PasteLike {
+  readonly clipboardData?: {
+    readonly items: ArrayLike<ClipboardItemLike>
+  } | null
+}
+
 /**
  * Extract a media file from a ClipboardEvent.
- * Returns the first image, video or audio item or undefined.
- * @param event - Clipboard paste event
+ * Returns the first image, video or audio item.
+ * @param event - ClipboardEvent or compatible object
  * @returns Media File or undefined
  */
-export const extractMediaFile = (event: ClipboardEvent): File | undefined => {
+export const extractMediaFile = (event: PasteLike): File | undefined => {
   const items = event.clipboardData?.items
   if (!items) return undefined
-  for (const item of items) {
+  for (const item of Array.from(items)) {
     if (isMedia(item.type)) {
       return item.getAsFile() ?? undefined
     }

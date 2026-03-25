@@ -1,4 +1,7 @@
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
+import { decodeResponse } from '@/validation/decode-response'
+import type { SuccessResponse } from '@/validation/schemas/api-response'
+import { SuccessResponseSchema } from '@/validation/schemas/api-response'
 
 /**
  * Write a binary asset to the SW virtual FS (base64).
@@ -9,11 +12,11 @@ import { swFetch } from '@/composables/useSWBridge/sw-fetch'
 export const writeAsset = async (
   path: string,
   content: string
-): Promise<{ success: boolean }> => {
+): Promise<SuccessResponse> => {
   const res = await swFetch('/api/github/asset', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ path, content }),
   })
-  return res.json() as Promise<{ success: boolean }>
+  return decodeResponse(SuccessResponseSchema)(res)
 }

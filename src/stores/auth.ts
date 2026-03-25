@@ -1,24 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import { getCachedUser } from '@/composables/useAuth/cached-user'
-import { getInitialUser } from '@/composables/useAuth/get-initial-user'
-import { saveProfile } from '@/composables/useAuth/profile-cache'
-import { revalidateUser } from '@/composables/useAuth/revalidate-user'
-import { clearToken, loadToken } from '@/composables/useAuth/token-storage'
-import { initSWWithToken } from '@/composables/useSWBridge/init-sw'
+import { loadToken } from '@/composables/useAuth/token-storage'
 import type { User } from '@/types/user'
-
-/**
- * Send token to Service Worker when user changes.
- * @param user - Authenticated user or null
- */
-const syncTokenToSW = (user: User | null): void => {
-  if (user?.accessToken)
-    initSWWithToken(user.accessToken, {
-      name: user.name,
-      username: user.username,
-    })
-}
+import { createLogout, createSetUser } from './auth-actions'
+import { createCheckAuth } from './auth-check'
+import { syncTokenToSW } from './auth-sync-sw'
 
 /**
  * Pinia store for authentication state management.
@@ -32,43 +18,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   watch(user, syncTokenToSW, { immediate: true })
 
-  const checkAuth = async () => {
-    if (typeof globalThis.document === 'undefined') return
-    if (user.value) return
-    const cached = getCachedUser()
-    if (cached) {
-      user.value = cached
-      loading.value = false
-      revalidateUser().then(fresh => {
-        if (fresh) user.value = fresh
-        else logout()
-      })
-      return
-    }
-    loading.value = true
-    try {
-      user.value = await getInitialUser()
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const setUser = (u: User | null) => {
-    user.value = u
-    if (u) {
-      saveProfile({
-        username: u.username,
-        name: u.name,
-        avatar: u.avatar,
-      })
-    }
-  }
-
-  const logout = () => {
-    clearToken()
-    user.value = null
-    loading.value = false
-  }
+  const logout = createLogout(user, loading)
+  const checkAuth = createCheckAuth(user, loading, logout)
+  const setUser = createSetUser(user)
 
   return {
     user,

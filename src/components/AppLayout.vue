@@ -4,12 +4,14 @@ import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
 import AppMain from './AppMain.vue'
 import AuthButton from './AuthButton.vue'
+import MobileMenu from './MobileMenu/MobileMenu.vue'
 
 const slots = useSlots()
 </script>
 
 <template>
   <AppHeader>
+    <template #breadcrumb><slot name="breadcrumb" /></template>
     <AuthButton />
   </AppHeader>
 
@@ -23,4 +25,6 @@ const slots = useSlots()
       © {{ new Date().getFullYear() }} Admin Panel. All rights reserved.
     </span>
   </AppFooter>
+
+  <MobileMenu />
 </template>

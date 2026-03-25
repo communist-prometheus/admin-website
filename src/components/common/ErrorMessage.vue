@@ -5,12 +5,12 @@ defineProps<{
 </script>
 
 <template>
-  <div
+  <output
     v-if="error"
     class="error-message"
   >
     <p>Error: {{ error }}</p>
-  </div>
+  </output>
 </template>
 
 <style scoped>

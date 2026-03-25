@@ -11,13 +11,11 @@ const formatValue = (value: unknown): string => {
  * @param content - Markdown content
  * @returns Formatted markdown with frontmatter
  */
-export const stringifyFrontmatter = <
-  T extends Record<string, unknown> = Record<string, unknown>,
->(
-  frontmatter: T,
+export const stringifyFrontmatter = (
+  frontmatter: Record<string, unknown>,
   content: string
 ): string => {
-  const lines = Object.entries(frontmatter as Record<string, unknown>).map(
+  const lines = Object.entries(frontmatter).map(
     ([key, value]) => `${key}: ${formatValue(value)}`
   )
 

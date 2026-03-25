@@ -26,9 +26,9 @@ const filteredItems = computed(() =>
 </script>
 
 <template>
-  <div class="content-list" data-testid="content-list">
+  <section class="content-list" data-testid="content-list">
     <ContentListHeader v-if="!hideCreate" @create="emit('create')" />
-    <div v-if="loading" class="loading">Loading content...</div>
+    <output v-if="loading" class="loading">Loading content...</output>
     <ContentListEmpty
       v-else-if="filteredItems.length === 0"
       :lang="selectedLang"
@@ -43,7 +43,7 @@ const filteredItems = computed(() =>
       @click="emit('select', item)"
       @delete="emit('delete', item)"
     />
-  </div>
+  </section>
 </template>
 
 <style scoped>

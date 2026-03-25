@@ -1,4 +1,7 @@
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
+import { decodeResponse } from '@/validation/decode-response'
+import type { CommitResponse } from '@/validation/schemas/api-response'
+import { CommitResponseSchema } from '@/validation/schemas/api-response'
 
 /**
  * Commit all staged changes and push to remote.
@@ -7,11 +10,11 @@ import { swFetch } from '@/composables/useSWBridge/sw-fetch'
  */
 export const commitStaged = async (
   message: string
-): Promise<{ success: boolean; sha: string }> => {
+): Promise<CommitResponse> => {
   const res = await swFetch('/api/github/commit', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ message }),
   })
-  return res.json() as Promise<{ success: boolean; sha: string }>
+  return decodeResponse(CommitResponseSchema)(res)
 }

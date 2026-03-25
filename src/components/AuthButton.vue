@@ -46,7 +46,7 @@ const handleDifferentAccount = () => {
 </script>
 
 <template>
-  <div class="auth-slot">
+  <span class="auth-slot">
     <LoginButton
       v-if="!authStore.user"
       :loading="loading"
@@ -60,7 +60,7 @@ const handleDifferentAccount = () => {
       @logout="handleLogout"
       @different-account="handleDifferentAccount"
     />
-  </div>
+  </span>
 </template>
 
 <style scoped>
@@ -68,5 +68,11 @@ const handleDifferentAccount = () => {
   display: flex;
   justify-content: flex-end;
   min-width: 120px;
+}
+
+@media (width < 768px) {
+  .auth-slot {
+    display: none;
+  }
 }
 </style>
