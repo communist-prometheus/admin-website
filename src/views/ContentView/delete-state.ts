@@ -29,7 +29,7 @@ const buildHandlers = (
  * @returns Delete state and handlers
  */
 export const createDeleteState = (
-  contentType: ContentType,
+  contentType: Ref<ContentType>,
   selectedLang: Ref<Language>,
   reload: () => Promise<void>
 ) => {
@@ -38,15 +38,16 @@ export const createDeleteState = (
   const clear = () => {
     deleteTarget.value = undefined
   }
-  const h = createDeleteHandlers({
-    contentType,
-    selectedLang: selectedLang.value,
-    reload,
-    clearTarget: clear,
-  })
+  const mkHandlers = () =>
+    createDeleteHandlers({
+      contentType: contentType.value,
+      selectedLang: selectedLang.value,
+      reload,
+      clearTarget: clear,
+    })
   return {
     deleteTarget,
     showDeleteDialog,
-    ...buildHandlers(deleteTarget, h),
+    ...buildHandlers(deleteTarget, mkHandlers()),
   }
 }

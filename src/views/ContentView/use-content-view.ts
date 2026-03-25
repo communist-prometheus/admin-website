@@ -1,3 +1,4 @@
+import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useContentCreator } from '@/composables/useContent/useContentCreator'
@@ -9,17 +10,16 @@ const FIXED: ReadonlySet<ContentType> = new Set(['pages', 'common'])
 
 /**
  * Setup core state for ContentView page.
- * @param contentType - The content type for this view
+ * @param contentType - Reactive content type ref
  * @returns Reactive state and list/creator composables
  */
-export const useContentView = (contentType: ContentType) => {
+export const useContentView = (contentType: Ref<ContentType>) => {
   const router = useRouter()
   const authStore = useAuthStore()
   const isAuthenticated = computed(() => !!authStore.user)
-  const isFixedStructure = computed(() => FIXED.has(contentType))
-  const contentTypeRef = computed(() => contentType)
-  const list = useContentList(contentTypeRef)
-  const { createContent } = useContentCreator(() => contentType)
+  const isFixedStructure = computed(() => FIXED.has(contentType.value))
+  const list = useContentList(contentType)
+  const { createContent } = useContentCreator(() => contentType.value)
   const error = ref<string | null>(null)
   const selectedLang = ref<Language>('en')
   const showCreateDialog = ref(false)
