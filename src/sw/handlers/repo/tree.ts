@@ -24,5 +24,5 @@ export const handleTree = async (url: URL): Promise<Response> => {
     })
   )
 
-  return jsonResponse(items)
+  return jsonResponse({ tree: items })
 }
