@@ -39,7 +39,11 @@ const style = computed(() => ({
   box-shadow: var(--shadow-lg);
   transition:
     opacity var(--transition-base),
-    transform var(--transition-base);
+    transform var(--transition-base),
+    top var(--transition-base),
+    bottom var(--transition-base),
+    left var(--transition-base),
+    right var(--transition-base);
 }
 
 @media (width >= 768px) {

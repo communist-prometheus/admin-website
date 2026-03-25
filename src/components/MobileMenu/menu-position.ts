@@ -1,21 +1,30 @@
 import type { CSSProperties } from 'vue'
 import type { Corner } from '@/composables/useDraggableFab'
+import {
+  FAB_MARGIN,
+  FAB_SIZE,
+} from '@/composables/useDraggableFab/fab-constants'
 
-const OFFSET = 72
-const MARGIN = 16
+const GAP = 8
 
 /**
- * Compute menu popup position based on FAB corner.
- * Menu opens away from the edge where FAB sits.
+ * Compute menu position relative to FAB corner.
+ * Uses left+bottom for animatable transitions.
  * @param corner - Current FAB corner
- * @returns CSS positioning properties
+ * @returns CSS positioning for the popup
  */
 export const menuPosition = (corner: Corner): CSSProperties => {
   const isRight = corner.endsWith('right')
-  const isBottom = corner.endsWith('bottom') || corner.startsWith('bottom')
+  const isBottom = corner.startsWith('bottom')
+  const x = isRight
+    ? `calc(100vw - ${FAB_SIZE + FAB_MARGIN}px)`
+    : `${FAB_MARGIN}px`
+  const y = isBottom
+    ? `${FAB_SIZE + FAB_MARGIN + GAP}px`
+    : `${FAB_MARGIN + FAB_SIZE + GAP}px`
 
   return {
-    ...(isRight ? { right: `${MARGIN}px` } : { left: `${MARGIN}px` }),
-    ...(isBottom ? { bottom: `${OFFSET}px` } : { top: `${OFFSET}px` }),
+    left: x,
+    ...(isBottom ? { bottom: y, top: 'auto' } : { top: y, bottom: 'auto' }),
   }
 }
