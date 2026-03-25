@@ -1,10 +1,20 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useScrollHeader } from '@/composables/useScrollHeader'
 import AppNav from './AppNav.vue'
+
+const { offset } = useScrollHeader()
+const headerStyle = computed(() => ({
+  transform: `translateY(${offset.value}px)`,
+}))
 </script>
 
 <template>
-  <header class="app-header">
+  <header
+    class="app-header"
+    :style="headerStyle"
+  >
     <RouterLink to="/" class="logo">Prometheus</RouterLink>
     <AppNav />
     <slot />
@@ -13,6 +23,10 @@ import AppNav from './AppNav.vue'
 
 <style scoped>
 .app-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  will-change: transform;
   display: flex;
   justify-content: space-between;
   align-items: center;
