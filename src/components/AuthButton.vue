@@ -69,4 +69,10 @@ const handleDifferentAccount = () => {
   justify-content: flex-end;
   min-width: 120px;
 }
+
+@media (width < 768px) {
+  .auth-slot {
+    display: none;
+  }
+}
 </style>

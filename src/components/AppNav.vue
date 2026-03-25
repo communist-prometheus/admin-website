@@ -54,4 +54,10 @@ const auth = useAuthStore()
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
 }
+
+@media (width < 768px) {
+  .app-nav {
+    display: none;
+  }
+}
 </style>
