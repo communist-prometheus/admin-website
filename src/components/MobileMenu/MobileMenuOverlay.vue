@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { Corner } from '@/composables/useDraggableFab'
+import { menuPosition } from './menu-position'
 import { overlayStyle } from './overlay-style'
 import { MOBILE_MENU } from './test-ids'
 
 const props = defineProps<{
   readonly open: boolean
+  readonly corner: Corner
 }>()
 
-const style = computed(() => overlayStyle(props.open))
+const style = computed(() => ({
+  ...overlayStyle(props.open),
+  ...menuPosition(props.corner),
+}))
 </script>
 
 <template>
@@ -25,8 +31,6 @@ const style = computed(() => overlayStyle(props.open))
 <style scoped>
 .mobile-popup {
   position: fixed;
-  right: 16px;
-  bottom: 80px;
   z-index: 99;
   background: var(--color-surface-elevated);
   border: 1px solid var(--color-border);

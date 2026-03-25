@@ -14,7 +14,6 @@ const handleRefresh = () => { contentStore.loadAll() }
 
 <template>
   <header class="view-header">
-    <h1>{{ contentType.charAt(0).toUpperCase() + contentType.slice(1) }}</h1>
     <ContentViewHeaderActions
       v-model="selectedLang"
       :loading="contentStore.loading"
@@ -27,14 +26,7 @@ const handleRefresh = () => { contentStore.loadAll() }
 .view-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2rem);
+  padding: clamp(0.5rem, 1.5vw, 1rem) clamp(1rem, 3vw, 2rem);
   border-bottom: 1px solid var(--color-border);
-}
-
-h1 {
-  margin: 0;
-  font-size: clamp(1.5rem, 4vw, 2rem);
-  text-transform: capitalize;
 }
 </style>

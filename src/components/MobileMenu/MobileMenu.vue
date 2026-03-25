@@ -28,7 +28,7 @@ const handlePointerup = (e: PointerEvent) => {
     @pointermove="fab.onPointermove"
     @pointerup="handlePointerup"
   />
-  <MobileMenuOverlay :open="menuOpen">
+  <MobileMenuOverlay :open="menuOpen" :corner="fab.corner.value">
     <MobileMenuNav @navigate="close" />
   </MobileMenuOverlay>
 </template>
