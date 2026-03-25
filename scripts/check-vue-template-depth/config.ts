@@ -24,8 +24,10 @@ const matchesPattern =
       : normalizedPath === pattern
 
 export const isExcluded = (filePath: string): boolean => {
-  const normalizedPath = normalizePathSeparators(
-    filePath.replace(`${process.cwd()}\\`, '')
-  )
-  return config.excludePatterns.some(matchesPattern(normalizedPath))
+  const cwd = normalizePathSeparators(process.cwd())
+  const full = normalizePathSeparators(filePath)
+  const relative = full.startsWith(`${cwd}/`)
+    ? full.slice(cwd.length + 1)
+    : full
+  return config.excludePatterns.some(matchesPattern(relative))
 }
