@@ -51,5 +51,9 @@ defineEmits<{
 h1 {
   margin: 0;
   font-size: clamp(1.25rem, 3vw, 1.5rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 </style>

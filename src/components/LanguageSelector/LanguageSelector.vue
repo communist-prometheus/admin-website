@@ -43,6 +43,7 @@ const langButtonClass = (code: Language) => ({
 <style scoped>
 .language-selector {
   display: flex;
+  flex-wrap: wrap;
   gap: clamp(0.5rem, 1vw, 0.75rem);
   padding: clamp(0.5rem, 1.5vw, 1rem);
   border: 1px solid var(--color-border);
