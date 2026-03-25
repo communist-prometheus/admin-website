@@ -1,15 +1,62 @@
 # admin-website
 
-Vue 3 SSR application with client-side hydration powered by Vite and Fastify.
+Vue 3 SPA for managing multilingual content in the [public-website](https://github.com/communist-prometheus/public-website) repository. Uses a Service Worker as a Backend-for-Frontend (BFF) that clones the content repo into IndexedDB via isomorphic-git, serving REST endpoints entirely from the browser. No backend server required.
 
 ## Architecture
 
-This project implements Server-Side Rendering (SSR) with client-side hydration:
+Pure client-side Single Page Application with PKCE OAuth:
 
-- **Server**: Fastify serves SSR-rendered HTML
-- **Client**: Vue 3 hydrates the SSR content for interactivity
-- **Build**: Vite bundles both client and server code
-- **Development**: Integrated Vite dev server with HMR
+- **Client**: Vue 3 SPA with Pinia stores and composable-based business logic
+- **Service Worker BFF**: Clones a GitHub repo into IndexedDB, serves `/api/github/*` endpoints locally
+- **Auth**: GitHub OAuth PKCE flow via popup -- tokens stored in localStorage
+- **Build**: Vite bundles client and SW separately
+
+See also:
+- [ARCHITECTURE.md](ARCHITECTURE.md) -- architectural principles and constraints
+- [CODE_STYLE.md](CODE_STYLE.md) -- Effect.js patterns, FP principles, file size limits
+- [TYPE_SAFETY.md](TYPE_SAFETY.md) -- zero `as` cast policy, Schema validation, narrowing patterns
+
+## Project Structure
+
+```
+src/
+  api/                  -- API client utilities
+  assets/styles/        -- global SCSS variables and resets
+  components/           -- shared and feature-scoped Vue components
+  composables/          -- Vue composables (business logic)
+    useAuth/            -- authentication lifecycle
+    useContent/         -- content list, editor, creator
+    useAssets/          -- asset management (upload, delete, display)
+    useGitHubApi/       -- typed API client for SW endpoints
+    useSWBridge/        -- SW registration, init, message transport
+    useOAuthPopup/      -- PKCE OAuth popup flow
+  config/               -- build-time configuration (auth, GitHub, content paths)
+  directives/           -- Vue custom directives
+  router/               -- Vue Router configuration
+  stores/               -- Pinia stores (auth, content, settings)
+  sw/                   -- Service Worker BFF
+    core/               -- lifecycle, fetch listener, message dispatch
+    errors/             -- typed Effect error classes
+    git/                -- isomorphic-git operations
+      io/               -- file read/write/delete/list
+      remote/           -- commit and push
+      repo/             -- repo existence, mock init, config persistence
+      sync/             -- clone-or-pull orchestration
+    handlers/           -- HTTP request handlers
+      asset/            -- asset CRUD
+      content/          -- content CRUD
+      file/             -- file CRUD
+      shared/           -- JSON response, MIME, frontmatter, slug parsing
+    logging/            -- structured logging, metrics, tracing
+    mock/               -- mock data for E2E tests
+    protocol/           -- SW communication types and constants
+    state/              -- global worker state
+  types/                -- domain model type definitions
+  utils/                -- shared utility functions
+  validation/           -- Effect.Schema-based validation infrastructure
+    schemas/            -- schema definitions for all data boundaries
+  views/                -- page-level components (routes)
+```
 
 ## Content Repository Structure
 
@@ -17,17 +64,17 @@ This admin manages content in the [public-website](https://github.com/communist-
 
 ```
 src/content/
-  blog/                              ← nested: slug/index.lang.md + assets/
+  blog/                              -- nested: slug/index.lang.md + assets/
     {slug}/
-      index.{en|ru|it|es}.md         ← article content per language
-      assets/                        ← optional media (images, video, audio)
+      index.{en|ru|it|es}.md         -- article content per language
+      assets/                        -- optional media (images, video, audio)
         cover.jpg
         hero.svg
         demo.mp4
         sample.m4a
-  pages/                             ← flat: slug.lang.md
+  pages/                             -- flat: slug.lang.md
     {slug}.{en|ru|it|es}.md
-  positions/                         ← flat: slug.lang.md
+  positions/                         -- flat: slug.lang.md
     {slug}.{en|ru|it|es}.md
 ```
 
@@ -39,48 +86,13 @@ Key points:
 - Frontmatter may reference assets via `image: ./assets/file`
 - Body may embed assets via `![alt](./assets/file)` or `<video>`/`<audio>` HTML
 
-### Current Content (develop branch)
-
-| Section | Articles | Languages | Assets |
-|---------|----------|-----------|--------|
-| blog/astro-framework | Why Choose Astro Framework | en, ru, it, es | — |
-| blog/media-showcase | Rich Media in Blog Posts | en, ru, it, es | architecture.svg, cover.jpg, demo.mp4, landscape.jpg, sample.m4a |
-| blog/modern-web-development | Modern Web Development Best Practices | en, ru, it, es | — |
-| blog/open-source-collaboration | The Power of Open Source Collaboration | en, ru, it, es | cover.jpg |
-| blog/welcome-to-prometheus | Welcome to Prometheus | en, ru, it, es | hero.svg |
-| pages/manifest | Our Manifest | en, ru, it, es | — |
-| positions/digital-sovereignty | Digital Sovereignty | en, ru, it, es | — |
-| positions/knowledge-access | Universal Knowledge Access | en, ru, it, es | — |
-
 ### Service Worker Data Flow
 
-- **`dev:token`**: Builds SW without mock mode → clones real repo via `GITHUB_E2E_KEY` token → pulls latest on each init
-- **`build:e2e`**: Builds SW with `MOCK_OAUTH=true` → uses hardcoded mock entries (no GitHub API)
+- **`dev:token`**: Builds SW without mock mode -- clones real repo via `GITHUB_E2E_KEY` token -- pulls latest on each init
+- **`build:e2e`**: Builds SW with `MOCK_OAUTH=true` -- uses hardcoded mock entries (no GitHub API)
 - **Production**: SW clones via user's OAuth token through CORS proxy
 
 Mock entries in `src/sw/mock/` MUST mirror the production content structure above.
-
-## Code Style
-
-### Effect.js Functional Programming
-
-All server-side code MUST be written using Effect.js in functional pipeline style:
-
-- Use `Effect.promise`, `Effect.tryPromise`, `Effect.sync` for async operations
-- Chain operations using `pipe()` and `Effect.flatMap`, `Effect.map`, `Effect.tap`
-- Avoid `async/await` - use Effect combinators instead
-- Use `Effect.gen` for complex flows requiring multiple bindings
-- Handle errors with `Effect.mapError`, `Effect.catchAll`
-- Keep functions pure and composable
-- Execute effects with `Effect.runPromise` only at application boundaries
-
-### Key Files
-
-- `src/app.ts` - Universal app factory (shared between client and server)
-- `src/entry-client.ts` - Client entry point for hydration
-- `src/entry-server.ts` - Server entry point for SSR rendering
-- `src/server.ts` - Fastify server with SSR support
-- `index.html` - HTML template with SSR outlet placeholder
 
 ## Recommended IDE Setup
 
@@ -106,39 +118,45 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 ## Project Setup
 
 ```sh
-npm install
+bun install
 ```
 
 ## Development
 
-Run the development server with SSR and HMR:
+Run the development server with HMR:
 
 ```sh
-npm run dev
+bun run dev
 ```
 
 Server will start at `http://localhost:5173`
+
+To run with a real GitHub token (clones real repo):
+
+```sh
+bun run dev:token
+```
 
 ## Production
 
 ### Build
 
-Build both client and server bundles:
+Build client and SW bundles:
 
 ```sh
-npm run build
+bun run build
 ```
 
 This creates:
-- `dist/client/` - Client-side bundle with assets
-- `dist/server/` - Server-side rendering bundle
+- `dist/client/` -- client-side SPA bundle with assets
+- `dist/client/sw.js` -- Service Worker bundle
 
 ### Preview
 
 Run the production build locally:
 
 ```sh
-npm run preview
+bun run preview
 ```
 
 ## Testing
@@ -146,7 +164,7 @@ npm run preview
 ### Unit Tests with [Vitest](https://vitest.dev/)
 
 ```sh
-npm run test:unit
+bun run test:unit
 ```
 
 ### E2E Tests with [Playwright](https://playwright.dev)
@@ -155,17 +173,14 @@ npm run test:unit
 # Install browsers for the first run
 npx playwright install
 
-# When testing on CI, must build the project first
-npm run build
+# Build with mock auth for E2E
+bun run build:e2e
 
-# Runs the end-to-end tests
-npm run test:e2e
-# Runs the tests only on Chromium
-npm run test:e2e --project=chromium
-# Runs the tests of a specific file
-npm run test:e2e tests/example.spec.ts
-# Runs the tests in debug mode
-npm run test:e2e --debug
+# Run end-to-end tests
+bun run test:e2e
+
+# Run with UI
+bun run test:e2e:ui
 ```
 
 ## Code Quality
@@ -173,11 +188,17 @@ npm run test:e2e --debug
 ### Type Checking
 
 ```sh
-npm run type-check
+bun run type-check
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+### Lint and Format
 
 ```sh
-npm run lint
+bun run format          # Biome format
+bun run lint            # Biome lint
+bun run lint:sonar      # oxlint (file/function size limits)
+bun run lint:jsdoc      # JSDoc completeness
+bun run lint:css        # Stylelint
+bun run lint:vue-depth  # Vue template depth check
+bun run validate        # Run all checks
 ```

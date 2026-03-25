@@ -1,103 +1,103 @@
-# Архитектурные принципы проекта
+# Architectural Principles
 
-## Основные принципы
+## Core Principles
 
-### 1. Минимальный размер компонентов
-- **Максимум 50 строк на файл** - жесткое ограничение линтера
-- Если компонент превышает лимит - немедленная декомпозиция
-- Каждый компонент решает **одну задачу**
+### 1. Minimal Component Size
+- **Maximum 50 non-blank lines per file** -- hard linter limit
+- If a component exceeds the limit, decompose immediately
+- Each component solves **one task**
 
-### 2. Декомпозиция
-- **Любая условная ветка (v-if) = отдельный компонент**
-- Не должно быть компонентов с множественными v-if для разных состояний
-- Пример: LoadingOverlay и ErrorMessage - два отдельных компонента, а не один с двумя v-if
+### 2. Decomposition
+- **Every conditional branch (v-if) = a separate component**
+- No components with multiple v-if for different states
+- Example: LoadingOverlay and ErrorMessage are two separate components, not one with two v-if
 
-### 3. Организация кода
-- **Feature-based структура**, не layout-based
-- Компоненты группируются по фичам: `/views/ContentView/ContentViewHeader.vue`
-- Общие компоненты в `/components/common/`
+### 3. Code Organization
+- **Feature-based structure**, not layout-based
+- Components are grouped by feature: `/views/ContentView/ContentViewHeader.vue`
+- Shared components in `/components/common/`
 
-### 4. Разделение ответственности
-- **Логика в сервисах** (composables, services)
-- **Компоненты максимально декларативные**
-- Минимум бизнес-логики в компонентах
+### 4. Separation of Concerns
+- **Logic in services** (composables, helpers)
+- **Components are maximally declarative**
+- Minimal business logic in components
 
-### 5. DDD подход
-- Четкое разделение слоев:
-  - **Input/Output ports** (UI компоненты)
+### 5. DDD Approach
+- Clear layer separation:
+  - **Input/Output ports** (UI components)
   - **Business logic** (composables, domain models)
-  - **Services** (API клиенты, внешние сервисы)
-  - **Helpers** (утилиты без состояния)
+  - **Services** (API clients, external integrations)
+  - **Helpers** (stateless utilities)
 
-### 6. Чистый функциональный подход
-- Предпочтение функциям перед классами
-- Immutable данные (readonly, ref)
-- Декларативность превыше всего
-- Closures и стратегии вместо ветвлений
+### 6. Pure Functional Approach
+- Functions over classes
+- Immutable data (readonly, ref)
+- Declarative above all
+- Closures and strategies over branching
 
-## Требования к компонентам
+## Component Requirements
 
 ### Template
-- **Запрещены `<div>`** - только семантические теги или дочерние компоненты
-- **Максимальная глубина вложенности: 2**
-- Стили контейнера через `:host {}`
+- **No `<div>`** -- use semantic tags or child components
+- **Maximum nesting depth: 2**
+- Container styles via `:host {}`
 
 ### Script
-- **Composition API** обязательно
-- `inject()` вместо constructor injection
-- Только TypeScript, строгая типизация
-- Нет `any`, нет `as`, нет type casting
+- **Composition API** required
+- `inject()` instead of constructor injection
+- TypeScript only, strict typing
+- No `any`, no `as`, no type casting
 
-### Стили
-- **Scoped стили** всегда
-- CSS переменные из `_variables.scss`
-- Responsive через `clamp()`
-- Никаких inline стилей
+### Styles
+- **Scoped styles** always
+- CSS variables from `_variables.scss`
+- Responsive via `clamp()`
+- No inline styles
 
-## Линтер
+## Linter Rules
 
-### Правила
-- `sonarjs/max-lines: 50` - максимум строк
-- `sonarjs/max-lines-per-function: 30` - максимум строк в функции
-- `sonarjs/cognitive-complexity: 15` - когнитивная сложность
-- `vue/no-restricted-html-elements: div` - запрет на div
+### Limits
+- `sonarjs/max-lines: 50` -- maximum lines per file
+- `sonarjs/max-lines-per-function: 25` -- maximum lines per function
+- `sonarjs/cognitive-complexity: 15` -- cognitive complexity
+- `vue/no-restricted-html-elements: div` -- no div elements
 
-### Исключения
-- **Только для серверного кода** и тестов
-- UI код исключений **не имеет**
+### Exceptions
+- Only for SW code (`src/sw/`, `src/api/`) and tests
+- UI code has **no exceptions**
 
-## Тестирование
+## Testing
 
-### Пирамида тестирования
-1. **Unit тесты** (80%) - helpers, composables, utils
-2. **Integration тесты** (15%) - API endpoints, сервисы
-3. **E2E тесты** (5%) - критические user flow
+### Testing Pyramid
+1. **Unit tests** (80%) -- helpers, composables, utils
+2. **Integration tests** (15%) -- API endpoints, services
+3. **E2E tests** (5%) -- critical user flows
 
-### TDD обязательно
-- Сначала тест (failing)
-- Потом код
-- Затем рефакторинг
+### TDD Required
+- Test first (failing)
+- Then code
+- Then refactor
 
-## Недопустимо
+## Prohibited
 
-❌ Компоненты больше 50 строк  
-❌ Функции больше 30 строк  
-❌ Использование `<div>`  
-❌ Множественные v-if в одном компоненте  
-❌ Бизнес-логика в компонентах  
-❌ Type casting (`as`)  
-❌ `any` типы  
-❌ Мутабельные данные без ref  
-❌ Классы вместо функций  
-❌ Inline стили  
+- Components over 50 lines
+- Functions over 25 lines
+- Using `<div>`
+- Multiple v-if in one component
+- Business logic in components
+- Type casting (`as`)
+- `any` types
+- Mutable data without ref
+- Classes instead of functions
+- Inline styles
 
-## Обязательно
+## Required
 
-✅ Декомпозиция при превышении лимитов  
-✅ Один компонент = одна ответственность  
-✅ Логика в composables/services  
-✅ Строгая типизация  
-✅ Функциональный подход  
-✅ Feature-based структура  
-✅ TDD  
-✅ Минимальные компоненты  
+- Decompose when exceeding limits
+- One component = one responsibility
+- Logic in composables/services
+- Strict typing
+- Functional approach
+- Feature-based structure
+- TDD
+- Minimal components
