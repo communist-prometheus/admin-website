@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
-import { MOBILE_FAB } from '../helpers/mobile-constants'
 import { dragFab } from '../helpers/drag-fab'
+import { MOBILE_FAB } from '../helpers/mobile-constants'
 
 test.describe('FAB Drag', () => {
   test('dragging FAB to top-left snaps correctly', async ({ page }) => {

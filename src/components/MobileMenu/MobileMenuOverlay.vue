@@ -12,7 +12,7 @@ const style = computed(() => overlayStyle(props.open))
 
 <template>
   <nav
-    class="mobile-overlay"
+    class="mobile-popup"
     role="navigation"
     aria-label="Mobile navigation"
     :style="style"
@@ -23,22 +23,23 @@ const style = computed(() => overlayStyle(props.open))
 </template>
 
 <style scoped>
-.mobile-overlay {
+.mobile-popup {
   position: fixed;
-  inset: 0;
+  right: 16px;
+  bottom: 80px;
   z-index: 99;
-  background: var(--color-background);
-  opacity: 98%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: clamp(0.5rem, 2vw, 0.75rem);
+  box-shadow: var(--shadow-lg);
   transition:
     opacity var(--transition-base),
     transform var(--transition-base);
 }
 
 @media (width >= 768px) {
-  .mobile-overlay {
+  .mobile-popup {
     display: none;
   }
 }

@@ -5,10 +5,11 @@ import AssetPanel from '@/components/AssetManager/AssetPanel.vue'
 import CoverImage from '@/components/AssetManager/CoverImage.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import LanguageSelector from '@/components/LanguageSelector/LanguageSelector.vue'
 import { renameContent } from '@/composables/useGitHubApi/rename-content'
 import type { Language } from '@/types/content'
-import ContentEditHeader from './ContentEditView/ContentEditHeader.vue'
 import ContentEditMain from './ContentEditView/ContentEditMain.vue'
+import EditBreadcrumb from './ContentEditView/EditBreadcrumb.vue'
 import { initEditPage } from './ContentEditView/init-edit-page'
 import { useEditPage } from './ContentEditView/useEditPage'
 
@@ -24,7 +25,6 @@ const updateBody = (v: string) => { p.editor.bodyContent.value = v }
 const updateFm = (d: Record<string, unknown>) => {
   p.editor.frontmatterData.value = d
 }
-
 const handleSwitchLang = (lang: Language) => {
   const available = p.langs.value
   if (available.has(lang)) {
@@ -33,23 +33,28 @@ const handleSwitchLang = (lang: Language) => {
     p.editor.switchLanguage(lang)
   }
 }
-
 const handleRename = async (newSlug: string) => {
   await renameContent(props.type, props.slug, newSlug)
-  const url = `/content/${props.type}/edit/${newSlug}`
-  globalThis.location.replace(url)
+  globalThis.location.replace(`/content/${props.type}/edit/${newSlug}`)
 }
+const isRenameable =
+  p.contentType.value !== 'pages' &&
+  p.contentType.value !== 'common'
 </script>
 
 <template>
   <AppLayout>
-    <ContentEditHeader
-      :slug="slug" :content-type="p.contentType.value"
-      :current-lang="p.editor.currentLang.value"
+    <template #breadcrumb>
+      <EditBreadcrumb
+        :content-type="p.contentType.value"
+        :slug="slug" :renameable="isRenameable"
+        @rename="handleRename"
+      />
+    </template>
+    <LanguageSelector
+      :model-value="p.editor.currentLang.value"
       :available-languages="p.langs.value"
-      :renameable="p.contentType.value !== 'pages' && p.contentType.value !== 'common'"
-      @switch-lang="handleSwitchLang"
-      @rename="handleRename"
+      @update:model-value="handleSwitchLang"
     />
     <CoverImage
       v-if="p.hasAssets.value && !p.editor.loadingFile.value"

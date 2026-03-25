@@ -29,6 +29,7 @@ const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
 
 <template>
   <AppLayout>
+    <template #breadcrumb>{{ contentType }}</template>
     <ContentViewHeader v-model="selectedLang" :content-type="contentType" />
     <ContentViewMain
       :items="items" :selected-lang="selectedLang"

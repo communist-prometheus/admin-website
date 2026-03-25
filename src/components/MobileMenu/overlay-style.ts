@@ -1,15 +1,20 @@
 import type { CSSProperties } from 'vue'
 
 /**
- * Compute overlay visibility styles.
- * @param open - Whether overlay is visible
- * @returns CSS properties for the overlay
+ * Compute popup menu styles based on open state.
+ * Menu appears above the FAB button, anchored to same edge.
+ * @param open - Whether menu is visible
+ * @returns CSS properties for the popup
  */
 export const overlayStyle = (open: boolean): CSSProperties =>
   open
-    ? { opacity: 1, transform: 'scale(1)', pointerEvents: 'auto' }
+    ? {
+        opacity: 1,
+        transform: 'translateY(0)',
+        pointerEvents: 'auto',
+      }
     : {
         opacity: 0,
-        transform: 'scale(0.95)',
+        transform: 'translateY(8px)',
         pointerEvents: 'none',
       }

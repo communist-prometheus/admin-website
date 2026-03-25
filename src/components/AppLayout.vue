@@ -11,6 +11,7 @@ const slots = useSlots()
 
 <template>
   <AppHeader>
+    <template #breadcrumb><slot name="breadcrumb" /></template>
     <AuthButton />
   </AppHeader>
 

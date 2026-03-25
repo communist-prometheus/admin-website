@@ -1,37 +1,26 @@
+import type { Ref } from 'vue'
 import { onMounted, onUnmounted, ref } from 'vue'
-import { computeOffset } from './compute-offset'
+import { createScrollListener } from './create-listener'
 
 /**
  * Track scroll direction and compute header translateY.
  * Returns a reactive offset (0 = visible, -height = hidden).
- * @param headerHeight - Header height in pixels
+ * @param headerHeight - Header height ref or number
  * @returns Reactive offset ref
  */
-export const useScrollHeader = (headerHeight = 60) => {
+export const useScrollHeader = (headerHeight: Ref<number> | number = 60) => {
   const offset = ref(0)
-  let prevY = 0
-  let ticking = false
-
-  const onScroll = () => {
-    if (ticking) return
-    ticking = true
-    requestAnimationFrame(() => {
-      const currY = globalThis.scrollY
-      offset.value = computeOffset(prevY, currY, offset.value, headerHeight)
-      prevY = currY
-      ticking = false
-    })
-  }
+  const { handler, setPrevY } = createScrollListener(offset, headerHeight)
 
   onMounted(() => {
-    prevY = globalThis.scrollY
-    globalThis.addEventListener('scroll', onScroll, {
+    setPrevY(globalThis.scrollY)
+    globalThis.addEventListener('scroll', handler, {
       passive: true,
     })
   })
 
   onUnmounted(() => {
-    globalThis.removeEventListener('scroll', onScroll)
+    globalThis.removeEventListener('scroll', handler)
   })
 
   return { offset }
