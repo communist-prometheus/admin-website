@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { MOBILE_FAB } from './constants'
+import { MOBILE_FAB } from '../helpers/mobile-constants'
 
 test.describe('FAB Visibility', () => {
   test('FAB button is visible on mobile viewport', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { MOBILE_FAB, MOBILE_MENU } from './constants'
+import { MOBILE_FAB, MOBILE_MENU } from '../helpers/mobile-constants'
 
 test.describe('FAB Menu', () => {
   test('tapping FAB opens the menu overlay', async ({ page }) => {
