@@ -39,6 +39,14 @@ defineProps<{
   touch-action: none;
   padding: 0;
   box-shadow: var(--shadow-md);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+
+  &:active {
+    transform: scale(0.9);
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 @media (width >= 768px) {

@@ -11,6 +11,7 @@ const props = defineProps<{
   readonly show: boolean
   readonly contentType: ContentType
   readonly lang: Language
+  readonly categories?: readonly string[]
 }>()
 
 const emit = defineEmits<{
@@ -79,7 +80,10 @@ watch(() => props.show, (visible) => {
     <label v-if="contentType === 'blog' || contentType === 'positions'" for="description" class="field-label">Description *</label>
     <textarea v-if="contentType === 'blog' || contentType === 'positions'" id="description" v-model="description" required placeholder="Brief description..." rows="3" class="field-input" />
     <label v-if="contentType === 'blog'" for="category" class="field-label">Category *</label>
-    <input v-if="contentType === 'blog'" id="category" v-model="category" type="text" required placeholder="Technology" class="field-input" />
+    <input v-if="contentType === 'blog'" id="category" v-model="category" type="text" list="category-list" required placeholder="Technology" class="field-input" />
+    <datalist v-if="contentType === 'blog'" id="category-list">
+      <option v-for="cat in categories" :key="cat" :value="cat" />
+    </datalist>
     <label v-if="contentType === 'positions'" for="order" class="field-label">Order *</label>
     <input v-if="contentType === 'positions'" id="order" v-model.number="order" type="number" required min="1" class="field-input" />
     <button type="button" class="btn btn-secondary" @click="handleClose">Cancel</button>

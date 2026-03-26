@@ -96,7 +96,6 @@ const handleUpload = (file: File) => {
   display: flex;
   flex-direction: column;
   gap: clamp(0.25rem, 0.5vw, 0.5rem);
-  overflow: auto;
 }
 
 textarea {

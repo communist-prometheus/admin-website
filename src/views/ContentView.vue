@@ -9,6 +9,7 @@ import type { ContentType } from '@/types/content'
 import ContentViewHeader from './ContentView/ContentViewHeader.vue'
 import ContentViewMain from './ContentView/ContentViewMain.vue'
 import { createDeleteState } from './ContentView/delete-state'
+import { useBlogCategories } from './ContentView/extract-categories'
 import { createSelectHandler } from './ContentView/select-handler'
 import { useContentView } from './ContentView/use-content-view'
 
@@ -18,6 +19,7 @@ const { router, isAuthenticated, isFixedStructure, items,
   loadingList, reloadContent, createContent,
   error, selectedLang, showCreateDialog,
 } = useContentView(typeRef)
+const categories = useBlogCategories()
 const handleSelect = createSelectHandler(router, typeRef)
 const del = createDeleteState(typeRef, selectedLang, reloadContent)
 const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
@@ -45,6 +47,7 @@ const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
     <CreateContentDialog
       v-if="!isFixedStructure" :show="showCreateDialog"
       :content-type="contentType" :lang="selectedLang"
+      :categories="categories"
       @close="() => { showCreateDialog = false }" @create="handleCreate" />
     <DeleteConfirmDialog
       v-if="!isFixedStructure" :show="del.showDeleteDialog.value"

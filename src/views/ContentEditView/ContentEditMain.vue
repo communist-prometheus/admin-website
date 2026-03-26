@@ -51,7 +51,6 @@ defineEmits<{
   flex: 1;
   gap: clamp(0.5rem, 2vw, 1rem);
   padding: clamp(1rem, 3vw, 2rem);
-  overflow: auto;
 }
 
 .loading-state {

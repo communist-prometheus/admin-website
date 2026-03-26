@@ -10,6 +10,7 @@ export const config: Config = {
     'src/components/AppLayout.vue',
     'src/components/AppHeader.vue',
     'src/views/ContentEditView.vue',
+    'src/components/CreateContentDialog/**/*.vue',
   ],
 } as const
 
