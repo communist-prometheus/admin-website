@@ -1,6 +1,7 @@
 import { blogEntries } from './blog-entries'
 import { pageEntries } from './page-entries'
 import { positionEntries } from './position-entries'
+import { settingsEntries } from './settings-entries'
 
 /**
  * Single mock file entry representing a file in the virtual FS.
@@ -29,9 +30,10 @@ export interface MockEntry {
   readonly content: string
 }
 
-/** All mock entries combined (blog + pages + positions) */
+/** All mock entries combined (blog + pages + positions + settings) */
 export const allMockEntries: readonly MockEntry[] = [
   ...blogEntries,
   ...pageEntries,
   ...positionEntries,
+  ...settingsEntries,
 ]

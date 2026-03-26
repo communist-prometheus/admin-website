@@ -7,7 +7,7 @@ export const mediaShowcaseTranslations: readonly MockEntry[] = [
     content: `---
 title: Мультимедиа в блоге
 description: Демонстрация типов медиаконтента в блоге Prometheus.
-category: Технология
+category: technology
 pubDate: 2024-02-10
 image: ./assets/cover.jpg
 lang: ru
@@ -22,7 +22,7 @@ lang: ru
     content: `---
 title: Contenuti multimediali nel blog
 description: Una vetrina dei tipi di media supportati nel blog Prometheus.
-category: Tecnologia
+category: technology
 pubDate: 2024-02-10
 image: ./assets/cover.jpg
 lang: it
@@ -37,7 +37,7 @@ Il blog Prometheus supporta un'ampia gamma di contenuti multimediali.`,
     content: `---
 title: Contenido multimedia en el blog
 description: Muestra de tipos de medios en el blog Prometheus.
-category: Tecnología
+category: technology
 pubDate: 2024-02-10
 image: ./assets/cover.jpg
 lang: es

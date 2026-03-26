@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useLabelsStore } from '@/stores/labels'
+import { resolveLabel } from '@/stores/resolve-label'
 import type { ContentItem } from '@/types/content'
 import ItemHeader from './ItemHeader.vue'
 import ItemMeta from './ItemMeta.vue'
@@ -13,6 +15,7 @@ const props = defineProps<{
 const emit = defineEmits<{ click: []; delete: [] }>()
 
 const fm = computed(() => props.item.frontmatter)
+const labelsStore = useLabelsStore()
 
 const formattedDate = computed(() => {
   const date = fm.value.pubDate
@@ -26,8 +29,13 @@ const formattedDate = computed(() => {
 })
 
 const category = computed(() => {
-  const v = fm.value.category
-  return typeof v === 'string' ? v : undefined
+  const key = fm.value.category
+  if (typeof key !== 'string') return undefined
+  return resolveLabel(
+    key,
+    props.item.lang,
+    labelsStore.labels
+  )
 })
 
 const order = computed(() => {

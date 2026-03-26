@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, useTemplateRef, watch } from 'vue'
+import type { LabelEntry } from '@/stores/labels'
 import type { ContentType, Language } from '@/types/content'
 import {
   buildCreateData,
@@ -11,7 +12,7 @@ const props = defineProps<{
   readonly show: boolean
   readonly contentType: ContentType
   readonly lang: Language
-  readonly categories?: readonly string[]
+  readonly labels?: readonly LabelEntry[]
 }>()
 
 const emit = defineEmits<{
@@ -80,10 +81,12 @@ watch(() => props.show, (visible) => {
     <label v-if="contentType === 'blog' || contentType === 'positions'" for="description" class="field-label">Description *</label>
     <textarea v-if="contentType === 'blog' || contentType === 'positions'" id="description" v-model="description" required placeholder="Brief description..." rows="3" class="field-input" />
     <label v-if="contentType === 'blog'" for="category" class="field-label">Category *</label>
-    <input v-if="contentType === 'blog'" id="category" v-model="category" type="text" list="category-list" required placeholder="Technology" class="field-input" />
-    <datalist v-if="contentType === 'blog'" id="category-list">
-      <option v-for="cat in categories" :key="cat" :value="cat" />
-    </datalist>
+    <select v-if="contentType === 'blog'" id="category" v-model="category" required class="field-input">
+      <option value="" disabled>Select category</option>
+      <option v-for="label in labels" :key="label.key" :value="label.key">
+        {{ label.translations[lang] ?? label.key }}
+      </option>
+    </select>
     <label v-if="contentType === 'positions'" for="order" class="field-label">Order *</label>
     <input v-if="contentType === 'positions'" id="order" v-model.number="order" type="number" required min="1" class="field-input" />
     <button type="button" class="btn btn-secondary" @click="handleClose">Cancel</button>

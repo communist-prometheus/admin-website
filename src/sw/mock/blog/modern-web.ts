@@ -8,7 +8,7 @@ export const modernWebEntries: readonly MockEntry[] = [
     content: `---
 title: Modern Web Development Best Practices
 description: Explore the latest best practices in web development.
-category: Technology
+category: technology
 pubDate: 2024-01-20
 lang: en
 ---
@@ -22,7 +22,7 @@ The web development landscape is constantly evolving.`,
     content: `---
 title: Лучшие практики современной веб-разработки
 description: Изучите новейшие практики веб-разработки.
-category: Технологии
+category: technology
 pubDate: 2024-01-20
 lang: ru
 ---

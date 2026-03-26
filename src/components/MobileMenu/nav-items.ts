@@ -8,7 +8,6 @@ export interface NavItem {
 /** Shared navigation items used by mobile menu. */
 export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/', label: 'Home', requiresAuth: false },
-  { path: '/about', label: 'About', requiresAuth: false },
   { path: '/content/blog', label: 'Blog', requiresAuth: true },
   {
     path: '/content/positions',

@@ -1,0 +1,30 @@
+/** Mock labels JSON for content categories. */
+export const labelsJson = JSON.stringify([
+  {
+    key: 'technology',
+    translations: {
+      en: 'Technology',
+      ru: 'Технологии',
+      it: 'Tecnologia',
+      es: 'Tecnología',
+    },
+  },
+  {
+    key: 'announcement',
+    translations: {
+      en: 'Announcement',
+      ru: 'Объявление',
+      it: 'Annuncio',
+      es: 'Anuncio',
+    },
+  },
+  {
+    key: 'community',
+    translations: {
+      en: 'Community',
+      ru: 'Сообщество',
+      it: 'Comunità',
+      es: 'Comunidad',
+    },
+  },
+])
