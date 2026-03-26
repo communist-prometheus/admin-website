@@ -7,7 +7,7 @@ export const astroTranslations: readonly MockEntry[] = [
     content: `---
 title: Perché Scegliere il Framework Astro
 description: Scopri l'approccio unico di Astro per siti web veloci.
-category: technology
+category: Tecnologia
 pubDate: 2024-01-25
 lang: it
 ---
@@ -21,7 +21,7 @@ Astro è un framework web moderno con un approccio innovativo.`,
     content: `---
 title: Por Qué Elegir el Framework Astro
 description: Descubre el enfoque único de Astro para sitios web rápidos.
-category: technology
+category: Tecnología
 pubDate: 2024-01-25
 lang: es
 ---

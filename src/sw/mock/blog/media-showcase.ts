@@ -9,7 +9,7 @@ export const mediaShowcaseEntries: readonly MockEntry[] = [
     content: `---
 title: Rich Media in Blog Posts
 description: A showcase of media types supported in Prometheus blog.
-category: technology
+category: Technology
 pubDate: 2024-02-10
 image: ./assets/cover.jpg
 lang: en

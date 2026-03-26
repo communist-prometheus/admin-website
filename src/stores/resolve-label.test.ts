@@ -13,20 +13,25 @@ const LABELS = [
 ]
 
 describe('resolveLabel', () => {
-  it('returns translation for matching key and lang', () => {
+  it('resolves by key', () => {
     expect(resolveLabel('tech', 'en', LABELS)).toBe('Technology')
     expect(resolveLabel('tech', 'ru', LABELS)).toBe('Технологии')
   })
 
-  it('falls back to key when lang not found', () => {
+  it('resolves legacy text to translation', () => {
+    expect(resolveLabel('Technology', 'ru', LABELS)).toBe('Технологии')
+    expect(resolveLabel('Технологии', 'en', LABELS)).toBe('Technology')
+  })
+
+  it('falls back to value when lang missing', () => {
     expect(resolveLabel('tech', 'fr', LABELS)).toBe('tech')
   })
 
-  it('falls back to key when key not found', () => {
-    expect(resolveLabel('missing', 'en', LABELS)).toBe('missing')
+  it('falls back to value when not found', () => {
+    expect(resolveLabel('unknown', 'en', LABELS)).toBe('unknown')
   })
 
-  it('falls back to key on empty labels', () => {
+  it('falls back on empty labels', () => {
     expect(resolveLabel('tech', 'en', [])).toBe('tech')
   })
 })

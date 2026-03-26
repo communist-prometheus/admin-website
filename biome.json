@@ -113,7 +113,7 @@
       }
     },
     {
-      "includes": ["scripts/dev-token.ts"],
+      "includes": ["scripts/*.ts"],
       "linter": {
         "rules": {
           "suspicious": {

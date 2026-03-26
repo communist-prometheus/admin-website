@@ -1,17 +1,31 @@
 import type { LabelEntry } from '@/validation/schemas/labels'
 
 /**
- * Resolve a label key to its translated text.
- * @param key - Label key to look up
+ * Find a label entry by key or by translation value.
+ * @param value - Key or translated text to look up
+ * @param labels - Available label entries
+ * @returns Matching label entry or undefined
+ */
+const findEntry = (
+  value: string,
+  labels: readonly LabelEntry[]
+): LabelEntry | undefined =>
+  labels.find(l => l.key === value) ??
+  labels.find(l => Object.values(l.translations).includes(value))
+
+/**
+ * Resolve a label key (or legacy text) to translated text.
+ * Works with both key-based and text-based category values.
+ * @param value - Label key or legacy translated text
  * @param lang - Language code for translation
  * @param labels - Available label entries
- * @returns Translated string or the key itself as fallback
+ * @returns Translated string or the value itself as fallback
  */
 export const resolveLabel = (
-  key: string,
+  value: string,
   lang: string,
   labels: readonly LabelEntry[]
 ): string => {
-  const entry = labels.find(l => l.key === key)
-  return entry?.translations[lang] ?? key
+  const entry = findEntry(value, labels)
+  return entry?.translations[lang] ?? value
 }

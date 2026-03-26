@@ -55,7 +55,9 @@
     {
       "files": ["scripts/**/*.ts"],
       "rules": {
-        "no-console": "off"
+        "no-console": "off",
+        "sonarjs/max-lines": "off",
+        "sonarjs/max-lines-per-function": "off"
       }
     },
     {
