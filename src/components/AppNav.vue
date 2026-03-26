@@ -16,18 +16,13 @@ const auth = useAuthStore()
       Home
     </RouterLink>
     <AppNavAuth v-if="auth.user || auth.loading" />
-    <RouterLink
-      to="/about"
-      :class="{ active: route.path === '/about' }"
-    >
-      About
-    </RouterLink>
   </nav>
 </template>
 
 <style scoped>
 .app-nav {
   display: flex;
+  flex: 1;
   gap: clamp(1rem, 3vw, 2rem);
   align-items: center;
 }

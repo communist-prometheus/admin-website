@@ -13,9 +13,4 @@ export const publicRoutes: RouteRecordRaw[] = [
     name: 'auth-callback',
     component: () => import('../views/AuthCallbackView.vue'),
   },
-  {
-    path: '/about',
-    name: 'about',
-    component: () => import('../views/AboutView.vue'),
-  },
 ]

@@ -97,6 +97,7 @@ watch(() => props.show, (visible) => {
   padding: clamp(1rem, 2vw, 1.5rem);
   max-width: clamp(400px, 90vw, 600px);
   width: 100%;
+  margin: auto;
   box-shadow: 0 10px 40px rgb(0 0 0 / 20%);
 
   &::backdrop {

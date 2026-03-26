@@ -7,7 +7,13 @@ import AppNav from './AppNav.vue'
 const el = useTemplateRef<HTMLElement>('header')
 const height = ref(60)
 onMounted(() => {
-  if (el.value) height.value = el.value.offsetHeight
+  if (el.value) {
+    height.value = el.value.offsetHeight
+    document.documentElement.style.setProperty(
+      '--header-height',
+      `${height.value}px`
+    )
+  }
 })
 const { offset } = useScrollHeader(height)
 const headerStyle = computed(() => ({
@@ -22,7 +28,6 @@ const headerStyle = computed(() => ({
     :style="headerStyle"
   >
     <RouterLink to="/" class="logo">Prometheus</RouterLink>
-    <slot name="breadcrumb" />
     <AppNav />
     <slot />
   </header>

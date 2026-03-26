@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
 import AssetPanel from '@/components/AssetManager/AssetPanel.vue'
 import CoverImage from '@/components/AssetManager/CoverImage.vue'
@@ -18,7 +17,6 @@ const props = defineProps<{
   readonly slug: string
 }>()
 
-const router = useRouter()
 const p = useEditPage(props.type, props.slug)
 const { handleSave } = initEditPage(p)
 const updateBody = (v: string) => { p.editor.bodyContent.value = v }
@@ -44,20 +42,20 @@ const isRenameable =
 
 <template>
   <AppLayout>
-    <template #breadcrumb>
+    <nav class="edit-nav">
       <EditBreadcrumb
         :content-type="p.contentType.value"
         :slug="slug" :renameable="isRenameable"
         @rename="handleRename"
       />
-    </template>
+    </nav>
     <LanguageSelector
       :model-value="p.editor.currentLang.value"
       :available-languages="p.langs.value"
       @update:model-value="handleSwitchLang"
     />
     <CoverImage
-      v-if="p.hasAssets.value && !p.editor.loadingFile.value"
+      v-if="p.hasCover.value && !p.editor.loadingFile.value"
       :cover-url="p.assets.coverUrl.value"
       @delete-cover="p.ah.onRemoveCover"
       @upload-cover="p.ah.onUploadCover"
@@ -87,3 +85,13 @@ const isRenameable =
     <ErrorMessage :error="null" />
   </AppLayout>
 </template>
+
+<style scoped>
+.edit-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  font-size: clamp(0.875rem, 2vw, 1rem);
+}
+</style>

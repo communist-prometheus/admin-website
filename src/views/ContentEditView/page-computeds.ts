@@ -23,6 +23,7 @@ export const createPageComputeds = (
   isAuth: computed(() => !!useAuthStore().user),
   contentType: computed(() => validType),
   hasAssets: computed(() => NESTED_TYPES.has(validType)),
+  hasCover: computed(() => validType === 'blog' || validType === 'positions'),
   isBlog: computed(() => validType === 'blog'),
   langs: computed(() => getAvailableLanguages(list.items.value, slug)),
   buildPath: (lang: Language) => contentFile(validType, slug, lang),

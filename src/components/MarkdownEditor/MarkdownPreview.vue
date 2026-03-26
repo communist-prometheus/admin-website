@@ -28,9 +28,6 @@ const html = computed(() => {
 <style scoped>
 .markdown-preview {
   flex: 1;
-  padding: clamp(0.75rem, 2vw, 1.5rem);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
   background: var(--color-background);
   color: var(--color-text);
   font-size: 1rem;

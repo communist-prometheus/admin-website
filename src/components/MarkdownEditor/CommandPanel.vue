@@ -71,7 +71,7 @@ const onMedia = (a: AssetDisplay) => {
 <style scoped>
 .command-panel {
   position: sticky;
-  top: 0;
+  top: var(--header-height, 60px);
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;

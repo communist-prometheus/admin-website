@@ -15,21 +15,23 @@ import { useContentView } from './ContentView/use-content-view'
 const props = defineProps<{ readonly contentType: ContentType }>()
 const typeRef = toRef(() => props.contentType)
 const { router, isAuthenticated, isFixedStructure, items,
-  loadingList, loadContent, reloadContent, createContent,
+  loadingList, reloadContent, createContent,
   error, selectedLang, showCreateDialog,
 } = useContentView(typeRef)
 const handleSelect = createSelectHandler(router, typeRef)
 const del = createDeleteState(typeRef, selectedLang, reloadContent)
 const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
   await createContent(data)
-  await loadContent()
   showCreateDialog.value = false
+  router.push({
+    name: 'content-edit',
+    params: { type: props.contentType, slug: data.slug },
+  })
 }
 </script>
 
 <template>
   <AppLayout>
-    <template #breadcrumb>{{ contentType }}</template>
     <ContentViewHeader v-model="selectedLang" :content-type="contentType" />
     <ContentViewMain
       :items="items" :selected-lang="selectedLang"
