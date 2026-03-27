@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import MobileAuthAction from './MobileAuthAction.vue'
 import MobileNavLink from './MobileNavLink.vue'
 import { visibleItems } from './visible-items'
 
@@ -23,6 +24,7 @@ const items = computed(() =>
       :label="item.label"
       @click="emit('navigate')"
     />
+    <MobileAuthAction @navigate="emit('navigate')" />
   </ul>
 </template>
 
