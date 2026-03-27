@@ -18,12 +18,17 @@ export const handleFileUpdate = async (
     return errorResponse('Missing required fields', 400)
   }
 
-  await writeAndStage(path, content)
-  const commitSha = await commitAndPush(message)
-  const blobSha = await computeBlobSha(content)
+  try {
+    await writeAndStage(path, content)
+    const commitSha = await commitAndPush(message)
+    const blobSha = await computeBlobSha(content)
 
-  return jsonResponse({
-    content: { sha: blobSha },
-    commit: { sha: commitSha },
-  })
+    return jsonResponse({
+      content: { sha: blobSha },
+      commit: { sha: commitSha },
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return errorResponse(`Write failed: ${msg}`, 500)
+  }
 }
