@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { deployHandler } from './deploy-handler'
 import { tokenHandler } from './token-handler'
 
 /**
@@ -6,6 +7,9 @@ import { tokenHandler } from './token-handler'
  */
 export interface Env {
   readonly GITHUB_CLIENT_SECRET: string
+  readonly CF_API_TOKEN: string
+  readonly CF_ACCOUNT_ID: string
+  readonly CF_PROJECT_NAME: string
 }
 
 /**
@@ -15,3 +19,4 @@ export interface Env {
 export const api = new Hono<{ Bindings: Env }>()
   .basePath('/api')
   .post('/oauth/token', tokenHandler)
+  .get('/deploy', deployHandler)

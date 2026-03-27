@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 import { log } from '../../logging/logger'
-import { workerState } from '../../state/state'
+import type { workerState } from '../../state/state'
 import { execCommit } from './exec-commit'
 
 type SWGitConfig = NonNullable<typeof workerState.config>
