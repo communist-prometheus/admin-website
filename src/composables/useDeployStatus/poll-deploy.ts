@@ -1,24 +1,25 @@
 import type { Ref } from 'vue'
-import { parseDeploy } from './parse-deploy'
 import type { DeployInfo } from './types'
 
 /**
- * Create a poll function that fetches deploy status.
+ * Create a poll function that checks for new version.
  * @param info - Reactive deploy info to update
- * @param getSha - Getter for current tracked SHA
+ * @param getAfter - Getter for version number to compare
  * @param stop - Stop polling callback
  * @returns Async poll function
  */
 export const createPoll =
-  (info: Ref<DeployInfo>, getSha: () => string, stop: () => void) =>
+  (info: Ref<DeployInfo>, getAfter: () => number, stop: () => void) =>
   async () => {
-    const res = await fetch(`/api/deploy?sha=${getSha()}`)
-    if (!res.ok) {
+    const r = await fetch(`/api/deploy?after=${getAfter()}`)
+    if (!r.ok) {
       info.value = { stage: 'not-found' }
       return
     }
-    info.value = parseDeploy(await res.json())
-    const done =
-      info.value.stage === 'success' || info.value.stage === 'failure'
-    if (done) stop()
+    const d: { isNew: boolean; version: number; createdOn: string } =
+      await r.json()
+    info.value = d.isNew
+      ? { stage: 'success', version: d.version, createdOn: d.createdOn }
+      : { stage: 'building', version: d.version }
+    if (d.isNew) stop()
   }

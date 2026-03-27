@@ -40,6 +40,9 @@ export const forwardToApi = async (
 ): Promise<void> => {
   const response = await api.fetch(request, {
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET ?? '',
+    CF_API_TOKEN: process.env.VITE_CF_API_TOKEN ?? '',
+    CF_ACCOUNT_ID: process.env.VITE_CF_ACCOUNT_ID ?? '',
+    CF_PROJECT_NAME: process.env.VITE_CF_PROJECT_NAME ?? '',
   })
   res.writeHead(response.status, {
     'Content-Type':

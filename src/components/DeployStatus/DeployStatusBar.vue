@@ -1,18 +1,13 @@
 <script setup lang="ts">
 import type { DeployInfo } from '@/composables/useDeployStatus'
 
-const props = defineProps<{
-  readonly info: DeployInfo
-}>()
+defineProps<{ readonly info: DeployInfo }>()
 
 const label: Record<string, string> = {
   idle: '',
-  queued: 'Queued...',
-  building: 'Building...',
-  deploying: 'Deploying...',
-  success: 'Deployed',
-  failure: 'Deploy failed',
-  'not-found': 'Waiting for build...',
+  building: 'Building site...',
+  success: 'Site deployed',
+  'not-found': 'Checking deploy...',
 }
 </script>
 
@@ -24,14 +19,9 @@ const label: Record<string, string> = {
   >
     <span class="dot" />
     {{ label[info.stage] }}
-    <a
-      v-if="info.url && info.stage === 'success'"
-      :href="info.url"
-      target="_blank"
-      rel="noopener"
-    >
-      View
-    </a>
+    <time v-if="info.createdOn" class="time">
+      {{ new Date(info.createdOn).toLocaleTimeString() }}
+    </time>
   </aside>
 </template>
 
@@ -57,36 +47,24 @@ const label: Record<string, string> = {
   animation: pulse 1.5s infinite;
 }
 
-.queued,
 .not-found { background: var(--color-surface); }
 
-.building,
-.deploying { background: hsl(40deg 80% 20%); }
+.building { background: hsl(40deg 80% 20%); }
 
 .success { background: hsl(140deg 50% 15%); }
 
-.failure { background: hsl(0deg 60% 20%); }
-
-.queued .dot,
 .not-found .dot { background: hsl(0deg 0% 60%); }
 
-.building .dot,
-.deploying .dot { background: hsl(40deg 90% 55%); }
+.building .dot { background: hsl(40deg 90% 55%); }
 
 .success .dot {
   background: hsl(140deg 70% 50%);
   animation: none;
 }
 
-.failure .dot {
-  background: hsl(0deg 70% 55%);
-  animation: none;
-}
-
-a {
-  color: inherit;
+.time {
   margin-left: auto;
-  text-decoration: underline;
+  opacity: 70%;
 }
 
 @keyframes pulse {

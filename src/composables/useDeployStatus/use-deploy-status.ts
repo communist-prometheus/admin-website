@@ -1,40 +1,34 @@
 import { onUnmounted, ref } from 'vue'
+import { fetchCurrentVersion } from './fetch-current'
 import { createPoll } from './poll-deploy'
 import type { DeployInfo } from './types'
 
-const POLL_MS = 5000
+const POLL_MS = 10000
 const idle: DeployInfo = { stage: 'idle' }
 
 /**
- * Poll deployment status for a commit SHA.
- * Starts on track(sha), stops on terminal state.
+ * Poll for new CF Workers version after save.
  * @returns Reactive info, track, and clear functions
  */
 export const useDeployStatus = () => {
   const info = ref<DeployInfo>(idle)
   let timer: ReturnType<typeof setInterval> | undefined
-  let sha = ''
-
+  let after = 0
   const stop = () => {
     if (timer) clearInterval(timer)
     timer = undefined
   }
-
-  const poll = createPoll(info, () => sha, stop)
-
-  const track = (s: string) => {
+  const poll = createPoll(info, () => after, stop)
+  const track = async () => {
     stop()
-    sha = s
-    info.value = { stage: 'queued' }
-    poll()
+    after = await fetchCurrentVersion()
+    info.value = { stage: 'building' }
     timer = setInterval(poll, POLL_MS)
   }
-
   const clear = () => {
     stop()
     info.value = idle
   }
-
   onUnmounted(stop)
   return { info, track, clear }
 }
