@@ -3,10 +3,8 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { exchangeCodeForToken } from '@/composables/useAuth/exchange-token'
 import { fetchGitHubUser } from '@/composables/useAuth/fetch-github-user'
-import {
-  loadAndClearVerifier,
-  saveToken,
-} from '@/composables/useAuth/token-storage'
+import { loadAndClearVerifier } from '@/composables/useAuth/pkce-storage'
+import { saveToken } from '@/composables/useAuth/token-storage'
 import { loadRedirect } from '@/router/auth-guard'
 import { useAuthStore } from '@/stores/auth'
 import { extractString } from '@/validation/extract-string'

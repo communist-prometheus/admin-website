@@ -1,6 +1,6 @@
 import { getAuthConfig } from '@/config/auth'
 import { generateCodeChallenge, generateCodeVerifier } from '../useAuth/pkce'
-import { saveVerifier } from '../useAuth/token-storage'
+import { saveVerifier } from '../useAuth/pkce-storage'
 
 const GITHUB_AUTHORIZE = 'https://github.com/login/oauth/authorize'
 
