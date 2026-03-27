@@ -139,6 +139,10 @@ bun run dev:token
 
 ## Production
 
+**Live site**: https://admin.comprom.org
+
+Deployed on Cloudflare Workers. The CORS proxy (`cors-proxy/`) is a separate Worker (`prometheus-cors-proxy`) that proxies git operations to GitHub.
+
 ### Build
 
 Build client and SW bundles:

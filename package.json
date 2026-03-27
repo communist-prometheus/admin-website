@@ -32,7 +32,9 @@
     "lint:css:fix": "stylelint \"**/*.{css,vue}\" --fix",
     "check": "biome check --write .",
     "check:ci": "biome ci .",
-    "check:all": "bun run type-check && bun run check && bun run lint:sonar && bun run lint:css"
+    "check:all": "bun run type-check && bun run check && bun run lint:sonar && bun run lint:css",
+    "deploy:status": "bun scripts/deploy-status.ts",
+    "deploy": "CLOUDFLARE_API_TOKEN=$VITE_CF_API_TOKEN npx wrangler deploy --config wrangler.jsonc"
   },
   "dependencies": {
     "@isomorphic-git/lightning-fs": "^4.6.2",
