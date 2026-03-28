@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, ref, useTemplateRef, watchEffect } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useScrollHeader } from '@/composables/useScrollHeader'
 import AppNav from './AppNav.vue'
@@ -16,6 +16,12 @@ onMounted(() => {
   }
 })
 const { offset } = useScrollHeader(height)
+watchEffect(() => {
+  document.documentElement.style.setProperty(
+    '--header-offset',
+    `${offset.value}px`
+  )
+})
 const headerStyle = computed(() => ({
   transform: `translateY(${offset.value}px)`,
 }))
