@@ -11,8 +11,7 @@ if (!accountId || !apiToken) {
   process.exit(1)
 }
 
-const baseUrl =
-  `https://api.cloudflare.com/client/v4/accounts/${accountId}`
+const baseUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}`
 
 const headers = { Authorization: `Bearer ${apiToken}` }
 
@@ -26,12 +25,15 @@ interface Deployment {
   readonly id: string
   readonly created_on: string
   readonly source: string
-  readonly versions: readonly { readonly version_id: string; readonly percentage: number }[]
+  readonly versions: readonly {
+    readonly version_id: string
+    readonly percentage: number
+  }[]
 }
 
 const fetchJson = async <T>(url: string): Promise<T> => {
   const res = await fetch(url, { headers })
-  const data = await res.json() as { result: T }
+  const data = (await res.json()) as { result: T }
   return data.result
 }
 
@@ -39,9 +41,9 @@ const formatDate = (iso: string) =>
   new Date(iso).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
 
 const run = async () => {
-  const { deployments } = await fetchJson<{ deployments: readonly Deployment[] }>(
-    `${baseUrl}/workers/scripts/${scriptName}/deployments`
-  )
+  const { deployments } = await fetchJson<{
+    deployments: readonly Deployment[]
+  }>(`${baseUrl}/workers/scripts/${scriptName}/deployments`)
 
   const latest = deployments[0]
   if (!latest) {

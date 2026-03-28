@@ -1,7 +1,9 @@
 import { Effect } from 'effect'
 import { log } from '../../logging/logger'
-import type { workerState } from '../../state/state'
-import { execCommit } from './exec-commit'
+import { recordOp } from '../../logging/metrics'
+import { workerState } from '../../state/state'
+import { fs, REPO_DIR } from '../fs'
+import { loadGit } from '../load-git'
 
 type SWGitConfig = NonNullable<typeof workerState.config>
 
@@ -12,11 +14,22 @@ type SWGitConfig = NonNullable<typeof workerState.config>
  * @returns Effect yielding the commit SHA
  */
 export const realCommit = (config: SWGitConfig, message: string) =>
-  Effect.tryPromise({
-    try: () => execCommit(config, message),
-    catch: (e: unknown) => {
-      const msg = e instanceof Error ? e.message : String(e)
-      log('error', 'git', `commit failed: ${msg}`)
-      return new Error(`Commit failed: ${msg}`)
-    },
+  Effect.tryPromise(async () => {
+    const start = Date.now()
+    const git = await loadGit()
+    const sha = await git.commit({
+      fs,
+      dir: REPO_DIR,
+      message,
+      author: {
+        name: config.authorName ?? 'Admin',
+        email: config.authorEmail ?? 'admin@prometheus.org',
+      },
+    })
+    log('info', 'git', `committed ${sha.slice(0, 7)}`)
+    const { pushToRemote } = await import('./push-to-remote')
+    await pushToRemote(config)
+    workerState.commitSha = sha
+    recordOp('commitAndPush', Date.now() - start)
+    return sha
   })

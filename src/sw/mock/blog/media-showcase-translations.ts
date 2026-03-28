@@ -7,7 +7,7 @@ export const mediaShowcaseTranslations: readonly MockEntry[] = [
     content: `---
 title: Мультимедиа в блоге
 description: Демонстрация типов медиаконтента в блоге Prometheus.
-category: Технологии
+category: Технология
 pubDate: 2024-02-10
 image: ./assets/cover.jpg
 lang: ru
