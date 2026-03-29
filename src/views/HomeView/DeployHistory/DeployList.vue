@@ -16,10 +16,11 @@ defineProps<{
       No deployments found
     </p>
     <DeployItem
-      v-for="d in deploys"
+      v-for="(d, i) in deploys"
       v-else
       :key="d.id"
       :deploy="d"
+      :is-latest="i === 0"
     />
   </section>
 </template>
