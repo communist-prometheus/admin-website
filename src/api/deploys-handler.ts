@@ -13,13 +13,13 @@ import { mergeDeployData } from './deploys/merge'
 export const deploysHandler = async (
   c: Context<{ Bindings: Env }>
 ): Promise<Response> => {
-  const { CF_API_TOKEN, CF_ACCOUNT_ID } = c.env
+  const { CF_API_TOKEN, CF_ACCOUNT_ID, GITHUB_TOKEN } = c.env
   if (!CF_API_TOKEN || !CF_ACCOUNT_ID)
     return c.json({ error: 'CF credentials not set' }, 500)
 
   const [deploys, commits] = await Promise.all([
     fetchCfDeployments(CF_API_TOKEN, CF_ACCOUNT_ID, 'admin-website'),
-    fetchGhCommits(),
+    fetchGhCommits(GITHUB_TOKEN),
   ])
 
   return c.json(mergeDeployData(deploys, commits))
