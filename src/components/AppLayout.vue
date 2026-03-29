@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { provide, useSlots } from 'vue'
-import { useDeployStatus } from '@/composables/useDeployStatus'
-import { DEPLOY_TRACK_KEY } from '@/composables/useDeployStatus/deploy-context'
+import { inject, ref, useSlots } from 'vue'
+import type { DeployInfo } from '@/composables/useDeployStatus'
+import { DEPLOY_INFO_KEY } from '@/composables/useDeployStatus/deploy-context'
 import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
 import AppMain from './AppMain.vue'
@@ -10,8 +10,8 @@ import DeployStatusBar from './DeployStatus/DeployStatusBar.vue'
 import MobileMenu from './MobileMenu/MobileMenu.vue'
 
 const slots = useSlots()
-const deploy = useDeployStatus()
-provide(DEPLOY_TRACK_KEY, deploy.track)
+const idle: DeployInfo = { stage: 'idle' }
+const info = inject(DEPLOY_INFO_KEY, ref(idle))
 </script>
 
 <template>
@@ -31,5 +31,5 @@ provide(DEPLOY_TRACK_KEY, deploy.track)
   </AppFooter>
 
   <MobileMenu />
-  <DeployStatusBar :info="deploy.info.value" />
+  <DeployStatusBar :info="info" />
 </template>
