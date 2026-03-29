@@ -16,19 +16,17 @@ interface GhCommitRaw {
 
 /**
  * Fetch recent commits from admin-website master.
- * @param token - Optional GitHub token for auth
+ * Public repo — no auth required, User-Agent mandatory.
  * @returns Array of commit entries
  */
-export const fetchGhCommits = async (
-  token?: string
-): Promise<readonly GhCommit[]> => {
+export const fetchGhCommits = async (): Promise<readonly GhCommit[]> => {
   const url = `${API}/repos/${REPO}/commits?sha=master&per_page=20`
-  const headers: Record<string, string> = {
-    Accept: 'application/vnd.github.v3+json',
-    'User-Agent': 'admin-website',
-  }
-  if (token) headers.Authorization = `Bearer ${token}`
-  const r = await fetch(url, { headers })
+  const r = await fetch(url, {
+    headers: {
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'admin-website',
+    },
+  })
   if (!r.ok) return []
   const data: readonly GhCommitRaw[] = await r.json()
   return data.map(c => ({
