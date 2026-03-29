@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { DeployEntry } from '@/api/deploys/types'
+import type { CfDeploy } from '@/api/deploys/types'
 import DeployItem from './DeployItem.vue'
 
 defineProps<{
-  readonly deploys: readonly DeployEntry[]
+  readonly deploys: readonly CfDeploy[]
   readonly loading: boolean
 }>()
 </script>
