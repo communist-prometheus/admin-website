@@ -2,13 +2,6 @@
 import type { DeployInfo } from '@/composables/useDeployStatus'
 
 defineProps<{ readonly info: DeployInfo }>()
-
-const label: Record<string, string> = {
-  idle: '',
-  building: 'Building site...',
-  success: 'Site deployed',
-  'not-found': 'Checking deploy...',
-}
 </script>
 
 <template>
@@ -16,13 +9,7 @@ const label: Record<string, string> = {
     v-if="info.stage !== 'idle'"
     class="deploy-bar"
     :class="info.stage"
-  >
-    <span class="dot" />
-    {{ label[info.stage] }}
-    <time v-if="info.createdOn" class="time">
-      {{ new Date(info.createdOn).toLocaleTimeString() }}
-    </time>
-  </aside>
+  />
 </template>
 
 <style scoped>
@@ -32,43 +19,44 @@ const label: Record<string, string> = {
   left: 0;
   right: 0;
   z-index: var(--z-fab);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.8125rem;
-  transition: background var(--transition-base);
+  height: 3px;
+  transform: translateY(100%);
+  animation: slide-in 0.3s ease-out forwards;
 }
 
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  animation: pulse 1.5s infinite;
+.building {
+  background: linear-gradient(
+    90deg,
+    var(--color-primary) 0%,
+    var(--color-primary-light, hsl(14deg 90% 65%)) 50%,
+    var(--color-primary) 100%
+  );
+  background-size: 200% 100%;
+  animation:
+    slide-in 0.3s ease-out forwards,
+    shimmer 1.5s ease-in-out infinite;
 }
 
-.not-found { background: var(--color-surface); }
-
-.building { background: hsl(40deg 80% 20%); }
-
-.success { background: hsl(140deg 50% 15%); }
-
-.not-found .dot { background: hsl(0deg 0% 60%); }
-
-.building .dot { background: hsl(40deg 90% 55%); }
-
-.success .dot {
-  background: hsl(140deg 70% 50%);
-  animation: none;
+.success {
+  background: linear-gradient(
+    90deg,
+    hsl(140deg 60% 40%),
+    hsl(140deg 70% 50%),
+    hsl(140deg 60% 40%)
+  );
 }
 
-.time {
-  margin-left: auto;
-  opacity: 70%;
+.not-found {
+  background: var(--color-border);
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 100%; }
-  50% { opacity: 30%; }
+@keyframes slide-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 </style>

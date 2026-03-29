@@ -1,21 +1,21 @@
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
 import { decodeResponse } from '@/validation/decode-response'
-import type { SuccessResponse } from '@/validation/schemas/api-response'
-import { SuccessResponseSchema } from '@/validation/schemas/api-response'
+import type { CommitResponse } from '@/validation/schemas/sw-api'
+import { CommitResultSchema } from '@/validation/schemas/sw-api'
 import type { CreateFileParams } from './types'
 
 /**
  * Create file in GitHub repository.
  * @param params - File creation parameters
- * @returns File creation result
+ * @returns Commit result with SHA
  */
 export const createFile = async (
   params: CreateFileParams
-): Promise<SuccessResponse> => {
+): Promise<CommitResponse> => {
   const res = await swFetch('/api/github/file', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   })
-  return decodeResponse(SuccessResponseSchema)(res)
+  return decodeResponse(CommitResultSchema)(res)
 }

@@ -10,6 +10,15 @@ export const SWFileSchema = Schema.Struct({
 /** SW file response type. */
 export type SWFile = typeof SWFileSchema.Type
 
+/** Schema for SW commit result (POST/PUT /api/github/file). */
+export const CommitResultSchema = Schema.Struct({
+  content: Schema.Struct({ sha: Schema.String }),
+  commit: Schema.Struct({ sha: Schema.String }),
+})
+
+/** Commit result type. */
+export type CommitResponse = typeof CommitResultSchema.Type
+
 /** Schema for SW /api/github/tree item. */
 export const SWTreeItemSchema = Schema.Struct({
   path: Schema.String,
