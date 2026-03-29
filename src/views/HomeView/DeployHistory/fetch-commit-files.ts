@@ -1,7 +1,7 @@
 import { loadToken } from '@/composables/useAuth/token-storage'
 
 const GH_API = 'https://api.github.com'
-const REPO = 'communist-prometheus/admin-website'
+const REPO = 'communist-prometheus/public-website'
 
 /** A file changed in a commit. */
 export interface CommitFile {
