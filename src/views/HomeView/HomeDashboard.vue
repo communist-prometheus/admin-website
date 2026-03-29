@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import DashboardDescription from '@/components/DashboardDescription/DashboardDescription.vue'
-import DashboardHeading from '@/components/DashboardHeading/DashboardHeading.vue'
-import DashboardSection from '@/components/DashboardSection/DashboardSection.vue'
-import HomeDashboardGrid from './HomeDashboardGrid.vue'
+import { onMounted, ref } from 'vue'
+import type { DeployEntry } from '@/api/deploys/types'
+import DeployList from './DeployHistory/DeployList.vue'
+import { fetchDeploys } from './DeployHistory/fetch-deploys'
 
-defineProps<{
-  readonly showGrid: boolean
-}>()
+const deploys = ref<readonly DeployEntry[]>([])
+const loading = ref(true)
+
+onMounted(async () => {
+  deploys.value = await fetchDeploys()
+  loading.value = false
+})
 </script>
 
 <template>
-  <DashboardSection>
-    <DashboardHeading />
-    <DashboardDescription />
-    <HomeDashboardGrid v-if="showGrid" />
-  </DashboardSection>
+  <DeployList :deploys="deploys" :loading="loading" />
 </template>

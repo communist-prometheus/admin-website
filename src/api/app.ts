@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { deployHandler } from './deploy-handler'
+import { deploysHandler } from './deploys-handler'
 import { tokenHandler } from './token-handler'
 
 /**
@@ -20,3 +21,4 @@ export const api = new Hono<{ Bindings: Env }>()
   .basePath('/api')
   .post('/oauth/token', tokenHandler)
   .get('/deploy', deployHandler)
+  .get('/deploys', deploysHandler)
