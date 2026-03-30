@@ -1,26 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fetchDeploys } from './fetch-deploys'
+
+vi.mock('@/composables/useDeployStatus/commit-builds', () => ({
+  fetchCommitBuilds: vi.fn().mockResolvedValue([
+    { sha: 'a', message: 'test', author: 'u', date: '2026' },
+  ]),
+}))
+
+const { fetchDeploys } = await import('./fetch-deploys')
 
 describe('fetchDeploys', () => {
-  it('returns deploys on success', async () => {
-    const data = [
-      {
-        id: '1',
-        createdOn: '2026-03-29',
-        source: 'wrangler',
-        versionId: 'v1',
-      },
-    ]
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(data),
-    })
-    const result = await fetchDeploys()
-    expect(result).toEqual(data)
-  })
-
-  it('returns empty array on failure', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false })
-    expect(await fetchDeploys()).toEqual([])
+  it('delegates to fetchCommitBuilds', async () => {
+    const r = await fetchDeploys()
+    expect(r).toHaveLength(1)
+    expect(r[0]?.message).toBe('test')
   })
 })

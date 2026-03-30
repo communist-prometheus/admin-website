@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import type { CfDeploy } from '@/api/deploys/types'
+import type { CommitBuild } from '@/composables/useDeployStatus/check-runs'
 import DeployList from './DeployHistory/DeployList.vue'
 import { fetchDeploys } from './DeployHistory/fetch-deploys'
 
-const deploys = ref<readonly CfDeploy[]>([])
+const deploys = ref<readonly CommitBuild[]>([])
 const loading = ref(true)
 
 onMounted(async () => {

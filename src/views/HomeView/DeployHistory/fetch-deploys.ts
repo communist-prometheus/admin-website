@@ -1,11 +1,10 @@
-import type { CfDeploy } from '@/api/deploys/types'
+import type { CommitBuild } from '@/composables/useDeployStatus/check-runs'
+import { fetchCommitBuilds } from '@/composables/useDeployStatus/commit-builds'
+
+export type { CommitBuild }
 
 /**
- * Fetch deployment history from CF API.
- * @returns Array of CF deploy entries
+ * Fetch deployment history via GitHub Check Runs.
+ * @returns Commits with CF build status
  */
-export const fetchDeploys = async (): Promise<readonly CfDeploy[]> => {
-  const r = await fetch('/api/deploys')
-  if (!r.ok) return []
-  return r.json()
-}
+export const fetchDeploys = () => fetchCommitBuilds(15)

@@ -1,39 +1,43 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
+import type { CheckRun } from '@/composables/useDeployStatus/check-runs'
+import { fetchCheckRun } from '@/composables/useDeployStatus/check-runs'
 
 const props = defineProps<{
-  readonly deployDate: string
-  readonly isLatest: boolean
+  readonly sha: string
+  readonly check: CheckRun | undefined
 }>()
 
-const status = ref<'idle' | 'building' | 'done'>('idle')
+const status = ref(props.check?.status ?? 'pending')
+const conclusion = ref(props.check?.conclusion)
 let timer: ReturnType<typeof setInterval> | undefined
 
 const poll = async () => {
-  const r = await fetch('/api/deploy')
-  if (!r.ok) return
-  const d: { createdOn: string } = await r.json()
-  const latestTs = new Date(d.createdOn).getTime()
-  const deployTs = new Date(props.deployDate).getTime()
-  if (latestTs >= deployTs) {
-    status.value = 'done'
-    if (timer) {
-      clearInterval(timer)
-      timer = undefined
-    }
-  } else {
-    status.value = 'building'
+  const run = await fetchCheckRun(props.sha)
+  if (!run) return
+  status.value = run.status
+  conclusion.value = run.conclusion
+  if (run.status === 'completed' && timer) {
+    clearInterval(timer)
+    timer = undefined
   }
 }
 
+const label = () => {
+  if (status.value === 'completed') return conclusion.value ?? 'done'
+  return status.value
+}
+
+const barClass = () => {
+  if (status.value === 'in_progress') return 'building'
+  if (status.value === 'completed') return 'done'
+  return 'waiting'
+}
+
 onMounted(() => {
-  if (!props.isLatest) {
-    status.value = 'done'
-    return
+  if (status.value !== 'completed') {
+    timer = setInterval(poll, 5000)
   }
-  status.value = 'building'
-  poll()
-  timer = setInterval(poll, 5000)
 })
 
 onUnmounted(() => {
@@ -43,8 +47,8 @@ onUnmounted(() => {
 
 <template>
   <aside class="progress-wrap">
-    <span class="label">{{ status }}</span>
-    <span class="bar" :class="status" />
+    <span class="lbl">{{ label() }}</span>
+    <span class="bar" :class="barClass()" />
   </aside>
 </template>
 
@@ -54,15 +58,13 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: 0.25rem;
 }
 
-.label {
+.lbl {
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  min-width: 4rem;
+  min-width: 5rem;
 }
 
 .bar {
@@ -70,7 +72,6 @@ onUnmounted(() => {
   height: 4px;
   border-radius: 2px;
   background: var(--color-border);
-  transition: background 0.3s ease;
 }
 
 .bar.building {
@@ -86,6 +87,10 @@ onUnmounted(() => {
 
 .bar.done {
   background: hsl(140deg 60% 45%);
+}
+
+.bar.waiting {
+  background: hsl(40deg 50% 40%);
 }
 
 @keyframes shimmer {

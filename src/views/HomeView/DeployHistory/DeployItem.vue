@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { CfDeploy } from '@/api/deploys/types'
+import type { CommitBuild } from '@/composables/useDeployStatus/check-runs'
 import DeployDetail from './DeployDetail.vue'
 import DeployItemHeader from './DeployItemHeader.vue'
 import DeployItemMeta from './DeployItemMeta.vue'
 
-defineProps<{
-  readonly deploy: CfDeploy
-  readonly isLatest: boolean
-}>()
+defineProps<{ readonly build: CommitBuild }>()
 
 const expanded = ref(false)
-const toggle = () => { expanded.value = !expanded.value }
+const toggle = () => {
+  expanded.value = !expanded.value
+}
+
+const buildStatus = (b: CommitBuild) => {
+  if (b.check?.status === 'completed') return b.check.conclusion ?? 'success'
+  if (b.check?.status === 'in_progress') return 'building'
+  if (b.check?.status === 'queued') return 'queued'
+  return 'pending'
+}
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -28,17 +34,16 @@ const formatDate = (iso: string) =>
     :class="{ expanded }"
     @click="toggle"
   >
-    <DeployItemHeader :message="deploy.source" />
+    <DeployItemHeader
+      :message="build.message"
+      :status="buildStatus(build)"
+    />
     <DeployItemMeta
-      :author="deploy.versionId.slice(0, 8)"
-      :date="formatDate(deploy.createdOn)"
-      :sha="deploy.id.slice(0, 8)"
+      :author="build.author"
+      :date="formatDate(build.date)"
+      :sha="build.sha.slice(0, 7)"
     />
-    <DeployDetail
-      v-if="expanded"
-      :deploy="deploy"
-      :is-latest="isLatest"
-    />
+    <DeployDetail v-if="expanded" :build="build" />
   </article>
 </template>
 

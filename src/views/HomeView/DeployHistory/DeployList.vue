@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { CfDeploy } from '@/api/deploys/types'
+import type { CommitBuild } from '@/composables/useDeployStatus/check-runs'
 import DeployItem from './DeployItem.vue'
 
 defineProps<{
-  readonly deploys: readonly CfDeploy[]
+  readonly deploys: readonly CommitBuild[]
   readonly loading: boolean
 }>()
 </script>
@@ -16,11 +16,10 @@ defineProps<{
       No deployments found
     </p>
     <DeployItem
-      v-for="(d, i) in deploys"
+      v-for="d in deploys"
       v-else
-      :key="d.id"
-      :deploy="d"
-      :is-latest="i === 0"
+      :key="d.sha"
+      :build="d"
     />
   </section>
 </template>
