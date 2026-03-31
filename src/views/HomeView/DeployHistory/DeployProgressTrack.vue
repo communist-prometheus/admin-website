@@ -26,7 +26,7 @@ const fillStyle = () => {
 
 <style scoped>
 .deploy-track {
-  height: 4px;
+  height: 6px;
   border-radius: 2px;
   background: var(--color-border);
   overflow: hidden;
