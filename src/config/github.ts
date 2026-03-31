@@ -20,5 +20,6 @@ export const getGitHubConfig = (): GitHubRepoConfig => ({
   branch: import.meta.env.VITE_GITHUB_BRANCH ?? 'develop',
   contentPath: import.meta.env.VITE_GITHUB_CONTENT_PATH ?? '',
   corsProxy:
-    import.meta.env.VITE_CORS_PROXY ?? 'https://cors.isomorphic-git.org',
+    import.meta.env.VITE_CORS_PROXY ??
+    `${globalThis.location?.origin ?? ''}/api/cors`,
 })

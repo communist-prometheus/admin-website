@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { corsProxy } from './cors-proxy'
 import { deployHandler } from './deploy-handler'
 import { deploysHandler } from './deploys-handler'
 import { tokenHandler } from './token-handler'
@@ -22,3 +23,4 @@ export const api = new Hono<{ Bindings: Env }>()
   .post('/oauth/token', tokenHandler)
   .get('/deploy', deployHandler)
   .get('/deploys', deploysHandler)
+  .all('/cors/*', corsProxy)
