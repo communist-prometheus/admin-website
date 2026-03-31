@@ -15,10 +15,7 @@ export const pushToRemote = async (config: SWGitConfig): Promise<void> => {
     http,
     dir: REPO_DIR,
     corsProxy: config.corsProxy,
-    onAuth: () => ({
-      username: config.token,
-      password: 'x-oauth-basic',
-    }),
+    onAuth: () => ({ username: config.token }),
   })
   log('info', 'git', 'pushed to remote')
 }
