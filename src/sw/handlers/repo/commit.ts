@@ -10,6 +10,11 @@ export const handleCommit = async (request: Request): Promise<Response> => {
   const { message } = await request.json()
   if (!message) return errorResponse('Message is required', 400)
 
-  const sha = await commitAndPush(message)
-  return jsonResponse({ success: true, sha })
+  try {
+    const sha = await commitAndPush(message)
+    return jsonResponse({ success: true, sha })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return jsonResponse({ success: false, sha: '', error: msg })
+  }
 }
