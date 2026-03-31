@@ -1,18 +1,31 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   readonly status: string
   readonly progress: number
 }>()
+
+const fillStyle = () => {
+  const colors: Record<string, string> = {
+    'in-progress': 'var(--color-primary)',
+    completed: 'hsl(140deg 60% 45%)',
+    queued: 'hsl(40deg 50% 40%)',
+    pending: 'hsl(40deg 50% 40%)',
+  }
+  return {
+    width: `${props.progress}%`,
+    background: colors[props.status] ?? 'var(--color-primary)',
+  }
+}
 </script>
 
 <template>
-  <aside class="track" role="progressbar" :aria-valuenow="progress">
-    <span class="fill" :class="status" :style="{ width: `${progress}%` }" />
+  <aside class="deploy-track" role="progressbar" :aria-valuenow="progress">
+    <span class="deploy-fill" :style="fillStyle()" />
   </aside>
 </template>
 
 <style scoped>
-.track {
+.deploy-track {
   height: 4px;
   border-radius: 2px;
   background: var(--color-border);
@@ -20,24 +33,10 @@ defineProps<{
   margin-bottom: 0.5rem;
 }
 
-.fill {
+.deploy-fill {
   display: block;
   height: 100%;
   border-radius: 2px;
   transition: width 1s linear;
-  background: var(--color-primary);
-}
-
-.fill.in-progress {
-  background: var(--color-primary);
-}
-
-.fill.completed {
-  background: hsl(140deg 60% 45%);
-}
-
-.fill.queued,
-.fill.pending {
-  background: hsl(40deg 50% 40%);
 }
 </style>
