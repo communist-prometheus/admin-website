@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import DeployProgressInfo from './DeployProgressInfo.vue'
+import DeployProgressTrack from './DeployProgressTrack.vue'
+
 defineProps<{
   readonly status: string
   readonly conclusion: string | undefined

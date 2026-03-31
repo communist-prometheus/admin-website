@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import type { CheckRun } from '@/composables/useDeployStatus/check-runs'
 import { fetchCheckRun } from '@/composables/useDeployStatus/check-runs'
 import { calcProgress, formatElapsed } from './build-progress'
+import DeployProgressBar from './DeployProgressBar.vue'
 
 const props = defineProps<{
   readonly sha: string
