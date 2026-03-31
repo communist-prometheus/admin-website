@@ -24,10 +24,13 @@ export const fetchCommitBuilds = async (
     `/repos/${REPO}/commits?sha=master&per_page=${count}`
   )
   if (!Array.isArray(data)) return []
-  const checks: readonly (CheckRun | undefined)[] = await Promise.all(
-    data.map(c => fetchCheckRun(c.sha))
+  const real = data.filter(
+    c => !c.commit.message.startsWith("Squashed 'src/content/'")
   )
-  return data.map((c, i) => ({
+  const checks: readonly (CheckRun | undefined)[] = await Promise.all(
+    real.map(c => fetchCheckRun(c.sha))
+  )
+  return real.map((c, i) => ({
     sha: c.sha,
     message: c.commit.message.split('\n')[0] ?? '',
     author: c.commit.author.name,
