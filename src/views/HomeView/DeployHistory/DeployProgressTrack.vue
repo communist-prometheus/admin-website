@@ -25,6 +25,7 @@ defineProps<{
   height: 100%;
   border-radius: 2px;
   transition: width 1s linear;
+  background: var(--color-primary);
 }
 
 .fill.in-progress {
