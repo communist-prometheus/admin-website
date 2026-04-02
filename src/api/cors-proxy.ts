@@ -30,10 +30,14 @@ export const corsProxy = async (c: Context): Promise<Response> => {
     : `https://${path}`
   const headers = new Headers(c.req.raw.headers)
   headers.delete('host')
+  const body =
+    c.req.method === 'GET' || c.req.method === 'HEAD'
+      ? undefined
+      : await c.req.arrayBuffer()
   const resp = await fetch(target, {
     method: c.req.method,
     headers,
-    body: c.req.raw.body,
+    body,
   })
   return addCors(resp, origin)
 }
