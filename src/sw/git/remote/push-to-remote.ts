@@ -1,24 +1,29 @@
 import { log } from '../../logging/logger'
 import type { SWGitConfig } from '../../protocol'
-import { fs, REPO_DIR } from '../fs'
 import { loadGit } from '../load-git'
+import { buildAuthOpts } from './build-auth-opts'
 
 /**
- * Push local commits to the remote GitHub repository.
+ * Pull latest then push local commits to remote.
+ * Throws on push rejection.
  * @param config - SW git configuration with token
  */
 export const pushToRemote = async (config: SWGitConfig): Promise<void> => {
   const git = await loadGit()
   const { default: http } = await import('isomorphic-git/http/web')
-  await git.push({
-    fs,
-    http,
-    dir: REPO_DIR,
-    corsProxy: config.corsProxy,
-    onAuth: () => ({
-      username: config.token,
-      password: 'x-oauth-basic',
-    }),
-  })
+  const opts = buildAuthOpts(config, http)
+  await git
+    .pull({
+      ...opts,
+      ref: config.branch,
+      singleBranch: true,
+      author: {
+        name: config.authorName ?? 'Admin',
+        email: config.authorEmail ?? 'admin@prometheus.org',
+      },
+    })
+    .catch(() => log('warn', 'git', 'pull before push failed'))
+  const result = await git.push(opts)
+  if (result.error) throw new Error(`Push rejected: ${result.error}`)
   log('info', 'git', 'pushed to remote')
 }
