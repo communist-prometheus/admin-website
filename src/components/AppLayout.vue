@@ -12,6 +12,7 @@ import MobileMenu from './MobileMenu/MobileMenu.vue'
 const slots = useSlots()
 const idle: DeployInfo = { stage: 'idle' }
 const info = inject(DEPLOY_INFO_KEY, ref(idle))
+const hash = __COMMIT_HASH__
 </script>
 
 <template>
@@ -26,7 +27,7 @@ const info = inject(DEPLOY_INFO_KEY, ref(idle))
   <AppFooter>
     <slot v-if="slots.footer" name="footer" />
     <span v-else>
-      © {{ new Date().getFullYear() }} Admin Panel. All rights reserved.
+      © {{ new Date().getFullYear() }} Admin Panel · {{ hash }}
     </span>
   </AppFooter>
 
