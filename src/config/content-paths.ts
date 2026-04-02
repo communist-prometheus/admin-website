@@ -43,7 +43,7 @@ export const nestedFile = (
   type: string,
   slug: string,
   lang: string
-): string => join(root(), type, slug, `index.${lang}.md`)
+): string => join(root(), type, slug, `index.${lang || 'en'}.md`)
 
 /**
  * Path to a flat content file (nav).
