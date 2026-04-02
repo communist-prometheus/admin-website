@@ -9,6 +9,13 @@ export interface CheckRun {
   readonly conclusion: string | undefined
   readonly started_at: string | undefined
   readonly completed_at: string | undefined
+  readonly details_url: string | undefined
+  readonly output:
+    | {
+        readonly title: string | undefined
+        readonly summary: string | undefined
+      }
+    | undefined
 }
 
 /** Commit with its build check run. */

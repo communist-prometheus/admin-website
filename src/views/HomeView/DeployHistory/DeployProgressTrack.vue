@@ -1,20 +1,18 @@
 <script setup lang="ts">
 const props = defineProps<{
   readonly status: string
+  readonly conclusion: string | undefined
   readonly progress: number
 }>()
 
 const fillStyle = () => {
-  const colors: Record<string, string> = {
-    'in-progress': 'var(--color-primary)',
-    completed: 'hsl(140deg 60% 45%)',
-    queued: 'hsl(40deg 50% 40%)',
-    pending: 'hsl(40deg 50% 40%)',
-  }
-  return {
-    width: `${props.progress}%`,
-    background: colors[props.status] ?? 'var(--color-primary)',
-  }
+  const bg =
+    props.status === 'completed'
+      ? props.conclusion === 'success'
+        ? 'hsl(140deg 60% 45%)'
+        : 'hsl(0deg 60% 50%)'
+      : 'var(--color-primary)'
+  return { width: `${props.progress}%`, background: bg }
 }
 </script>
 

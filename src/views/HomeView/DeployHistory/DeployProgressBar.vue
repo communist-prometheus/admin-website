@@ -18,5 +18,5 @@ const label = (s: string, c: string | undefined) =>
     :label="label(status, conclusion)"
     :elapsed="elapsed"
   />
-  <DeployProgressTrack :status="status" :progress="progress" />
+  <DeployProgressTrack :status="status" :conclusion="conclusion" :progress="progress" />
 </template>

@@ -16,9 +16,7 @@ describe('useContentCreator', () => {
 
   it('creates blog content with frontmatter', async () => {
     mockCreate.mockResolvedValueOnce({ success: true })
-
     const { createContent } = useContentCreator('blog')
-
     await createContent({
       slug: 'test-post',
       lang: 'en',
@@ -26,37 +24,31 @@ describe('useContentCreator', () => {
       description: 'Test description',
       category: 'tech',
     })
-
     expect(mockCreate).toHaveBeenCalledWith(
       'blog/test-post/index.en.md',
       expect.stringContaining('title: Test Post'),
-      'Create index.en.md'
+      'Create test-post in blog'
     )
   })
 
   it('creates pages content without description', async () => {
     mockCreate.mockResolvedValueOnce({ success: true })
-
     const { createContent } = useContentCreator('pages')
-
     await createContent({
       slug: 'about',
       lang: 'ru',
       title: 'О нас',
     })
-
     expect(mockCreate).toHaveBeenCalledWith(
       'pages/about/index.ru.md',
       expect.stringContaining('title: О нас'),
-      'Create index.ru.md'
+      'Create about in pages'
     )
   })
 
   it('creates positions content with order', async () => {
     mockCreate.mockResolvedValueOnce({ success: true })
-
     const { createContent } = useContentCreator('positions')
-
     await createContent({
       slug: 'developer',
       lang: 'en',
@@ -64,11 +56,10 @@ describe('useContentCreator', () => {
       description: 'Full-time position',
       order: 1,
     })
-
     expect(mockCreate).toHaveBeenCalledWith(
       'positions/developer/index.en.md',
       expect.stringContaining('order: 1'),
-      'Create index.en.md'
+      'Create developer in positions'
     )
   })
 })

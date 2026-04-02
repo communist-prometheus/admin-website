@@ -24,10 +24,9 @@ export const useContentCreator = (
   ) => {
     const type = getContentType()
     const filePath = contentFile(type, data.slug, data.lang)
-    const fileName = filePath.split('/').pop() ?? ''
     const fm = buildFrontmatter(type, data)
     const content = stringifyFrontmatter(fm, initialContent)
-    await create(filePath, content, `Create ${fileName}`)
+    await create(filePath, content, `Create ${data.slug} in ${type}`)
   }
 
   return { createContent }
