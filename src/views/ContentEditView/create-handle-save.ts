@@ -1,5 +1,6 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { TrackDeploy } from '@/composables/useDeployStatus/deploy-context'
+import { setPendingDeploy } from '@/composables/useDeployStatus/pending-deploy'
 import type { Language } from '@/types/content'
 
 interface HandleSaveDeps {
@@ -29,6 +30,7 @@ export const createHandleSave = (deps: HandleSaveDeps) => async () => {
     const path = deps.buildPath(deps.currentLang.value)
     await deps.saveCurrentLanguage(path, message)
   }
+  setPendingDeploy(message)
   deps.track?.()
   await deps.reloadContent()
 }

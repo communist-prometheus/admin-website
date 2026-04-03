@@ -10,6 +10,8 @@ defineProps<{
   readonly frontmatterData: Record<string, unknown>
   readonly contentType: ContentType
   readonly slug?: string
+  readonly saving: boolean
+  readonly saved: boolean
   readonly assetUrlMap?: ReadonlyMap<string, string>
   readonly assets?: readonly AssetDisplay[]
 }>()
@@ -41,6 +43,8 @@ defineEmits<{
   />
   <EditorFooter
     :disabled="false"
+    :saving="saving"
+    :saved="saved"
     @save="$emit('save')"
   />
 </template>

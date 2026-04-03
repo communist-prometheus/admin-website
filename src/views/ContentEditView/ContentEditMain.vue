@@ -9,6 +9,8 @@ defineProps<{
   readonly contentType: ContentType
   readonly slug?: string
   readonly loadingFile: boolean
+  readonly saving: boolean
+  readonly saved: boolean
   readonly assetUrlMap?: ReadonlyMap<string, string>
   readonly assets?: readonly AssetDisplay[]
 }>()
@@ -35,6 +37,8 @@ defineEmits<{
       :slug="slug"
       :asset-url-map="assetUrlMap"
       :assets="assets"
+      :saving="saving"
+      :saved="saved"
       @update:body-content="$emit('update:bodyContent', $event)"
       @update:frontmatter="$emit('update:frontmatter', $event)"
       @save="$emit('save')"

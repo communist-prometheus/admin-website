@@ -18,7 +18,7 @@ const props = defineProps<{
 }>()
 
 const p = useEditPage(props.type, props.slug)
-const { handleSave } = initEditPage(p)
+const { handleSave, saving, saved } = initEditPage(p)
 const updateBody = (v: string) => { p.editor.bodyContent.value = v }
 const updateFm = (d: Record<string, unknown>) => {
   p.editor.frontmatterData.value = d
@@ -66,6 +66,8 @@ const isRenameable =
       :content-type="p.contentType.value"
       :slug="p.slug"
       :loading-file="p.editor.loadingFile.value"
+      :saving="saving"
+      :saved="saved"
       :asset-url-map="p.hasAssets.value ? p.assets.urlMap.value : undefined"
       :assets="p.hasAssets.value ? p.assets.allAssets.value : undefined"
       @update:body-content="updateBody"
