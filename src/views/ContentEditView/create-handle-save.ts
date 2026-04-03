@@ -1,11 +1,14 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { TrackDeploy } from '@/composables/useDeployStatus/deploy-context'
-import { setPendingDeploy } from '@/composables/useDeployStatus/pending-deploy'
+import {
+  pendingDeploy,
+  setPendingDeploy,
+} from '@/composables/useDeployStatus/pending-deploy'
 import type { Language } from '@/types/content'
 
 interface HandleSaveDeps {
   readonly hasAssets: ComputedRef<boolean>
-  readonly blogSave: (message: string) => Promise<void>
+  readonly blogSave: (message: string) => Promise<string>
   readonly buildPath: (lang: Language) => string
   readonly currentLang: Ref<Language>
   readonly saveCurrentLanguage: (
@@ -25,12 +28,15 @@ interface HandleSaveDeps {
  */
 export const createHandleSave = (deps: HandleSaveDeps) => async () => {
   const message = `updated ${deps.title.value} in ${deps.contentTypeName.value}`
-  if (deps.hasAssets.value) await deps.blogSave(message)
-  else {
+  setPendingDeploy(message)
+  if (deps.hasAssets.value) {
+    const sha = await deps.blogSave(message)
+    if (pendingDeploy.value)
+      pendingDeploy.value = { ...pendingDeploy.value, sha }
+  } else {
     const path = deps.buildPath(deps.currentLang.value)
     await deps.saveCurrentLanguage(path, message)
   }
-  setPendingDeploy(message)
   deps.track?.()
   await deps.reloadContent()
 }

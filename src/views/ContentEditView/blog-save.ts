@@ -21,13 +21,13 @@ interface AssetSaveDeps {
  */
 export const createBlogSave =
   (deps: AssetSaveDeps) =>
-  async (message: string): Promise<void> => {
+  async (message: string): Promise<string> => {
     const fm = { ...deps.frontmatter() }
     const cover = deps.assets.coverPath.value
     if (cover) fm.image = cover
     else delete fm.image
     const content = stringifyFrontmatter(fm, deps.body())
-    await transactionalSave({
+    const sha = await transactionalSave({
       type: deps.type,
       slug: deps.slug,
       articlePath: deps.buildPath(),
@@ -39,4 +39,5 @@ export const createBlogSave =
     deps.markSaved()
     deps.assets.resetPending()
     await deps.assets.loadAssets()
+    return sha
   }
