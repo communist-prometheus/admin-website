@@ -4,31 +4,29 @@ import type { CommitBuild } from '@/composables/useDeployStatus/check-runs'
 import { pendingDeploy } from '@/composables/useDeployStatus/pending-deploy'
 import DeployList from './DeployHistory/DeployList.vue'
 import { fetchDeploys } from './DeployHistory/fetch-deploys'
+import { isPendingReplaced } from './DeployHistory/pending-match'
 
 const fetched = ref<readonly CommitBuild[]>([])
 const loading = ref(true)
 let timer: ReturnType<typeof setInterval> | undefined
 
-const pendingMatched = () => {
-  const p = pendingDeploy.value
-  if (!p) return true
-  return fetched.value.some(d => d.message === p.message)
-}
+const pendingReplaced = () =>
+  isPendingReplaced(pendingDeploy.value, fetched.value)
 
 const deploys = computed(() => {
   const p = pendingDeploy.value
-  if (!p || pendingMatched()) return fetched.value
+  if (!p || pendingReplaced()) return fetched.value
   return [p, ...fetched.value]
 })
 
 const needsPoll = () =>
-  !pendingMatched() ||
+  !pendingReplaced() ||
   fetched.value.some(d => d.check?.status !== 'completed')
 
 const load = async () => {
   fetched.value = await fetchDeploys()
   loading.value = false
-  if (pendingMatched()) pendingDeploy.value = undefined
+  if (pendingReplaced()) pendingDeploy.value = undefined
   if (needsPoll() && !timer) timer = setInterval(load, 8000)
   if (!needsPoll() && timer) {
     clearInterval(timer)
@@ -37,7 +35,9 @@ const load = async () => {
 }
 
 onMounted(load)
-onUnmounted(() => { if (timer) clearInterval(timer) })
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+})
 </script>
 
 <template>
