@@ -204,8 +204,7 @@ test.describe('Deploy Detail Page', () => {
     if ((await file.count()) > 0) {
       await file.click()
       const patch = page.locator('.patch')
-      if ((await patch.count()) > 0)
-        await expect(patch.first()).toBeVisible()
+      if ((await patch.count()) > 0) await expect(patch.first()).toBeVisible()
     }
   })
 
