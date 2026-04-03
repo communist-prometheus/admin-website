@@ -35,8 +35,8 @@ test.describe('Save & Deploy Flow', () => {
     await waitForContentReady(page)
 
     const saveBtn = page.getByTestId('save-button')
-    const commitPromise = page.waitForResponse(
-      r => r.url().includes('/api/github/commit')
+    const commitPromise = page.waitForResponse(r =>
+      r.url().includes('/api/github/commit')
     )
     await saveBtn.click()
     const commitResponse = await commitPromise

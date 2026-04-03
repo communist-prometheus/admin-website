@@ -25,6 +25,7 @@ const formatDate = (iso: string) =>
 
 <template>
   <RouterLink
+    v-if="build.sha"
     :to="{ name: 'deploy-detail', params: { sha: build.sha } }"
     class="deploy-item"
   >
@@ -38,6 +39,17 @@ const formatDate = (iso: string) =>
       :sha="build.sha.slice(0, 7)"
     />
   </RouterLink>
+  <article v-else class="deploy-item pending-card">
+    <DeployItemHeader
+      :message="build.message"
+      :status="'pending'"
+    />
+    <DeployItemMeta
+      :author="build.author"
+      :date="formatDate(build.date)"
+      sha="..."
+    />
+  </article>
 </template>
 
 <style scoped>
@@ -54,5 +66,10 @@ const formatDate = (iso: string) =>
 
 .deploy-item:hover {
   border-color: var(--color-text-secondary);
+}
+
+.pending-card {
+  border-color: var(--color-primary);
+  opacity: 80%;
 }
 </style>
