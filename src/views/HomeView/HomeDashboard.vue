@@ -8,25 +8,25 @@ import { isPendingReplaced } from './DeployHistory/pending-match'
 
 const fetched = ref<readonly CommitBuild[]>([])
 const loading = ref(true)
+const countAtPending = ref(0)
 let timer: ReturnType<typeof setInterval> | undefined
 
-const pendingReplaced = () =>
-  isPendingReplaced(pendingDeploy.value, fetched.value)
+const replaced = () =>
+  isPendingReplaced(pendingDeploy.value, fetched.value, countAtPending.value)
 
 const deploys = computed(() => {
   const p = pendingDeploy.value
-  if (!p || pendingReplaced()) return fetched.value
+  if (!p || replaced()) return fetched.value
   return [p, ...fetched.value]
 })
 
 const needsPoll = () =>
-  !pendingReplaced() ||
-  fetched.value.some(d => d.check?.status !== 'completed')
+  !replaced() || fetched.value.some(d => d.check?.status !== 'completed')
 
 const load = async () => {
   fetched.value = await fetchDeploys()
   loading.value = false
-  if (pendingReplaced()) pendingDeploy.value = undefined
+  if (replaced()) pendingDeploy.value = undefined
   if (needsPoll() && !timer) timer = setInterval(load, 8000)
   if (!needsPoll() && timer) {
     clearInterval(timer)
@@ -34,7 +34,10 @@ const load = async () => {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  countAtPending.value = fetched.value.length
+  load()
+})
 onUnmounted(() => {
   if (timer) clearInterval(timer)
 })
