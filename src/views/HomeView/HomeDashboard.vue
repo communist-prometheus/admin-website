@@ -9,32 +9,34 @@ const fetched = ref<readonly CommitBuild[]>([])
 const loading = ref(true)
 let timer: ReturnType<typeof setInterval> | undefined
 
+const pendingMatched = () => {
+  const p = pendingDeploy.value
+  if (!p) return true
+  return fetched.value.some(d => d.message === p.message)
+}
+
 const deploys = computed(() => {
   const p = pendingDeploy.value
-  if (!p) return fetched.value
-  const exists = fetched.value.some(d => d.message === p.message)
-  return exists ? fetched.value : [p, ...fetched.value]
+  if (!p || pendingMatched()) return fetched.value
+  return [p, ...fetched.value]
 })
 
-const hasActive = (ds: readonly CommitBuild[]) =>
-  ds.some(d => d.check?.status !== 'completed')
+const needsPoll = () =>
+  !pendingMatched() ||
+  fetched.value.some(d => d.check?.status !== 'completed')
 
 const load = async () => {
   fetched.value = await fetchDeploys()
   loading.value = false
-  if (pendingDeploy.value) pendingDeploy.value = undefined
-  if ((hasActive(fetched.value) || pendingDeploy.value) && !timer)
-    timer = setInterval(load, 8000)
-  if (!hasActive(fetched.value) && !pendingDeploy.value && timer) {
+  if (pendingMatched()) pendingDeploy.value = undefined
+  if (needsPoll() && !timer) timer = setInterval(load, 8000)
+  if (!needsPoll() && timer) {
     clearInterval(timer)
     timer = undefined
   }
 }
 
-onMounted(() => {
-  load()
-  if (pendingDeploy.value) timer = setInterval(load, 8000)
-})
+onMounted(load)
 onUnmounted(() => { if (timer) clearInterval(timer) })
 </script>
 
