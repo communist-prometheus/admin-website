@@ -134,7 +134,7 @@ test.describe('Home Deploy List', () => {
     }
   })
 
-  test('pending card shows PENDING badge', async ({ page }) => {
+  test('pending card shows DEPLOYING badge', async ({ page }) => {
     await openFirstArticle(page)
     await page.getByTestId('save-button').click()
     await expect(page.getByTestId('save-button')).toContainText('Saved', {
@@ -143,7 +143,7 @@ test.describe('Home Deploy List', () => {
     await page.goto('/')
     const pending = page.locator('.pending-card')
     if ((await pending.count()) > 0) {
-      await expect(pending.locator('.badge')).toContainText('pending', {
+      await expect(pending.locator('.badge')).toContainText('deploying', {
         ignoreCase: true,
       })
     }

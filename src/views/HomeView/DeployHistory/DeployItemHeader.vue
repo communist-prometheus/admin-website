@@ -61,4 +61,9 @@ defineProps<{
   color: var(--color-text-secondary);
   background: var(--color-surface);
 }
+
+.badge.deploying {
+  color: var(--color-primary);
+  background: hsl(14deg 40% 15%);
+}
 </style>

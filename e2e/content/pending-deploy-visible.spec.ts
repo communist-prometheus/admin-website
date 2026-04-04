@@ -39,8 +39,8 @@ test.describe('Pending deploy appears on home after save', () => {
     const pending = page.locator('.pending-card')
     await expect(pending).toBeVisible({ timeout: 5000 })
 
-    // 9. Pending card must have PENDING badge
-    await expect(pending.locator('.badge')).toContainText('pending', {
+    // 9. Pending card must have DEPLOYING badge
+    await expect(pending.locator('.badge')).toContainText('deploying', {
       ignoreCase: true,
     })
   })

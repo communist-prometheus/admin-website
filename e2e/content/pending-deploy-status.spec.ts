@@ -21,7 +21,7 @@ test.describe('Pending deploy status transitions', () => {
 
     const pending = page.locator('.pending-card')
     await expect(pending).toBeVisible({ timeout: 5000 })
-    await expect(pending.locator('.badge')).toContainText('pending', {
+    await expect(pending.locator('.badge')).toContainText('deploying', {
       ignoreCase: true,
     })
   })
@@ -48,12 +48,10 @@ test.describe('Pending deploy status transitions', () => {
     const pending = page.locator('.pending-card')
     await expect(pending).toBeVisible({ timeout: 5000 })
 
-    // After 10 seconds, pending should show BUILDING
-    // (time-based, not API-based)
-    await expect(pending.locator('.badge')).toContainText(
-      /building|pending/i,
-      { timeout: 15000 }
-    )
+    // Pending card should show DEPLOYING status
+    await expect(pending.locator('.badge')).toContainText('deploying', {
+      ignoreCase: true,
+    })
   })
 
   test('real deploy card replaces pending when commit appears', async ({
