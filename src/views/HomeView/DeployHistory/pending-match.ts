@@ -18,7 +18,7 @@ export const isPendingReplaced = (
   initialCount: number
 ): boolean => {
   if (!pending) return true
-  if (fetched.length > initialCount) return true
+  if (initialCount >= 0 && fetched.length > initialCount) return true
   const age = Date.now() - new Date(pending.date).getTime()
   return age > MAX_PENDING_MS
 }
