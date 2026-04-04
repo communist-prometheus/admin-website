@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { CommitBuild } from '@/composables/useDeployStatus/check-runs'
 import DeployItemHeader from './DeployItemHeader.vue'
 import DeployItemMeta from './DeployItemMeta.vue'
 
-defineProps<{ readonly build: CommitBuild }>()
+const props = defineProps<{ readonly build: CommitBuild }>()
 
 const buildStatus = (b: CommitBuild) => {
   if (b.check?.status === 'completed')
@@ -13,6 +14,21 @@ const buildStatus = (b: CommitBuild) => {
   if (b.check?.status === 'queued') return 'queued'
   return 'pending'
 }
+
+const pendingPhase = ref<'pending' | 'building'>('pending')
+let phaseTimer: ReturnType<typeof setTimeout> | undefined
+
+onMounted(() => {
+  if (!props.build.sha) {
+    phaseTimer = setTimeout(() => {
+      pendingPhase.value = 'building'
+    }, 5000)
+  }
+})
+
+onUnmounted(() => {
+  if (phaseTimer) clearTimeout(phaseTimer)
+})
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -42,7 +58,7 @@ const formatDate = (iso: string) =>
   <article v-else class="deploy-item pending-card">
     <DeployItemHeader
       :message="build.message"
-      :status="'pending'"
+      :status="pendingPhase"
     />
     <DeployItemMeta
       :author="build.author"

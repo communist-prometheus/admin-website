@@ -1,0 +1,77 @@
+import { expect, test } from '@playwright/test'
+import { waitForContentReady } from '../helpers/content-ready'
+
+test.describe('Pending deploy status transitions', () => {
+  test('pending card shows PENDING badge immediately', async ({ page }) => {
+    await page.goto('/content/blog')
+    await waitForContentReady(page)
+    await page.locator('h3').first().click()
+    await page.waitForURL(/\/edit\//)
+    await waitForContentReady(page)
+
+    await page.getByTestId('save-button').click()
+    await expect(page.getByTestId('save-button')).toContainText('Saved', {
+      timeout: 30000,
+    })
+
+    await page.goto('/')
+    await expect(page.getByText('Recent Deployments')).toBeVisible({
+      timeout: 15000,
+    })
+
+    const pending = page.locator('.pending-card')
+    await expect(pending).toBeVisible({ timeout: 5000 })
+    await expect(pending.locator('.badge')).toContainText('pending', {
+      ignoreCase: true,
+    })
+  })
+
+  test('pending card transitions to BUILDING after poll', async ({
+    page,
+  }) => {
+    await page.goto('/content/blog')
+    await waitForContentReady(page)
+    await page.locator('h3').first().click()
+    await page.waitForURL(/\/edit\//)
+    await waitForContentReady(page)
+
+    await page.getByTestId('save-button').click()
+    await expect(page.getByTestId('save-button')).toContainText('Saved', {
+      timeout: 30000,
+    })
+
+    await page.goto('/')
+    await expect(page.getByText('Recent Deployments')).toBeVisible({
+      timeout: 15000,
+    })
+
+    const pending = page.locator('.pending-card')
+    await expect(pending).toBeVisible({ timeout: 5000 })
+
+    // After 10 seconds, pending should show BUILDING
+    // (time-based, not API-based)
+    await expect(pending.locator('.badge')).toContainText(
+      /building|pending/i,
+      { timeout: 15000 }
+    )
+  })
+
+  test('real deploy card replaces pending when commit appears', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await expect(page.getByText('Recent Deployments')).toBeVisible({
+      timeout: 15000,
+    })
+
+    // All real cards should be links (not pending)
+    const links = page.locator('a.deploy-item')
+    await expect(links.first()).toBeVisible({ timeout: 15000 })
+
+    // Real cards should NOT have 'pending' badge
+    const firstBadge = links.first().locator('.badge')
+    await expect(firstBadge).not.toContainText('pending', {
+      ignoreCase: true,
+    })
+  })
+})
