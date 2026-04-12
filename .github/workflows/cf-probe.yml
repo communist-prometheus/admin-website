@@ -45,6 +45,23 @@ jobs:
           curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/domains" \
             | jq '[.result[] | select(.service == "public-website") | {hostname, zone_name, environment}]'
+      - name: List all Workers Routes (bind patterns)
+        run: |
+          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones?per_page=50" \
+            | jq '[.result[] | {id, name}]' > /tmp/zones.json
+          cat /tmp/zones.json
+          for zid in $(jq -r '.[].id' /tmp/zones.json); do
+            echo "--- zone $zid ---"
+            curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/zones/$zid/workers/routes" \
+              | jq '.result'
+          done
+      - name: List CF Pages projects
+        run: |
+          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects" \
+            | jq '[.result[]? | {name, subdomain, domains, latest_deployment: .latest_deployment.url}]'
       - name: HTTP probe admin prod
         run: |
           curl -sS -o /dev/null -w "status=%{http_code} ttfb=%{time_starttransfer}s\n" \
