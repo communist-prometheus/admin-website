@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
-import type { CommitBuild } from '@/composables/useDeployStatus/check-runs'
+import type { DeployBuild } from '@/composables/useDeployStatus/workflow-types'
 import DeployItemHeader from './DeployItemHeader.vue'
 import DeployItemMeta from './DeployItemMeta.vue'
+import DeploySteps from './DeploySteps.vue'
 
-defineProps<{ readonly build: CommitBuild }>()
+defineProps<{ readonly build: DeployBuild }>()
 
-const buildStatus = (b: CommitBuild) => {
-  if (b.check?.status === 'completed')
-    return b.check.conclusion ?? 'success'
-  if (b.check?.status === 'in_progress') return 'building'
-  if (b.check?.status === 'queued') return 'queued'
-  return 'pending'
+const status = (b: DeployBuild) => {
+  if (b.run.status === 'completed')
+    return b.run.conclusion === 'success' ? 'success' : (b.run.conclusion ?? 'failure')
+  if (b.run.status === 'in_progress') return 'building'
+  return 'queued'
 }
 
 const formatDate = (iso: string) =>
@@ -21,33 +20,27 @@ const formatDate = (iso: string) =>
     hour: '2-digit',
     minute: '2-digit',
   })
+
+const firstJob = (b: DeployBuild) => b.jobs[0]
 </script>
 
 <template>
-  <RouterLink
-    v-if="build.sha"
-    :to="{ name: 'deploy-detail', params: { sha: build.sha } }"
+  <article
     class="deploy-item"
+    :class="{ active: build.run.status !== 'completed' }"
   >
     <DeployItemHeader
-      :message="build.message"
-      :status="buildStatus(build)"
+      :message="build.run.head_commit?.message?.split('\n')[0] ?? ''"
+      :status="status(build)"
     />
     <DeployItemMeta
-      :author="build.author"
-      :date="formatDate(build.date)"
-      :sha="build.sha.slice(0, 7)"
+      :author="build.run.head_commit?.author?.name ?? ''"
+      :date="formatDate(build.run.created_at)"
+      :sha="build.run.head_sha.slice(0, 7)"
     />
-  </RouterLink>
-  <article v-else class="deploy-item pending-card">
-    <DeployItemHeader
-      :message="build.message"
-      status="deploying"
-    />
-    <DeployItemMeta
-      :author="build.author"
-      :date="formatDate(build.date)"
-      sha="..."
+    <DeploySteps
+      v-if="firstJob(build)?.steps?.length"
+      :steps="firstJob(build)?.steps ?? []"
     />
   </article>
 </template>
@@ -59,17 +52,10 @@ const formatDate = (iso: string) =>
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  text-decoration: none;
-  color: inherit;
   transition: border-color var(--transition-fast);
 }
 
-.deploy-item:hover {
-  border-color: var(--color-text-secondary);
-}
-
-.pending-card {
+.deploy-item.active {
   border-color: var(--color-primary);
-  opacity: 80%;
 }
 </style>

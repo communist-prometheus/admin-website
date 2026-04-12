@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { CommitBuild } from '@/composables/useDeployStatus/check-runs'
+import type { DeployBuild } from '@/composables/useDeployStatus/workflow-types'
 import DeployItem from './DeployItem.vue'
 
 defineProps<{
-  readonly deploys: readonly CommitBuild[]
+  readonly deploys: ReadonlyArray<DeployBuild>
   readonly loading: boolean
 }>()
 </script>
@@ -18,7 +18,7 @@ defineProps<{
     <DeployItem
       v-for="d in deploys"
       v-else
-      :key="d.sha"
+      :key="d.run.id"
       :build="d"
     />
   </section>

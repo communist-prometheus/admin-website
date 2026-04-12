@@ -12,6 +12,7 @@ export const ghFetch = async <T>(path: string): Promise<T | undefined> => {
   if (!token) return undefined
   const r = await fetch(`${GH}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
   })
   return r.ok ? r.json() : undefined
 }
