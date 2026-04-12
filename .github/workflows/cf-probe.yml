@@ -1,0 +1,54 @@
+name: Cloudflare probe
+
+on:
+  workflow_dispatch: {}
+
+# Fetches Worker deployment status + recent tail events for both admin and
+# public sites so we can observe prod state without shell access. Intended
+# to be a manual triage tool — run it when something is off in production
+# and look at the run logs.
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Verify Cloudflare token
+        run: |
+          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
+            https://api.cloudflare.com/client/v4/user/tokens/verify \
+            | jq .
+      - name: List recent admin-website deployments
+        run: |
+          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/admin-website/deployments" \
+            | jq '.result.deployments[0:5]'
+      - name: List recent public-website deployments
+        run: |
+          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/public-website/deployments" \
+            | jq '.result.deployments[0:5]'
+      - name: Fetch admin-website Worker metadata
+        run: |
+          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/admin-website" \
+            | jq '{modified: .result.modified_on, created: .result.created_on, version: .result.version_id}'
+      - name: Fetch public-website Worker metadata
+        run: |
+          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/public-website" \
+            | jq '{modified: .result.modified_on, created: .result.created_on, version: .result.version_id}'
+      - name: HTTP probe admin prod
+        run: |
+          curl -sS -o /dev/null -w "status=%{http_code} ttfb=%{time_starttransfer}s\n" \
+            https://admin-website.igor-ganov.workers.dev
+      - name: HTTP probe public-website prod (homepage EN)
+        run: |
+          curl -sS -o /dev/null -w "status=%{http_code} ttfb=%{time_starttransfer}s\n" \
+            https://public-website.igor-ganov.workers.dev/en
+      - name: HTTP probe Test Article 47 detail
+        run: |
+          curl -sS -o /dev/null -w "status=%{http_code} ttfb=%{time_starttransfer}s\n" \
+            https://public-website.igor-ganov.workers.dev/en/blog/test-article
