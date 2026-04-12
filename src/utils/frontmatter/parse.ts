@@ -30,15 +30,18 @@ const parseFrontmatterLines = (text: string): Record<string, unknown> => {
 }
 
 /**
- * Parse frontmatter from markdown content
+ * Parse frontmatter from markdown content.
+ * Normalizes CRLF/CR line endings to LF before matching so files authored
+ * on Windows or round-tripped through CRLF-normalizing tooling parse correctly.
  * @param markdown - Markdown content with frontmatter
  * @returns Parsed content with frontmatter and body
  */
 export const parseFrontmatter = (markdown: string): ParsedContent => {
-  const match = markdown.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
+  const normalized = markdown.replace(/\r\n?/g, '\n')
+  const match = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
 
   if (!match) {
-    return { frontmatter: {}, content: markdown }
+    return { frontmatter: {}, content: normalized }
   }
 
   const [, frontmatterText = '', content = ''] = match

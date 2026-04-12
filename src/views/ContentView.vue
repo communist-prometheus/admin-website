@@ -24,12 +24,17 @@ onMounted(() => labelsStore.ensureLoaded())
 const handleSelect = createSelectHandler(router, typeRef)
 const del = createDeleteState(typeRef, selectedLang, reloadContent)
 const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
-  await createContent(data)
-  showCreateDialog.value = false
-  router.push({
-    name: 'content-edit',
-    params: { type: props.contentType, slug: data.slug },
-  })
+  try {
+    error.value = null
+    await createContent(data)
+    showCreateDialog.value = false
+    router.push({
+      name: 'content-edit',
+      params: { type: props.contentType, slug: data.slug },
+    })
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to create content'
+  }
 }
 </script>
 

@@ -67,4 +67,25 @@ Content`
     expect(result.frontmatter).toEqual({})
     expect(result.content).toBe('Just plain content')
   })
+
+  it('parses CRLF line endings', () => {
+    const markdown =
+      '---\r\ntitle: Windows File\r\ncategory: test\r\n---\r\n\r\nBody line'
+
+    const result = parseFrontmatter(markdown)
+
+    expect(result.frontmatter.title).toBe('Windows File')
+    expect(result.frontmatter.category).toBe('test')
+    expect(result.content).toBe('Body line')
+  })
+
+  it('parses frontmatter when file has no trailing newline', () => {
+    const markdown = '---\ntitle: X\nlang: en\n---\nBody'
+
+    const result = parseFrontmatter(markdown)
+
+    expect(result.frontmatter.title).toBe('X')
+    expect(result.frontmatter.lang).toBe('en')
+    expect(result.content).toBe('Body')
+  })
 })

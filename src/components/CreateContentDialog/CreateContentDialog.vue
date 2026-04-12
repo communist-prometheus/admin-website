@@ -42,18 +42,23 @@ const formState = () => ({
 const handleCreate = () => {
   if (!isFormValid(formState())) return
   emit('create', buildCreateData(props.contentType, formState()))
-  reset()
+  // Do NOT reset here — wait for parent to close via :show prop. If parent
+  // fails (network/API error), dialog stays open with the user's input intact
+  // so they can retry without re-typing.
 }
 
 const handleClose = () => {
   dialogRef.value?.close()
-  reset()
   emit('close')
 }
 
 watch(() => props.show, (visible) => {
-  if (visible) dialogRef.value?.showModal()
-  else dialogRef.value?.close()
+  if (visible) {
+    reset()
+    dialogRef.value?.showModal()
+  } else {
+    dialogRef.value?.close()
+  }
 })
 </script>
 
