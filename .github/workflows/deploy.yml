@@ -7,6 +7,14 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # VITE_* env vars are injected into the client bundle at build time by
+    # Vite. Without this, `import.meta.env.VITE_GITHUB_CLIENT_ID` resolves
+    # to undefined and the admin sends an empty client_id to GitHub on
+    # Login click — which renders as a 404 on github.com/login/oauth/authorize.
+    env:
+      VITE_GITHUB_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID }}
+      VITE_MOCK_AUTH: 'false'
+      VITE_GITHUB_BRANCH: master
     steps:
       - name: Cloning git repository
         uses: actions/checkout@v4
