@@ -7,12 +7,18 @@
     "not_found_handling": "single-page-application",
     "binding": "ASSETS"
   },
-  // OAuth token exchange needs the client secret
-  // Deploy status needs CF API credentials
-  // Set these as secrets: wrangler secret put <NAME>
-  // Required secrets: GITHUB_CLIENT_SECRET, CF_API_TOKEN, CF_ACCOUNT_ID, CF_PROJECT_NAME
+  // Secrets (set via push-worker-secrets.yml workflow, NOT committed here):
+  //   GH_APP_PRIVATE_KEY   — RSA private key PEM of the GitHub App used to
+  //                          mint installation tokens (replaces OAuth flow)
+  //   ADMIN_PASSWORD       — gate for /api/auth/app-token endpoint
+  //   GITHUB_CLIENT_SECRET — legacy OAuth fallback, keeps working for dev
+  //   CF_API_TOKEN         — for CF-facing operations (deploy status etc.)
+  //
+  // Plain vars below are public and committed:
   "vars": {
     "CF_ACCOUNT_ID": "c5b8f26375cab6f66eab9981fe3b6d3a",
-    "CF_PROJECT_NAME": "public-website"
+    "CF_PROJECT_NAME": "public-website",
+    "GH_APP_ID": "2976007",
+    "GH_INSTALLATION_ID": "113163920"
   }
 }
