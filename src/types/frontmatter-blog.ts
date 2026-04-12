@@ -18,6 +18,6 @@ export interface BlogFrontmatter {
 export interface PositionFrontmatter {
   readonly title: string
   readonly description: string
-  readonly order: number
+  readonly pubDate: Date
   readonly lang: Language
 }

@@ -2,7 +2,6 @@
 defineProps<{
   date?: string
   category?: string
-  order?: number
 }>()
 </script>
 
@@ -20,12 +19,6 @@ defineProps<{
     >
       {{ category }}
     </span>
-    <span
-      v-if="order !== undefined"
-      class="meta-order"
-    >
-      Order: {{ order }}
-    </span>
   </footer>
 </template>
 
@@ -38,8 +31,7 @@ defineProps<{
 }
 
 .meta-date,
-.meta-category,
-.meta-order {
+.meta-category {
   &::before {
     content: '•';
     margin-right: clamp(0.375rem, 1vw, 0.5rem);

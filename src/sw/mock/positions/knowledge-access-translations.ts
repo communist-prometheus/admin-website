@@ -7,7 +7,7 @@ export const knowledgeTranslations: readonly MockEntry[] = [
     content: `---
 title: Accesso Universale alla Conoscenza
 description: L'istruzione e la conoscenza dovrebbero essere liberamente disponibili.
-order: 2
+pubDate: 2024-02-01
 lang: it
 ---
 
@@ -20,7 +20,7 @@ L'apprendimento dovrebbe essere collaborativo.`,
     content: `---
 title: Acceso Universal al Conocimiento
 description: La educación y el conocimiento deben estar disponibles libremente.
-order: 2
+pubDate: 2024-02-01
 lang: es
 ---
 

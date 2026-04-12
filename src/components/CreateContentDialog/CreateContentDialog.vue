@@ -26,19 +26,17 @@ const slug = ref('')
 const title = ref('')
 const description = ref('')
 const category = ref('')
-const order = ref<number>(1)
 
 const reset = () => {
   slug.value = ''
   title.value = ''
   description.value = ''
   category.value = ''
-  order.value = 1
 }
 
 const formState = () => ({
   slug: slug.value, lang: props.lang, title: title.value,
-  description: description.value, category: category.value, order: order.value,
+  description: description.value, category: category.value,
 })
 
 const handleCreate = () => {
@@ -87,8 +85,6 @@ watch(() => props.show, (visible) => {
         {{ label.translations[lang] ?? label.key }}
       </option>
     </select>
-    <label v-if="contentType === 'positions'" for="order" class="field-label">Order *</label>
-    <input v-if="contentType === 'positions'" id="order" v-model.number="order" type="number" required min="1" class="field-input" />
     <button type="button" class="btn btn-secondary" @click="handleClose">Cancel</button>
     <button type="button" class="btn btn-primary" @click="handleCreate">Create</button>
   </dialog>

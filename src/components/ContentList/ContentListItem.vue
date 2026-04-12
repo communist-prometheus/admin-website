@@ -38,11 +38,6 @@ const category = computed(() => {
   )
 })
 
-const order = computed(() => {
-  const v = fm.value.order
-  return typeof v === 'number' ? v : undefined
-})
-
 const description = computed(() => {
   const v = fm.value.description
   return typeof v === 'string' ? v : undefined
@@ -71,7 +66,6 @@ const description = computed(() => {
     <ItemMeta
       :date="formattedDate"
       :category="category"
-      :order="order"
     />
   </article>
 </template>

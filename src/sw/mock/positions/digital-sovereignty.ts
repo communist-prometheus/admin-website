@@ -8,7 +8,7 @@ export const digitalSovereigntyEntries: readonly MockEntry[] = [
     content: `---
 title: Digital Sovereignty
 description: Technology must serve the people, not corporations.
-order: 1
+pubDate: 2024-01-15
 lang: en
 ---
 
@@ -21,7 +21,7 @@ We advocate for open-source infrastructure.`,
     content: `---
 title: Цифровой суверенитет
 description: Технологии должны служить людям, а не корпорациям.
-order: 1
+pubDate: 2024-01-15
 lang: ru
 ---
 

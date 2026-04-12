@@ -2,7 +2,6 @@
 interface DefaultsInput {
   readonly description?: string
   readonly category?: string
-  readonly order?: number
 }
 
 /**
@@ -23,7 +22,7 @@ const blogDefaults = (data: DefaultsInput): Record<string, unknown> => ({
  */
 const positionsDefaults = (data: DefaultsInput): Record<string, unknown> => ({
   description: data.description || '',
-  order: data.order || 1,
+  pubDate: new Date(),
 })
 
 /**

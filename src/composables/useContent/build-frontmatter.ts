@@ -8,7 +8,6 @@ export interface FrontmatterInput {
   readonly lang: Language
   readonly description?: string
   readonly category?: string
-  readonly order?: number
 }
 
 /**

@@ -9,7 +9,6 @@ export interface CreateContentData {
   readonly title: string
   readonly description?: string
   readonly category?: string
-  readonly order?: number
 }
 
 interface FormState {
@@ -18,7 +17,6 @@ interface FormState {
   readonly title: string
   readonly description: string
   readonly category: string
-  readonly order: number
 }
 
 /**
@@ -54,7 +52,7 @@ export const buildCreateData = (
   }
 
   if (contentType === 'positions') {
-    return { ...baseData, description: state.description, order: state.order }
+    return { ...baseData, description: state.description }
   }
 
   return baseData

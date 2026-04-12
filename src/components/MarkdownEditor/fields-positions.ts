@@ -14,5 +14,5 @@ export const positionsFields: readonly FieldDefinition[] = [
     type: 'textarea',
     required: true,
   },
-  { key: 'order', label: 'Order', type: 'number' },
+  { key: 'pubDate', label: 'Publication Date', type: 'date' },
 ]

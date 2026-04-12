@@ -46,7 +46,7 @@ describe('useContentCreator', () => {
     )
   })
 
-  it('creates positions content with order', async () => {
+  it('creates positions content with pubDate', async () => {
     mockCreate.mockResolvedValueOnce({ success: true })
     const { createContent } = useContentCreator('positions')
     await createContent({
@@ -54,11 +54,10 @@ describe('useContentCreator', () => {
       lang: 'en',
       title: 'Senior Developer',
       description: 'Full-time position',
-      order: 1,
     })
     expect(mockCreate).toHaveBeenCalledWith(
       'positions/developer/index.en.md',
-      expect.stringContaining('order: 1'),
+      expect.stringContaining('pubDate:'),
       'Create developer in positions'
     )
   })
