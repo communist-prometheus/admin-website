@@ -62,6 +62,16 @@ jobs:
           curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects" \
             | jq '[.result[]? | {name, subdomain, domains, latest_deployment: .latest_deployment.url}]'
+      - name: List admin-website worker secrets (names)
+        run: |
+          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/admin-website/secrets" \
+            | jq '.result'
+      - name: List admin-website worker bindings
+        run: |
+          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/admin-website/settings" \
+            | jq '.result'
       - name: HTTP probe admin prod
         run: |
           curl -sS -o /dev/null -w "status=%{http_code} ttfb=%{time_starttransfer}s\n" \
