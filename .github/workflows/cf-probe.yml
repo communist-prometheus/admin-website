@@ -30,16 +30,11 @@ jobs:
           curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/public-website/deployments" \
             | jq '.result.deployments[0:5]'
-      - name: Fetch admin-website Worker metadata
+      - name: List all worker scripts on account
         run: |
           curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/admin-website" \
-            | jq '{modified: .result.modified_on, created: .result.created_on, version: .result.version_id}'
-      - name: Fetch public-website Worker metadata
-        run: |
-          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/public-website" \
-            | jq '{modified: .result.modified_on, created: .result.created_on, version: .result.version_id}'
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts" \
+            | jq '[.result[] | {id, modified_on, created_on}]'
       - name: HTTP probe admin prod
         run: |
           curl -sS -o /dev/null -w "status=%{http_code} ttfb=%{time_starttransfer}s\n" \
