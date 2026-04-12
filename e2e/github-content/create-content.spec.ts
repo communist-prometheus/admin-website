@@ -37,7 +37,8 @@ test.describe('GitHub Content - Create', () => {
     await waitForContentReady(page)
     await page.click('button:has-text("New")')
     await expect(page.getByLabel(/description/i)).toBeVisible()
-    await expect(page.getByLabel(/order/i)).toBeVisible()
+    // Positions no longer expose an Order field (migrated to pubDate).
+    await expect(page.locator('#order')).toBeHidden()
   })
 
   test('should keep dialog open when submitting empty form', async ({

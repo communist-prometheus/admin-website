@@ -75,6 +75,12 @@ test.describe('Content Switch Verification', () => {
     const cp = new ContentPage(page)
     await cp.navigate('blog')
 
+    // Wait for at least one item — otherwise allTextContents() captures
+    // the empty-skeleton list before reactive rendering settles.
+    await page
+      .locator('[data-testid="content-item"]')
+      .first()
+      .waitFor({ state: 'visible', timeout: 15000 })
     const blogFirst = await page
       .locator('[data-testid="content-item"]')
       .allTextContents()
@@ -86,6 +92,10 @@ test.describe('Content Switch Verification', () => {
     await page.click('a[href="/content/blog"]')
     await page.waitForURL('/content/blog')
     await cp.expectToBeVisible()
+    await page
+      .locator('[data-testid="content-item"]')
+      .first()
+      .waitFor({ state: 'visible', timeout: 15000 })
 
     const blogSecond = await page
       .locator('[data-testid="content-item"]')

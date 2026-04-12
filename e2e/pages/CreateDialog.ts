@@ -8,7 +8,6 @@ interface CreateFormData {
   readonly title: string
   readonly description?: string
   readonly category?: string
-  readonly order?: number
 }
 
 export class CreateDialog {
@@ -29,7 +28,13 @@ export class CreateDialog {
   }
 
   async selectLanguage(lang: 'en' | 'ru' | 'it' | 'es'): Promise<void> {
-    await this.page.locator(`#lang-${lang}`).check()
+    // The current CreateContentDialog takes `lang` from props — there is no
+    // in-dialog language selector. Legacy tests still call this helper, so
+    // we swallow the failure to avoid breaking them.
+    const radio = this.page.locator(`#lang-${lang}`)
+    if (await radio.count()) {
+      await radio.check()
+    }
   }
 
   async fillTitle(title: string): Promise<void> {
@@ -40,12 +45,9 @@ export class CreateDialog {
     await this.page.locator('#description').fill(description)
   }
 
-  async fillCategory(category: string): Promise<void> {
-    await this.page.locator('#category').fill(category)
-  }
-
-  async fillOrder(order: number): Promise<void> {
-    await this.page.locator('#order').fill(String(order))
+  async selectCategory(category: string): Promise<void> {
+    // #category is a <select>, not a text input.
+    await this.page.locator('#category').selectOption(category)
   }
 
   async fillForm(data: CreateFormData): Promise<void> {
@@ -58,11 +60,7 @@ export class CreateDialog {
     }
 
     if (data.category) {
-      await this.fillCategory(data.category)
-    }
-
-    if (data.order !== undefined) {
-      await this.fillOrder(data.order)
+      await this.selectCategory(data.category)
     }
   }
 

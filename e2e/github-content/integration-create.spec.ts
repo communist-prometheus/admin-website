@@ -6,11 +6,16 @@ import { CreateDialog } from '../pages/CreateDialog'
 const TEST_SLUG = `e2e-test-${Date.now()}`
 const TEST_TITLE = 'E2E Integration Test Position'
 const TEST_DESCRIPTION = 'Created by integration test'
+// Positions live at positions/<slug>/index.<lang>.md in the content repo.
+const positionPath = (slug: string) => `positions/${slug}/index.en.md`
 
-const githubApi = (path: string, options?: RequestInit) => {
+const githubApi = (
+  path: string,
+  options?: RequestInit
+): Promise<Response> => {
   const token = process.env.GITHUB_E2E_KEY ?? ''
-  const owner = process.env.GITHUB_OWNER || 'communist-prometheus'
-  const repo = process.env.GITHUB_REPO || 'public-website'
+  const owner = process.env.GITHUB_OWNER ?? 'communist-prometheus'
+  const repo = process.env.GITHUB_REPO ?? 'public-website-content'
   return fetch(
     `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
     {
@@ -24,18 +29,18 @@ const githubApi = (path: string, options?: RequestInit) => {
   )
 }
 
-const deleteTestFile = async (slug: string) => {
-  const branch = process.env.GITHUB_BRANCH || 'develop'
-  const path = `src/content/positions/${slug}.en.md`
+const deleteTestFile = async (slug: string): Promise<void> => {
+  const branch = process.env.GITHUB_BRANCH ?? 'master'
+  const path = positionPath(slug)
 
   const res = await githubApi(`${path}?ref=${branch}`)
   if (!res.ok) return
 
-  const data = await res.json()
+  const data: { sha: string } = await res.json()
   await githubApi(path, {
     method: 'DELETE',
     body: JSON.stringify({
-      message: `test: cleanup ${slug}.en.md`,
+      message: `test: cleanup ${slug}`,
       sha: data.sha,
       branch,
     }),
@@ -71,7 +76,6 @@ test.describe('Integration - Create Content via GitHub', () => {
       lang: 'en',
       title: TEST_TITLE,
       description: TEST_DESCRIPTION,
-      order: 99,
     })
 
     const responsePromise = page.waitForResponse(

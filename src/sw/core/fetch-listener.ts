@@ -1,4 +1,5 @@
 import { routeRequest } from '../handlers/route'
+import { errorResponse } from '../handlers/shared/json-response'
 import { log } from '../logging/logger'
 import { workerState } from '../state/state'
 import { autoRecover } from './auto-recover'
@@ -8,16 +9,15 @@ declare const self: ServiceWorkerGlobalScope
 
 /**
  * Auto-recover from SW restart, then route the request.
+ * Returns a JSON `{ error }` payload on failure so the client decoder
+ * can surface a readable message.
  * @param request - The intercepted fetch request
- * @returns Routed response or 503 if recovery fails
+ * @returns Routed response or JSON error
  */
 const recoverAndRoute = async (request: Request): Promise<Response> => {
   const ok = await autoRecover()
   if (ok) return routeRequest(request)
-  return new Response(JSON.stringify({ error: 'SW not ready' }), {
-    status: 503,
-    headers: { 'content-type': 'application/json' },
-  })
+  return errorResponse('SW not ready', 503)
 }
 
 /**

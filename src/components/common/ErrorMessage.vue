@@ -8,6 +8,7 @@ defineProps<{
   <output
     v-if="error"
     class="error-message"
+    data-testid="error-message"
   >
     <p>Error: {{ error }}</p>
   </output>

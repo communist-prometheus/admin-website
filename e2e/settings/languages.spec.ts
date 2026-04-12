@@ -12,7 +12,9 @@ test.describe('Settings - Languages', () => {
   test('should navigate to settings page', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('h1')).toHaveText('Settings')
-    await expect(page.locator('h2')).toHaveText('Languages')
+    // Settings has two sections (Languages + Labels). Assert the first h2
+    // rather than pinning all h2 text.
+    await expect(page.locator('h2').first()).toHaveText('Languages')
   })
 
   test('should show languages editor with table', async ({ page }) => {

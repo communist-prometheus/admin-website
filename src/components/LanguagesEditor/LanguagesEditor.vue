@@ -62,16 +62,23 @@ const handleSave = () => {
 </script>
 
 <template>
-  <LanguagesTable
-    :languages="draft"
-    data-testid="languages-editor"
-    @update:code="updateCode"
-    @update:label="updateLabel"
-    @remove="removeLanguage"
-  />
-  <LanguagesActions
-    :saving="saving"
-    @add="addLanguage"
-    @save="handleSave"
-  />
+  <section data-testid="languages-editor" class="languages-editor-root">
+    <LanguagesTable
+      :languages="draft"
+      @update:code="updateCode"
+      @update:label="updateLabel"
+      @remove="removeLanguage"
+    />
+    <LanguagesActions
+      :saving="saving"
+      @add="addLanguage"
+      @save="handleSave"
+    />
+  </section>
 </template>
+
+<style scoped>
+.languages-editor-root {
+  display: block;
+}
+</style>

@@ -41,7 +41,9 @@ test.describe('GitHub Content - List', () => {
   test('should navigate between content types', async ({ page }) => {
     await page.click('a[href="/content/pages"]')
     await page.waitForURL('/content/pages')
-    await expect(page.getByRole('heading', { name: /pages/i })).toBeVisible()
+    // There's no page heading in ContentView — assert by URL + content list.
+    expect(page.url()).toContain('/content/pages')
+    await expect(page.locator('[data-testid="content-list"]')).toBeVisible()
   })
 
   test('should show create button', async ({ page }) => {

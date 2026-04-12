@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test'
 
 test.describe('Delete Article', () => {
   test('should show delete button on hover', async ({ page }) => {
-    await page.goto('/content/pages', { waitUntil: 'domcontentloaded' })
+    // Pages are fixed-structure (hide-delete=true). Use /content/blog so
+    // delete buttons are actually rendered.
+    await page.goto('/content/blog', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('[data-testid="content-item"]', {
       timeout: 20000,
     })
@@ -15,7 +17,9 @@ test.describe('Delete Article', () => {
   })
 
   test('should show delete confirmation dialog', async ({ page }) => {
-    await page.goto('/content/pages', { waitUntil: 'domcontentloaded' })
+    // Pages are fixed-structure (hide-delete=true). Use /content/blog so
+    // delete buttons are actually rendered.
+    await page.goto('/content/blog', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('[data-testid="content-item"]', {
       timeout: 20000,
     })
@@ -37,7 +41,9 @@ test.describe('Delete Article', () => {
   })
 
   test('should close dialog on cancel', async ({ page }) => {
-    await page.goto('/content/pages', { waitUntil: 'domcontentloaded' })
+    // Pages are fixed-structure (hide-delete=true). Use /content/blog so
+    // delete buttons are actually rendered.
+    await page.goto('/content/blog', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('[data-testid="content-item"]', {
       timeout: 20000,
     })
@@ -54,7 +60,9 @@ test.describe('Delete Article', () => {
   })
 
   test.skip('delete all should remove item from list', async ({ page }) => {
-    await page.goto('/content/pages', { waitUntil: 'domcontentloaded' })
+    // Pages are fixed-structure (hide-delete=true). Use /content/blog so
+    // delete buttons are actually rendered.
+    await page.goto('/content/blog', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('[data-testid="content-item"]', {
       timeout: 20000,
     })

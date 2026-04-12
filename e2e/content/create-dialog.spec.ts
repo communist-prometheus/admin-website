@@ -1,4 +1,4 @@
-import { test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { ContentPage } from '../pages/ContentPage'
 import { CreateDialog } from '../pages/CreateDialog'
 
@@ -42,7 +42,7 @@ test.describe('Create Content Dialog', () => {
     await createDialog.expectFieldToBeVisible('category')
   })
 
-  test('should display order field for positions content', async ({
+  test('should display only basic fields for positions content', async ({
     page,
   }) => {
     const contentPage = new ContentPage(page)
@@ -50,18 +50,21 @@ test.describe('Create Content Dialog', () => {
 
     await contentPage.navigate('positions')
     await contentPage.clickCreateButton()
-    await createDialog.expectFieldToBeVisible('order')
+    await createDialog.expectFieldToBeVisible('slug')
+    await createDialog.expectFieldToBeVisible('title')
+    await createDialog.expectFieldToBeVisible('description')
+    // positions no longer have an Order field — pubDate is auto-set on save
+    await createDialog.expectFieldToBeHidden('order')
   })
 
-  test('should not display category field for pages content', async ({
+  test('pages content is fixed-structure: no create flow', async ({
     page,
   }) => {
     const contentPage = new ContentPage(page)
-    const createDialog = new CreateDialog(page)
-
     await contentPage.navigate('pages')
-    await contentPage.clickCreateButton()
-    await createDialog.expectFieldToBeHidden('category')
+    // Pages are a closed set — no Create button, no dialog, no fields.
+    await expect(page.getByRole('button', { name: /new/i })).toBeHidden()
+    await expect(page.locator('.create-dialog')).toBeHidden()
   })
 
   test('should keep dialog open when clicking create without data', async ({

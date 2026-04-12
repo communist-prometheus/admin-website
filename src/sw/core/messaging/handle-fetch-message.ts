@@ -32,6 +32,9 @@ const serializeResponse = async (
   return { status: response.status, body, headers }
 }
 
+const toMessage = (err: unknown): string =>
+  err instanceof Error ? err.message : String(err)
+
 /**
  * Build an error response payload.
  * @param err - The error that occurred
@@ -39,7 +42,7 @@ const serializeResponse = async (
  */
 const errorResponse = (err: unknown): SWFetchResponse => ({
   status: 500,
-  body: JSON.stringify({ error: String(err) }),
+  body: JSON.stringify({ error: toMessage(err) }),
   headers: { 'content-type': 'application/json' },
 })
 
