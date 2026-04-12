@@ -1,0 +1,40 @@
+name: E2E integration (real GitHub API)
+
+on:
+  workflow_dispatch: {}
+
+# Runs only the integration-create test against the real content repo
+# via GITHUB_E2E_KEY. This is the closest automated equivalent to a user
+# actually clicking "Create" in the admin UI in production — it uses a
+# real chromium with real network calls into a real content branch.
+#
+# Intentionally kept separate from the deploy gate so a hiccup in the
+# real content repo doesn't block unrelated shipping work.
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_E2E_KEY: ${{ secrets.GH_E2E_PAT }}
+      GITHUB_OWNER: communist-prometheus
+      GITHUB_REPO: public-website-content
+      GITHUB_BRANCH: master
+      MOCK_OAUTH: 'false'
+      VITE_MOCK_AUTH: 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+
+      - run: bunx playwright install --with-deps chromium
+
+      - name: Build admin-website (non-mock)
+        run: bun run build:client && bun run build:sw
+
+      - name: Run integration-create spec
+        run: |
+          bunx playwright test \
+            e2e/github-content/integration-create.spec.ts \
+            --project=chromium \
+            --reporter=list
