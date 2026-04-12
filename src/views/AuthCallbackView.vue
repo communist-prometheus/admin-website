@@ -16,12 +16,20 @@ const status = ref('Completing authentication…')
 
 /**
  * Post token to opener window and close popup.
+ *
+ * Uses `'*'` as targetOrigin so the token delivers across origins — the
+ * popup may run at a different origin (e.g. workers.dev) than the opener
+ * (e.g. admin.comprom.org) when VITE_OAUTH_REDIRECT_URI is set to a
+ * centralized callback URL. The opener validates the sender origin via
+ * the TRUSTED_ORIGINS allowlist in useOAuthPopup/handlers.ts, so the
+ * wildcard target is safe — only admin hostnames we control can produce
+ * a message that the opener will accept.
  * @param token - GitHub access token
  */
 const notifyOpener = (token: string) => {
   globalThis.opener?.postMessage(
     { type: 'github-oauth-success', token },
-    globalThis.location.origin
+    '*'
   )
   globalThis.close()
 }

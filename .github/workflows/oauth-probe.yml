@@ -1,0 +1,67 @@
+name: OAuth redirect_uri registration probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      uris:
+        description: |
+          Comma-separated redirect_uri candidates to test against the
+          GitHub App. Defaults to the admin's known prod + local URLs.
+        required: false
+        default: >-
+          https://admin.comprom.org/auth/github/callback,
+          https://admin-website.igor-ganov.workers.dev/auth/github/callback,
+          http://localhost:5173/auth/github/callback
+  push:
+    branches: [master]
+
+# Probes which redirect_uri values the GitHub App (identified by
+# VITE_GITHUB_CLIENT_ID) currently accepts. Uses the OAuth token-exchange
+# endpoint with a deliberately fake code: GitHub validates the redirect_uri
+# BEFORE validating the code, so the response distinguishes
+# `redirect_uri_mismatch` (not registered) from `bad_verification_code`
+# (registered, fake code rejected).
+#
+# Runs on every master push so if the set of production hostnames drifts
+# out of sync with the GitHub App's registered callback URLs, the deploy
+# is noisy (but not blocking — this is an observability workflow).
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      GH_APP_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID }}
+      GH_APP_CLIENT_SECRET: ${{ secrets.GH_APP_CLIENT_SECRET }}
+    steps:
+      - name: Probe redirect URIs via token exchange
+        run: |
+          set -u
+          if [ -z "${GH_APP_CLIENT_SECRET:-}" ]; then
+            echo "::warning::GITHUB_APP_CLIENT_SECRET secret is not set — probe will return unauthorized_client for every URI. Set it in repo secrets to enable this check."
+          fi
+          INPUT="${{ inputs.uris }}"
+          if [ -z "$INPUT" ]; then
+            INPUT="https://admin.comprom.org/auth/github/callback,https://admin-website.igor-ganov.workers.dev/auth/github/callback,http://localhost:5173/auth/github/callback"
+          fi
+          STATUS=0
+          echo "$INPUT" | tr ',' '\n' | while read -r uri; do
+            uri=$(echo "$uri" | xargs)
+            [ -z "$uri" ] && continue
+            BODY=$(jq -cn --arg cid "$GH_APP_CLIENT_ID" \
+                         --arg cs "$GH_APP_CLIENT_SECRET" \
+                         --arg ru "$uri" \
+              '{client_id:$cid,client_secret:$cs,code:"probe_fake_code_12345",redirect_uri:$ru}')
+            RESP=$(curl -sS -X POST https://github.com/login/oauth/access_token \
+              -H "Accept: application/json" \
+              -H "Content-Type: application/json" \
+              -d "$BODY")
+            ERR=$(echo "$RESP" | jq -r '.error // "ok"')
+            case "$ERR" in
+              bad_verification_code)
+                echo "::notice title=$uri::REGISTERED (fake code correctly rejected)" ;;
+              redirect_uri_mismatch)
+                echo "::warning title=$uri::NOT REGISTERED in GitHub App callback URLs" ;;
+              *)
+                echo "::warning title=$uri::unknown error: $ERR" ;;
+            esac
+          done
