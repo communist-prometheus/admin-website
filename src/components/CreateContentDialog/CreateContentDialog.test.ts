@@ -32,9 +32,7 @@ describe('CreateContentDialog submitting state', () => {
     const fieldset = wrapper.get('fieldset')
     expect(fieldset.attributes('disabled')).toBeDefined()
 
-    const cancel = wrapper
-      .findAll('button')
-      .find(b => b.text() === 'Cancel')
+    const cancel = wrapper.findAll('button').find(b => b.text() === 'Cancel')
     expect(cancel).toBeDefined()
     expect(cancel?.attributes('disabled')).toBeDefined()
   })
@@ -44,9 +42,7 @@ describe('CreateContentDialog submitting state', () => {
     await wrapper.get('input#slug').setValue('my-slug')
     await wrapper.get('input#title').setValue('Title')
     await wrapper.get('textarea#description').setValue('Desc')
-    await wrapper
-      .get('select#category')
-      .setValue('technology')
+    await wrapper.get('select#category').setValue('technology')
     // click works on enabled elements only — a disabled button ignores
     // the event, so the emit list stays empty.
     await wrapper.get('[data-testid="create-submit"]').trigger('click')
@@ -58,9 +54,7 @@ describe('CreateContentDialog submitting state', () => {
     await wrapper.get('input#slug').setValue('my-slug')
     await wrapper.get('input#title').setValue('My Title')
     await wrapper.get('textarea#description').setValue('My description')
-    await wrapper
-      .get('select#category')
-      .setValue('technology')
+    await wrapper.get('select#category').setValue('technology')
     await wrapper.get('[data-testid="create-submit"]').trigger('click')
     const events = wrapper.emitted('create')
     expect(events).toBeDefined()

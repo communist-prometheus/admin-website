@@ -1,22 +1,27 @@
-import { computed, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 import type { Language } from '@/types/content'
 import { createInitEditor } from './useEditPageInit'
 
-const makeDeps = (
-  available: readonly Language[]
-): Parameters<typeof createInitEditor>[0] & {
-  loadLanguageVersion: ReturnType<typeof vi.fn>
-  reset: ReturnType<typeof vi.fn>
-  loadContent: ReturnType<typeof vi.fn>
-} => ({
-  reset: vi.fn(),
-  loadContent: vi.fn().mockResolvedValue(undefined),
-  availableLanguages: computed(() => new Set<Language>(available)),
-  currentLang: ref<Language>('en'),
-  loadLanguageVersion: vi.fn().mockResolvedValue(undefined),
-  buildPath: (lang: Language) => `blog/my-slug/index.${lang}.md`,
-})
+const makeDeps = (available: readonly Language[]) => {
+  const reset = vi.fn<() => void>()
+  const loadContent = vi.fn<() => Promise<void>>().mockResolvedValue()
+  const loadLanguageVersion = vi
+    .fn<(path: string) => Promise<void>>()
+    .mockResolvedValue()
+  const currentLang = ref<Language>('en')
+  const availableLanguages = computed(() => new Set<Language>(available))
+  const buildPath = (lang: Language): string =>
+    `blog/my-slug/index.${lang}.md`
+  return {
+    reset,
+    loadContent,
+    availableLanguages,
+    currentLang,
+    loadLanguageVersion,
+    buildPath,
+  }
+}
 
 describe('createInitEditor', () => {
   it('loads the first available language', async () => {

@@ -10,9 +10,8 @@ interface InitDeps {
   readonly buildPath: (lang: Language) => string
 }
 
-const pickFirstLang = (
-  available: ReadonlySet<Language>
-): Language => (available.has('en') ? 'en' : ([...available][0] ?? 'en'))
+const pickFirstLang = (available: ReadonlySet<Language>): Language =>
+  available.has('en') ? 'en' : ([...available][0] ?? 'en')
 
 /**
  * Creates an editor initialization function.

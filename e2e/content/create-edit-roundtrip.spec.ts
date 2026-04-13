@@ -45,7 +45,9 @@ test.describe('Content - create → edit round-trip', () => {
 
     const categorySelect = page.locator('select#category').first()
     await expect
-      .poll(() => categorySelect.locator('option').count(), { timeout: 20000 })
+      .poll(() => categorySelect.locator('option').count(), {
+        timeout: 20000,
+      })
       .toBeGreaterThan(1)
     await categorySelect.selectOption({ index: 1 })
 
@@ -87,7 +89,9 @@ test.describe('Content - create → edit round-trip', () => {
       .poll(
         async () => {
           const r = await readFile(page, `blog/${slug}/index.en.md`)
-          return r.content?.includes('edited body line') ? 'has-edit' : 'no-edit'
+          return r.content?.includes('edited body line')
+            ? 'has-edit'
+            : 'no-edit'
         },
         { timeout: 15000 }
       )
