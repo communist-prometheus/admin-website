@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAppTokenAuth } from '@/composables/useAppTokenAuth'
 import { useAuth } from '@/composables/useAuth'
 import { useDropdown } from '@/composables/useDropdown'
+import { useOAuthPopup } from '@/composables/useOAuthPopup'
 import { loadRedirect } from '@/router/auth-guard'
 import { useAuthStore } from '@/stores/auth'
 import LoginButton from './AuthButton/LoginButton.vue'
@@ -12,39 +12,25 @@ import UserMenu from './AuthButton/UserMenu.vue'
 const router = useRouter()
 const { loading: authLoading } = useAuth()
 const authStore = useAuthStore()
-const { show: showDropdown, toggle: toggleDropdown } = useDropdown()
-
-// Password → installation-token login replaces the OAuth popup flow.
-// Rationale: the GitHub App's callback URLs don't cover our production
-// hostnames, and that registration can only be changed via the web UI —
-// there is no REST API for GitHub App settings. The installation-token
-// flow sidesteps OAuth entirely: the worker signs a JWT with the private
-// key and mints an installation access token from a password-gated
-// endpoint. See `src/api/app-token-handler.ts` and
-// `src/composables/useAppTokenAuth.ts`.
-const { loading: loginLoading, login: loginWithPassword } = useAppTokenAuth(
-  u => {
-    authStore.setUser(u)
-    const redirect = loadRedirect()
-    if (redirect) router.push(redirect)
-  },
-  e => {
-    authStore.error = e
-  }
-)
+const {
+  show: showDropdown,
+  toggle: toggleDropdown,
+} = useDropdown()
+const { loading: oauthLoading, openPopup } =
+  useOAuthPopup(
+    u => {
+      authStore.setUser(u)
+      const redirect = loadRedirect()
+      if (redirect) router.push(redirect)
+    },
+    e => {
+      authStore.error = e
+    }
+  )
 
 const loading = computed(
-  () => authLoading.value || Boolean(loginLoading.value)
+  () => authLoading.value || oauthLoading.value
 )
-
-const handleLogin = async (): Promise<void> => {
-  const password =
-    typeof globalThis.prompt === 'function'
-      ? (globalThis.prompt('Admin password:') ?? '')
-      : ''
-  if (!password) return
-  await loginWithPassword(password)
-}
 
 const handleLogout = () => {
   authStore.logout()
@@ -64,7 +50,7 @@ const handleDifferentAccount = () => {
     <LoginButton
       v-if="!authStore.user"
       :loading="loading"
-      @click="handleLogin"
+      @click="openPopup"
     />
     <UserMenu
       v-else

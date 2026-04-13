@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useAppTokenAuth } from '@/composables/useAppTokenAuth'
+import { useOAuthPopup } from '@/composables/useOAuthPopup'
 import { useAuthStore } from '@/stores/auth'
 
 const emit = defineEmits<{ navigate: [] }>()
 const auth = useAuthStore()
-
-// Password → installation-token login (same as AuthButton).
-const { login } = useAppTokenAuth(
+const { openPopup } = useOAuthPopup(
   u => {
     auth.setUser(u)
     emit('navigate')
@@ -15,15 +13,6 @@ const { login } = useAppTokenAuth(
     auth.error = e
   }
 )
-
-const handleLogin = async (): Promise<void> => {
-  const password =
-    typeof globalThis.prompt === 'function'
-      ? (globalThis.prompt('Admin password:') ?? '')
-      : ''
-  if (!password) return
-  await login(password)
-}
 
 const handleLogout = () => {
   auth.logout()
@@ -38,7 +27,7 @@ const handleLogout = () => {
       type="button"
       class="login-btn"
       data-testid="mobile-login"
-      @click="handleLogin"
+      @click="openPopup"
     >
       Login
     </button>
