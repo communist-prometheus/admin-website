@@ -10,7 +10,7 @@
     "validate": "bun run type-check && bun run check:ci && bun run lint:sonar && bun run lint:jsdoc && bun run lint:vue-depth && bun run lint:css",
     "build": "bun run validate && bun run build:client && bun run build:sw",
     "build:client": "vite build --outDir dist/client",
-    "build:sw": "vite build --config vite.sw.config.ts",
+    "build:sw": "vite build --config vite.sw.config.ts && bun scripts/verify-sw-browser-safe.ts",
     "build:e2e": "cross-env VITE_MOCK_AUTH=true bun run build:client && cross-env MOCK_OAUTH=true bun run build:sw",
     "preview": "vite preview --port 5173 --outDir dist/client",
     "preview:test": "vite preview --port 5173 --outDir dist/client",

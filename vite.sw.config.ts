@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 import process from 'node:process'
 import type { OutputBundle } from 'rolldown'
 import { defineConfig } from 'vite'
+import { swAliases } from './vite/sw-aliases'
 import { replaceSWVersion } from './vite/sw-version-replace'
 
 /**
@@ -35,11 +36,7 @@ const prependBanner = (bundle: OutputBundle): void => {
  * app (browser-only code like Vue would crash in SW context).
  */
 export default defineConfig({
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-    },
-  },
+  resolve: { alias: swAliases(__dirname) },
   define: {
     __MOCK_MODE__: JSON.stringify(isMockMode),
   },
