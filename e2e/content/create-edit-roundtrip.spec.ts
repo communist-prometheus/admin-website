@@ -68,18 +68,17 @@ test.describe('Content - create → edit round-trip', () => {
     await expect(page.locator('#fm-description')).toHaveValue(description)
     await expect(page.locator('#fm-category')).not.toHaveValue('')
 
-    // Type a change into the body, then save.
-    const bodyEditor = page
-      .locator('[data-testid="markdown-editor"] textarea')
-      .first()
+    // Type a change into the body, then save. Use the editor-body
+    // testid specifically — `[data-testid="markdown-editor"] textarea`
+    // would also match the frontmatter editor's `description` textarea
+    // which sits inside the same markdown-editor section.
+    const bodyEditor = page.locator('[data-testid="editor-body"]')
     await bodyEditor.waitFor({ state: 'visible' })
     await bodyEditor.focus()
     await bodyEditor.press('End')
     await bodyEditor.type('\n\nedited body line')
 
-    const saveBtn = page
-      .locator('[data-testid="editor-save-button"], button:has-text("Save")')
-      .first()
+    const saveBtn = page.locator('[data-testid="save-button"]')
     await saveBtn.click()
 
     // Poll the SW file read until the body actually contains the new line
