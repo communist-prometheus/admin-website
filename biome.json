@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!!**/dist", "!!cors-proxy"],
+    "includes": ["**", "!!**/dist", "!!cors-proxy", "!!.wrangler"],
     "ignoreUnknown": false
   },
   "formatter": {

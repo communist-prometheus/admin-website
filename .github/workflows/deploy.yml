@@ -51,40 +51,43 @@ jobs:
       - name: Rebuilding production bundle after e2e
         run: bun run build:client && bun run build:sw
 
-      # Deploy-gate smoke test: start a preview of the rebuilt prod
-      # bundle, drive a real chromium against it with the e2e PAT,
-      # assert `commit.sha` is a real 40-char hash and not `"mock"`.
-      # Catches the mock-mode-regression even if the rebuild step above
-      # silently produces the wrong bundle.
-      - name: Starting preview of rebuilt bundle
+      # Deploy-gate smoke test: spin up the REAL CF worker locally via
+      # wrangler dev so the /api/cors/github.com/* proxy is served by
+      # the actual worker code (same as prod). `vite preview` only
+      # serves static files — requests to /api/cors/* fall through to
+      # the SPA HTML and isomorphic-git fails with SmartHttpError
+      # ("Expected # service=git-upload-pack but received <!DOCTYPE html>").
+      # With wrangler dev the smoke test hits the real proxy and pushes
+      # to GitHub exactly like the production SW would.
+      - name: Starting wrangler dev on the rebuilt bundle
         run: |
-          bunx vite preview --port 5173 --outDir dist/client \
-            > /tmp/preview.log 2>&1 &
-          echo "preview pid=$!"
+          bunx wrangler dev --port 5173 --ip 127.0.0.1 --local \
+            > /tmp/wrangler.log 2>&1 &
+          echo "wrangler pid=$!"
         shell: bash
 
-      - name: Waiting for preview to listen
+      - name: Waiting for wrangler dev to listen
         run: |
-          for i in $(seq 1 30); do
-            if curl -sS -o /dev/null -w '%{http_code}' http://localhost:5173/ | grep -q 200; then
-              echo "preview up"
-              # Sanity-check: the running preview must be serving the
-              # rebuilt non-mock sw.js, not the stale mock one.
-              if curl -sS http://localhost:5173/sw.js | grep -q createHash; then
-                echo "ERROR: preview is serving a browser-unsafe bundle"
+          for i in $(seq 1 60); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:5173/ || echo 000)
+            if [ "$code" = "200" ]; then
+              echo "wrangler up"
+              if curl -sS http://127.0.0.1:5173/sw.js | grep -q createHash; then
+                echo "ERROR: wrangler is serving a browser-unsafe bundle"
                 exit 1
               fi
               exit 0
             fi
             sleep 1
           done
-          echo "preview failed to start"
-          cat /tmp/preview.log || true
+          echo "wrangler failed to start"
+          cat /tmp/wrangler.log || true
           exit 1
 
       - name: Deploy-gate smoke test (real commit via prod bundle)
         env:
           PROD_SMOKE: '1'
+          PROBE_BASE_URL: 'http://127.0.0.1:5173'
           GITHUB_E2E_KEY: ${{ secrets.GH_E2E_PAT }}
           GITHUB_OWNER: communist-prometheus
           GITHUB_REPO: public-website-content

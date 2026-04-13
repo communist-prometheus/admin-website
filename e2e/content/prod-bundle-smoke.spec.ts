@@ -79,7 +79,8 @@ test.describe('Deploy smoke - prod bundle makes a real commit', () => {
     })
     page.on('console', m => consoleLogs.push(`[${m.type()}] ${m.text()}`))
 
-    await page.goto('/')
+    const base = process.env.PROBE_BASE_URL ?? 'http://127.0.0.1:5173'
+    await page.goto(`${base}/`)
     await page.evaluate(t => localStorage.setItem('gh_token', t), pat)
     await page.reload({ waitUntil: 'networkidle' })
 

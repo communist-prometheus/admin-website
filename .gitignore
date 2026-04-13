@@ -51,3 +51,4 @@ public/sw.js
 
 # Auto-generated type definitions
 src/components.d.ts
+.wrangler
