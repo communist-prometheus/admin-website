@@ -54,8 +54,31 @@ test.describe('Deploy smoke - prod bundle makes a real commit', () => {
   test('SW commit goes through to GitHub, not mock', async ({ browser }) => {
     if (!pat) throw new Error('GITHUB_E2E_KEY required for smoke test')
 
-    const ctx = await browser.newContext()
+    // Do NOT inherit storageState from the default mock e2e context
+    // (which seeds `gh_token='mock-token'` so the SW flips itself into
+    // mock mode via `buildSWConfig.mock = token === 'mock-token'`).
+    // Start from a blank slate, set the real PAT, then load the app
+    // so checkAuth sees the real token on its very first mount.
+    const ctx = await browser.newContext({ storageState: undefined })
     const page = await ctx.newPage()
+
+    // Stream SW logs from the BroadcastChannel so failures (clone
+    // error, 401 from GitHub, corsProxy misconfig) show up in CI logs
+    // instead of a bare 503.
+    const swLogs: string[] = []
+    const consoleLogs: string[] = []
+    await page.exposeFunction('__swLog', (entry: unknown) => {
+      swLogs.push(JSON.stringify(entry))
+    })
+    await page.addInitScript(() => {
+      const ch = new BroadcastChannel('sw-logs')
+      ch.onmessage = e =>
+        (globalThis as unknown as { __swLog: (e: unknown) => void }).__swLog(
+          e.data
+        )
+    })
+    page.on('console', m => consoleLogs.push(`[${m.type()}] ${m.text()}`))
+
     await page.goto('/')
     await page.evaluate(t => localStorage.setItem('gh_token', t), pat)
     await page.reload({ waitUntil: 'networkidle' })
@@ -63,16 +86,23 @@ test.describe('Deploy smoke - prod bundle makes a real commit', () => {
     // Wait until the SW has cloned the content repo and is serving
     // real data. If it stays in 503 "SW not ready", the init failed
     // — most likely because the bundle is the mock-mode build.
-    await expect
-      .poll(
-        async () =>
-          await page.evaluate(async () => {
-            const r = await fetch('/api/github/content/blog')
-            return r.status
-          }),
-        { timeout: 60000 }
-      )
-      .toBe(200)
+    try {
+      await expect
+        .poll(
+          async () =>
+            await page.evaluate(async () => {
+              const r = await fetch('/api/github/content/blog')
+              return r.status
+            }),
+          { timeout: 60000 }
+        )
+        .toBe(200)
+    } catch (e) {
+      // Dump captured logs so the CI failure mode is visible.
+      for (const l of swLogs) process.stdout.write(`[sw] ${l}\n`)
+      for (const l of consoleLogs) process.stdout.write(`${l}\n`)
+      throw e
+    }
 
     const response = await page.evaluate(
       async ({ slug }) => {
