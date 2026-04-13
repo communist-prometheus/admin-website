@@ -4,30 +4,49 @@ import process from 'node:process'
 
 const SW_PATH = resolve('dist/client/sw.js')
 
-// isomorphic-git's CJS build (node_modules/isomorphic-git/index.cjs) uses
-// `require('crypto').createHash` which throws TypeError in a browser
-// Service Worker. Vite 8 resolves the root package via exports.default,
-// which currently points at the CJS build, so without the explicit alias
-// in vite.sw.config.ts the SW bundle silently ships the broken path. A
-// bundle containing `createHash` (or `require('crypto')`) means the
-// alias regressed and SW will fail on first git operation.
-const FORBIDDEN: readonly { readonly token: string; readonly why: string }[] =
-  [
-    {
-      token: 'createHash',
-      why: 'isomorphic-git CJS build — use ESM alias in vite.sw.config.ts',
-    },
-    {
-      token: 'require("crypto")',
-      why: 'node crypto — not available in Service Worker',
-    },
-    {
-      token: "require('crypto')",
-      why: 'node crypto — not available in Service Worker',
-    },
-  ] as const
+/**
+ * Post-build guard against the isomorphic-git CJS regression.
+ *
+ * Vite 8 resolves `isomorphic-git` to its CJS entry unless aliased,
+ * and that file calls `require('crypto').createHash` which does not
+ * exist in a Service Worker. The first git operation throws a
+ * TypeError, the SW flips to state='error', every `/api/github/*`
+ * request returns 503 "SW not ready", and the admin UI silently
+ * gives up. This script greps the compiled `dist/client/sw.js` for
+ * those exact tokens and fails the build if any appears.
+ *
+ * The mock-vs-prod build distinction is NOT checked here — after
+ * minification both builds contain the same markers; they differ
+ * only in how `__MOCK_MODE__` evaluates at runtime. That regression
+ * is guarded structurally by deploy.yml rebuilding the production
+ * bundle after playwright runs, and by the e2e-integration workflow
+ * that drives a real commit flow through a real browser.
+ */
+
+const FORBIDDEN = [
+  {
+    token: 'createHash',
+    why: 'isomorphic-git CJS build — check vite/sw-aliases.ts',
+  },
+  {
+    token: 'require("crypto")',
+    why: 'node crypto — not available in Service Worker',
+  },
+  {
+    token: "require('crypto')",
+    why: 'node crypto — not available in Service Worker',
+  },
+] as const
 
 const main = (): void => {
+  // `build:e2e` produces an intentional mock bundle to run playwright
+  // against. Skip the guard in that path — deploy.yml rebuilds after
+  // e2e and that rebuild is the one we actually verify.
+  if (process.env.MOCK_OAUTH === 'true') {
+    console.log('SKIP sw.js verify (MOCK_OAUTH set — mock build)')
+    return
+  }
+
   const src = readFileSync(SW_PATH, 'utf8')
   const hits = FORBIDDEN.filter(({ token }) => src.includes(token))
   if (hits.length === 0) {

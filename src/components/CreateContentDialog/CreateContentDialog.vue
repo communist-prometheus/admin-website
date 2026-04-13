@@ -13,6 +13,7 @@ const props = defineProps<{
   readonly contentType: ContentType
   readonly lang: Language
   readonly labels?: readonly LabelEntry[]
+  readonly submitting?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -77,21 +78,37 @@ watch(() => props.show, (visible) => {
     >
       ×
     </button>
-    <label for="slug" class="field-label">Slug *</label>
-    <input id="slug" v-model="slug" type="text" required placeholder="my-article-slug" class="field-input" />
-    <label for="title" class="field-label">Title *</label>
-    <input id="title" v-model="title" type="text" required placeholder="Article Title" class="field-input" />
-    <label v-if="contentType === 'blog' || contentType === 'positions'" for="description" class="field-label">Description *</label>
-    <textarea v-if="contentType === 'blog' || contentType === 'positions'" id="description" v-model="description" required placeholder="Brief description..." rows="3" class="field-input" />
-    <label v-if="contentType === 'blog'" for="category" class="field-label">Category *</label>
-    <select v-if="contentType === 'blog'" id="category" v-model="category" required class="field-input">
-      <option value="" disabled>Select category</option>
-      <option v-for="label in labels" :key="label.key" :value="label.key">
-        {{ label.translations[lang] ?? label.key }}
-      </option>
-    </select>
-    <button type="button" class="btn btn-secondary" @click="handleClose">Cancel</button>
-    <button type="button" class="btn btn-primary" @click="handleCreate">Create</button>
+    <fieldset :disabled="submitting" class="field-group">
+      <label for="slug" class="field-label">Slug *</label>
+      <input id="slug" v-model="slug" type="text" required placeholder="my-article-slug" class="field-input" />
+      <label for="title" class="field-label">Title *</label>
+      <input id="title" v-model="title" type="text" required placeholder="Article Title" class="field-input" />
+      <template v-if="contentType === 'blog' || contentType === 'positions'">
+        <label for="description" class="field-label">Description *</label>
+        <textarea id="description" v-model="description" required placeholder="Brief description..." rows="3" class="field-input" />
+      </template>
+      <template v-if="contentType === 'blog'">
+        <label for="category" class="field-label">Category *</label>
+        <select id="category" v-model="category" required class="field-input">
+          <option value="" disabled>Select category</option>
+          <option v-for="label in labels" :key="label.key" :value="label.key">
+            {{ label.translations[lang] ?? label.key }}
+          </option>
+        </select>
+      </template>
+    </fieldset>
+    <button type="button" class="btn btn-secondary" :disabled="submitting" @click="handleClose">Cancel</button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      :class="{ 'is-submitting': submitting }"
+      :disabled="submitting"
+      data-testid="create-submit"
+      @click="handleCreate"
+    >
+      <span v-if="submitting">Creating…</span>
+      <span v-else>Create</span>
+    </button>
   </dialog>
 </template>
 
@@ -167,6 +184,43 @@ watch(() => props.show, (visible) => {
   &:hover {
     background: var(--color-background-soft);
   }
+}
+
+.btn:disabled {
+  opacity: 60%;
+  cursor: not-allowed;
+}
+
+.btn-primary.is-submitting {
+  position: relative;
+  padding-left: calc(clamp(1rem, 2vw, 1.5rem) + 1.25rem);
+}
+
+.btn-primary.is-submitting::before {
+  content: '';
+  position: absolute;
+  left: clamp(0.75rem, 1.5vw, 1rem);
+  top: 50%;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-top: -0.45rem;
+  border: 2px solid var(--color-background);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1.5vw, 0.75rem);
+  border: 0;
+  padding: 0;
+  margin: 0;
 }
 
 .dialog-title {

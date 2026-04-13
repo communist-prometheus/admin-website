@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, toRef } from 'vue'
+import { onMounted, ref, toRef } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import DeleteConfirmDialog from '@/components/ContentList/DeleteConfirmDialog.vue'
 import CreateContentDialog from '@/components/CreateContentDialog/CreateContentDialog.vue'
@@ -23,10 +23,20 @@ const labelsStore = useLabelsStore()
 onMounted(() => labelsStore.ensureLoaded())
 const handleSelect = createSelectHandler(router, typeRef)
 const del = createDeleteState(typeRef, selectedLang, reloadContent)
+const creating = ref(false)
 const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
+  if (creating.value) return
+  creating.value = true
   try {
     error.value = null
+    // Wait for the SW to finish pushing to GitHub before navigating —
+    // without this, the edit page opens while the content store is
+    // still stale and frontmatter reactive state stays empty.
     await createContent(data)
+    // Refresh the pinia content store so the edit page's availableLanguages
+    // set sees the new slug. Otherwise initEditor skips loadLanguageVersion
+    // and the first save writes an empty frontmatter block.
+    await reloadContent()
     showCreateDialog.value = false
     router.push({
       name: 'content-edit',
@@ -34,6 +44,8 @@ const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
     })
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to create content'
+  } finally {
+    creating.value = false
   }
 }
 </script>
@@ -53,8 +65,9 @@ const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
     <CreateContentDialog
       v-if="!isFixedStructure" :show="showCreateDialog"
       :content-type="contentType" :lang="selectedLang"
-      :labels="labelsStore.labels"
-      @close="() => { showCreateDialog = false }" @create="handleCreate" />
+      :labels="labelsStore.labels" :submitting="creating"
+      @close="() => { if (!creating) showCreateDialog = false }"
+      @create="handleCreate" />
     <DeleteConfirmDialog
       v-if="!isFixedStructure" :show="del.showDeleteDialog.value"
       :slug="del.deleteTarget.value?.slug ?? ''" :current-lang="selectedLang"

@@ -43,6 +43,38 @@ jobs:
       - name: Rebuilding production bundle after e2e
         run: bun run build:client && bun run build:sw
 
+      # Deploy-gate smoke test: start a preview of the rebuilt prod
+      # bundle, drive a real chromium against it with the e2e PAT,
+      # assert `commit.sha` is a real 40-char hash and not `"mock"`.
+      # Catches the mock-mode-regression even if the rebuild step above
+      # silently produces the wrong bundle.
+      - name: Starting preview of rebuilt bundle
+        run: bunx vite preview --port 5173 --outDir dist/client &
+        shell: bash
+
+      - name: Waiting for preview to listen
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sS -o /dev/null -w '%{http_code}' http://localhost:5173/ | grep -q 200; then
+              echo "preview up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "preview failed to start"
+          exit 1
+
+      - name: Deploy-gate smoke test (real commit via prod bundle)
+        env:
+          PROD_SMOKE: '1'
+          GITHUB_E2E_KEY: ${{ secrets.GH_E2E_PAT }}
+          GITHUB_OWNER: communist-prometheus
+          GITHUB_REPO: public-website-content
+          GITHUB_BRANCH: master
+        run: |
+          bunx playwright test e2e/content/prod-bundle-smoke.spec.ts \
+            --project=chromium --reporter=line
+
       - name: Deploying to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:

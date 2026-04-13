@@ -10,8 +10,20 @@ interface InitDeps {
   readonly buildPath: (lang: Language) => string
 }
 
+const pickFirstLang = (
+  available: ReadonlySet<Language>
+): Language => (available.has('en') ? 'en' : ([...available][0] ?? 'en'))
+
 /**
- * Creates an editor initialization function
+ * Creates an editor initialization function.
+ *
+ * Always calls `loadLanguageVersion`, even when the store's
+ * availableLanguages set is empty for the current slug. This handles
+ * the create→edit transition: the SW has just written the new file
+ * to its virtual FS, but the global content store (pinia) has not
+ * refreshed yet, so `availableLanguages` still returns an empty set.
+ * Skipping the load in that case leaves the editor with empty
+ * frontmatter, so the next save silently wipes all frontmatter.
  * @param deps - Dependencies for initialization
  * @returns Async function to initialize the editor
  */
@@ -19,11 +31,7 @@ export const createInitEditor =
   (deps: InitDeps) => async (): Promise<void> => {
     deps.reset()
     await deps.loadContent()
-    const firstLang = deps.availableLanguages.value.has('en')
-      ? 'en'
-      : ([...deps.availableLanguages.value][0] ?? 'en')
+    const firstLang = pickFirstLang(deps.availableLanguages.value)
     deps.currentLang.value = firstLang
-    if (deps.availableLanguages.value.has(firstLang)) {
-      await deps.loadLanguageVersion(deps.buildPath(firstLang))
-    }
+    await deps.loadLanguageVersion(deps.buildPath(firstLang))
   }
