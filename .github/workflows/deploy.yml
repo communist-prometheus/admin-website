@@ -35,6 +35,14 @@ jobs:
       - name: Running E2E tests
         run: bunx playwright test --project=chromium --reporter=line
 
+      # Playwright's webServer runs `bun run build:e2e` which overwrites
+      # dist/ with a VITE_MOCK_AUTH=true bundle. Rebuild the production
+      # (non-mock) bundle before deploy, otherwise wrangler ships a SW
+      # that stays in mock mode in the browser — every commit becomes
+      # `sha: mock` and nothing reaches the content repo.
+      - name: Rebuilding production bundle after e2e
+        run: bun run build:client && bun run build:sw
+
       - name: Deploying to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
