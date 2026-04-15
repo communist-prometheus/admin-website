@@ -49,7 +49,9 @@ MUST be added here with its coverage status before merge.
 | U-200 | Create dialog opens on New click | ✅ | e2e/content/content-creation.spec.ts, e2e/content/create-dialog.spec.ts |
 | U-201 | Dialog shows correct fields per content type | ✅ | e2e/content/content-creation.spec.ts |
 | U-202 | Empty form submit keeps dialog open | ✅ | e2e/content/content-creation.spec.ts |
-| U-203 | Successful create closes dialog + redirects | ✅ | e2e/content/create-end-to-end.spec.ts (real SW path) |
+| U-203 | Successful create closes dialog + redirects | ✅ | e2e/content/create-end-to-end.spec.ts, e2e/content/create-edit-roundtrip.spec.ts (regression gate), e2e/content/prod-manual-verify.spec.ts (prod) |
+| U-203a | Submit button disabled + spinner + fields blocked while SW push in flight | ✅ | src/components/CreateContentDialog/CreateContentDialog.test.ts |
+| U-203b | Redirect to edit page waits for SW push + content store reload | ✅ | e2e/content/create-edit-roundtrip.spec.ts |
 | U-204 | Cancel button closes dialog | ✅ | e2e/content/create-dialog.spec.ts |
 | U-205 | Positions no longer show Order field (pubDate migration) | ✅ | e2e/content/create-end-to-end.spec.ts |
 | U-206 | Pages are fixed-structure, no Create | ✅ | e2e/content/content-creation.spec.ts, e2e/content/create-dialog.spec.ts |
@@ -59,11 +61,14 @@ MUST be added here with its coverage status before merge.
 
 | ID | Story | Coverage | Tests |
 |----|-------|----------|-------|
-| U-300 | Editor loads with frontmatter + body | ✅ | e2e/content/content-editing.spec.ts, e2e/content/edit-page.spec.ts |
+| U-300 | Editor loads with frontmatter + body | ✅ | e2e/content/content-editing.spec.ts, e2e/content/edit-page.spec.ts, e2e/content/create-edit-roundtrip.spec.ts |
+| U-300a | `createInitEditor` always calls `loadLanguageVersion` (defense-in-depth) | ✅ (unit) | src/views/ContentEditView/useEditPageInit.test.ts |
+| U-300b | Content store refreshed after create before edit page loads | ✅ | e2e/content/create-edit-roundtrip.spec.ts |
 | U-301 | Body textarea accepts typing | ✅ | e2e/content/content-editing.spec.ts |
-| U-302 | Save button commits to git | ⚠️ | e2e/content/save-auto-message.spec.ts |
+| U-302 | Save button commits to git | ✅ | e2e/content/save-auto-message.spec.ts, e2e/content/create-edit-roundtrip.spec.ts, e2e/content/prod-manual-verify.spec.ts |
+| U-302a | Save path preserves every frontmatter field (regression: empty `---\n\n---` wipe) | ✅ | e2e/content/create-edit-roundtrip.spec.ts |
 | U-303 | Dirty-state reset after save | ⚠️ | e2e/content/save-dirty-reset.spec.ts |
-| U-304 | Rename slug | ✅ | e2e/content/rename-slug.spec.ts |
+| U-304 | Rename slug | ✅ | e2e/content/rename-slug.spec.ts, e2e/content/prod-manual-verify.spec.ts |
 | U-305 | Update failure surfaces real error | ✅ (unit) | src/validation/decode-response.test.ts |
 | U-306 | CRLF parsing does not wipe frontmatter | ✅ | src/utils/frontmatter/parse.test.ts (CRLF test added) |
 
@@ -134,6 +139,17 @@ MUST be added here with its coverage status before merge.
 | U-903 | Pending deploy transitions | ❌ | same |
 | U-904 | Deploy detail files diff | ❌ | same |
 
+### Build & deploy pipeline
+
+| ID | Story | Coverage | Tests |
+|----|-------|----------|-------|
+| U-B00 | SW bundle is browser-safe (no `createHash`, no `require('crypto')`) | ✅ | scripts/verify-sw-browser-safe.ts, wired into `build:sw` |
+| U-B01 | Production SW build resolved against isomorphic-git ESM (not CJS) | ✅ | vite/sw-aliases.ts + verify script |
+| U-B02 | Deploy pipeline rebuilds non-mock bundle after e2e runs | ✅ | .github/workflows/deploy.yml (rebuild step after playwright) |
+| U-B03 | Deploy-gate smoke test runs real SW push on wrangler dev before wrangler deploy | ✅ | e2e/content/prod-bundle-smoke.spec.ts + deploy.yml (wrangler dev smoke step) |
+| U-B04 | Mock-mode bundle cannot ship to prod (stale preview-from-playwright killed before rebuild) | ✅ | deploy.yml `Killing stale mock-mode preview` step |
+| U-B05 | `Effect.tryPromise` clone errors surface the real message | ✅ | src/sw/git/sync/sync-helpers.ts (explicit `catch` projection) |
+
 ### Mobile
 
 | ID | Story | Coverage | Tests |
@@ -199,6 +215,11 @@ MUST be added here with its coverage status before merge.
 | E-600 | U-302 | Save while offline | ❌ |
 | E-601 | U-302 | Token expired mid-save | ❌ |
 | E-700 | U-803 | Two tabs editing languages.json | ❌ |
+| E-800 | U-300 | Create → edit immediately: content store stale, frontmatter wiped on first save | ✅ e2e/content/create-edit-roundtrip.spec.ts, src/views/ContentEditView/useEditPageInit.test.ts |
+| E-801 | U-B02 | Playwright webServer `build:e2e` overwrites prod `dist/` with mock bundle before deploy | ✅ deploy.yml rebuild step + e2e/content/prod-bundle-smoke.spec.ts |
+| E-802 | U-B00 | Vite 8 resolves isomorphic-git to CJS (calls `require('crypto').createHash`) | ✅ vite/sw-aliases.ts + scripts/verify-sw-browser-safe.ts |
+| E-803 | U-203a | User double-clicks Create while SW push is in flight | ✅ src/components/CreateContentDialog/CreateContentDialog.test.ts |
+| E-804 | U-302 | Orphaned broken blog files from failed e2e probes block public-website build | ⚠️ manual cleanup; no prune workflow yet |
 
 ---
 
@@ -238,3 +259,57 @@ MUST be added here with its coverage status before merge.
 8. **16 dependabot security alerts**: All closed via version bumps
    + transitive overrides. `eslint-plugin-comments@1.0.0` was a phantom
    dead dependency blocking peer resolution. Removed.
+
+9. **Create → edit silently wipes frontmatter**: `ContentView.handleCreate`
+   navigated to the edit page without refreshing `useContentStore`.
+   The edit page's `createInitEditor` skipped `loadLanguageVersion`
+   because `availableLanguages` was an empty set for the new slug,
+   so `frontmatterData` stayed `{}`. The first Save stringified
+   `---\n\n---\n...body`, wiping every field. Astro then rejected the
+   public-site build with `InvalidContentEntryDataError`. Fix:
+   `await reloadContent()` before router.push and always call
+   `loadLanguageVersion` in `createInitEditor`. Regression tests:
+   `e2e/content/create-edit-roundtrip.spec.ts`,
+   `src/views/ContentEditView/useEditPageInit.test.ts`.
+
+10. **Mock-mode bundle deployed to prod**: `playwright test`'s webServer
+    ran `bun run build:e2e` which overwrote `dist/` with a
+    `MOCK_OAUTH=true` SW bundle. `wrangler deploy` then uploaded that
+    mock bundle. The deployed SW's `isMock(config)` always returned
+    true, every admin commit took the `mockCommit` branch → `sha: 'mock'`,
+    nothing reached the content repo. UI showed 200 OK and happy
+    redirect; user never saw an error. Fix: kill port 5173 before
+    rebuild, explicit `bun run build:client && bun run build:sw` after
+    e2e, and a deploy-gate smoke test that starts `wrangler dev --local`
+    against the rebuilt bundle and asserts `commit.sha` is a real
+    40-char hash before `wrangler deploy` runs.
+
+11. **isomorphic-git CJS → `createHash` TypeError in SW**: Vite 8
+    resolves the root `isomorphic-git` entry via `exports.default` to
+    `index.cjs`, which calls `require('crypto').createHash(...)` —
+    Node-only, not available in a Service Worker. First git operation
+    threw `TypeError: createHash is not a function`, SW flipped to
+    state='error', every `/api/github/*` returned 503. Fix: exact-match
+    regex alias in `vite/sw-aliases.ts` that forces the ESM entry
+    (`node_modules/isomorphic-git/index.js`) for bare imports.
+    Post-build guard in `scripts/verify-sw-browser-safe.ts` greps
+    `dist/client/sw.js` for `createHash`/`require('crypto')` and
+    fails `build:sw` if any reappears.
+
+12. **`Effect.tryPromise` erases clone errors**: `freshClone` wrapped
+    the clone pipeline in `Effect.tryPromise(async () => { ... })`
+    without a `catch` projection, so isomorphic-git's
+    `SmartHttpError` and the `createHash` TypeError both surfaced as
+    the generic `"An unknown error occurred in Effect.tryPromise"`
+    message — masking the root cause in SW logs for weeks. Fix: pass
+    a `catch: (e) => ...` that preserves the original Error.
+
+13. **Orphaned broken blog files from failed e2e probes**: Ad-hoc
+    probes that pushed through the SW directly to the real content
+    repo left half-written files behind when their assertions failed
+    (inline cleanup at the bottom never ran). Any subsequent admin
+    commit triggered a public-site rebuild which then failed on the
+    orphan's empty frontmatter. Cleaned up manually; prevention:
+    permanent specs MUST put cleanup in `test.afterAll`, not inline.
+    Prune workflow on the content repo is still an open TODO (see
+    E-804).
