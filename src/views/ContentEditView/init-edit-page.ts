@@ -1,35 +1,38 @@
-import { computed, inject, ref } from 'vue'
+import { inject, ref } from 'vue'
 import { DEPLOY_TRACK_KEY } from '@/composables/useDeployStatus/deploy-context'
 import { buildInitAll } from './build-init-deps'
-import { createHandleSave } from './create-handle-save'
+import { buildRawSave } from './build-raw-save'
 import { setupLifecycle } from './setup-lifecycle'
 import type { useEditPage } from './useEditPage'
 import { wrapSave } from './wrap-save'
 
 type Page = ReturnType<typeof useEditPage>
 
+const toMessage = (e: unknown): string =>
+  e instanceof Error ? e.message : String(e)
+
 /**
  * Set up mount/watch hooks and save handler.
+ * Save errors are captured into `saveError` so the view can surface
+ * them via `<ErrorMessage>`; `saving` always resets via wrapSave's
+ * try/finally.
  * @param page - Edit page state from useEditPage
- * @returns Save handler + saving/saved state
+ * @returns Save handler + saving/saved/saveError state
  */
 export const initEditPage = (page: Page) => {
-  const { editor, hasAssets, list, slug } = page
   const track = inject(DEPLOY_TRACK_KEY, undefined)
   const saving = ref(false)
   const saved = ref(false)
-  const initAll = buildInitAll(page)
-  const rawSave = createHandleSave({
-    hasAssets,
-    blogSave: page.blogSave,
-    buildPath: page.buildPath,
-    currentLang: editor.currentLang,
-    saveCurrentLanguage: editor.saveCurrentLanguage,
-    reloadContent: list.reloadContent,
-    title: computed(() => String(editor.frontmatterData.value.title ?? slug)),
-    contentTypeName: page.contentType,
-    track,
-  })
-  setupLifecycle(page, initAll)
-  return { handleSave: wrapSave(rawSave, saving, saved), saving, saved }
+  const saveError = ref<string | null>(null)
+  const wrapped = wrapSave(buildRawSave(page, track), saving, saved)
+  const handleSave = async (): Promise<void> => {
+    saveError.value = null
+    try {
+      await wrapped()
+    } catch (e) {
+      saveError.value = toMessage(e)
+    }
+  }
+  setupLifecycle(page, buildInitAll(page))
+  return { handleSave, saving, saved, saveError }
 }

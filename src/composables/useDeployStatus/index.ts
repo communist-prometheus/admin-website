@@ -1,4 +1,4 @@
-/** Deploy status polling composable. */
+/** Deploy polling composable — single-loop unified state. */
 
 export type { DeployInfo, DeployStage } from './types'
-export { useDeployStatus } from './use-deploy-status'
+export { useDeployPolling } from './use-deploy-polling'

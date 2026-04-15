@@ -18,7 +18,7 @@ const props = defineProps<{
 }>()
 
 const p = useEditPage(props.type, props.slug)
-const { handleSave, saving, saved } = initEditPage(p)
+const { handleSave, saving, saved, saveError } = initEditPage(p)
 const updateBody = (v: string) => { p.editor.bodyContent.value = v }
 const updateFm = (d: Record<string, unknown>) => {
   p.editor.frontmatterData.value = d
@@ -84,7 +84,7 @@ const isRenameable =
       @upload-asset="p.ah.onUploadAsset"
     />
     <LoadingOverlay :show="p.list.loadingList.value" />
-    <ErrorMessage :error="null" />
+    <ErrorMessage :error="saveError" />
   </AppLayout>
 </template>
 

@@ -1,13 +1,23 @@
 import type { InjectionKey, Ref } from 'vue'
-import type { DeployInfo } from './types'
+import type { DeployBuild } from './workflow-types'
 
-/** Track function — starts polling for new version. */
+/**
+ * Resume polling — called after a save commits so the freshly-
+ * triggered workflow run shows up without waiting for a random tick.
+ * Name preserved for existing callers; maps to `requestPoll` on the
+ * unified deploy polling composable.
+ */
 export type TrackDeploy = () => void
 
-/** Injection key for deploy tracking function. */
+/** Injection key for the resume-polling function. */
 export const DEPLOY_TRACK_KEY: InjectionKey<TrackDeploy> =
   Symbol('deploy-track')
 
-/** Injection key for reactive deploy info. */
-export const DEPLOY_INFO_KEY: InjectionKey<Ref<DeployInfo>> =
-  Symbol('deploy-info')
+/** Shared reactive entries — single source of truth app-wide. */
+export const DEPLOY_ENTRIES_KEY: InjectionKey<
+  Ref<ReadonlyArray<DeployBuild>>
+> = Symbol('deploy-entries')
+
+/** Shared loading flag for the home deploy list. */
+export const DEPLOY_LOADING_KEY: InjectionKey<Ref<boolean>> =
+  Symbol('deploy-loading')

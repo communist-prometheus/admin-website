@@ -1,19 +1,25 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import type { DeployBuild } from '@/composables/useDeployStatus/workflow-types'
-import DeployItemHeader from './DeployItemHeader.vue'
+import { calcProgress, formatElapsed } from './build-progress'
 import DeployItemMeta from './DeployItemMeta.vue'
+import DeployItemSummary from './DeployItemSummary.vue'
+import DeployProgressBar from './DeployProgressBar.vue'
 import DeploySteps from './DeploySteps.vue'
 
-defineProps<{ readonly build: DeployBuild }>()
+const props = defineProps<{ readonly build: DeployBuild }>()
 
-const status = (b: DeployBuild) => {
-  if (b.run.status === 'completed')
-    return b.run.conclusion === 'success' ? 'success' : (b.run.conclusion ?? 'failure')
-  if (b.run.status === 'in_progress') return 'building'
+const expanded = ref(false)
+
+const badge = computed<string>(() => {
+  const { status, conclusion } = props.build.run
+  if (status === 'completed')
+    return conclusion === 'success' ? 'success' : (conclusion ?? 'failure')
+  if (status === 'in_progress') return 'building'
   return 'queued'
-}
+})
 
-const formatDate = (iso: string) =>
+const formatDate = (iso: string): string =>
   new Date(iso).toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
@@ -21,26 +27,60 @@ const formatDate = (iso: string) =>
     minute: '2-digit',
   })
 
-const firstJob = (b: DeployBuild) => b.jobs[0]
+const firstJob = computed(() => props.build.jobs[0])
+const hasSteps = computed(() => (firstJob.value?.steps?.length ?? 0) > 0)
+const startedAt = computed(
+  () => firstJob.value?.started_at ?? props.build.run.created_at
+)
+const progress = computed(() =>
+  props.build.run.status === 'completed'
+    ? 100
+    : calcProgress(startedAt.value)
+)
+const elapsed = computed(() => formatElapsed(startedAt.value))
+const stepsId = computed(() => `deploy-steps-${props.build.run.id}`)
+const messageLine = computed(
+  () => props.build.run.head_commit?.message?.split('\n')[0] ?? ''
+)
+
+const toggle = (): void => {
+  if (hasSteps.value) expanded.value = !expanded.value
+}
 </script>
 
 <template>
   <article
     class="deploy-item"
-    :class="{ active: build.run.status !== 'completed' }"
+    :class="{
+      active: build.run.status !== 'completed',
+      expanded,
+    }"
+    :data-testid="`deploy-item-${build.run.id}`"
   >
-    <DeployItemHeader
-      :message="build.run.head_commit?.message?.split('\n')[0] ?? ''"
-      :status="status(build)"
+    <DeployItemSummary
+      :message="messageLine"
+      :status="badge"
+      :expanded="expanded"
+      :has-steps="hasSteps"
+      :controls="stepsId"
+      @toggle="toggle"
     />
     <DeployItemMeta
       :author="build.run.head_commit?.author?.name ?? ''"
       :date="formatDate(build.run.created_at)"
       :sha="build.run.head_sha.slice(0, 7)"
     />
+    <DeployProgressBar
+      :status="build.run.status"
+      :conclusion="build.run.conclusion"
+      :progress="progress"
+      :elapsed="elapsed"
+    />
     <DeploySteps
-      v-if="firstJob(build)?.steps?.length"
-      :steps="firstJob(build)?.steps ?? []"
+      v-if="expanded && hasSteps"
+      :id="stepsId"
+      :steps="firstJob?.steps ?? []"
+      data-testid="deploy-item-steps"
     />
   </article>
 </template>
