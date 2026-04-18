@@ -44,5 +44,5 @@ export const isPendingMatched = (
   runs.some(
     b =>
       b.run.head_sha !== PENDING_RUN_PREFIX &&
-      b.run.head_commit?.message === pending.message
+      !!b.run.head_commit?.message?.includes(pending.message)
   )

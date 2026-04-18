@@ -16,6 +16,7 @@ export interface LoopCtx {
   readonly state: DeployState
   readonly phase: Ref<Phase>
   timer: ReturnType<typeof setTimeout> | undefined
+  waitingForRunUntil: number
 }
 
 /** Single poll tick interval (ms). Applies while polling is active. */

@@ -78,6 +78,12 @@ describe('isPendingMatched', () => {
     expect(isPendingMatched(requirePending(), real)).toBe(true)
   })
 
+  it('matches when real commit has content: prefix', () => {
+    setPendingDeploy('updated Hero in pages')
+    const real = [realBuild('content: updated Hero in pages', 'deadbeef')]
+    expect(isPendingMatched(requirePending(), real)).toBe(true)
+  })
+
   it('returns false when no real run matches', () => {
     setPendingDeploy('pending msg')
     const real = [realBuild('other msg', 'abc1234')]

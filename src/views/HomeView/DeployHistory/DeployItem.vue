@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { clearPendingDeploy } from '@/composables/useDeployStatus/pending-deploy'
+import { PENDING_RUN_PREFIX } from '@/composables/useDeployStatus/pending-deploy-projection'
 import type { DeployBuild } from '@/composables/useDeployStatus/workflow-types'
 import { calcProgress, formatElapsed } from './build-progress'
 import DeployItemMeta from './DeployItemMeta.vue'
@@ -8,6 +10,10 @@ import DeployProgressBar from './DeployProgressBar.vue'
 import DeploySteps from './DeploySteps.vue'
 
 const props = defineProps<{ readonly build: DeployBuild }>()
+
+const isPending = computed(() =>
+  props.build.run.head_sha.startsWith(PENDING_RUN_PREFIX),
+)
 
 const expanded = ref(false)
 
@@ -82,6 +88,13 @@ const toggle = (): void => {
       :steps="firstJob?.steps ?? []"
       data-testid="deploy-item-steps"
     />
+    <button
+      v-if="isPending"
+      class="dismiss"
+      @click.stop="clearPendingDeploy()"
+    >
+      Dismiss
+    </button>
   </article>
 </template>
 
@@ -97,5 +110,21 @@ const toggle = (): void => {
 
 .deploy-item.active {
   border-color: var(--color-primary);
+}
+
+.dismiss {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.125rem 0.5rem;
+  cursor: pointer;
+}
+
+.dismiss:hover {
+  color: var(--color-heading);
+  border-color: var(--color-text-secondary);
 }
 </style>

@@ -4,6 +4,8 @@ import { checkRepoAndSync } from '../git/sync/sync-repo'
 import { log } from '../logging/logger'
 import { workerState } from '../state/state'
 
+let pending: Promise<boolean> | undefined
+
 const recoverEffect: Effect.Effect<boolean, never> = Effect.tryPromise(() =>
   loadConfig()
 ).pipe(
@@ -31,7 +33,13 @@ const recoverEffect: Effect.Effect<boolean, never> = Effect.tryPromise(() =>
 /**
  * Attempt to auto-recover after browser-triggered SW restart.
  * Loads persisted config from IndexedDB and re-verifies repo.
+ * Deduplicated: concurrent callers share a single recovery attempt.
  * @returns true if recovery succeeded and SW is ready
  */
-export const autoRecover = (): Promise<boolean> =>
-  Effect.runPromise(recoverEffect)
+export const autoRecover = (): Promise<boolean> => {
+  if (pending) return pending
+  pending = Effect.runPromise(recoverEffect).finally(() => {
+    pending = undefined
+  })
+  return pending
+}

@@ -31,10 +31,17 @@ const poll = useDeployPolling()
 // real entries so the home list shows the user's action instantly.
 // The pending entry is dropped automatically once a real run with a
 // matching commit message lands.
+const PENDING_TTL_MS = 5 * 60 * 1000
+
 const mergedEntries = computed<ReadonlyArray<DeployBuild>>(() => {
   const real = poll.entries.value
   const pending = pendingDeploy.value
   if (!pending) return real
+  const age = Date.now() - Date.parse(pending.createdAt)
+  if (age > PENDING_TTL_MS) {
+    clearPendingDeploy()
+    return real
+  }
   if (isPendingMatched(pending, real)) {
     clearPendingDeploy()
     return real

@@ -11,7 +11,7 @@ import type { PollContext } from './poll-types'
  */
 export const runTick = async (ctx: PollContext): Promise<void> => {
   await doTick(ctx)
-  if (allTerminal(ctx.state.entries.value)) {
+  if (allTerminal(ctx.state.entries.value) && !ctx.isWaitingForRun()) {
     ctx.phase.value = 'paused'
     ctx.setTimer(undefined)
     return
