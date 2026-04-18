@@ -4,7 +4,10 @@ export { readMetaKey, writeMetaKey } from './idb-meta'
 
 const GIT_DB = 'sw-git'
 
-/** Delete the sw-git IndexedDB database. */
+/**
+ * Delete the sw-git IndexedDB database.
+ * @returns Resolves when deletion completes or is blocked
+ */
 export const deleteGitDatabase = (): Promise<void> =>
   new Promise(resolve => {
     const req = indexedDB.deleteDatabase(GIT_DB)
