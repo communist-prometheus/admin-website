@@ -90,6 +90,7 @@ const toggle = (): void => {
     />
     <button
       v-if="isPending"
+      type="button"
       class="dismiss"
       @click.stop="clearPendingDeploy()"
     >
