@@ -6,7 +6,14 @@ describe('getFields', () => {
     it('returns blog fields', () => {
       const fields = getFields('blog')
       const keys = fields.map(f => f.key)
-      expect(keys).toEqual(['title', 'description', 'category', 'pubDate'])
+      expect(keys).toEqual([
+        'title',
+        'description',
+        'category',
+        'pubDate',
+        'published',
+        'publishDate',
+      ])
     })
   })
 
@@ -14,7 +21,13 @@ describe('getFields', () => {
     it('returns positions fields', () => {
       const fields = getFields('positions')
       const keys = fields.map(f => f.key)
-      expect(keys).toEqual(['title', 'description', 'pubDate'])
+      expect(keys).toEqual([
+        'title',
+        'description',
+        'pubDate',
+        'published',
+        'publishDate',
+      ])
     })
   })
 
