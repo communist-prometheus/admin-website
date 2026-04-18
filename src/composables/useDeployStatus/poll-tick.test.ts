@@ -157,6 +157,7 @@ describe('runTick', () => {
       schedule,
       setTimer,
       isWaitingForRun: () => false,
+      hasPendingDeploy: () => false,
     })
     expect(phase.value).toBe('paused')
     expect(schedule).not.toHaveBeenCalled()
@@ -175,6 +176,7 @@ describe('runTick', () => {
       schedule,
       setTimer,
       isWaitingForRun: () => false,
+      hasPendingDeploy: () => false,
     })
     expect(phase.value).toBe('polling')
     expect(schedule).toHaveBeenCalledOnce()
@@ -191,6 +193,7 @@ describe('runTick', () => {
       schedule,
       setTimer: vi.fn(),
       isWaitingForRun: () => false,
+      hasPendingDeploy: () => false,
     })
     expect(state.error.value).toBe('network down')
     // Keeps the loop alive on transient errors — we'll retry next tick.

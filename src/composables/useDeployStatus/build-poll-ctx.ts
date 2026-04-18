@@ -1,5 +1,6 @@
 import { makeSchedule } from './loop-actions'
 import type { LoopCtx } from './loop-types'
+import { pendingDeploy } from './pending-deploy'
 import type { PollContext } from './poll-types'
 
 /**
@@ -18,6 +19,7 @@ export const buildPollCtx = (c: LoopCtx): PollContext => {
     setTimer,
     schedule: () => schedule(),
     isWaitingForRun: () => Date.now() < c.waitingForRunUntil,
+    hasPendingDeploy: () => !!pendingDeploy.value,
   }
   schedule = makeSchedule(c, poll)
   return poll

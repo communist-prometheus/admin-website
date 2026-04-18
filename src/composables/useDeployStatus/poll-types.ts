@@ -11,4 +11,5 @@ export interface PollContext {
   readonly setTimer: (t: ReturnType<typeof setTimeout> | undefined) => void
   readonly schedule: () => void
   readonly isWaitingForRun: () => boolean
+  readonly hasPendingDeploy: () => boolean
 }
