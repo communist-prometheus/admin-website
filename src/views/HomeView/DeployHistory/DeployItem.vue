@@ -36,14 +36,15 @@ const formatDate = (iso: string): string =>
 const firstJob = computed(() => props.build.jobs[0])
 const hasSteps = computed(() => (firstJob.value?.steps?.length ?? 0) > 0)
 const startedAt = computed(
-  () => firstJob.value?.started_at ?? props.build.run.created_at
+  () => firstJob.value?.started_at ?? props.build.run.created_at,
 )
+const completedAt = computed(() => firstJob.value?.completed_at)
 const progress = computed(() =>
-  props.build.run.status === 'completed'
-    ? 100
-    : calcProgress(startedAt.value)
+  calcProgress(firstJob.value, props.build.run.status),
 )
-const elapsed = computed(() => formatElapsed(startedAt.value))
+const elapsed = computed(() =>
+  formatElapsed(startedAt.value, completedAt.value),
+)
 const stepsId = computed(() => `deploy-steps-${props.build.run.id}`)
 const messageLine = computed(
   () => props.build.run.head_commit?.message?.split('\n')[0] ?? ''
