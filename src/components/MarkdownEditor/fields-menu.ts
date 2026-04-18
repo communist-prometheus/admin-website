@@ -22,6 +22,12 @@ export const menuFields: readonly FieldDefinition[] = [
     type: 'text',
     required: true,
   },
+  {
+    key: 'newspaper',
+    label: 'Newspaper',
+    type: 'text',
+    required: true,
+  },
   { key: 'menu', label: 'Menu', type: 'text', required: true },
   {
     key: 'copyright',

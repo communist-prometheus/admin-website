@@ -10,6 +10,7 @@ export const CONTENT_TYPES: readonly ContentType[] = [
   'pages',
   'positions',
   'common',
+  'newspaper',
 ]
 
 /**

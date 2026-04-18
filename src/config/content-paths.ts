@@ -1,6 +1,12 @@
 import { getGitHubConfig } from './github'
 
-const NESTED_TYPES = new Set(['blog', 'positions', 'pages', 'common'])
+const NESTED_TYPES = new Set([
+  'blog',
+  'positions',
+  'pages',
+  'common',
+  'newspaper',
+])
 
 /**
  * Join content root with segments, skipping empty root.

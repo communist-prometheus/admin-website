@@ -1,35 +1,27 @@
 import type { RouteRecordRaw } from 'vue-router'
+import type { ContentType } from '@/types/content'
+
+const CONTENT_SECTIONS: readonly ContentType[] = [
+  'blog',
+  'positions',
+  'pages',
+  'common',
+  'newspaper',
+]
+
+const contentView = () => import('../views/ContentView.vue')
+
+const sectionRoutes: RouteRecordRaw[] = CONTENT_SECTIONS.map(type => ({
+  path: `/content/${type}`,
+  name: `content-${type}`,
+  meta: { requiresAuth: true },
+  component: contentView,
+  props: { contentType: type },
+}))
 
 /** Routes for content management (require authentication) */
 export const contentRoutes: RouteRecordRaw[] = [
-  {
-    path: '/content/blog',
-    name: 'content-blog',
-    meta: { requiresAuth: true },
-    component: () => import('../views/ContentView.vue'),
-    props: { contentType: 'blog' },
-  },
-  {
-    path: '/content/pages',
-    name: 'content-pages',
-    meta: { requiresAuth: true },
-    component: () => import('../views/ContentView.vue'),
-    props: { contentType: 'pages' },
-  },
-  {
-    path: '/content/positions',
-    name: 'content-positions',
-    meta: { requiresAuth: true },
-    component: () => import('../views/ContentView.vue'),
-    props: { contentType: 'positions' },
-  },
-  {
-    path: '/content/common',
-    name: 'content-common',
-    meta: { requiresAuth: true },
-    component: () => import('../views/ContentView.vue'),
-    props: { contentType: 'common' },
-  },
+  ...sectionRoutes,
   {
     path: '/settings',
     name: 'settings',

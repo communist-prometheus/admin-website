@@ -6,6 +6,7 @@ const navItems = [
   { path: '/content/positions', label: 'Positions' },
   { path: '/content/pages', label: 'Pages' },
   { path: '/content/common', label: 'Common' },
+  { path: '/content/newspaper', label: 'Newspaper' },
   { path: '/settings', label: 'Settings' },
 ] as const
 </script>

@@ -30,6 +30,12 @@ const route = useRoute()
     Common
   </RouterLink>
   <RouterLink
+    to="/content/newspaper"
+    :class="{ active: route.path.startsWith('/content/newspaper') }"
+  >
+    Newspaper
+  </RouterLink>
+  <RouterLink
     to="/settings"
     :class="{ active: route.path.startsWith('/settings') }"
   >

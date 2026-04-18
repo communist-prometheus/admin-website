@@ -1,7 +1,12 @@
 /**
  * Available content types
  */
-export type ContentType = 'blog' | 'positions' | 'pages' | 'common'
+export type ContentType =
+  | 'blog'
+  | 'positions'
+  | 'pages'
+  | 'common'
+  | 'newspaper'
 
 /** All valid content type values */
 const CONTENT_TYPE_VALUES: readonly string[] = [
@@ -9,6 +14,7 @@ const CONTENT_TYPE_VALUES: readonly string[] = [
   'positions',
   'pages',
   'common',
+  'newspaper',
 ]
 
 /**
@@ -28,4 +34,5 @@ export const NESTED_TYPES: ReadonlySet<ContentType> = new Set([
   'positions',
   'pages',
   'common',
+  'newspaper',
 ])

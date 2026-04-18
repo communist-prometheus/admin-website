@@ -35,6 +35,16 @@ const commonDefaults = (): Record<string, unknown> => ({
   backToList: '',
 })
 
+/**
+ * Frontmatter defaults for newspaper content type.
+ * @param data - Frontmatter input data
+ * @returns Newspaper-specific frontmatter fields
+ */
+const newspaperDefaults = (data: DefaultsInput): Record<string, unknown> => ({
+  description: data.description || '',
+  pubDate: new Date(),
+})
+
 /** Extra frontmatter fields by content type */
 export const extrasByType: Readonly<
   Record<string, (data: DefaultsInput) => Record<string, unknown>>
@@ -42,4 +52,5 @@ export const extrasByType: Readonly<
   blog: blogDefaults,
   positions: positionsDefaults,
   common: commonDefaults,
+  newspaper: newspaperDefaults,
 }

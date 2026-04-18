@@ -25,6 +25,11 @@ export const NAV_ITEMS: readonly NavItem[] = [
     requiresAuth: true,
   },
   {
+    path: '/content/newspaper',
+    label: 'Newspaper',
+    requiresAuth: true,
+  },
+  {
     path: '/settings',
     label: 'Settings',
     requiresAuth: true,

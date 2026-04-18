@@ -83,7 +83,7 @@ watch(() => props.show, (visible) => {
       <input id="slug" v-model="slug" type="text" required placeholder="my-article-slug" class="field-input" />
       <label for="title" class="field-label">Title *</label>
       <input id="title" v-model="title" type="text" required placeholder="Article Title" class="field-input" />
-      <template v-if="contentType === 'blog' || contentType === 'positions'">
+      <template v-if="contentType === 'blog' || contentType === 'positions' || contentType === 'newspaper'">
         <label for="description" class="field-label">Description *</label>
         <textarea id="description" v-model="description" required placeholder="Brief description..." rows="3" class="field-input" />
       </template>

@@ -4,6 +4,7 @@ export {
   labelsFields,
   menuFields,
 } from './fields-common'
+export { newspaperFields } from './fields-newspaper'
 export {
   basePageFields,
   pageFieldsBySlug,

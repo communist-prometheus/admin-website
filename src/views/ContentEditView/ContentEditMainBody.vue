@@ -2,6 +2,7 @@
 import EditorFooter from '@/components/MarkdownEditor/EditorFooter.vue'
 import FrontmatterEditor from '@/components/MarkdownEditor/FrontmatterEditor.vue'
 import MarkdownEditorBody from '@/components/MarkdownEditor/MarkdownEditorBody.vue'
+import PdfUpload from '@/components/MarkdownEditor/PdfUpload.vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import type { ContentType } from '@/types/content'
 
@@ -23,6 +24,8 @@ defineEmits<{
   'paste:image': [file: File]
   'upload-asset': [file: File]
 }>()
+
+const isNewspaper = (type: ContentType) => type === 'newspaper'
 </script>
 
 <template>
@@ -33,7 +36,13 @@ defineEmits<{
     :slug="slug"
     @update:frontmatter="$emit('update:frontmatter', $event)"
   />
+  <PdfUpload
+    v-if="isNewspaper(contentType)"
+    :assets="assets"
+    @upload-pdf="$emit('upload-asset', $event)"
+  />
   <MarkdownEditorBody
+    v-else
     :model-value="bodyContent"
     :asset-url-map="assetUrlMap"
     :assets="assets"
