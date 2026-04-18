@@ -76,12 +76,12 @@ const forceUpdate = async (): Promise<void> => {
   background: #444;
 }
 
-.sw-actions button.danger {
+.sw-actions .danger {
   border-color: hsl(0deg 60% 40%);
   color: hsl(0deg 80% 70%);
 }
 
-.sw-actions button.danger:hover {
+.sw-actions .danger:hover {
   background: hsl(0deg 40% 25%);
 }
 </style>
