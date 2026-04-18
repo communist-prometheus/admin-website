@@ -1,6 +1,10 @@
 import { Effect, Option, pipe } from 'effect'
 import { log } from '../logging/logger'
 import { handleGetRole } from '../rbac/handle-role'
+import {
+  handleGetRoles,
+  handleUpdateRoles,
+} from '../rbac/handle-roles-config'
 import { routeAssetRequest } from './asset/route'
 import { routeContentRequest } from './content/route'
 import { routeFileRequest } from './file/route'
@@ -9,8 +13,14 @@ import type { RouteHandler } from './shared/first-match'
 import { firstMatch } from './shared/first-match'
 import { errorResponse } from './shared/json-response'
 
-const routeRbacRequest: RouteHandler = async url =>
-  url.pathname === '/api/github/role' ? handleGetRole() : undefined
+const routeRbacRequest: RouteHandler = async (url, request) => {
+  if (url.pathname === '/api/github/role') return handleGetRole()
+  if (url.pathname === '/api/github/roles' && request.method === 'GET')
+    return handleGetRoles()
+  if (url.pathname === '/api/github/roles' && request.method === 'POST')
+    return handleUpdateRoles(request)
+  return undefined
+}
 
 const routes: readonly RouteHandler[] = [
   routeRbacRequest,

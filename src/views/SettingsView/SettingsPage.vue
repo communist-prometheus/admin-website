@@ -3,6 +3,7 @@ import type { LabelEntry } from '@/stores/labels'
 import type { LanguageEntry } from '@/stores/settings'
 import LabelsSection from './LabelsSection.vue'
 import LanguagesSection from './LanguagesSection.vue'
+import MembersSection from './MembersSection.vue'
 import SettingsHeading from './SettingsHeading.vue'
 
 defineProps<{
@@ -36,6 +37,7 @@ defineEmits<{
       :saving="savingLabels"
       @save="$emit('save-labels', $event)"
     />
+    <MembersSection />
   </section>
 </template>
 
