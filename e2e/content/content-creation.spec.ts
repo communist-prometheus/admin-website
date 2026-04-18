@@ -1,4 +1,3 @@
-import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { waitForContentReady } from '../helpers/content-ready'
 
@@ -98,37 +97,12 @@ test.describe('Content Creation', () => {
     await expect(page.locator('.create-dialog')).toBeVisible()
   })
 
-  // Mock shape MUST match what the client decodes via StagedResultSchema.
-  // Create now only stages — commit+push is a separate /api/github/commit call.
-  const mockCreateSuccess = async (page: Page) => {
-    await page.route('**/api/github/file', async route => {
-      if (route.request().method() === 'POST') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            content: { sha: 'mockcontentsha' },
-            staged: true,
-          }),
-        })
-      } else {
-        await route.continue()
-      }
-    })
-    await page.route('**/api/github/commit', async route => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: true, sha: 'mockcommitsha' }),
-      })
-    })
-  }
+  // Create dialog no longer calls any API — it stores a draft in
+  // sessionStorage and navigates to the edit page.
 
   test('should create new content when form is submitted', async ({
     page,
   }) => {
-    await mockCreateSuccess(page)
-
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
@@ -152,8 +126,6 @@ test.describe('Content Creation', () => {
   })
 
   test('should close dialog after successful creation', async ({ page }) => {
-    await mockCreateSuccess(page)
-
     await page.goto('/content/blog')
     await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
