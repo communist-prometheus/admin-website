@@ -26,10 +26,13 @@ export const initEditPage = (page: Page) => {
   const saveError = ref<string | null>(null)
   const wrapped = wrapSave(buildRawSave(page, track), saving, saved)
   const handleSave = async (): Promise<void> => {
+    console.log('[save] handleSave called, saving:', saving.value)
     saveError.value = null
     try {
       await wrapped()
+      console.log('[save] wrapped() completed')
     } catch (e) {
+      console.error('[save] error:', e)
       saveError.value = toMessage(e)
     }
   }
