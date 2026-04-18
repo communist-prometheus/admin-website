@@ -76,6 +76,8 @@ const handleInput = (event: Event) => {
 }
 
 .field-input {
+  width: 100%;
+  box-sizing: border-box;
   padding: clamp(0.375rem, 1vw, 0.5rem);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);

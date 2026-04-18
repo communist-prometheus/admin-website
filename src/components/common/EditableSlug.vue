@@ -75,6 +75,10 @@ const onKeydown = (e: KeyboardEvent) => {
   margin: 0;
   font-size: clamp(1.25rem, 3vw, 1.5rem);
   cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   &:hover {
     text-decoration: underline;
@@ -86,6 +90,7 @@ const onKeydown = (e: KeyboardEvent) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .slug-input {
@@ -97,6 +102,8 @@ const onKeydown = (e: KeyboardEvent) => {
   font-size: clamp(1.25rem, 3vw, 1.5rem);
   font-weight: 700;
   width: 16ch;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .slug-error {

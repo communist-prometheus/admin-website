@@ -59,6 +59,7 @@ const active = (a: AssetDisplay) =>
   right: 0;
   z-index: 10;
   min-width: 200px;
+  max-width: calc(100vw - 2rem);
   max-height: 260px;
   overflow-y: auto;
   margin: 0.25rem 0 0;

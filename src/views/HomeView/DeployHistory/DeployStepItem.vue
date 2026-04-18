@@ -82,7 +82,13 @@ const durText = () => dur(props.step)
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.name { flex: 1; }
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .dur {
   font-size: 0.6875rem;

@@ -128,4 +128,10 @@ audio {
 .thumb:hover .actions {
   opacity: 100%;
 }
+
+@media (hover: none) {
+  .thumb .actions {
+    opacity: 100%;
+  }
+}
 </style>

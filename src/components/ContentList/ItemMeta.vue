@@ -25,7 +25,8 @@ defineProps<{
 <style scoped>
 .item-meta {
   display: flex;
-  gap: clamp(0.75rem, 2vw, 1rem);
+  flex-wrap: wrap;
+  gap: 0.25rem clamp(0.75rem, 2vw, 1rem);
   font-size: clamp(0.75rem, 1.5vw, 0.875rem);
   color: var(--color-text-secondary);
 }

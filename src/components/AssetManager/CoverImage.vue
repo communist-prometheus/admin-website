@@ -64,4 +64,10 @@ img {
 .cover-image:hover .cover-overlay {
   opacity: 100%;
 }
+
+@media (hover: none) {
+  .cover-image .cover-overlay {
+    opacity: 100%;
+  }
+}
 </style>

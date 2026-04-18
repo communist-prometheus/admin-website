@@ -17,7 +17,8 @@ defineProps<{
 <style scoped>
 .deploy-meta {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
   margin-top: 0.25rem;
   font-size: 0.8125rem;
   color: var(--color-text-secondary);

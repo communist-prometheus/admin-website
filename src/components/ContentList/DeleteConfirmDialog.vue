@@ -72,8 +72,11 @@ const emit = defineEmits<{
   font-weight: 600;
   color: var(--color-text);
   background: var(--color-background);
-  padding: 1rem 2rem;
+  padding: 1rem clamp(1rem, 4vw, 2rem);
   border-radius: var(--radius-md);
+  max-width: 90vw;
+  overflow-wrap: break-word;
+  word-break: break-all;
 }
 
 .dialog-overlay button {

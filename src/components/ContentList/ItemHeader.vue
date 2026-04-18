@@ -36,6 +36,10 @@ h3 {
   font-size: clamp(1rem, 2vw, 1.125rem);
   font-weight: 600;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lang-badge {

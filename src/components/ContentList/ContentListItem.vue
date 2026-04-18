@@ -85,6 +85,12 @@ const description = computed(() => {
   border-color: var(--color-heading);
 }
 
+@media (hover: none) {
+  .content-item :deep(.delete-btn) {
+    visibility: visible;
+  }
+}
+
 .content-item:hover {
   background: var(--color-background-soft);
   border-color: var(--color-heading);

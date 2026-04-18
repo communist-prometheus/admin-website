@@ -51,6 +51,8 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: 0.875em;
+  overflow-wrap: break-word;
+  word-break: break-all;
 }
 
 .markdown-preview pre {
