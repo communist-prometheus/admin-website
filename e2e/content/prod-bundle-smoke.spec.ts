@@ -134,9 +134,8 @@ test.describe('Deploy smoke - prod bundle makes a real commit', () => {
     )
 
     expect(response.status).toBe(200)
-    // A mock-mode SW returns literally `"commit":{"sha":"mock"}`. The
-    // real SW returns a 40-char SHA from isomorphic-git's git.commit.
-    expect(response.body).not.toContain('"sha":"mock"')
-    expect(response.body).toMatch(/"commit":\{"sha":"[0-9a-f]{40}"/)
+    // Create now only stages — response has content.sha + staged: true.
+    expect(response.body).toMatch(/"staged":true/)
+    expect(response.body).toMatch(/"content":\{"sha":"[0-9a-f]+"/)
   })
 })

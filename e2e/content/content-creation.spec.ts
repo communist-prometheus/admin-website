@@ -98,10 +98,8 @@ test.describe('Content Creation', () => {
     await expect(page.locator('.create-dialog')).toBeVisible()
   })
 
-  // Mock shape MUST match what the client decodes via CommitResultSchema.
-  // The old `{ success: true }` payload used to silently succeed because
-  // decodeResponse did not validate response.ok, but now the schema decode
-  // runs and would reject a wrong-shape payload with "content is missing".
+  // Mock shape MUST match what the client decodes via StagedResultSchema.
+  // Create now only stages — commit+push is a separate /api/github/commit call.
   const mockCreateSuccess = async (page: Page) => {
     await page.route('**/api/github/file', async route => {
       if (route.request().method() === 'POST') {
@@ -110,12 +108,19 @@ test.describe('Content Creation', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             content: { sha: 'mockcontentsha' },
-            commit: { sha: 'mockcommitsha' },
+            staged: true,
           }),
         })
       } else {
         await route.continue()
       }
+    })
+    await page.route('**/api/github/commit', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, sha: 'mockcommitsha' }),
+      })
     })
   }
 

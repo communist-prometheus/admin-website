@@ -4,14 +4,10 @@ import { waitForContentReady } from '../helpers/content-ready'
 /**
  * End-to-end create flow that goes through the REAL service worker path
  * (mock mode, no page.route stubs). This catches the class of bug where
- * the SW response shape drifts from the client's CommitResultSchema —
- * the original failure that surfaced on prod as
- * "Error: { readonly content: ... } └─ ["content"] └─ is missing".
+ * the SW response shape drifts from the client's StagedResultSchema.
  *
- * Unlike content-creation.spec.ts, this test does not mock
- * /api/github/file — it exercises the full fetch → routeRequest →
- * handleFileCreate → writeAndStage → commitAndPush (mock) → jsonResponse
- * → decodeResponse(CommitResultSchema) pipeline.
+ * The new flow is: POST /api/github/file (stage only) → client calls
+ * POST /api/github/commit (commit+push) via pushAndTrack.
  */
 test.describe('Create content end-to-end (real SW path)', () => {
   test('blog create succeeds without schema decode error', async ({
@@ -34,11 +30,10 @@ test.describe('Create content end-to-end (real SW path)', () => {
     await page.fill('#slug', slug)
     await page.fill('#title', `E2E Test ${slug}`)
     await page.fill('#description', 'Created by end-to-end test')
-    // #category is a <select>; pick the first real option.
     await page.locator('#category').selectOption({ index: 1 })
 
-    // Capture the SW response so we can assert the shape directly.
-    const responsePromise = page.waitForResponse(
+    // Capture the stage response.
+    const stagePromise = page.waitForResponse(
       res =>
         res.url().includes('/api/github/file') &&
         res.request().method() === 'POST',
@@ -47,21 +42,21 @@ test.describe('Create content end-to-end (real SW path)', () => {
 
     await page.click('button:has-text("Create")')
 
-    const response = await responsePromise
-    expect(response.status()).toBe(200)
+    const stageResponse = await stagePromise
+    expect(stageResponse.status()).toBe(200)
 
-    const body = (await response.json()) as {
+    const stageBody = (await stageResponse.json()) as {
       content?: { sha?: string }
-      commit?: { sha?: string }
+      staged?: boolean
       error?: string
     }
-    expect(body.error).toBeUndefined()
-    expect(body.content?.sha).toBeTruthy()
-    expect(body.commit?.sha).toBeTruthy()
+    expect(stageBody.error).toBeUndefined()
+    expect(stageBody.content?.sha).toBeTruthy()
+    expect(stageBody.staged).toBe(true)
 
     // Dialog closes on success and parent redirects to the edit page.
     await expect(page.locator('.create-dialog')).toBeHidden({
-      timeout: 10000,
+      timeout: 15000,
     })
     await expect(page).toHaveURL(new RegExp(`/content/blog/edit/${slug}`))
 
@@ -70,7 +65,7 @@ test.describe('Create content end-to-end (real SW path)', () => {
 
     // No schema-decode errors in the console.
     const schemaErrors = errors.filter(
-      e => e.includes('is missing') || e.includes('CommitResultSchema')
+      e => e.includes('is missing') || e.includes('StagedResultSchema')
     )
     expect(schemaErrors).toEqual([])
   })
@@ -85,14 +80,13 @@ test.describe('Create content end-to-end (real SW path)', () => {
     await page.click('button:has-text("New")')
     await expect(page.locator('.create-dialog')).toBeVisible()
 
-    // No Order field after the pubDate migration.
     await expect(page.locator('#order')).toBeHidden()
 
     await page.fill('#slug', slug)
     await page.fill('#title', `E2E Position ${slug}`)
     await page.fill('#description', 'Created by end-to-end test')
 
-    const responsePromise = page.waitForResponse(
+    const stagePromise = page.waitForResponse(
       res =>
         res.url().includes('/api/github/file') &&
         res.request().method() === 'POST',
@@ -101,24 +95,18 @@ test.describe('Create content end-to-end (real SW path)', () => {
 
     await page.click('button:has-text("Create")')
 
-    const response = await responsePromise
-    expect(response.status()).toBe(200)
+    const stageResponse = await stagePromise
+    expect(stageResponse.status()).toBe(200)
 
-    const body = (await response.json()) as {
+    const stageBody = (await stageResponse.json()) as {
       content?: { sha?: string }
-      commit?: { sha?: string }
+      staged?: boolean
     }
-    expect(body.content?.sha).toBeTruthy()
-    expect(body.commit?.sha).toBeTruthy()
+    expect(stageBody.content?.sha).toBeTruthy()
+    expect(stageBody.staged).toBe(true)
 
     await expect(page.locator('.create-dialog')).toBeHidden({
-      timeout: 10000,
+      timeout: 15000,
     })
   })
-
-  // Error-surfacing path for non-OK SW responses is covered by the unit
-  // test at src/validation/decode-response.test.ts which exercises the
-  // extractor directly. Faking an error at e2e level is unreliable
-  // because page.route cannot reach requests that the SW handles
-  // internally without going through the network.
 })

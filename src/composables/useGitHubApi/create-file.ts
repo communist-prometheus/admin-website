@@ -1,21 +1,22 @@
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
 import { decodeResponse } from '@/validation/decode-response'
-import type { CommitResponse } from '@/validation/schemas/sw-api'
-import { CommitResultSchema } from '@/validation/schemas/sw-api'
+import type { StagedResponse } from '@/validation/schemas/sw-api'
+import { StagedResultSchema } from '@/validation/schemas/sw-api'
 import type { CreateFileParams } from './types'
 
 /**
- * Create file in GitHub repository.
+ * Stage a new file in the local git repo (no commit/push).
+ * Caller is responsible for committing via commitStaged().
  * @param params - File creation parameters
- * @returns Commit result with SHA
+ * @returns Staged result with content SHA
  */
 export const createFile = async (
   params: CreateFileParams
-): Promise<CommitResponse> => {
+): Promise<StagedResponse> => {
   const res = await swFetch('/api/github/file', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   })
-  return decodeResponse(CommitResultSchema)(res)
+  return decodeResponse(StagedResultSchema)(res)
 }

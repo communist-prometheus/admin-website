@@ -10,14 +10,23 @@ export const SWFileSchema = Schema.Struct({
 /** SW file response type. */
 export type SWFile = typeof SWFileSchema.Type
 
-/** Schema for SW commit result (POST/PUT /api/github/file). */
-export const CommitResultSchema = Schema.Struct({
+/** Schema for SW file stage result (POST /api/github/file). */
+export const StagedResultSchema = Schema.Struct({
   content: Schema.Struct({ sha: Schema.String }),
-  commit: Schema.Struct({ sha: Schema.String }),
+  staged: Schema.Boolean,
 })
 
-/** Commit result type. */
-export type CommitResponse = typeof CommitResultSchema.Type
+/** Staged result type. */
+export type StagedResponse = typeof StagedResultSchema.Type
+
+/**
+ * Legacy schema kept for backwards compatibility with callers
+ * that still reference CommitResultSchema.
+ */
+export const CommitResultSchema = StagedResultSchema
+
+/** Commit result type (alias for StagedResponse). */
+export type CommitResponse = StagedResponse
 
 /** Schema for SW /api/github/tree item. */
 export const SWTreeItemSchema = Schema.Struct({

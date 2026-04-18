@@ -143,7 +143,7 @@ test.describe('Prod manual verify', () => {
         })
         const createResp = await createPromise
         const body = await createResp.text()
-        if (!/"commit":\{"sha":"[0-9a-f]{40}"/.test(body))
+        if (!/"staged":true/.test(body))
           throw new Error(`bad create body: ${body.slice(0, 120)}`)
       }
     )
