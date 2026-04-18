@@ -15,6 +15,6 @@ export const handleCommit = async (request: Request): Promise<Response> => {
     return jsonResponse({ success: true, sha })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    return jsonResponse({ success: false, sha: '', error: msg })
+    return errorResponse(`Commit failed: ${msg}`, 500)
   }
 }

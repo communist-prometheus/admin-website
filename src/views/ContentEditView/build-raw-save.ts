@@ -31,5 +31,6 @@ export const buildRawSave = (
     title,
     contentTypeName: page.contentType,
     track,
+    onError: msg => globalThis.alert(`Save failed: ${msg}`),
   })
 }

@@ -1,6 +1,9 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { TrackDeploy } from '@/composables/useDeployStatus/deploy-context'
-import { setPendingDeploy } from '@/composables/useDeployStatus/pending-deploy'
+import {
+  clearPendingDeploy,
+  setPendingDeploy,
+} from '@/composables/useDeployStatus/pending-deploy'
 import type { Language } from '@/types/content'
 
 interface HandleSaveDeps {
@@ -16,6 +19,7 @@ interface HandleSaveDeps {
   readonly title: ComputedRef<string>
   readonly contentTypeName: ComputedRef<string>
   readonly track?: TrackDeploy
+  readonly onError?: (msg: string) => void
 }
 
 /**
@@ -26,11 +30,18 @@ interface HandleSaveDeps {
 export const createHandleSave = (deps: HandleSaveDeps) => async () => {
   const message = `updated ${deps.title.value} in ${deps.contentTypeName.value}`
   setPendingDeploy(message)
-  if (deps.hasAssets.value) await deps.blogSave(message)
-  else {
-    const path = deps.buildPath(deps.currentLang.value)
-    await deps.saveCurrentLanguage(path, message)
+  try {
+    if (deps.hasAssets.value) await deps.blogSave(message)
+    else {
+      const path = deps.buildPath(deps.currentLang.value)
+      await deps.saveCurrentLanguage(path, message)
+    }
+    deps.track?.()
+    await deps.reloadContent()
+  } catch (err) {
+    clearPendingDeploy()
+    const msg = err instanceof Error ? err.message : 'Save failed'
+    deps.onError?.(msg)
+    throw err
   }
-  deps.track?.()
-  await deps.reloadContent()
 }
