@@ -16,6 +16,9 @@ const displayValue = (): string => {
   return String(props.value ?? '')
 }
 
+const isChecked = (): boolean =>
+  props.value === true || props.value === 'true'
+
 const handleInput = (event: Event) => {
   const target = event.target
   if (
@@ -23,6 +26,10 @@ const handleInput = (event: Event) => {
     !(target instanceof HTMLTextAreaElement)
   )
     return
+  if (props.field.type === 'checkbox') {
+    emit('update', (target as HTMLInputElement).checked)
+    return
+  }
   emit('update', parseFieldValue(props.field.type, target.value))
 }
 </script>
@@ -39,6 +46,18 @@ const handleInput = (event: Event) => {
     class="field-input"
     @input="handleInput"
   />
+  <label
+    v-else-if="field.type === 'checkbox'"
+    class="checkbox-wrap"
+  >
+    <input
+      :id="`fm-${field.key}`"
+      type="checkbox"
+      :checked="isChecked()"
+      @change="handleInput"
+    />
+    <span class="checkbox-label">{{ field.label }}</span>
+  </label>
   <input
     v-else
     :id="`fm-${field.key}`"
@@ -74,5 +93,24 @@ const handleInput = (event: Event) => {
 .field-input[rows] {
   resize: vertical;
   min-height: 48px;
+}
+
+.checkbox-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox-wrap input[type="checkbox"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--color-heading);
+  cursor: pointer;
+}
+
+.checkbox-label {
+  font-size: clamp(0.875rem, 2vw, 1rem);
+  color: var(--color-text);
 }
 </style>

@@ -15,8 +15,14 @@ const emit = defineEmits<{
 
 const fields = () => getFields(props.contentType, props.slug)
 
+const today = () => new Date().toISOString().slice(0, 10)
+
 const handleFieldUpdate = (key: string, value: unknown) => {
-  emit('update:frontmatter', { ...props.frontmatter, [key]: value })
+  const updated = { ...props.frontmatter, [key]: value }
+  if (key === 'published' && value === true && !updated.publishDate) {
+    updated.publishDate = today()
+  }
+  emit('update:frontmatter', updated)
 }
 </script>
 

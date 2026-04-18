@@ -2,6 +2,7 @@ const formatValue = (value: unknown): string => {
   if (value instanceof Date) {
     return value.toISOString().split('T')[0] ?? ''
   }
+  if (typeof value === 'boolean') return value ? 'true' : 'false'
   return String(value)
 }
 
