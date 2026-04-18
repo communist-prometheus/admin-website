@@ -23,6 +23,12 @@ const sectionRoutes: RouteRecordRaw[] = CONTENT_SECTIONS.map(type => ({
 export const contentRoutes: RouteRecordRaw[] = [
   ...sectionRoutes,
   {
+    path: '/tickets',
+    name: 'tickets',
+    meta: { requiresAuth: true },
+    component: () => import('../views/TicketsView/TicketsView.vue'),
+  },
+  {
     path: '/settings',
     name: 'settings',
     meta: { requiresAuth: true },

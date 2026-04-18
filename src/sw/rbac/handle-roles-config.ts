@@ -41,7 +41,7 @@ export const handleUpdateRoles = async (
   try {
     const body: unknown = await request.json()
     Schema.decodeUnknownSync(RolesConfigSchema)(body)
-    const content = JSON.stringify(body, undefined, 2) + '\n'
+    const content = `${JSON.stringify(body, undefined, 2)}\n`
     await writeAndStage(ROLES_PATH, content)
     await commitAndPush('admin: update roles')
     await loadRoles()
