@@ -38,6 +38,7 @@ export const createInitEditor =
       deps.currentLang.value = draft.lang
       deps.frontmatterData.value = {
         title: draft.title,
+        lang: draft.lang,
         ...(draft.description ? { description: draft.description } : {}),
         ...(draft.category ? { category: draft.category } : {}),
         pubDate: new Date().toISOString().slice(0, 10),
