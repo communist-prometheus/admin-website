@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useRoleStore } from '@/stores/role'
 import MobileAuthAction from './MobileAuthAction.vue'
 import MobileNavLink from './MobileNavLink.vue'
 import { visibleItems } from './visible-items'
@@ -10,8 +11,9 @@ const emit = defineEmits<{
 }>()
 
 const auth = useAuthStore()
+const roleStore = useRoleStore()
 const items = computed(() =>
-  visibleItems(!!auth.user)
+  visibleItems(!!auth.user, roleStore.role)
 )
 </script>
 

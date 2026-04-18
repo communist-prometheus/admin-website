@@ -2,7 +2,13 @@
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 /** Log categories */
-export type LogCategory = 'git' | 'fs' | 'auth' | 'cache' | 'lifecycle'
+export type LogCategory =
+  | 'git'
+  | 'fs'
+  | 'auth'
+  | 'cache'
+  | 'lifecycle'
+  | 'rbac'
 
 /** Structured log entry */
 export interface LogEntry {

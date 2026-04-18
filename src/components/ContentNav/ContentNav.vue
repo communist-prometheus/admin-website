@@ -1,14 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useRoleStore } from '@/stores/role'
+import { getNavForRole } from './nav-by-role'
 
-const navItems = [
-  { path: '/content/blog', label: 'Blog' },
-  { path: '/content/positions', label: 'Positions' },
-  { path: '/content/pages', label: 'Pages' },
-  { path: '/content/common', label: 'Common' },
-  { path: '/content/newspaper', label: 'Newspaper' },
-  { path: '/settings', label: 'Settings' },
-] as const
+const roleStore = useRoleStore()
+const navItems = computed(() => getNavForRole(roleStore.role))
 </script>
 
 <template>

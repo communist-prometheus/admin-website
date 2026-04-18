@@ -6,6 +6,7 @@ export interface SWGitConfig {
   readonly contentPath: string
   readonly corsProxy: string
   readonly token: string
+  readonly username?: string
   readonly authorName?: string
   readonly authorEmail?: string
   readonly mock?: boolean

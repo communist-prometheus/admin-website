@@ -1,44 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { useRoleStore } from '@/stores/role'
+import { getNavForRole } from './ContentNav/nav-by-role'
 
 const route = useRoute()
+const roleStore = useRoleStore()
+const items = computed(() => getNavForRole(roleStore.role))
 </script>
 
 <template>
   <RouterLink
-    to="/content/blog"
-    :class="{ active: route.path.startsWith('/content/blog') }"
+    v-for="item in items"
+    :key="item.path"
+    :to="item.path"
+    :class="{ active: route.path.startsWith(item.path) }"
   >
-    Blog
-  </RouterLink>
-  <RouterLink
-    to="/content/positions"
-    :class="{ active: route.path.startsWith('/content/positions') }"
-  >
-    Positions
-  </RouterLink>
-  <RouterLink
-    to="/content/pages"
-    :class="{ active: route.path.startsWith('/content/pages') }"
-  >
-    Pages
-  </RouterLink>
-  <RouterLink
-    to="/content/common"
-    :class="{ active: route.path.startsWith('/content/common') }"
-  >
-    Common
-  </RouterLink>
-  <RouterLink
-    to="/content/newspaper"
-    :class="{ active: route.path.startsWith('/content/newspaper') }"
-  >
-    Newspaper
-  </RouterLink>
-  <RouterLink
-    to="/settings"
-    :class="{ active: route.path.startsWith('/settings') }"
-  >
-    Settings
+    {{ item.label }}
   </RouterLink>
 </template>

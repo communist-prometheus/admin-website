@@ -32,3 +32,8 @@ export class ParseError extends Data.TaggedError('ParseError')<{
   readonly input: string
   readonly cause: unknown
 }> {}
+
+/** Action forbidden by role-based access control. */
+export class ForbiddenError extends Data.TaggedError('ForbiddenError')<{
+  readonly message: string
+}> {}

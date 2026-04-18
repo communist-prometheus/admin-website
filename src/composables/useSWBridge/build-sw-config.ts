@@ -23,6 +23,7 @@ export const buildSWConfig = (
 ): SWGitConfig => ({
   ...getGitHubConfig(),
   token,
+  username: author?.username,
   authorName: author?.name ?? author?.username,
   authorEmail: author
     ? `${author.username}@users.noreply.github.com`

@@ -11,6 +11,7 @@ export const SWGitConfigSchema = Schema.Struct({
   contentPath: Schema.String,
   corsProxy: Schema.String,
   token: Schema.String,
+  username: Schema.optional(Schema.String),
   authorName: Schema.optional(Schema.String),
   authorEmail: Schema.optional(Schema.String),
   mock: Schema.optional(Schema.Boolean),

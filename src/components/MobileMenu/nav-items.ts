@@ -1,8 +1,11 @@
+import type { Role } from '@/types/role'
+
 /** Navigation item definition for mobile menu. */
 export interface NavItem {
   readonly path: string
   readonly label: string
   readonly requiresAuth: boolean
+  readonly minRole?: Role
 }
 
 /** Shared navigation items used by mobile menu. */
@@ -13,16 +16,19 @@ export const NAV_ITEMS: readonly NavItem[] = [
     path: '/content/positions',
     label: 'Positions',
     requiresAuth: true,
+    minRole: 'chief-editor',
   },
   {
     path: '/content/pages',
     label: 'Pages',
     requiresAuth: true,
+    minRole: 'admin',
   },
   {
     path: '/content/common',
     label: 'Common',
     requiresAuth: true,
+    minRole: 'admin',
   },
   {
     path: '/content/newspaper',
@@ -33,5 +39,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
     path: '/settings',
     label: 'Settings',
     requiresAuth: true,
+    minRole: 'admin',
   },
 ]

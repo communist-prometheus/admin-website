@@ -1,7 +1,10 @@
 import { Effect, pipe } from 'effect'
+import type { ContentType } from '@/types/content'
+import { isContentType } from '@/types/content'
 import { ValidationError } from '../../errors'
 import { writeAndStage } from '../../git/io/write-file'
 import { commitAndPush } from '../../git/remote/commit-and-push'
+import { assertPermission } from '../../rbac/permission-check'
 import { serializeFrontmatter } from '../shared/frontmatter'
 import { errorResponse, jsonResponse } from '../shared/json-response'
 import { parseBody } from '../shared/parse-body'
@@ -10,14 +13,16 @@ import { resolveContentPath } from './resolve-path'
 import type { UpdateBody } from './update-body'
 import { isValidUpdate } from './update-body'
 
-/**
- * Resolve path, write content, commit, return response.
- * @param b - Validated update body
- * @returns Effect yielding JSON Response
- */
-const writeContent = (b: UpdateBody) =>
+const checkAndWrite = (b: UpdateBody) =>
   pipe(
-    Effect.promise(() => resolveContentPath(b.type, b.slug, b.lang)),
+    assertPermission(
+      'update',
+      isContentType(b.type) ? (b.type as ContentType) : 'blog',
+      String(b.frontmatter['author'] ?? '')
+    ),
+    Effect.flatMap(() =>
+      Effect.promise(() => resolveContentPath(b.type, b.slug, b.lang))
+    ),
     Effect.map(p => p ?? newFilePath(b.type, b.slug, b.lang)),
     Effect.tap(path =>
       Effect.tryPromise(() =>
@@ -40,7 +45,10 @@ export const handleContentUpdate = (request: Request): Promise<Response> =>
       isValidUpdate,
       () => new ValidationError({ message: 'Missing required fields' })
     ),
-    Effect.flatMap(writeContent),
+    Effect.flatMap(checkAndWrite),
+    Effect.catchTag('ForbiddenError', e =>
+      Effect.succeed(errorResponse(e.message, 403))
+    ),
     Effect.catchTag('ValidationError', e =>
       Effect.succeed(errorResponse(e.message, 400))
     ),
