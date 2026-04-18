@@ -5,6 +5,7 @@ import DeleteConfirmDialog from '@/components/ContentList/DeleteConfirmDialog.vu
 import CreateContentDialog from '@/components/CreateContentDialog/CreateContentDialog.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import { usePushAndTrack } from '@/composables/useDeployStatus/push-and-track'
 import { useLabelsStore } from '@/stores/labels'
 import type { ContentType } from '@/types/content'
 import ContentViewHeader from './ContentView/ContentViewHeader.vue'
@@ -22,20 +23,16 @@ const { router, isAuthenticated, isFixedStructure, items,
 const labelsStore = useLabelsStore()
 onMounted(() => labelsStore.ensureLoaded())
 const handleSelect = createSelectHandler(router, typeRef)
-const del = createDeleteState(typeRef, selectedLang, reloadContent)
+const pushAndTrack = usePushAndTrack()
+const del = createDeleteState(typeRef, selectedLang, reloadContent, pushAndTrack)
 const creating = ref(false)
 const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
   if (creating.value) return
   creating.value = true
   try {
     error.value = null
-    // Wait for the SW to finish pushing to GitHub before navigating —
-    // without this, the edit page opens while the content store is
-    // still stale and frontmatter reactive state stays empty.
     await createContent(data)
-    // Refresh the pinia content store so the edit page's availableLanguages
-    // set sees the new slug. Otherwise initEditor skips loadLanguageVersion
-    // and the first save writes an empty frontmatter block.
+    await pushAndTrack(`Create ${data.slug} in ${props.contentType}`)
     await reloadContent()
     showCreateDialog.value = false
     router.push({

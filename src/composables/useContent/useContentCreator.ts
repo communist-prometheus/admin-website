@@ -6,7 +6,8 @@ import type { FrontmatterInput } from './build-frontmatter'
 import { buildFrontmatter } from './build-frontmatter'
 
 /**
- * Content creation composable
+ * Content creation composable — stages the file only.
+ * Caller is responsible for commit+push via pushAndTrack.
  * @param contentType - Type or getter for content type
  * @returns Content creation interface
  */

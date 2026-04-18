@@ -1,7 +1,6 @@
 import { Effect, pipe } from 'effect'
 import { NotFoundError } from '../../errors'
 import { deleteAndUnstage } from '../../git/io/delete-git-file'
-import { commitAndPush } from '../../git/remote/commit-and-push'
 import { errorResponse, jsonResponse } from '../shared/json-response'
 import { resolveContentPath } from './resolve-path'
 
@@ -13,16 +12,13 @@ const deleteFile = (type: string, slug: string, lang: string) =>
       () => new NotFoundError({ resource: `${slug}.${lang}.md` })
     ),
     Effect.tap(p => Effect.tryPromise(() => deleteAndUnstage(p))),
-    Effect.tap(() =>
-      Effect.tryPromise(() =>
-        commitAndPush(`Delete ${type}/${slug}.${lang}.md`)
-      )
-    ),
-    Effect.map(path => jsonResponse({ success: true, path }))
+    Effect.map(path => jsonResponse({ success: true, staged: true, path }))
   )
 
 /**
  * Handle DELETE /api/github/content/:type/:slug/:lang
+ * Stages the deletion but does NOT commit or push.
+ * Client calls /api/github/commit separately.
  * @param type - Content type
  * @param slug - Content slug
  * @param lang - Language code

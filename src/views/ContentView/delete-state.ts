@@ -26,12 +26,14 @@ const buildHandlers = (
  * @param contentType - Content type
  * @param selectedLang - Current selected language
  * @param reload - Reload callback
+ * @param pushAndTrack - Unified push+track function
  * @returns Delete state and handlers
  */
 export const createDeleteState = (
   contentType: Ref<ContentType>,
   selectedLang: Ref<Language>,
-  reload: () => Promise<void>
+  reload: () => Promise<void>,
+  pushAndTrack: (message: string) => Promise<string>
 ) => {
   const deleteTarget = ref<ContentItem | undefined>()
   const showDeleteDialog = computed(() => deleteTarget.value !== undefined)
@@ -44,6 +46,7 @@ export const createDeleteState = (
       selectedLang: selectedLang.value,
       reload,
       clearTarget: clear,
+      pushAndTrack,
     })
   return {
     deleteTarget,
