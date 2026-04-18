@@ -151,7 +151,13 @@ describe('runTick', () => {
     const phase = ref<'idle' | 'polling' | 'paused'>('polling')
     const schedule = vi.fn()
     const setTimer = vi.fn()
-    await runTick({ state, phase, schedule, setTimer, isWaitingForRun: () => false })
+    await runTick({
+      state,
+      phase,
+      schedule,
+      setTimer,
+      isWaitingForRun: () => false,
+    })
     expect(phase.value).toBe('paused')
     expect(schedule).not.toHaveBeenCalled()
   })
@@ -163,7 +169,13 @@ describe('runTick', () => {
     const phase = ref<'idle' | 'polling' | 'paused'>('polling')
     const schedule = vi.fn()
     const setTimer = vi.fn()
-    await runTick({ state, phase, schedule, setTimer, isWaitingForRun: () => false })
+    await runTick({
+      state,
+      phase,
+      schedule,
+      setTimer,
+      isWaitingForRun: () => false,
+    })
     expect(phase.value).toBe('polling')
     expect(schedule).toHaveBeenCalledOnce()
   })
@@ -173,7 +185,13 @@ describe('runTick', () => {
     const state = createDeployState()
     const phase = ref<'idle' | 'polling' | 'paused'>('polling')
     const schedule = vi.fn()
-    await runTick({ state, phase, schedule, setTimer: vi.fn(), isWaitingForRun: () => false })
+    await runTick({
+      state,
+      phase,
+      schedule,
+      setTimer: vi.fn(),
+      isWaitingForRun: () => false,
+    })
     expect(state.error.value).toBe('network down')
     // Keeps the loop alive on transient errors — we'll retry next tick.
     expect(schedule).toHaveBeenCalledOnce()

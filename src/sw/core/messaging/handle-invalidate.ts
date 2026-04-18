@@ -14,7 +14,11 @@ const wipeDatabase = async (): Promise<void> => {
       req.onsuccess = () => resolve()
       req.onerror = () => reject(req.error)
       req.onblocked = () => {
-        log('warn', 'lifecycle', 'IndexedDB delete blocked — connections still open')
+        log(
+          'warn',
+          'lifecycle',
+          'IndexedDB delete blocked — connections still open'
+        )
         resolve()
       }
     })
@@ -30,7 +34,11 @@ const wipeDatabase = async (): Promise<void> => {
  * @param reply - Response callback
  */
 export const handleInvalidate = (reply: (data: unknown) => void): void => {
-  log('info', 'lifecycle', 'Invalidation requested — wiping state + IndexedDB')
+  log(
+    'info',
+    'lifecycle',
+    'Invalidation requested — wiping state + IndexedDB'
+  )
   workerState.state = 'idle'
   workerState.lastSync = undefined
   workerState.commitSha = undefined

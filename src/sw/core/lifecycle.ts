@@ -14,7 +14,11 @@ const ensureVersionMatch = async (): Promise<void> => {
   try {
     const stored = await readVersionFromIDB()
     if (stored && stored !== SW_VERSION) {
-      log('info', 'lifecycle', `Version mismatch: ${stored} → ${SW_VERSION}, wiping IndexedDB`)
+      log(
+        'info',
+        'lifecycle',
+        `Version mismatch: ${stored} → ${SW_VERSION}, wiping IndexedDB`
+      )
       await deleteDatabase()
     }
     await writeVersionToIDB()
@@ -28,8 +32,7 @@ const readVersionFromIDB = (): Promise<string | undefined> =>
     const req = indexedDB.open('sw-meta', 1)
     req.onupgradeneeded = () => {
       const db = req.result
-      if (!db.objectStoreNames.contains('kv'))
-        db.createObjectStore('kv')
+      if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv')
     }
     req.onsuccess = () => {
       const db = req.result
@@ -39,7 +42,10 @@ const readVersionFromIDB = (): Promise<string | undefined> =>
         db.close()
         resolve(get.result as string | undefined)
       }
-      get.onerror = () => { db.close(); resolve(undefined) }
+      get.onerror = () => {
+        db.close()
+        resolve(undefined)
+      }
     }
     req.onerror = () => resolve(undefined)
   })
@@ -49,15 +55,20 @@ const writeVersionToIDB = (): Promise<void> =>
     const req = indexedDB.open('sw-meta', 1)
     req.onupgradeneeded = () => {
       const db = req.result
-      if (!db.objectStoreNames.contains('kv'))
-        db.createObjectStore('kv')
+      if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv')
     }
     req.onsuccess = () => {
       const db = req.result
       const tx = db.transaction('kv', 'readwrite')
       tx.objectStore('kv').put(SW_VERSION, VERSION_KEY)
-      tx.oncomplete = () => { db.close(); resolve() }
-      tx.onerror = () => { db.close(); resolve() }
+      tx.oncomplete = () => {
+        db.close()
+        resolve()
+      }
+      tx.onerror = () => {
+        db.close()
+        resolve()
+      }
     }
     req.onerror = () => resolve()
   })
@@ -65,7 +76,10 @@ const writeVersionToIDB = (): Promise<void> =>
 const deleteDatabase = (): Promise<void> =>
   new Promise(resolve => {
     const req = indexedDB.deleteDatabase(DB_NAME)
-    req.onsuccess = () => { log('info', 'lifecycle', `Deleted ${DB_NAME}`); resolve() }
+    req.onsuccess = () => {
+      log('info', 'lifecycle', `Deleted ${DB_NAME}`)
+      resolve()
+    }
     req.onerror = () => resolve()
     req.onblocked = () => resolve()
   })
@@ -83,8 +97,6 @@ export const registerLifecycle = (): void => {
 
   self.addEventListener('activate', event => {
     log('info', 'lifecycle', 'SW activated')
-    event.waitUntil(
-      ensureVersionMatch().then(() => self.clients.claim())
-    )
+    event.waitUntil(ensureVersionMatch().then(() => self.clients.claim()))
   })
 }
