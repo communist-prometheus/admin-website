@@ -20,6 +20,8 @@ const makeDeps = (available: readonly Language[]) => {
     currentLang,
     loadLanguageVersion,
     buildPath,
+    frontmatterData: ref<Record<string, unknown>>({}),
+    bodyContent: ref(''),
   }
 }
 

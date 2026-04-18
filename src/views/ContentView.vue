@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, toRef } from 'vue'
+import { onMounted, toRef } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import DeleteConfirmDialog from '@/components/ContentList/DeleteConfirmDialog.vue'
 import CreateContentDialog from '@/components/CreateContentDialog/CreateContentDialog.vue'
+import type { CreateContentData } from '@/components/CreateContentDialog/helpers'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import { setNewContentDraft } from '@/composables/useContent/new-content-draft'
 import { usePushAndTrack } from '@/composables/useDeployStatus/push-and-track'
 import { useLabelsStore } from '@/stores/labels'
 import type { ContentType } from '@/types/content'
@@ -16,8 +18,9 @@ import { useContentView } from './ContentView/use-content-view'
 
 const props = defineProps<{ readonly contentType: ContentType }>()
 const typeRef = toRef(() => props.contentType)
-const { router, isAuthenticated, isFixedStructure, items,
-  loadingList, reloadContent, createContent,
+const {
+  router, isAuthenticated, isFixedStructure, items,
+  loadingList, reloadContent,
   error, selectedLang, showCreateDialog,
 } = useContentView(typeRef)
 const labelsStore = useLabelsStore()
@@ -25,25 +28,14 @@ onMounted(() => labelsStore.ensureLoaded())
 const handleSelect = createSelectHandler(router, typeRef)
 const pushAndTrack = usePushAndTrack()
 const del = createDeleteState(typeRef, selectedLang, reloadContent, pushAndTrack)
-const creating = ref(false)
-const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
-  if (creating.value) return
-  creating.value = true
-  try {
-    error.value = null
-    await createContent(data)
-    await pushAndTrack(`Create ${data.slug} in ${props.contentType}`)
-    await reloadContent()
-    showCreateDialog.value = false
-    router.push({
-      name: 'content-edit',
-      params: { type: props.contentType, slug: data.slug },
-    })
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to create content'
-  } finally {
-    creating.value = false
-  }
+
+const handleCreate = (data: CreateContentData) => {
+  setNewContentDraft(data)
+  showCreateDialog.value = false
+  router.push({
+    name: 'content-edit',
+    params: { type: props.contentType, slug: data.slug },
+  })
 }
 </script>
 
@@ -56,19 +48,22 @@ const handleCreate = async (data: Parameters<typeof createContent>[0]) => {
       :hide-create="isFixedStructure" :hide-delete="isFixedStructure"
       @select="handleSelect"
       @create="() => { showCreateDialog = true }"
-      @delete="item => { del.deleteTarget.value = item }" />
+      @delete="item => { del.deleteTarget.value = item }"
+    />
     <LoadingOverlay :show="loadingList" />
     <ErrorMessage :error="error" />
     <CreateContentDialog
       v-if="!isFixedStructure" :show="showCreateDialog"
       :content-type="contentType" :lang="selectedLang"
-      :labels="labelsStore.labels" :submitting="creating"
-      @close="() => { if (!creating) showCreateDialog = false }"
-      @create="handleCreate" />
+      :labels="labelsStore.labels"
+      @close="() => { showCreateDialog = false }"
+      @create="handleCreate"
+    />
     <DeleteConfirmDialog
       v-if="!isFixedStructure" :show="del.showDeleteDialog.value"
       :slug="del.deleteTarget.value?.slug ?? ''" :current-lang="selectedLang"
       @delete-all="del.handleDeleteAll" @delete-lang="del.handleDeleteLang"
-      @close="() => { del.deleteTarget.value = undefined }" />
+      @close="() => { del.deleteTarget.value = undefined }"
+    />
   </AppLayout>
 </template>

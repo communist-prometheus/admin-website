@@ -1,4 +1,5 @@
 import type { ComputedRef, Ref } from 'vue'
+import { consumeNewContentDraft } from '@/composables/useContent/new-content-draft'
 import type { Language } from '@/types/content'
 
 interface InitDeps {
@@ -8,6 +9,8 @@ interface InitDeps {
   readonly currentLang: Ref<Language>
   readonly loadLanguageVersion: (path: string) => Promise<void>
   readonly buildPath: (lang: Language) => string
+  readonly frontmatterData: Ref<Record<string, unknown>>
+  readonly bodyContent: Ref<string>
 }
 
 const pickFirstLang = (available: ReadonlySet<Language>): Language =>
@@ -29,6 +32,20 @@ const pickFirstLang = (available: ReadonlySet<Language>): Language =>
 export const createInitEditor =
   (deps: InitDeps) => async (): Promise<void> => {
     deps.reset()
+
+    const draft = consumeNewContentDraft()
+    if (draft) {
+      deps.currentLang.value = draft.lang
+      deps.frontmatterData.value = {
+        title: draft.title,
+        ...(draft.description ? { description: draft.description } : {}),
+        ...(draft.category ? { category: draft.category } : {}),
+        pubDate: new Date().toISOString().slice(0, 10),
+      }
+      deps.bodyContent.value = ''
+      return
+    }
+
     await deps.loadContent()
     const firstLang = pickFirstLang(deps.availableLanguages.value)
     deps.currentLang.value = firstLang

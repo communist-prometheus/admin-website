@@ -34,9 +34,9 @@ export const handleFileUpdate = async (
   request: Request
 ): Promise<Response> => {
   const body: UpdateFileBody = await request.json()
-  const { path, content, sha, message } = body
+  const { path, content, message } = body
 
-  if (!path || !content || !sha || !message) {
+  if (!path || !content || !message) {
     return errorResponse('Missing required fields', 400)
   }
 
