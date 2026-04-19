@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const VENDOR = '/vendor/pdf.min.mjs'
 const WORKER = '/vendor/pdf.worker.min.mjs'
 
 const loadPdfJs = async () => {
-  const mod = await import(/* @vite-ignore */ VENDOR)
+  // @vite-ignore
+  const mod = await import(VENDOR)
   mod.GlobalWorkerOptions.workerSrc = WORKER
   return mod
 }

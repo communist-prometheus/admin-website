@@ -71,6 +71,7 @@
     "eslint.config.js",
     "src/auto-imports.d.ts",
     "src/components.d.ts",
-    "cors-proxy/**"
+    "cors-proxy/**",
+    "public/vendor/**"
   ]
 }

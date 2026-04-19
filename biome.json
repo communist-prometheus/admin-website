@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!!**/dist", "!!cors-proxy", "!!.wrangler"],
+    "includes": [
+      "**",
+      "!!**/dist",
+      "!!cors-proxy",
+      "!!.wrangler",
+      "!!public/vendor"
+    ],
     "ignoreUnknown": false
   },
   "formatter": {
