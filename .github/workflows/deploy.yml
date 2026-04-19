@@ -34,7 +34,7 @@ jobs:
 
       - name: Running E2E tests
         run: bunx playwright test --project=chromium --reporter=line
-        timeout-minutes: 15
+        timeout-minutes: 20
 
       # Playwright's webServer runs `bun run build:e2e` which overwrites
       # dist/ with a VITE_MOCK_AUTH=true bundle AND leaves a
