@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
-import { extractPdfCover } from '@/features/newspaper/extract-pdf-cover'
+import { createDragHandlers } from './pdf-upload-handlers'
 
 const props = defineProps<{
   readonly assets?: readonly AssetDisplay[]
@@ -18,24 +18,18 @@ const dragging = ref(false)
 
 const pdfAsset = computed(() =>
   props.assets?.find(
-    (a) =>
-      a.mimeType === 'application/pdf' &&
-      a.status !== 'pending-delete'
+    (a) => a.mimeType === 'application/pdf' && a.status !== 'pending-delete'
   )
 )
 
-const triggerUpload = () => {
-  inputRef.value?.click()
-}
+const triggerUpload = () => { inputRef.value?.click() }
 
 const handleFile = async (file: File) => {
   if (file.type !== 'application/pdf') return
   emit('upload-pdf', file)
-  const cover = await extractPdfCover(file)
-  if (cover) {
-    emit('upload-cover', cover)
-    emit('set-cover', 'cover.png')
-  }
+  const m = await import('@/features/newspaper/extract-pdf-cover')
+  const cover = await m.extractPdfCover(file)
+  if (cover) { emit('upload-cover', cover); emit('set-cover', 'cover.png') }
 }
 
 const handleChange = (event: Event) => {
@@ -45,20 +39,7 @@ const handleChange = (event: Event) => {
   event.target.value = ''
 }
 
-const onDrop = (event: DragEvent) => {
-  dragging.value = false
-  const file = event.dataTransfer?.files[0]
-  if (file) handleFile(file)
-}
-
-const onDragOver = (event: DragEvent) => {
-  event.preventDefault()
-  dragging.value = true
-}
-
-const onDragLeave = () => {
-  dragging.value = false
-}
+const { onDrop, onDragOver, onDragLeave } = createDragHandlers(dragging, handleFile)
 </script>
 
 <template>
