@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
+import { extractPdfCover } from '@/features/newspaper/extract-pdf-cover'
 
 const props = defineProps<{
   readonly assets?: readonly AssetDisplay[]
@@ -8,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'upload-pdf': [file: File]
+  'upload-cover': [file: File]
 }>()
 
 const inputRef = ref<HTMLInputElement>()
@@ -25,9 +27,11 @@ const triggerUpload = () => {
   inputRef.value?.click()
 }
 
-const handleFile = (file: File) => {
+const handleFile = async (file: File) => {
   if (file.type !== 'application/pdf') return
   emit('upload-pdf', file)
+  const cover = await extractPdfCover(file)
+  if (cover) emit('upload-cover', cover)
 }
 
 const handleChange = (event: Event) => {

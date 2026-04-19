@@ -38,6 +38,9 @@ export const listTickets = async (
   state: 'open' | 'closed' | 'all' = 'open'
 ): Promise<readonly Ticket[]> => {
   const url = `${BASE}/issues?state=${state}&per_page=50`
-  const res = await fetch(url, { headers: headers(token) })
+  const res = await fetch(url, {
+    headers: headers(token),
+    cache: 'no-store',
+  })
   return (await res.json()) as Ticket[]
 }

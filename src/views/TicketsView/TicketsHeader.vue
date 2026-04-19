@@ -28,9 +28,14 @@ const handleCreate = async (
   labels: readonly string[]
 ) => {
   if (!auth.user) return
-  await createTicket(auth.user.accessToken, title, body, labels)
-  emit('toggle-create')
-  emit('reload')
+  try {
+    await createTicket(auth.user.accessToken, title, body, labels)
+    emit('toggle-create')
+    emit('reload')
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Failed'
+    globalThis.alert(msg)
+  }
 }
 </script>
 

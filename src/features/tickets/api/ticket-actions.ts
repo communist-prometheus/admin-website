@@ -29,6 +29,7 @@ export const createTicket = async (
     headers: headers(token),
     body: JSON.stringify({ title, body, labels }),
   })
+  if (!res.ok) throw new Error(`Create ticket failed: ${res.status}`)
   return (await res.json()) as Ticket
 }
 

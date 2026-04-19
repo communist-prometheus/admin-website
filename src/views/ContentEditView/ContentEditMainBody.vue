@@ -40,6 +40,7 @@ const isNewspaper = (type: ContentType) => type === 'newspaper'
     v-if="isNewspaper(contentType)"
     :assets="assets"
     @upload-pdf="$emit('upload-asset', $event)"
+    @upload-cover="$emit('upload-asset', $event)"
   />
   <MarkdownEditorBody
     v-else
