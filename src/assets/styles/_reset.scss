@@ -13,8 +13,10 @@ body {
   height: 100%;
 }
 
-html {
-  scrollbar-gutter: stable;
+@media (min-width: 768px) {
+  html {
+    scrollbar-gutter: stable;
+  }
 }
 
 body {
