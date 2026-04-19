@@ -1,3 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+const VENDOR = '/vendor/pdf.min.mjs'
+const WORKER = '/vendor/pdf.worker.min.mjs'
+
+const loadPdfJs = async () => {
+  const mod = await import(/* @vite-ignore */ VENDOR)
+  mod.GlobalWorkerOptions.workerSrc = WORKER
+  return mod
+}
+
 /**
  * Render the first page of a PDF to a PNG Blob.
  * @param pdfFile - PDF file
@@ -6,11 +17,7 @@
 export const renderFirstPage = async (
   pdfFile: File
 ): Promise<Blob | undefined> => {
-  const pdfjsLib = await import('pdfjs-dist')
-  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.mjs',
-    import.meta.url
-  ).href
+  const pdfjsLib = await loadPdfJs()
   const data = new Uint8Array(await pdfFile.arrayBuffer())
   const doc = await pdfjsLib.getDocument({ data }).promise
   const page = await doc.getPage(1)
