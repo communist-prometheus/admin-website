@@ -1,7 +1,13 @@
 import { workerState } from '../../state/state'
 
 /** Content types that use nested folder layout. */
-export const NESTED_TYPES = new Set(['blog', 'positions', 'pages', 'common'])
+export const NESTED_TYPES = new Set([
+  'blog',
+  'positions',
+  'pages',
+  'common',
+  'newspaper',
+])
 
 /**
  * Check whether a content type uses nested layout.
