@@ -9,7 +9,7 @@ const handleInput = (event: Event) => {
 </script>
 
 <template>
-  <td>
+  <td data-label="Key">
     <input
       :value="value"
       type="text"

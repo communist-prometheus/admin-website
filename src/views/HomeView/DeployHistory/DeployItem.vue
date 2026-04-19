@@ -108,6 +108,7 @@ const toggle = (): void => {
   border-radius: var(--radius-md);
   background: var(--color-surface);
   transition: border-color var(--transition-fast);
+  min-width: 0;
 }
 
 .deploy-item.active {

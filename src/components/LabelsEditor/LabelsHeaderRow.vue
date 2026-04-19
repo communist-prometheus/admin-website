@@ -7,7 +7,7 @@ defineProps<{
 </script>
 
 <template>
-  <tr>
+  <tr class="label-header-row">
     <th>Key</th>
     <th
       v-for="lang in languages"

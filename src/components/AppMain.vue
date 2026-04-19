@@ -9,7 +9,7 @@
 <style scoped>
 .app-main {
   display: block;
-  padding: clamp(1rem, 4vw, 2rem);
+  min-width: 0;
   color: var(--color-text);
 }
 </style>

@@ -18,6 +18,7 @@ defineProps<{
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .msg {
@@ -26,6 +27,8 @@ defineProps<{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .badge {

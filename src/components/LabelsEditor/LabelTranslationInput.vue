@@ -1,7 +1,8 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   readonly value: string
   readonly langCode: string
+  readonly langLabel: string
 }>()
 const emit = defineEmits<{ input: [value: string] }>()
 
@@ -9,10 +10,12 @@ const handleInput = (event: Event) => {
   const target = event.target
   if (target instanceof HTMLInputElement) emit('input', target.value)
 }
+
+const mobileLabel = `${props.langLabel} (${props.langCode})`
 </script>
 
 <template>
-  <td>
+  <td :data-label="mobileLabel">
     <input
       :value="value"
       type="text"

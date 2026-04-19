@@ -3,11 +3,12 @@ defineEmits<{ click: [] }>()
 </script>
 
 <template>
-  <td>
+  <td class="remove-cell">
     <button
       type="button"
       class="remove-btn"
       data-testid="remove-label"
+      aria-label="Remove label"
       @click="$emit('click')"
     >
       &times;

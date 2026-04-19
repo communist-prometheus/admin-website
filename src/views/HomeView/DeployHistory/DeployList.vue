@@ -31,6 +31,7 @@ defineProps<{
   gap: 0.5rem;
   padding: clamp(1rem, 3vw, 2rem);
   max-width: 48rem;
+  min-width: 0;
 }
 
 h2 {

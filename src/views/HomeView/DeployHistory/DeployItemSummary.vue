@@ -38,6 +38,7 @@ defineEmits<{ toggle: [] }>()
   align-items: center;
   gap: 0.5rem;
   width: 100%;
+  min-width: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -73,6 +74,7 @@ defineEmits<{ toggle: [] }>()
 }
 
 .summary > :deep(.deploy-header) {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
 }
 </style>

@@ -28,6 +28,7 @@ const emit = defineEmits<{
       :key="lang.code"
       :value="props.entry.translations[lang.code] ?? ''"
       :lang-code="lang.code"
+      :lang-label="lang.label"
       @input="emit('update-translation', lang.code, $event)"
     />
     <LabelRemoveButton @click="emit('remove')" />
