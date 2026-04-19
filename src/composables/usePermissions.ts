@@ -25,12 +25,15 @@ export const usePermissions = () => {
   const role = computed(() => store.role)
 
   const canCreate = (type: ContentType) => {
+    if (!store.loaded) return true
     if (ADMIN_ONLY.has(type)) return atLeast(role.value, 'admin')
     if (CHIEF_PLUS.has(type)) return atLeast(role.value, 'chief-editor')
     return !!role.value
   }
 
-  const canEditSettings = computed(() => atLeast(role.value, 'admin'))
+  const canEditSettings = computed(
+    () => !store.loaded || atLeast(role.value, 'admin')
+  )
 
   return { role, canCreate, canEditSettings }
 }
