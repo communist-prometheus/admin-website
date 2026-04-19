@@ -10,6 +10,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'upload-pdf': [file: File]
   'upload-cover': [file: File]
+  'set-cover': [name: string]
 }>()
 
 const inputRef = ref<HTMLInputElement>()
@@ -31,7 +32,10 @@ const handleFile = async (file: File) => {
   if (file.type !== 'application/pdf') return
   emit('upload-pdf', file)
   const cover = await extractPdfCover(file)
-  if (cover) emit('upload-cover', cover)
+  if (cover) {
+    emit('upload-cover', cover)
+    emit('set-cover', 'cover.png')
+  }
 }
 
 const handleChange = (event: Event) => {

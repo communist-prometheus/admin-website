@@ -23,6 +23,7 @@ defineEmits<{
   save: []
   'paste:image': [file: File]
   'upload-asset': [file: File]
+  'set-cover': [name: string]
 }>()
 
 const isNewspaper = (type: ContentType) => type === 'newspaper'
@@ -41,6 +42,7 @@ const isNewspaper = (type: ContentType) => type === 'newspaper'
     :assets="assets"
     @upload-pdf="$emit('upload-asset', $event)"
     @upload-cover="$emit('upload-asset', $event)"
+    @set-cover="$emit('set-cover', $event)"
   />
   <MarkdownEditorBody
     v-else

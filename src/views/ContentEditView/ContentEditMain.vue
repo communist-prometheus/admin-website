@@ -21,6 +21,7 @@ defineEmits<{
   save: []
   'paste:image': [file: File]
   'upload-asset': [file: File]
+  'set-cover': [name: string]
 }>()
 </script>
 
@@ -44,6 +45,7 @@ defineEmits<{
       @save="$emit('save')"
       @paste:image="$emit('paste:image', $event)"
       @upload-asset="$emit('upload-asset', $event)"
+      @set-cover="$emit('set-cover', $event)"
     />
   </section>
 </template>

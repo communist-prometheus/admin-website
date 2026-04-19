@@ -75,6 +75,7 @@ const isRenameable =
       @save="handleSave"
       @paste:image="p.ah.onPasteImage"
       @upload-asset="p.ah.onUploadAsset"
+      @set-cover="p.ah.onSetCover"
     />
     <AssetPanel
       v-if="p.hasAssets.value && !p.editor.loadingFile.value"

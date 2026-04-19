@@ -17,7 +17,7 @@ app-layout {
 #app {
   display: grid;
   grid-template-rows: auto 1fr auto;
-  min-height: 100%;
+  min-height: 100dvh;
   color: var(--color-text);
 }
 
