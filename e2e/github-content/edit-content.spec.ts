@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { openPreview, saveAndConfirm } from '../content/preview-save'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 test.describe('GitHub Content - Edit', () => {
@@ -22,14 +23,12 @@ test.describe('GitHub Content - Edit', () => {
     expect(content).toContain('Test Content')
   })
 
-  test('should show save button', async ({ page }) => {
+  test('should show preview button on the edit page', async ({ page }) => {
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')
 
-    const saveBtn = page.getByRole('button', {
-      name: /save/i,
-    })
-    await expect(saveBtn).toBeVisible()
+    const previewBtn = page.locator('[data-testid="preview-button"]')
+    await expect(previewBtn).toBeVisible()
   })
 
   test('should save content with commit message via API', async ({
@@ -41,10 +40,12 @@ test.describe('GitHub Content - Edit', () => {
     const textarea = editPage.getEditorBody()
     await textarea.fill('# Updated via E2E test')
 
-    const saveBtn = page.getByRole('button', { name: /save/i })
-    await saveBtn.click()
+    await saveAndConfirm(page, await openPreview(page))
 
-    // Verify save succeeded by reloading and checking content persisted
+    // Wait for preview to auto-close, then re-navigate and verify.
+    await expect(
+      page.locator('[data-testid="preview-button"]')
+    ).toBeVisible({ timeout: 15000 })
     await editPage.navigate('blog', 'welcome-to-prometheus')
     const savedContent = await textarea.inputValue()
     expect(savedContent).toContain('Updated via E2E test')

@@ -14,3 +14,27 @@ export const openPreview = async (page: Page): Promise<Locator> => {
   await page.locator('[data-testid="preview-button"]').click()
   return page.locator('[data-testid="save-button"]')
 }
+
+/**
+ * Save + auto-confirm the publish dialog when it appears.
+ *
+ * Issue #15 introduced a confirmation dialog that fires when saving
+ * will publish to the live site (pages/common always, blog/positions/
+ * newspaper only when `published: true`). Tests that just want to
+ * exercise the save pipeline should wait for the dialog and click
+ * Confirm, or proceed if no dialog shows (draft content).
+ *
+ * @param page the Playwright Page
+ * @param saveBtn the Save button returned by openPreview
+ */
+export const saveAndConfirm = async (
+  page: Page,
+  saveBtn: Locator
+): Promise<void> => {
+  await saveBtn.click()
+  const confirm = page.locator('[data-testid="publish-confirm-btn"]')
+  await confirm
+    .waitFor({ state: 'visible', timeout: 1000 })
+    .catch(() => undefined)
+  if (await confirm.isVisible()) await confirm.click()
+}

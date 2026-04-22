@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { waitForNetworkIdle } from '../helpers/network'
 import { AssetManagerPage } from '../pages/AssetManagerPage'
 import { ContentEditPage } from '../pages/ContentEditPage'
-import { openPreview } from './preview-save'
+import { openPreview, saveAndConfirm } from './preview-save'
 
 const SLUG = 'media-showcase'
 
@@ -112,7 +112,7 @@ test.describe('Rename Slug', () => {
     })
 
     // Save
-    await (await openPreview(page)).click()
+    await saveAndConfirm(page, await openPreview(page))
     await waitForNetworkIdle(page, { idleTime: 1000 })
 
     // Navigate back to list

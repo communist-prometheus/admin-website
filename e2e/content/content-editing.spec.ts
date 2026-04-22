@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { waitForContentReady } from '../helpers/content-ready'
 import { ContentEditPage } from '../pages/ContentEditPage'
 import { ContentPage } from '../pages/ContentPage'
+import { openPreview } from './preview-save'
 
 test.describe('Content Editing', () => {
   test('should show refresh button that reloads content', async ({
@@ -60,14 +61,12 @@ test.describe('Content Editing', () => {
     expect(newContent).toContain('## Test Edit')
   })
 
-  test('should show save button', async ({ page }) => {
+  test('should show preview button on the edit page', async ({ page }) => {
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')
 
-    const saveBtn = page.getByRole('button', {
-      name: /save/i,
-    })
-    await expect(saveBtn).toBeVisible()
+    const previewBtn = page.locator('[data-testid="preview-button"]')
+    await expect(previewBtn).toBeVisible()
   })
 
   test('should send save request', async ({ page }) => {
@@ -89,6 +88,7 @@ test.describe('Content Editing', () => {
     const textarea = editPage.getEditorBody()
     await textarea.fill('# Updated Content')
 
-    await page.getByRole('button', { name: /save/i }).click()
+    const saveBtn = await openPreview(page)
+    await saveBtn.click()
   })
 })
