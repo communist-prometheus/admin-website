@@ -11,6 +11,8 @@ export const config: Config = {
     'src/components/AppHeader.vue',
     'src/views/ContentEditView.vue',
     'src/components/CreateContentDialog/**/*.vue',
+    'src/views/ContentEditView/PublishConfirmDialog.vue',
+    'src/views/ContentEditView/PublishDialogCard.vue',
   ],
 } as const
 
