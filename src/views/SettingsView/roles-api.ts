@@ -12,6 +12,20 @@ export const fetchRolesConfig = async (): Promise<RolesConfig> => {
 }
 
 /**
+ * Fetch the list of GitHub-org admin logins from the SW. The SW in
+ * turn calls `GET /orgs/{owner}/members?role=admin`. Falls back to an
+ * empty list on failure so callers can degrade gracefully.
+ *
+ * @returns list of lowercase-safe GitHub usernames with org-admin role
+ */
+export const fetchOrgAdmins = async (): Promise<readonly string[]> => {
+  const res = await swFetch('/api/github/org-members')
+  if (!res.ok) return []
+  const body = (await res.json()) as { readonly admins?: readonly string[] }
+  return body.admins ?? []
+}
+
+/**
  * Save updated roles config to the SW.
  * @param config - Updated roles config
  */

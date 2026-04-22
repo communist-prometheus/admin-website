@@ -1,5 +1,6 @@
 import { Effect, Option, pipe } from 'effect'
 import { log } from '../logging/logger'
+import { handleGetOrgMembers } from '../rbac/handle-org-members'
 import { handleGetRole } from '../rbac/handle-role'
 import {
   handleGetRoles,
@@ -15,6 +16,8 @@ import { errorResponse } from './shared/json-response'
 
 const routeRbacRequest: RouteHandler = async (url, request) => {
   if (url.pathname === '/api/github/role') return handleGetRole()
+  if (url.pathname === '/api/github/org-members' && request.method === 'GET')
+    return handleGetOrgMembers()
   if (url.pathname === '/api/github/roles' && request.method === 'GET')
     return handleGetRoles()
   if (url.pathname === '/api/github/roles' && request.method === 'POST')
