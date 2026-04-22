@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { waitForContentReady } from '../helpers/content-ready'
+import { openPreview } from './preview-save'
 
 // NOTE(deploy-history-rewrite): pending-card concept no longer exists in
 // the new deploy history. Skipped until the deploy UX stabilizes.
@@ -18,11 +19,13 @@ test.describe
       await waitForContentReady(page)
 
       // 3. Save
-      const saveBtn = page.getByTestId('save-button')
+      const saveBtn = await openPreview(page)
       await saveBtn.click()
 
-      // 4. Wait for save to complete (checkmark)
-      await expect(saveBtn).toContainText('Saved', { timeout: 30000 })
+      // 4. Wait for save to complete (preview-button returns on success)
+      await expect(
+        page.locator('[data-testid="preview-button"]')
+      ).toBeVisible({ timeout: 30000 })
 
       // 5. Verify pending_deploy is in sessionStorage
       const hasPending = await page.evaluate(

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { waitForNetworkIdle } from '../helpers/network'
 import { ContentEditPage } from '../pages/ContentEditPage'
+import { openPreview } from './preview-save'
 
 const SLUG = 'media-showcase'
 
@@ -18,7 +19,7 @@ test.describe('Dirty State Reset After Save', () => {
     await page.keyboard.type(' test-edit')
 
     // Save and wait for all API calls to complete
-    await page.locator('[data-testid="save-button"]').click()
+    await (await openPreview(page)).click()
     await waitForNetworkIdle(page, { idleTime: 1000 })
 
     // Set up dialog listener — it should NOT fire

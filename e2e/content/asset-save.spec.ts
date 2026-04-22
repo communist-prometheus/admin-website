@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { AssetManagerPage } from '../pages/AssetManagerPage'
+import { openPreview } from './preview-save'
 
 test.describe('Asset Transactional Save', () => {
   test('should show save button with assets pending', async ({ page }) => {
@@ -7,7 +8,7 @@ test.describe('Asset Transactional Save', () => {
     await am.navigateToBlog('welcome-to-prometheus')
     await am.expectPanelVisible()
 
-    const saveBtn = page.locator('[data-testid="save-button"]')
+    const saveBtn = await openPreview(page)
     await expect(saveBtn).toBeVisible({ timeout: 10000 })
   })
 

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { waitForContentReady } from '../helpers/content-ready'
+import { openPreview } from './preview-save'
 
 // NOTE(deploy-history-rewrite): tests asserting pending-card transitions
 // through PENDING → BUILDING → replaced. The new GitHub-Actions-polled
@@ -14,10 +15,10 @@ test.describe
       await page.waitForURL(/\/edit\//)
       await waitForContentReady(page)
 
-      await page.getByTestId('save-button').click()
-      await expect(page.getByTestId('save-button')).toContainText('Saved', {
-        timeout: 30000,
-      })
+      await (await openPreview(page)).click()
+      await expect(
+        page.locator('[data-testid="preview-button"]')
+      ).toBeVisible({ timeout: 30000 })
 
       await page.goto('/')
       await expect(page.getByText('Recent Deployments')).toBeVisible({
@@ -40,10 +41,10 @@ test.describe
       await page.waitForURL(/\/edit\//)
       await waitForContentReady(page)
 
-      await page.getByTestId('save-button').click()
-      await expect(page.getByTestId('save-button')).toContainText('Saved', {
-        timeout: 30000,
-      })
+      await (await openPreview(page)).click()
+      await expect(
+        page.locator('[data-testid="preview-button"]')
+      ).toBeVisible({ timeout: 30000 })
 
       await page.goto('/')
       await expect(page.getByText('Recent Deployments')).toBeVisible({
