@@ -41,7 +41,6 @@ export const createInitEditor =
         lang: draft.lang,
         ...(draft.description ? { description: draft.description } : {}),
         ...(draft.category ? { category: draft.category } : {}),
-        pubDate: new Date().toISOString().slice(0, 10),
       }
       deps.bodyContent.value = ''
       return

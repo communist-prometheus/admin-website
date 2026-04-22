@@ -7,9 +7,10 @@ export interface BlogFrontmatter {
   readonly title: string
   readonly description: string
   readonly category: string
-  readonly pubDate: Date
   readonly lang: Language
   readonly image?: string
+  readonly published?: boolean
+  readonly publishDate?: Date
 }
 
 /**
@@ -18,6 +19,7 @@ export interface BlogFrontmatter {
 export interface PositionFrontmatter {
   readonly title: string
   readonly description: string
-  readonly pubDate: Date
   readonly lang: Language
+  readonly published?: boolean
+  readonly publishDate?: Date
 }

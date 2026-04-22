@@ -10,7 +10,6 @@ describe('getFields', () => {
         'title',
         'description',
         'category',
-        'pubDate',
         'published',
         'publishDate',
       ])
@@ -24,7 +23,6 @@ describe('getFields', () => {
       expect(keys).toEqual([
         'title',
         'description',
-        'pubDate',
         'published',
         'publishDate',
       ])

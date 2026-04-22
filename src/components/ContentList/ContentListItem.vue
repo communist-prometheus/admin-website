@@ -18,7 +18,7 @@ const fm = computed(() => props.item.frontmatter)
 const labelsStore = useLabelsStore()
 
 const formattedDate = computed(() => {
-  const date = fm.value.pubDate
+  const date = fm.value.publishDate
   if (!date) return undefined
   const d = date instanceof Date ? date : new Date(String(date))
   return new Intl.DateTimeFormat('en-US', {
