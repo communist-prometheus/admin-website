@@ -20,7 +20,6 @@ export const blogFields: readonly FieldDefinition[] = [
     type: 'text',
     required: true,
   },
-  { key: 'pubDate', label: 'Creation Date', type: 'date' },
   { key: 'published', label: 'Published', type: 'checkbox' },
   { key: 'publishDate', label: 'Publish Date', type: 'date' },
 ]

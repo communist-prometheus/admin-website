@@ -9,7 +9,8 @@ export const astroFrameworkEntries: readonly MockEntry[] = [
 title: Why Choose Astro Framework
 description: Learn about Astro's unique approach to building fast websites.
 category: Technology
-pubDate: 2024-01-25
+published: true
+publishDate: 2024-01-25
 lang: en
 ---
 
@@ -23,7 +24,8 @@ Astro is a modern web framework with a fresh approach.`,
 title: Почему выбрать фреймворк Astro
 description: Узнайте об уникальном подходе Astro к созданию быстрых сайтов.
 category: Технологии
-pubDate: 2024-01-25
+published: true
+publishDate: 2024-01-25
 lang: ru
 ---
 

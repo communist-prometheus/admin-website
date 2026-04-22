@@ -8,7 +8,8 @@ export const welcomeTranslations: readonly MockEntry[] = [
 title: Benvenuti su Prometheus
 description: Scoprite la nostra visione per una piattaforma moderna.
 category: Annuncio
-pubDate: 2024-01-15
+published: true
+publishDate: 2024-01-15
 image: ./assets/hero.svg
 lang: it
 ---
@@ -23,7 +24,8 @@ Siamo entusiasti di presentare **Prometheus**.`,
 title: Bienvenidos a Prometheus
 description: Descubre nuestra visión para una plataforma moderna.
 category: Anuncio
-pubDate: 2024-01-15
+published: true
+publishDate: 2024-01-15
 image: ./assets/hero.svg
 lang: es
 ---

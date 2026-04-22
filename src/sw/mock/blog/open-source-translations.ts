@@ -8,7 +8,8 @@ export const openSourceTranslations: readonly MockEntry[] = [
 title: Il potere della collaborazione open source
 description: Come le comunità open source guidano l'innovazione.
 category: Comunità
-pubDate: 2024-02-05
+published: true
+publishDate: 2024-02-05
 image: ./assets/cover.jpg
 lang: it
 ---
@@ -23,7 +24,8 @@ L'open source è più di un modello di sviluppo.`,
 title: El poder de la colaboración open source
 description: Cómo las comunidades de código abierto impulsan la innovación.
 category: Comunidad
-pubDate: 2024-02-05
+published: true
+publishDate: 2024-02-05
 image: ./assets/cover.jpg
 lang: es
 ---

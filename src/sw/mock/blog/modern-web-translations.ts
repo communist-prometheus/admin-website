@@ -8,7 +8,8 @@ export const modernWebTranslations: readonly MockEntry[] = [
 title: Best Practice per lo Sviluppo Web Moderno
 description: Esplora le ultime best practice nello sviluppo web.
 category: Tecnologia
-pubDate: 2024-01-20
+published: true
+publishDate: 2024-01-20
 lang: it
 ---
 
@@ -22,7 +23,8 @@ Il panorama dello sviluppo web è in costante evoluzione.`,
 title: Mejores Prácticas de Desarrollo Web Moderno
 description: Explora las últimas mejores prácticas en desarrollo web.
 category: Tecnología
-pubDate: 2024-01-20
+published: true
+publishDate: 2024-01-20
 lang: es
 ---
 

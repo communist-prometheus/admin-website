@@ -10,7 +10,8 @@ export const welcomeEntries: readonly MockEntry[] = [
 title: Welcome to Prometheus
 description: Discover our vision for a modern knowledge sharing platform.
 category: Announcement
-pubDate: 2024-01-15
+published: true
+publishDate: 2024-01-15
 image: ./assets/hero.svg
 lang: en
 ---
@@ -27,7 +28,8 @@ We're excited to introduce **Prometheus** - a modern platform.`,
 title: Добро пожаловать в Prometheus
 description: Откройте для себя наше видение современной платформы.
 category: Объявление
-pubDate: 2024-01-15
+published: true
+publishDate: 2024-01-15
 image: ./assets/hero.svg
 lang: ru
 ---

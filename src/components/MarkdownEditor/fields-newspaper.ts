@@ -14,7 +14,6 @@ export const newspaperFields: readonly FieldDefinition[] = [
     type: 'textarea',
     required: true,
   },
-  { key: 'pubDate', label: 'Publication Date', type: 'date' },
   { key: 'published', label: 'Published', type: 'checkbox' },
   { key: 'publishDate', label: 'Publish Date', type: 'date' },
 ]

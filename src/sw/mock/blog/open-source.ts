@@ -10,7 +10,8 @@ export const openSourceEntries: readonly MockEntry[] = [
 title: The Power of Open Source Collaboration
 description: How open source communities drive innovation.
 category: Community
-pubDate: 2024-02-05
+published: true
+publishDate: 2024-02-05
 image: ./assets/cover.jpg
 lang: en
 ---
@@ -25,7 +26,8 @@ Open source is more than a development model.`,
 title: Сила открытого сотрудничества
 description: Как сообщества открытого кода стимулируют инновации.
 category: Сообщество
-pubDate: 2024-02-05
+published: true
+publishDate: 2024-02-05
 image: ./assets/cover.jpg
 lang: ru
 ---

@@ -7,7 +7,8 @@ export const sovereigntyTranslations: readonly MockEntry[] = [
     content: `---
 title: Sovranità Digitale
 description: La tecnologia deve servire le persone, non le corporazioni.
-pubDate: 2024-01-15
+published: true
+publishDate: 2024-01-15
 lang: it
 ---
 
@@ -20,7 +21,8 @@ Sosteniamo l'infrastruttura open-source.`,
     content: `---
 title: Soberanía Digital
 description: La tecnología debe servir a las personas, no a las corporaciones.
-pubDate: 2024-01-15
+published: true
+publishDate: 2024-01-15
 lang: es
 ---
 

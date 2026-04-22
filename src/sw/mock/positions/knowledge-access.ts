@@ -8,7 +8,8 @@ export const knowledgeAccessEntries: readonly MockEntry[] = [
     content: `---
 title: Universal Knowledge Access
 description: Education and knowledge should be freely available to everyone.
-pubDate: 2024-02-01
+published: true
+publishDate: 2024-02-01
 lang: en
 ---
 
@@ -21,7 +22,8 @@ Everyone deserves equal access to knowledge.`,
     content: `---
 title: Всеобщий доступ к знаниям
 description: Образование и знания должны быть свободно доступны каждому.
-pubDate: 2024-02-01
+published: true
+publishDate: 2024-02-01
 lang: ru
 ---
 
