@@ -2,15 +2,16 @@
 import { ref } from 'vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import CommandPanel from './CommandPanel.vue'
-import { buildDropTag, extractDropFile } from './handle-drop'
+import { createPasteDrop } from './editor-paste-drop'
 import { handleKeyboard } from './handle-keyboard'
-import { buildPasteTag, extractMediaFile } from './handle-paste'
 import { insertUploadTag } from './handle-upload'
+import ImportDocsButton from './ImportDocs/ImportDocsButton.vue'
+import { insertImported } from './ImportDocs/insert-imported'
 import MarkdownPreview from './MarkdownPreview.vue'
 import PreviewToggle from './PreviewToggle.vue'
 import { execBlock, execMedia, execWrap } from './use-commands'
 
-const props = defineProps<{
+defineProps<{
   readonly modelValue: string
   readonly assetUrlMap?: ReadonlyMap<string, string>
   readonly assets?: readonly AssetDisplay[]
@@ -20,11 +21,17 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
   'paste:image': [file: File]
   'upload-asset': [file: File]
+  error: [message: string]
 }>()
 
 const previewing = ref(false)
 const textareaRef = ref<HTMLTextAreaElement>()
 const emitUpload = (f: File) => emit('upload-asset', f)
+const { onPaste, onDrop } = createPasteDrop({
+  textareaRef,
+  emitPaste: f => emit('paste:image', f),
+  emitUpload,
+})
 
 const handleInput = (event: Event) => {
   if (!(event.target instanceof HTMLTextAreaElement)) return
@@ -35,27 +42,14 @@ const wrap = (pre: string, suf: string) => {
   if (textareaRef.value) execWrap(textareaRef.value, pre, suf)
 }
 
-const handlePaste = (event: ClipboardEvent) => {
-  const file = extractMediaFile(event)
-  if (!file || !textareaRef.value) return
-  event.preventDefault()
-  document.execCommand('insertText', false, buildPasteTag(file))
-  emit('paste:image', file)
-}
-
-const handleDrop = (event: DragEvent) => {
-  const file = extractDropFile(event)
-  if (!file || !textareaRef.value) return
-  event.preventDefault()
-  document.execCommand('insertText', false, buildDropTag(file))
-  emitUpload(file)
-}
-
 const handleUpload = (file: File) => {
   if (!textareaRef.value) return
   insertUploadTag(textareaRef.value, file)
   emitUpload(file)
 }
+
+const handleImported = (markdown: string, images: readonly File[]) =>
+  insertImported(textareaRef.value, markdown, images, emitUpload)
 </script>
 
 <template>
@@ -63,6 +57,11 @@ const handleUpload = (file: File) => {
     <PreviewToggle
       :previewing="previewing"
       @toggle="() => { previewing = !previewing }"
+    />
+    <ImportDocsButton
+      v-if="!previewing"
+      @imported="handleImported"
+      @error="msg => $emit('error', msg)"
     />
     <MarkdownPreview
       v-if="previewing"
@@ -83,8 +82,8 @@ const handleUpload = (file: File) => {
       data-testid="editor-body"
       :value="modelValue"
       @input="handleInput"
-      @paste="handlePaste"
-      @drop="handleDrop"
+      @paste="onPaste"
+      @drop="onDrop"
       @dragover.prevent
       @keydown="e => handleKeyboard(e, wrap)"
     />
