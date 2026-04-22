@@ -4,7 +4,7 @@ import { knowledgeTranslations } from './knowledge-access-translations'
 /** Mock entries for the "knowledge-access" position */
 export const knowledgeAccessEntries: readonly MockEntry[] = [
   {
-    path: 'positions/knowledge-access.en.md',
+    path: 'positions/knowledge-access/index.en.md',
     content: `---
 title: Universal Knowledge Access
 description: Education and knowledge should be freely available to everyone.
@@ -18,7 +18,7 @@ lang: en
 Everyone deserves equal access to knowledge.`,
   },
   {
-    path: 'positions/knowledge-access.ru.md',
+    path: 'positions/knowledge-access/index.ru.md',
     content: `---
 title: Всеобщий доступ к знаниям
 description: Образование и знания должны быть свободно доступны каждому.

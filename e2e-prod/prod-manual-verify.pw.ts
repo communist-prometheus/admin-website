@@ -66,10 +66,6 @@ const injectToken = async (page: Page): Promise<void> => {
 }
 
 test.describe('Prod manual verify', () => {
-  test.skip(
-    process.env.PROD_VERIFY !== '1',
-    'Set PROD_VERIFY=1 to run against admin.comprom.org'
-  )
   test.setTimeout(300000)
 
   test('walk through all critical user stories', async ({ browser }) => {
