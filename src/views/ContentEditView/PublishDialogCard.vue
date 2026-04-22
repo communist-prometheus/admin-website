@@ -1,10 +1,16 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+
 defineProps<{
   readonly title: string
   readonly autoPublic: boolean
 }>()
 const emit = defineEmits<{ confirm: []; cancel: [] }>()
-defineExpose<{ focusCancel: () => void }>()
+const cancelBtn = ref<HTMLButtonElement>()
+
+onMounted(() => {
+  cancelBtn.value?.focus()
+})
 </script>
 
 <template>
@@ -22,6 +28,7 @@ defineExpose<{ focusCancel: () => void }>()
     </p>
     <nav class="actions">
       <button
+        ref="cancelBtn"
         type="button"
         class="btn-cancel"
         data-testid="publish-cancel-btn"

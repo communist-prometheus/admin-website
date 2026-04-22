@@ -43,9 +43,9 @@ test.describe('GitHub Content - Edit', () => {
     await saveAndConfirm(page, await openPreview(page))
 
     // Wait for preview to auto-close, then re-navigate and verify.
-    await expect(
-      page.locator('[data-testid="preview-button"]')
-    ).toBeVisible({ timeout: 15000 })
+    await expect(page.locator('[data-testid="preview-button"]')).toBeVisible({
+      timeout: 15000,
+    })
     await editPage.navigate('blog', 'welcome-to-prometheus')
     const savedContent = await textarea.inputValue()
     expect(savedContent).toContain('Updated via E2E test')

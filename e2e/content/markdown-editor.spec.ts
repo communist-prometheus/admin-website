@@ -20,8 +20,6 @@ test.describe('Markdown Editor', () => {
     const textarea = editPage.getEditorBody()
     await textarea.waitFor({ state: 'visible', timeout: 10000 })
 
-    await expect(
-      page.locator('[data-testid="preview-button"]')
-    ).toBeVisible()
+    await expect(page.locator('[data-testid="preview-button"]')).toBeVisible()
   })
 })

@@ -45,7 +45,12 @@
   },
   "overrides": [
     {
-      "files": ["**/*.test.ts", "**/*.spec.ts", "e2e/**/*.ts"],
+      "files": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "e2e/**/*.ts",
+        "e2e-prod/**/*.ts"
+      ],
       "rules": {
         "sonarjs/max-lines": "off",
         "sonarjs/max-lines-per-function": "off",
