@@ -59,7 +59,7 @@ test.describe('Delete Article', () => {
     await expect(dialog).not.toBeVisible()
   })
 
-  test.skip('delete all should remove item from list', async ({ page }) => {
+  test('delete all should remove item from list', async ({ page }) => {
     // Pages are fixed-structure (hide-delete=true). Use /content/blog so
     // delete buttons are actually rendered.
     await page.goto('/content/blog', { waitUntil: 'domcontentloaded' })

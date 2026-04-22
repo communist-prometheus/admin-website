@@ -13,10 +13,6 @@ import { expect, test } from '@playwright/test'
 // Intentionally isolated to one branch (`smoke-{timestamp}`) with
 // afterAll cleanup.
 test.describe('Deploy smoke - prod bundle makes a real commit', () => {
-  test.skip(
-    process.env.PROD_SMOKE !== '1',
-    'Set PROD_SMOKE=1 to run against a rebuilt local preview'
-  )
   test.setTimeout(180000)
 
   const slug = `smoke-${Date.now()}`

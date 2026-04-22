@@ -104,7 +104,7 @@ test.describe('Content Switch Verification', () => {
     expect(blogSecond).toEqual(blogFirst)
   })
 
-  test.fixme('edit page shows correct content after section switch', async ({
+  test('edit page shows correct content after section switch', async ({
     page,
   }) => {
     const cp = new ContentPage(page)
