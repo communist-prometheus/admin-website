@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { waitForContentReady } from '../helpers/content-ready'
+import { openPreview } from './preview-save'
 
 const openFirstArticle = async (page: import('@playwright/test').Page) => {
   await page.goto('/content/blog')
@@ -12,14 +13,14 @@ const openFirstArticle = async (page: import('@playwright/test').Page) => {
 test.describe('Save Button States', () => {
   test('shows Save text initially', async ({ page }) => {
     await openFirstArticle(page)
-    const btn = page.getByTestId('save-button')
+    const btn = await openPreview(page)
     await expect(btn).toContainText('Save')
     await expect(btn).toBeEnabled()
   })
 
   test('disabled + spinner during save', async ({ page }) => {
     await openFirstArticle(page)
-    const btn = page.getByTestId('save-button')
+    const btn = await openPreview(page)
     await btn.click()
     await expect(btn).toHaveClass(/saving/, { timeout: 5000 })
     await expect(btn).toBeDisabled()
@@ -27,19 +28,22 @@ test.describe('Save Button States', () => {
 
   test('shows checkmark after save completes', async ({ page }) => {
     await openFirstArticle(page)
-    const btn = page.getByTestId('save-button')
+    const btn = await openPreview(page)
     await btn.click()
-    await expect(btn).toContainText('Saved', { timeout: 30000 })
-    await expect(btn).toHaveClass(/done/)
+    // Preview auto-exits on save success — preview-button reappears
+    await expect(page.locator('[data-testid="preview-button"]')).toBeVisible({
+      timeout: 30000,
+    })
   })
 
   test('reverts to Save after 2 seconds', async ({ page }) => {
     await openFirstArticle(page)
-    const btn = page.getByTestId('save-button')
+    const btn = await openPreview(page)
     await btn.click()
-    await expect(btn).toContainText('Saved', { timeout: 30000 })
-    await expect(btn).toContainText('Save', { timeout: 5000 })
-    await expect(btn).toBeEnabled()
+    // Preview auto-exits on save success — preview-button reappears
+    await expect(page.locator('[data-testid="preview-button"]')).toBeVisible({
+      timeout: 30000,
+    })
   })
 })
 
@@ -49,7 +53,7 @@ test.describe('Save Network Requests', () => {
     const p = page.waitForResponse(r =>
       r.url().includes('/api/github/file/stage')
     )
-    await page.getByTestId('save-button').click()
+    await (await openPreview(page)).click()
     expect((await p).status()).toBe(200)
   })
 
@@ -58,7 +62,7 @@ test.describe('Save Network Requests', () => {
     const p = page.waitForResponse(r =>
       r.url().includes('/api/github/commit')
     )
-    await page.getByTestId('save-button').click()
+    await (await openPreview(page)).click()
     const body = await (await p).json()
     expect(body).toHaveProperty('success')
     expect(body).toHaveProperty('sha')
@@ -68,8 +72,9 @@ test.describe('Save Network Requests', () => {
 test.describe('Deploy Bar After Save', () => {
   test('deploy bar appears after save', async ({ page }) => {
     await openFirstArticle(page)
-    await page.getByTestId('save-button').click()
-    await expect(page.getByTestId('save-button')).toContainText('Saved', {
+    await (await openPreview(page)).click()
+    // Preview auto-exits on save success — preview-button reappears
+    await expect(page.locator('[data-testid="preview-button"]')).toBeVisible({
       timeout: 30000,
     })
     await expect(page.locator('.deploy-bar')).toBeVisible({
@@ -128,10 +133,10 @@ test.describe
 
     test('pending card is article, not link', async ({ page }) => {
       await openFirstArticle(page)
-      await page.getByTestId('save-button').click()
-      await expect(page.getByTestId('save-button')).toContainText('Saved', {
-        timeout: 30000,
-      })
+      await (await openPreview(page)).click()
+      await expect(
+        page.locator('[data-testid="preview-button"]')
+      ).toBeVisible({ timeout: 30000 })
       await page.goto('/')
       const pending = page.locator('.pending-card')
       if ((await pending.count()) > 0) {
@@ -141,10 +146,10 @@ test.describe
 
     test('pending card shows DEPLOYING badge', async ({ page }) => {
       await openFirstArticle(page)
-      await page.getByTestId('save-button').click()
-      await expect(page.getByTestId('save-button')).toContainText('Saved', {
-        timeout: 30000,
-      })
+      await (await openPreview(page)).click()
+      await expect(
+        page.locator('[data-testid="preview-button"]')
+      ).toBeVisible({ timeout: 30000 })
       await page.goto('/')
       const pending = page.locator('.pending-card')
       if ((await pending.count()) > 0) {

@@ -11,8 +11,6 @@ defineProps<{
   readonly frontmatterData: Record<string, unknown>
   readonly contentType: ContentType
   readonly slug?: string
-  readonly saving: boolean
-  readonly saved: boolean
   readonly assetUrlMap?: ReadonlyMap<string, string>
   readonly assets?: readonly AssetDisplay[]
 }>()
@@ -20,7 +18,7 @@ defineProps<{
 defineEmits<{
   'update:bodyContent': [value: string]
   'update:frontmatter': [data: Record<string, unknown>]
-  save: []
+  preview: []
   'paste:image': [file: File]
   'upload-asset': [file: File]
   'set-cover': [name: string]
@@ -55,8 +53,6 @@ const isNewspaper = (type: ContentType) => type === 'newspaper'
   />
   <EditorFooter
     :disabled="false"
-    :saving="saving"
-    :saved="saved"
-    @save="$emit('save')"
+    @preview="$emit('preview')"
   />
 </template>

@@ -9,8 +9,6 @@ defineProps<{
   readonly contentType: ContentType
   readonly slug?: string
   readonly loadingFile: boolean
-  readonly saving: boolean
-  readonly saved: boolean
   readonly assetUrlMap?: ReadonlyMap<string, string>
   readonly assets?: readonly AssetDisplay[]
 }>()
@@ -18,7 +16,7 @@ defineProps<{
 defineEmits<{
   'update:bodyContent': [value: string]
   'update:frontmatter': [data: Record<string, unknown>]
-  save: []
+  preview: []
   'paste:image': [file: File]
   'upload-asset': [file: File]
   'set-cover': [name: string]
@@ -38,11 +36,9 @@ defineEmits<{
       :slug="slug"
       :asset-url-map="assetUrlMap"
       :assets="assets"
-      :saving="saving"
-      :saved="saved"
       @update:body-content="$emit('update:bodyContent', $event)"
       @update:frontmatter="$emit('update:frontmatter', $event)"
-      @save="$emit('save')"
+      @preview="$emit('preview')"
       @paste:image="$emit('paste:image', $event)"
       @upload-asset="$emit('upload-asset', $event)"
       @set-cover="$emit('set-cover', $event)"

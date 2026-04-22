@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { ContentEditPage } from '../pages/ContentEditPage'
+import { openPreview } from './preview-save'
 
 const SLUG = 'media-showcase'
 
@@ -17,7 +18,7 @@ test.describe('Auto Commit Message', () => {
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
 
-    const saveBtn = page.locator('[data-testid="save-button"]')
+    const saveBtn = await openPreview(page)
     await expect(saveBtn).toBeVisible()
     await expect(saveBtn).toBeEnabled()
   })

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { openPreview } from './preview-save'
 
 // Regression test for "creating article wipes frontmatter on next save":
 // the create→edit handover used to leave the pinia content store stale, so
@@ -78,7 +79,7 @@ test.describe('Content - create → edit round-trip', () => {
     await bodyEditor.press('End')
     await bodyEditor.type('\n\nedited body line')
 
-    const saveBtn = page.locator('[data-testid="save-button"]')
+    const saveBtn = await openPreview(page)
     await saveBtn.click()
 
     // Poll the SW file read until the body actually contains the new line

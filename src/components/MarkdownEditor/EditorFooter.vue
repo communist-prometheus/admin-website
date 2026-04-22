@@ -2,25 +2,22 @@
 withDefaults(
   defineProps<{
     readonly disabled: boolean
-    readonly saving?: boolean
-    readonly saved?: boolean
   }>(),
-  { saving: false, saved: false }
+  {}
 )
 
-const emit = defineEmits<{ save: [] }>()
+const emit = defineEmits<{ preview: [] }>()
 </script>
 
 <template>
   <footer class="editor-footer">
     <button
       type="button"
-      data-testid="save-button"
-      :disabled="disabled || saving"
-      :class="{ saving, done: saved }"
-      @click="emit('save')"
+      data-testid="preview-button"
+      :disabled="disabled"
+      @click="emit('preview')"
     >
-      {{ saving ? '' : saved ? '✓ Saved' : 'Save' }}
+      Preview
     </button>
   </footer>
 </template>
@@ -54,22 +51,5 @@ button:disabled {
 
 button:hover:not(:disabled) {
   background: var(--color-border);
-}
-
-.done { color: hsl(140deg 60% 50%); }
-
-.saving::after {
-  content: '';
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  border: 2px solid var(--color-text-secondary);
-  border-top-color: var(--color-text);
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 </style>
