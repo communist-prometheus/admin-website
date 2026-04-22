@@ -46,7 +46,7 @@ describe('useContentCreator', () => {
     )
   })
 
-  it('creates positions content with pubDate', async () => {
+  it('creates positions content without any date field', async () => {
     mockCreate.mockResolvedValueOnce({ success: true })
     const { createContent } = useContentCreator('positions')
     await createContent({
@@ -55,10 +55,40 @@ describe('useContentCreator', () => {
       title: 'Senior Developer',
       description: 'Full-time position',
     })
-    expect(mockCreate).toHaveBeenCalledWith(
-      'positions/developer/index.en.md',
-      expect.stringContaining('pubDate:'),
-      'Create developer in positions'
-    )
+    const firstCall = mockCreate.mock.calls[0] ?? []
+    const body = String(firstCall[1] ?? '')
+    expect(body).not.toMatch(/^pubDate:/m)
+    expect(body).not.toMatch(/^publishDate:/m)
+  })
+
+  it('creates blog content without any date field', async () => {
+    mockCreate.mockResolvedValueOnce({ success: true })
+    const { createContent } = useContentCreator('blog')
+    await createContent({
+      slug: 'no-dates',
+      lang: 'en',
+      title: 'No dates',
+      description: 'desc',
+      category: 'tech',
+    })
+    const firstCall = mockCreate.mock.calls[0] ?? []
+    const body = String(firstCall[1] ?? '')
+    expect(body).not.toMatch(/^pubDate:/m)
+    expect(body).not.toMatch(/^publishDate:/m)
+  })
+
+  it('creates newspaper content without any date field', async () => {
+    mockCreate.mockResolvedValueOnce({ success: true })
+    const { createContent } = useContentCreator('newspaper')
+    await createContent({
+      slug: 'week-1',
+      lang: 'en',
+      title: 'Week 1',
+      description: 'weekly digest',
+    })
+    const firstCall = mockCreate.mock.calls[0] ?? []
+    const body = String(firstCall[1] ?? '')
+    expect(body).not.toMatch(/^pubDate:/m)
+    expect(body).not.toMatch(/^publishDate:/m)
   })
 })

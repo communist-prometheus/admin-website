@@ -12,7 +12,6 @@ interface DefaultsInput {
 const blogDefaults = (data: DefaultsInput): Record<string, unknown> => ({
   description: data.description || '',
   category: data.category || '',
-  pubDate: new Date(),
 })
 
 /**
@@ -22,7 +21,6 @@ const blogDefaults = (data: DefaultsInput): Record<string, unknown> => ({
  */
 const positionsDefaults = (data: DefaultsInput): Record<string, unknown> => ({
   description: data.description || '',
-  pubDate: new Date(),
 })
 
 /**
@@ -42,7 +40,6 @@ const commonDefaults = (): Record<string, unknown> => ({
  */
 const newspaperDefaults = (data: DefaultsInput): Record<string, unknown> => ({
   description: data.description || '',
-  pubDate: new Date(),
 })
 
 /** Extra frontmatter fields by content type */
