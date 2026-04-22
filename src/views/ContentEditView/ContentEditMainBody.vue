@@ -22,6 +22,7 @@ defineEmits<{
   'paste:image': [file: File]
   'upload-asset': [file: File]
   'set-cover': [name: string]
+  error: [message: string]
 }>()
 
 const isNewspaper = (type: ContentType) => type === 'newspaper'
@@ -50,6 +51,7 @@ const isNewspaper = (type: ContentType) => type === 'newspaper'
     @update:model-value="$emit('update:bodyContent', $event)"
     @paste:image="$emit('paste:image', $event)"
     @upload-asset="$emit('upload-asset', $event)"
+    @error="$emit('error', $event)"
   />
   <EditorFooter
     :disabled="false"

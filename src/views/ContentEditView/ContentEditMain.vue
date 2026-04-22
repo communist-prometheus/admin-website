@@ -20,6 +20,7 @@ defineEmits<{
   'paste:image': [file: File]
   'upload-asset': [file: File]
   'set-cover': [name: string]
+  error: [message: string]
 }>()
 </script>
 
@@ -42,6 +43,7 @@ defineEmits<{
       @paste:image="$emit('paste:image', $event)"
       @upload-asset="$emit('upload-asset', $event)"
       @set-cover="$emit('set-cover', $event)"
+      @error="$emit('error', $event)"
     />
   </section>
 </template>

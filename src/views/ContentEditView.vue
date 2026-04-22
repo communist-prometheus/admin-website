@@ -48,6 +48,9 @@ const title = computed(() => String(p.editor.frontmatterData.value.title ?? p.sl
 const isRenameable = computed(
   () => p.contentType.value !== 'pages' && p.contentType.value !== 'common'
 )
+const setError = (msg: string): void => {
+  saveError.value = msg
+}
 </script>
 
 <template>
@@ -86,6 +89,7 @@ const isRenameable = computed(
       @paste:image="p.ah.onPasteImage"
       @upload-asset="p.ah.onUploadAsset"
       @set-cover="p.ah.onSetCover"
+      @error="setError"
     />
     <ContentPreview
       v-else
