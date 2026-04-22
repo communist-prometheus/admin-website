@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { openPreview } from './preview-save'
+import { openPreview, saveAndConfirm } from './preview-save'
 
 // Manual verification probe run against the real prod admin. Inject
 // GITHUB_E2E_KEY, walk through every critical flow the user cares
@@ -173,7 +173,7 @@ test.describe('Prod manual verify', () => {
           r.request().method() === 'POST',
         { timeout: 30000 }
       )
-      await (await openPreview(page)).click()
+      await saveAndConfirm(page, await openPreview(page))
       const commitResp = await commitPromise
       const text = await commitResp.text()
       if (!/"sha":"[0-9a-f]{40}"/.test(text))

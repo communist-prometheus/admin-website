@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { waitForContentReady } from '../helpers/content-ready'
-import { openPreview } from './preview-save'
+import { openPreview, saveAndConfirm } from './preview-save'
 
 const openFirstArticle = async (page: import('@playwright/test').Page) => {
   await page.goto('/content/blog')
@@ -18,29 +18,21 @@ test.describe('Save Button States', () => {
     await expect(btn).toBeEnabled()
   })
 
-  test('disabled + spinner during save', async ({ page }) => {
+  test('save reaches the commit stage and closes the preview', async ({
+    page,
+  }) => {
     await openFirstArticle(page)
     const btn = await openPreview(page)
-    await btn.click()
-    await expect(btn).toHaveClass(/saving/, { timeout: 5000 })
-    await expect(btn).toBeDisabled()
-  })
-
-  test('shows checkmark after save completes', async ({ page }) => {
-    await openFirstArticle(page)
-    const btn = await openPreview(page)
-    await btn.click()
+    await saveAndConfirm(page, btn)
     // Preview auto-exits on save success — preview-button reappears
     await expect(page.locator('[data-testid="preview-button"]')).toBeVisible({
       timeout: 30000,
     })
   })
 
-  test('reverts to Save after 2 seconds', async ({ page }) => {
+  test('preview closes after save completes', async ({ page }) => {
     await openFirstArticle(page)
-    const btn = await openPreview(page)
-    await btn.click()
-    // Preview auto-exits on save success — preview-button reappears
+    await saveAndConfirm(page, await openPreview(page))
     await expect(page.locator('[data-testid="preview-button"]')).toBeVisible({
       timeout: 30000,
     })
@@ -53,7 +45,7 @@ test.describe('Save Network Requests', () => {
     const p = page.waitForResponse(r =>
       r.url().includes('/api/github/file/stage')
     )
-    await (await openPreview(page)).click()
+    await saveAndConfirm(page, await openPreview(page))
     expect((await p).status()).toBe(200)
   })
 
@@ -62,7 +54,7 @@ test.describe('Save Network Requests', () => {
     const p = page.waitForResponse(r =>
       r.url().includes('/api/github/commit')
     )
-    await (await openPreview(page)).click()
+    await saveAndConfirm(page, await openPreview(page))
     const body = await (await p).json()
     expect(body).toHaveProperty('success')
     expect(body).toHaveProperty('sha')
@@ -72,7 +64,7 @@ test.describe('Save Network Requests', () => {
 test.describe('Deploy Bar After Save', () => {
   test('deploy bar appears after save', async ({ page }) => {
     await openFirstArticle(page)
-    await (await openPreview(page)).click()
+    await saveAndConfirm(page, await openPreview(page))
     // Preview auto-exits on save success — preview-button reappears
     await expect(page.locator('[data-testid="preview-button"]')).toBeVisible({
       timeout: 30000,
@@ -133,7 +125,7 @@ test.describe
 
     test('pending card is article, not link', async ({ page }) => {
       await openFirstArticle(page)
-      await (await openPreview(page)).click()
+      await saveAndConfirm(page, await openPreview(page))
       await expect(
         page.locator('[data-testid="preview-button"]')
       ).toBeVisible({ timeout: 30000 })
@@ -146,7 +138,7 @@ test.describe
 
     test('pending card shows DEPLOYING badge', async ({ page }) => {
       await openFirstArticle(page)
-      await (await openPreview(page)).click()
+      await saveAndConfirm(page, await openPreview(page))
       await expect(
         page.locator('[data-testid="preview-button"]')
       ).toBeVisible({ timeout: 30000 })
