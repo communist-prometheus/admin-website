@@ -29,6 +29,8 @@ export const buildRawSave = (
     saveCurrentLanguage: editor.saveCurrentLanguage,
     reloadContent: list.reloadContent,
     title,
+    contentType: page.contentType,
+    frontmatter: () => editor.frontmatterData.value,
     contentTypeName: page.contentType,
     track,
     onError: msg => globalThis.alert(`Save failed: ${msg}`),
