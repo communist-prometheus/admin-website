@@ -3,10 +3,16 @@ import { onMounted } from 'vue'
 import type { Role, RolesConfig } from '@/types/role'
 import MemberAddForm from './MemberAddForm.vue'
 import MemberRoleGroup from './MemberRoleGroup.vue'
+import OrgAdminsGroup from './OrgAdminsGroup.vue'
+import { useOrgAdmins } from './useOrgAdmins'
 import { useRolesConfig } from './useRolesConfig'
 
 const { config, loading, saving, load, save } = useRolesConfig()
-onMounted(load)
+const org = useOrgAdmins()
+onMounted(() => {
+  void load()
+  void org.load()
+})
 
 const addMember = async (username: string, role: Role) => {
   const roles = { ...config.value.roles }
@@ -26,7 +32,10 @@ const removeMember = async (role: Role, username: string) => {
 <template>
   <section class="members-section">
     <h2>Members</h2>
-    <p v-if="loading" class="loading">Loading members...</p>
+    <OrgAdminsGroup :admins="org.admins.value" :loading="org.loading.value" />
+    <p v-if="loading" class="loading">
+      Loading members...
+    </p>
     <MemberRoleGroup
       v-for="role in (['admin', 'chief-editor', 'editor'] as const)"
       :key="role"
