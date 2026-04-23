@@ -27,5 +27,5 @@ export const getAuthConfig = (): AuthConfig => ({
   redirectUri:
     import.meta.env.VITE_OAUTH_REDIRECT_URI ??
     `${location.origin}/auth/github/callback`,
-  scopes: 'repo read:user',
+  scopes: 'repo read:user read:org admin:org',
 })

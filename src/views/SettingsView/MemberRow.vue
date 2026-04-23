@@ -1,35 +1,50 @@
 <script setup lang="ts">
-import type { Role } from '@/types/role'
 import MemberRoleSelect from './MemberRoleSelect.vue'
-import type { MemberRow } from './merge-members'
+import type { OrgMember } from './roles-api'
 
 defineProps<{
-  readonly row: MemberRow
+  readonly row: OrgMember
   readonly disabled: boolean
 }>()
 
 const emit = defineEmits<{
-  change: [username: string, role: Role | undefined]
+  change: [
+    username: string,
+    role: 'admin' | 'chief-editor' | 'editor' | 'none',
+  ]
 }>()
 
-const onChange = (login: string) => (role: Role | undefined) =>
-  emit('change', login, role)
+const onChange =
+  (login: string) =>
+  (role: 'admin' | 'chief-editor' | 'editor' | undefined) =>
+    emit('change', login, role ?? 'none')
 </script>
 
 <template>
   <li class="member-row" :data-testid="`member-row-${row.login}`">
-    <span class="login">@{{ row.login }}</span>
-    <span
-      class="org-badge"
-      :class="{ 'is-admin': row.orgRole === 'admin' }"
-      :title="
-        row.orgRole === 'admin'
-          ? 'GitHub organisation admin'
-          : 'GitHub organisation member'
-      "
-    >
-      {{ row.orgRole === 'admin' ? 'Org admin' : 'Org member' }}
-    </span>
+    <img
+      class="avatar"
+      alt=""
+      :src="row.avatarUrl ?? `https://github.com/${row.login}.png?size=40`"
+      :aria-label="`@${row.login}`"
+      loading="lazy"
+      width="32"
+      height="32"
+    />
+    <div class="ident">
+      <span class="login">@{{ row.login }}</span>
+      <span
+        class="org-badge"
+        :class="{ 'is-admin': row.orgRole === 'admin' }"
+        :title="
+          row.orgRole === 'admin'
+            ? 'GitHub organisation admin'
+            : 'GitHub organisation member'
+        "
+      >
+        {{ row.orgRole === 'admin' ? 'Org admin' : 'Org member' }}
+      </span>
+    </div>
     <MemberRoleSelect
       :value="row.appRole"
       :disabled="disabled"
@@ -43,10 +58,10 @@ const onChange = (login: string) => (role: Role | undefined) =>
 <style scoped>
 .member-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 32px 1fr auto;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0.25rem;
+  padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -54,17 +69,36 @@ const onChange = (login: string) => (role: Role | undefined) =>
   border-bottom: none;
 }
 
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+}
+
+.ident {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
 .login {
   font-family: var(--font-mono, monospace);
   font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .org-badge {
+  align-self: start;
   padding: 0.125rem 0.5rem;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   background: var(--color-background-soft);
   color: var(--color-text-secondary);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   white-space: nowrap;
 }
 

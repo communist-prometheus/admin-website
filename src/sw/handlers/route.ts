@@ -1,29 +1,19 @@
 import { Effect, Option, pipe } from 'effect'
 import { log } from '../logging/logger'
-import { handleGetOrgMembers } from '../rbac/handle-org-members'
-import { handleGetRole } from '../rbac/handle-role'
-import {
-  handleGetRoles,
-  handleUpdateRoles,
-} from '../rbac/handle-roles-config'
 import { routeAssetRequest } from './asset/route'
 import { routeContentRequest } from './content/route'
 import { routeFileRequest } from './file/route'
 import { recoverAndRetry } from './recover-and-retry'
+import { matchRbacRoute } from './route-rbac'
 import type { RouteHandler } from './shared/first-match'
 import { firstMatch } from './shared/first-match'
 import { errorResponse } from './shared/json-response'
 
-const routeRbacRequest: RouteHandler = async (url, request) => {
-  if (url.pathname === '/api/github/role') return handleGetRole()
-  if (url.pathname === '/api/github/org-members' && request.method === 'GET')
-    return handleGetOrgMembers()
-  if (url.pathname === '/api/github/roles' && request.method === 'GET')
-    return handleGetRoles()
-  if (url.pathname === '/api/github/roles' && request.method === 'POST')
-    return handleUpdateRoles(request)
-  return undefined
-}
+const routeRbacRequest: RouteHandler = async (url, request) =>
+  Option.match(matchRbacRoute(url.pathname, request.method, request), {
+    onNone: () => undefined,
+    onSome: p => p,
+  })
 
 const routes: readonly RouteHandler[] = [
   routeRbacRequest,
@@ -43,23 +33,17 @@ const exec = (request: Request): Promise<Response> =>
   )
 
 /**
- * Route request; on error wipe repo and retry once.
+ * Route request; on error wipe repo and retry once. The request is
+ * cloned before exec so a handler that consumed its body still has
+ * an unused replay body for the retry path.
  *
- * The request is cloned BEFORE exec so the retry path has an unconsumed
- * body. Without this, any POST/PUT whose handler reads the body and then
- * throws would hit a "body already used" TypeError on retry, which the
- * SW_FETCH wrapper serializes as a JSON `{ error }` payload — the client's
- * success-schema decoder then fails with the misleading "content is
- * missing" Schema error that masks the real cause.
- * @param request - Incoming FetchEvent request
- * @returns Response from handler or recovery
+ * @param request incoming FetchEvent request
+ * @returns response from handler or recovery
  */
 export const routeRequest = async (request: Request): Promise<Response> => {
   const replay = request.clone()
-  try {
-    return await exec(request)
-  } catch (err) {
+  return exec(request).catch(err => {
     log('error', 'cache', `Handler error: ${toMessage(err)}`)
     return recoverAndRetry(replay, exec)
-  }
+  })
 }
