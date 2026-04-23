@@ -100,6 +100,37 @@ test.describe('Publish confirm dialog', () => {
   })
 })
 
+test.describe('Publish confirm — double-click guard', () => {
+  test('rapid double-click on Confirm only commits once', async ({
+    page,
+  }) => {
+    let commits = 0
+    page.on('request', r => {
+      if (r.url().includes('/api/github/commit')) commits += 1
+    })
+
+    await navToPublishedBlog(page)
+    await (await openPreview(page)).click()
+    await expect(dialog(page)).toBeVisible()
+
+    // Two clicks back-to-back without awaiting. The dialog closes on
+    // the first click, so Playwright's actionability check on the
+    // second will time out — we swallow that and just assert the
+    // commit-fired counter stays at 1.
+    const first = confirmBtn(page).click()
+    const second = confirmBtn(page)
+      .click({ timeout: 500 })
+      .catch(() => undefined)
+    await first
+    await second
+
+    await expect(page.locator('[data-testid="preview-button"]')).toBeVisible({
+      timeout: 15000,
+    })
+    expect(commits).toBe(1)
+  })
+})
+
 test.describe('Publish confirm — draft content bypasses the dialog', () => {
   test('saving an unpublished blog draft does not open the dialog', async ({
     page,

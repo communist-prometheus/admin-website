@@ -5,6 +5,11 @@ import type { useEditPage } from './useEditPage'
 
 type Page = ReturnType<typeof useEditPage>
 
+const liveAssetNames = (page: Page) => (): readonly string[] =>
+  page.assets.allAssets.value
+    .filter(a => a.status !== 'pending-delete')
+    .map(a => a.name)
+
 /**
  * Assemble the raw save closure from page dependencies.
  * Split out of init-edit-page so that file stays within the sonar
@@ -31,6 +36,7 @@ export const buildRawSave = (
     title,
     contentType: page.contentType,
     frontmatter: () => editor.frontmatterData.value,
+    assetNames: liveAssetNames(page),
     contentTypeName: page.contentType,
     track,
     onError: msg => globalThis.alert(`Save failed: ${msg}`),
