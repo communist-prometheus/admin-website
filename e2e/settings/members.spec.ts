@@ -17,7 +17,9 @@ test.describe('Members — unified org list with CRUD', () => {
     await expect(
       page.locator('[data-testid="org-admins-group"]')
     ).toHaveCount(0)
-    await expect(page.locator('[data-testid="members-section"]')).toBeVisible()
+    await expect(
+      page.locator('[data-testid="members-section"]')
+    ).toBeVisible()
   })
 
   test('lists every org member with an app-role select', async ({ page }) => {
@@ -52,6 +54,8 @@ test.describe('Members — unified org list with CRUD', () => {
     const row = page.locator('[data-testid="member-row-alice-admin"]')
     await expect(row).toBeVisible({ timeout: 10000 })
     await expect(row.locator('.org-badge.is-admin')).toBeVisible()
-    await expect(row.locator('.org-badge.is-admin')).toContainText(/org admin/i)
+    await expect(row.locator('.org-badge.is-admin')).toContainText(
+      /org admin/i
+    )
   })
 })
