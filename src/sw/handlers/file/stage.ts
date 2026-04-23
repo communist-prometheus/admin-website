@@ -1,6 +1,7 @@
 import { listFilesUnder } from '../../git/io/list-files'
 import { writeAndStage } from '../../git/io/write-file'
 import { errorResponse, jsonResponse } from '../shared/json-response'
+import { guardStagePayload } from './validate-stage'
 
 const FLAT_RE = /^(src\/content\/)([^/]+)\/([^/]+)\.(en|ru|it|es)\.md$/
 
@@ -33,6 +34,8 @@ export const handleFileStage = async (
   }
 
   const resolved = await resolveStage(path)
+  const reason = guardStagePayload(resolved, content)
+  if (reason !== undefined) return errorResponse(reason, 400)
   await writeAndStage(resolved, content)
   return jsonResponse({ success: true, path: resolved })
 }
