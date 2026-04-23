@@ -1,6 +1,12 @@
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
 import type { RolesConfig } from '@/types/role'
 
+/** Identity + org role for a GitHub organisation member. */
+export interface OrgMember {
+  readonly login: string
+  readonly orgRole: 'admin' | 'member'
+}
+
 /**
  * Fetch the full roles config from the SW.
  * @returns Roles config or default empty config
@@ -12,17 +18,20 @@ export const fetchRolesConfig = async (): Promise<RolesConfig> => {
 }
 
 /**
- * Fetch the list of GitHub-org admin logins from the SW. The SW in
- * turn calls `GET /orgs/{owner}/members?role=admin`. Falls back to an
- * empty list on failure so callers can degrade gracefully.
+ * Fetch every GitHub-org member (admin + regular) via the SW. The
+ * SW handler calls `GET /orgs/{owner}/members?role={admin,member}`
+ * and returns the tagged union. Falls back to an empty list so the
+ * UI never crashes when the OAuth token lacks `read:org`.
  *
- * @returns list of lowercase-safe GitHub usernames with org-admin role
+ * @returns list of org members with their org role
  */
-export const fetchOrgAdmins = async (): Promise<readonly string[]> => {
+export const fetchOrgMembers = async (): Promise<readonly OrgMember[]> => {
   const res = await swFetch('/api/github/org-members')
   if (!res.ok) return []
-  const body = (await res.json()) as { readonly admins?: readonly string[] }
-  return body.admins ?? []
+  const body = (await res.json()) as {
+    readonly members?: readonly OrgMember[]
+  }
+  return body.members ?? []
 }
 
 /**
