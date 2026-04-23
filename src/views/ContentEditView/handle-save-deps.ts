@@ -16,6 +16,7 @@ export interface HandleSaveDeps {
   readonly title: ComputedRef<string>
   readonly contentType: ComputedRef<ContentType>
   readonly frontmatter: () => Record<string, unknown>
+  readonly assetNames: () => readonly string[]
   readonly contentTypeName: ComputedRef<string>
   readonly track?: TrackDeploy
   readonly onError?: (msg: string) => void
