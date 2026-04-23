@@ -1,47 +1,40 @@
 import { errorResponse, jsonResponse } from '../handlers/shared/json-response'
 import { workerState } from '../state/state'
+import { loadOrgMembers } from './fetch-org-members'
 import { setOrgAdmins } from './org-admin-cache'
+import type { OrgMember } from './org-members-types'
 
-interface OrgMember {
-  readonly login: string
-}
+const MOCK_MEMBERS: readonly OrgMember[] = [
+  { login: 'alice-admin', orgRole: 'admin' },
+  { login: 'bob-editor', orgRole: 'member' },
+  { login: 'carol-reader', orgRole: 'member' },
+]
 
-const fetchJson = async (
-  url: string,
-  token: string
-): Promise<OrgMember[]> => {
-  const res = await fetch(url, {
-    headers: {
-      authorization: `Bearer ${token}`,
-      accept: 'application/vnd.github+json',
-      'x-github-api-version': '2022-11-28',
-    },
-  })
-  if (!res.ok) throw new Error(`github ${res.status}`)
-  const json: unknown = await res.json()
-  return Array.isArray(json) ? (json as OrgMember[]) : []
-}
+const primeAdminCacheFromMock = (): void =>
+  setOrgAdmins(
+    MOCK_MEMBERS.filter(m => m.orgRole === 'admin').map(m => m.login)
+  )
 
 /**
- * Handle GET /api/github/org-members — return the list of GitHub
- * org administrators by login. Returns `{ admins: [] }` on any
- * failure so the UI can degrade gracefully. Also updates the
- * local SW cache so resolveRole() treats org admins as implicit
- * app admins.
+ * Handle GET /api/github/org-members — return every GitHub
+ * organisation member with their org role (admin or member). In
+ * mock mode, a small fixture is returned. Falls back to
+ * `{ members: [] }` on failure so the UI degrades gracefully.
  *
- * @returns JSON response with the list of org admin logins
+ * @returns JSON response with the list of org members
  */
 export const handleGetOrgMembers = async (): Promise<Response> => {
   const config = workerState.config
   if (!config) return errorResponse('SW not initialised', 503)
+  if (__MOCK_MODE__ || config.mock) {
+    primeAdminCacheFromMock()
+    return jsonResponse({ members: MOCK_MEMBERS })
+  }
   try {
-    const url = `https://api.github.com/orgs/${config.owner}/members?role=admin&per_page=100`
-    const members = await fetchJson(url, config.token)
-    const admins = members.map(m => m.login)
-    setOrgAdmins(admins)
-    return jsonResponse({ admins })
+    const members = await loadOrgMembers(config.owner, config.token)
+    return jsonResponse({ members })
   } catch {
     setOrgAdmins([])
-    return jsonResponse({ admins: [] })
+    return jsonResponse({ members: [] })
   }
 }

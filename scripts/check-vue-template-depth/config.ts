@@ -13,7 +13,6 @@ export const config: Config = {
     'src/components/CreateContentDialog/**/*.vue',
     'src/views/ContentEditView/PublishConfirmDialog.vue',
     'src/views/ContentEditView/PublishDialogCard.vue',
-    'src/views/SettingsView/OrgAdminsGroup.vue',
   ],
 } as const
 
