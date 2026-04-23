@@ -1,6 +1,7 @@
 import tseslint from '@typescript-eslint/eslint-plugin'
 import parser from '@typescript-eslint/parser'
 import jsdoc from 'eslint-plugin-jsdoc'
+import { legacyIfFiles } from './eslint.legacy-if.js'
 
 export default [
   {
@@ -41,6 +42,26 @@ export default [
       jsdoc,
     },
     rules: {
+      // Project dogma: application code must be declarative. No
+      // imperative control-flow branching with if/switch; use
+      // Match from effect (Match.value(x).pipe(Match.when(...),
+      // Match.orElse(...))). Early-return guards that the reader
+      // would otherwise write as `if (x) return …` can be modelled
+      // as Match with a default branch, or as a lookup table /
+      // ternary for the trivial binary case.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'IfStatement',
+          message:
+            'No `if` in application code — use Match from effect (Match.value / Match.when / Match.orElse). A ternary is acceptable for trivial two-branch expressions.',
+        },
+        {
+          selector: 'SwitchStatement',
+          message:
+            'No `switch` in application code — use Match from effect (Match.value / Match.when / Match.orElse).',
+        },
+      ],
       'jsdoc/require-jsdoc': [
         'error',
         {
@@ -84,6 +105,23 @@ export default [
       'jsdoc/require-jsdoc': 'off',
       'jsdoc/require-param': 'off',
       'jsdoc/require-returns': 'off',
+    },
+  },
+  // Unit tests may use if/switch freely — they describe behaviour,
+  // not application flow.
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+  // Grandfathered files that still contain if/switch. When a file
+  // on this list is touched, the commit must also migrate its
+  // branching to Match and remove the entry.
+  {
+    files: legacyIfFiles,
+    rules: {
+      'no-restricted-syntax': 'off',
     },
   },
 ]
