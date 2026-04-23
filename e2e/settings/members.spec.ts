@@ -17,7 +17,9 @@ test.describe('Members — unified org list with CRUD', () => {
     await expect(
       page.locator('[data-testid="org-admins-group"]')
     ).toHaveCount(0)
-    await expect(page.locator('[data-testid="members-section"]')).toBeVisible()
+    await expect(
+      page.locator('[data-testid="members-section"]')
+    ).toBeVisible()
   })
 
   test('lists every org member with an app-role select', async ({ page }) => {
@@ -39,7 +41,9 @@ test.describe('Members — unified org list with CRUD', () => {
     ).toBeVisible()
   })
 
-  test('changing a role on a row sends it through the SW', async ({ page }) => {
+  test('changing a role on a row sends it through the SW', async ({
+    page,
+  }) => {
     await gotoSettings(page)
     const select = page.locator('[data-testid="role-select-dave-none"]')
     await expect(select).toBeVisible({ timeout: 10000 })
@@ -67,7 +71,9 @@ test.describe('Members — unified org list with CRUD', () => {
     await expect(page.locator('[data-testid="invite-row-99"]')).toBeVisible({
       timeout: 10000,
     })
-    await expect(page.locator('[data-testid="invite-revoke-99"]')).toBeVisible()
+    await expect(
+      page.locator('[data-testid="invite-revoke-99"]')
+    ).toBeVisible()
   })
 
   test('Invite button opens the dialog', async ({ page }) => {
