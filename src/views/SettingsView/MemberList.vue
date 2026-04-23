@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import type { Role } from '@/types/role'
 import MemberRow from './MemberRow.vue'
-import type { MemberRow as Row } from './merge-members'
+import type { OrgMember } from './roles-api'
 
 defineProps<{
-  readonly rows: readonly Row[]
+  readonly rows: readonly OrgMember[]
   readonly disabled: boolean
 }>()
 
 defineEmits<{
-  change: [username: string, role: Role | undefined]
+  change: [
+    username: string,
+    role: 'admin' | 'chief-editor' | 'editor' | 'none',
+  ]
 }>()
 </script>
 

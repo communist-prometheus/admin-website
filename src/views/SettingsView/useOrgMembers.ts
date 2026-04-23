@@ -1,24 +1,33 @@
 import { ref } from 'vue'
-import { fetchOrgMembers, type OrgMember } from './roles-api'
+import {
+  fetchOrgMembers,
+  type OrgInvitation,
+  type OrgMember,
+} from './roles-api'
 
 /**
- * Composable that fetches every member of the GitHub organisation
- * (both admins and regular members) from the SW.
+ * Composable that fetches every GitHub organisation member and
+ * every pending invitation in a single call. The list is sourced
+ * from the SW, which aggregates org members, team memberships
+ * (mapping to app roles), and pending invitations.
  *
- * @returns reactive member list + loader + loading flag
+ * @returns reactive members + invitations + loader + loading flag
  */
 export const useOrgMembers = () => {
   const members = ref<readonly OrgMember[]>([])
+  const invitations = ref<readonly OrgInvitation[]>([])
   const loading = ref(false)
 
   const load = async (): Promise<void> => {
     loading.value = true
     try {
-      members.value = await fetchOrgMembers()
+      const payload = await fetchOrgMembers()
+      members.value = payload.members
+      invitations.value = payload.invitations
     } finally {
       loading.value = false
     }
   }
 
-  return { members, loading, load }
+  return { members, invitations, loading, load }
 }

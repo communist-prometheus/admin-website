@@ -1,4 +1,4 @@
-/** A GitHub organisation member as surfaced to the client. */
+/** Identity + org role for a GitHub organisation member. */
 export interface OrgMember {
   readonly login: string
   readonly orgRole: 'admin' | 'member'
@@ -7,7 +7,7 @@ export interface OrgMember {
   readonly name?: string
 }
 
-/** A pending organisation invitation surfaced alongside members. */
+/** A pending organisation invitation. */
 export interface OrgInvitation {
   readonly id: number
   readonly login?: string
@@ -20,4 +20,11 @@ export interface OrgInvitation {
 export interface OrgMembersPayload {
   readonly members: readonly OrgMember[]
   readonly invitations: readonly OrgInvitation[]
+}
+
+/** Payload accepted by the invite endpoint. */
+export interface InviteRequest {
+  readonly email?: string
+  readonly login?: string
+  readonly role: 'admin' | 'chief-editor' | 'editor'
 }

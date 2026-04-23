@@ -13,6 +13,9 @@ export const config: Config = {
     'src/components/CreateContentDialog/**/*.vue',
     'src/views/ContentEditView/PublishConfirmDialog.vue',
     'src/views/ContentEditView/PublishDialogCard.vue',
+    'src/views/SettingsView/InviteDialog.vue',
+    'src/views/SettingsView/MemberRow.vue',
+    'src/views/SettingsView/MembersSection.vue',
   ],
 } as const
 

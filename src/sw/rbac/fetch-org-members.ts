@@ -1,42 +1,38 @@
+import { API, ghJson } from './github-api'
 import { setOrgAdmins } from './org-admin-cache'
 import type { OrgMember } from './org-members-types'
 
 interface RawMember {
   readonly login: string
+  readonly avatar_url?: string
 }
 
 const fetchRole = async (
   owner: string,
   token: string,
   role: 'admin' | 'member'
-): Promise<readonly string[]> => {
-  const url = `https://api.github.com/orgs/${owner}/members?role=${role}&per_page=100`
-  const res = await fetch(url, {
-    headers: {
-      authorization: `Bearer ${token}`,
-      accept: 'application/vnd.github+json',
-      'x-github-api-version': '2022-11-28',
-    },
-  })
-  if (!res.ok) throw new Error(`github ${res.status}`)
-  const json: unknown = await res.json()
-  return Array.isArray(json) ? (json as RawMember[]).map(m => m.login) : []
+): Promise<readonly RawMember[]> => {
+  const j = await ghJson<unknown>(
+    `${API}/orgs/${owner}/members?role=${role}&per_page=100`,
+    token
+  )
+  return Array.isArray(j) ? (j as RawMember[]) : []
 }
 
 const tag = (
-  logins: readonly string[],
+  xs: readonly RawMember[],
   orgRole: OrgMember['orgRole']
-): readonly OrgMember[] => logins.map(login => ({ login, orgRole }))
+): readonly OrgMember[] =>
+  xs.map(m => ({ login: m.login, orgRole, avatarUrl: m.avatar_url }))
 
 /**
- * Load every GitHub-org member by making parallel calls for admin
- * and member roles, then tag each login with its org role. Refresh
- * the SW org-admin cache as a side-effect so resolveRole() can
- * promote org admins to implicit app-admins.
+ * Load every GitHub-org member (admin + regular), tag each with
+ * their org role and public avatar URL, and refresh the SW
+ * org-admin cache.
  *
- * @param owner GitHub org login
- * @param token OAuth bearer token with `read:org`
- * @returns tagged union of admins first, then regular members
+ * @param owner org login
+ * @param token OAuth bearer with read:org
+ * @returns org members sorted by login
  */
 export const loadOrgMembers = async (
   owner: string,
@@ -46,6 +42,6 @@ export const loadOrgMembers = async (
     fetchRole(owner, token, 'admin'),
     fetchRole(owner, token, 'member'),
   ])
-  setOrgAdmins(admins)
+  setOrgAdmins(admins.map(a => a.login))
   return [...tag(admins, 'admin'), ...tag(members, 'member')]
 }
