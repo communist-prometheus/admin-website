@@ -146,7 +146,7 @@ MUST be added here with its coverage status before merge.
 | U-B00 | SW bundle is browser-safe (no `createHash`, no `require('crypto')`) | ✅ | scripts/verify-sw-browser-safe.ts, wired into `build:sw` |
 | U-B01 | Production SW build resolved against isomorphic-git ESM (not CJS) | ✅ | vite/sw-aliases.ts + verify script |
 | U-B02 | Deploy pipeline rebuilds non-mock bundle after e2e runs | ✅ | .github/workflows/deploy.yml (rebuild step after playwright) |
-| U-B03 | Deploy-gate smoke test runs real SW push on wrangler dev before wrangler deploy | ✅ | e2e/content/prod-bundle-smoke.spec.ts + deploy.yml (wrangler dev smoke step) |
+| U-B03 | Deploy-gate smoke test runs real SW push on wrangler dev before wrangler deploy | ✅ | e2e-prod/prod-bundle-smoke.pw.ts + deploy.yml (wrangler dev smoke step) |
 | U-B04 | Mock-mode bundle cannot ship to prod (stale preview-from-playwright killed before rebuild) | ✅ | deploy.yml `Killing stale mock-mode preview` step |
 | U-B05 | `Effect.tryPromise` clone errors surface the real message | ✅ | src/sw/git/sync/sync-helpers.ts (explicit `catch` projection) |
 
@@ -216,7 +216,7 @@ MUST be added here with its coverage status before merge.
 | E-601 | U-302 | Token expired mid-save | ❌ |
 | E-700 | U-803 | Two tabs editing languages.json | ❌ |
 | E-800 | U-300 | Create → edit immediately: content store stale, frontmatter wiped on first save | ✅ e2e/content/create-edit-roundtrip.spec.ts, src/views/ContentEditView/useEditPageInit.test.ts |
-| E-801 | U-B02 | Playwright webServer `build:e2e` overwrites prod `dist/` with mock bundle before deploy | ✅ deploy.yml rebuild step + e2e/content/prod-bundle-smoke.spec.ts |
+| E-801 | U-B02 | Playwright webServer `build:e2e` overwrites prod `dist/` with mock bundle before deploy | ✅ deploy.yml rebuild step + e2e-prod/prod-bundle-smoke.pw.ts |
 | E-802 | U-B00 | Vite 8 resolves isomorphic-git to CJS (calls `require('crypto').createHash`) | ✅ vite/sw-aliases.ts + scripts/verify-sw-browser-safe.ts |
 | E-803 | U-203a | User double-clicks Create while SW push is in flight | ✅ src/components/CreateContentDialog/CreateContentDialog.test.ts |
 | E-804 | U-302 | Orphaned broken blog files from failed e2e probes block public-website build | ⚠️ manual cleanup; no prune workflow yet |

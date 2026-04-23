@@ -94,8 +94,8 @@ jobs:
           GITHUB_REPO: public-website-content
           GITHUB_BRANCH: master
         run: |
-          bunx playwright test e2e/content/prod-bundle-smoke.spec.ts \
-            --project=chromium --reporter=line
+          bunx playwright test --config=playwright.config.prod.ts \
+            e2e-prod/prod-bundle-smoke.pw.ts --reporter=line
 
       - name: Deploying to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
