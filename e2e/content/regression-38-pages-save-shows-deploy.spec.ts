@@ -53,14 +53,21 @@ test.describe('Issue #38 — saving a page surfaces the deploy in the UI', () =>
     )
     expect(pending).not.toBeNull()
 
-    // Home dashboard must list the new pending entry.
+    // Home dashboard must list the new pending entry, even while
+    // GitHub Actions polling is still in flight (the issue user saw
+    // on prod was "Loading deployments..." masking the entry).
     await page.goto('/')
     await expect(page.locator('section.deploy-list h2')).toContainText(
       /recent deployments/i,
       { timeout: 10000 }
     )
     await expect(
-      page.locator('section.deploy-list').locator('article, li, div').first()
+      page.locator('section.deploy-list .deploy-item').first()
     ).toBeVisible({ timeout: 10000 })
+    await expect(
+      page.locator('section.deploy-list .status', {
+        hasText: /loading deployments/i,
+      })
+    ).toHaveCount(0)
   })
 })

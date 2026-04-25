@@ -11,16 +11,17 @@ defineProps<{
 <template>
   <section class="deploy-list">
     <h2>Recent Deployments</h2>
-    <p v-if="loading" class="status">Loading deployments...</p>
-    <p v-else-if="deploys.length === 0" class="status">
-      No deployments found
-    </p>
     <DeployItem
       v-for="d in deploys"
-      v-else
       :key="d.run.id"
       :build="d"
     />
+    <p v-if="loading && deploys.length === 0" class="status">
+      Loading deployments...
+    </p>
+    <p v-else-if="!loading && deploys.length === 0" class="status">
+      No deployments found
+    </p>
   </section>
 </template>
 
