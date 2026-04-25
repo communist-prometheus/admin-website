@@ -1,6 +1,8 @@
 import { convertDocxToHtml } from './convert-docx'
 import { extractImages } from './extract-images'
+import { generateToc } from './generate-toc'
 import { htmlToMarkdown } from './html-to-markdown'
+import { normaliseImportHtml } from './normalise-html'
 import { rewriteImages } from './rewrite-images'
 
 /** Output of an import: converted markdown and accompanying images. */
@@ -13,9 +15,13 @@ const UNSUPPORTED = 'Unsupported file type. Pick a .docx, .html, or .md.'
 const EMPTY: ImportResult = { markdown: '', images: [] }
 
 const fromHtml = (html: string, prefix: string): ImportResult => {
-  const images = extractImages(html, prefix)
-  const clean = rewriteImages(html, images)
-  return { markdown: htmlToMarkdown(clean), images: images.map(i => i.file) }
+  const normalised = normaliseImportHtml(html)
+  const images = extractImages(normalised, prefix)
+  const clean = rewriteImages(normalised, images)
+  return {
+    markdown: generateToc(htmlToMarkdown(clean)),
+    images: images.map(i => i.file),
+  }
 }
 
 const fromDocx = async (file: File): Promise<ImportResult> => {

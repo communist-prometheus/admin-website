@@ -1,5 +1,4 @@
 import mammoth from 'mammoth'
-import { promoteVisualHeadings } from './promote-visual-headings'
 
 const STYLE_MAP: string[] = [
   "p[style-name='Title'] => h1:fresh",
@@ -13,23 +12,20 @@ const STYLE_MAP: string[] = [
 ]
 
 /**
- * Convert a .docx ArrayBuffer to HTML via mammoth and promote visual
- * titles (bold-only paragraphs used as section headings) to real
- * `<hN>` elements so the markdown has a real outline. Embedded
- * images are still emitted as inline base64 data URIs; callers
- * extract them later.
+ * Convert a .docx ArrayBuffer to mammoth's HTML output. Heading
+ * normalisation (visual-bold paragraphs, single-item bold-only
+ * ordered lists) lives in `normaliseImportHtml` and runs in the
+ * shared `fromHtml` path so it applies to .html imports too.
  *
  * @param buffer raw .docx bytes
- * @returns mammoth HTML string with visual headings upgraded
+ * @returns mammoth HTML string (no post-processing applied here)
  */
 export const convertDocxToHtml = async (
   buffer: ArrayBuffer
 ): Promise<string> => {
   const result = await mammoth.convertToHtml(
     { arrayBuffer: buffer },
-    {
-      styleMap: STYLE_MAP,
-    }
+    { styleMap: STYLE_MAP }
   )
-  return promoteVisualHeadings(result.value)
+  return result.value
 }
