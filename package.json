@@ -40,6 +40,7 @@
   "dependencies": {
     "@isomorphic-git/lightning-fs": "^4.6.2",
     "@types/turndown": "^5.0.6",
+    "github-slugger": "^2.0.0",
     "hono": "^4.12.8",
     "isomorphic-git": "^1.37.2",
     "mammoth": "^1.12.0",

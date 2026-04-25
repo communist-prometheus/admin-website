@@ -92,4 +92,84 @@ test.describe('Import from Docs', () => {
     await page.locator('[data-testid="preview-button"]').click()
     await expect(button(page)).toBeHidden()
   })
+
+  test('html with single-item bold-only ordered lists becomes numbered ## headings', async ({
+    page,
+  }) => {
+    await edit(page)
+    const textarea = page.locator('[data-testid="editor-body"]')
+    await textarea.fill('')
+
+    // Mirrors what mammoth emits for Word "List Paragraph" sections —
+    // each section is its own single-item bold-only ordered list.
+    const html =
+      '<ol><li><strong>Foreword</strong></li></ol>' +
+      '<p>body</p>' +
+      '<ol><li><strong>Theory</strong></li></ol>' +
+      '<p>body</p>' +
+      '<ol><li><strong>Practice</strong></li></ol>' +
+      '<p>body</p>'
+
+    await input(page).setInputFiles({
+      name: 'doc.html',
+      mimeType: 'text/html',
+      buffer: Buffer.from(html),
+    })
+
+    await expect
+      .poll(() => textarea.inputValue(), { timeout: 5000 })
+      .toContain('## 1\\. Foreword')
+    const body = await textarea.inputValue()
+    expect(body).toContain('## 1\\. Foreword')
+    expect(body).toContain('## 2\\. Theory')
+    expect(body).toContain('## 3\\. Practice')
+    expect(body).not.toMatch(/^1\.\s+\*\*Foreword/m)
+  })
+
+  test('html with 3+ headings gets a Contents block prepended', async ({
+    page,
+  }) => {
+    await edit(page)
+    const textarea = page.locator('[data-testid="editor-body"]')
+    await textarea.fill('')
+
+    const html =
+      '<h2>Alpha</h2><p>body</p>' +
+      '<h2>Beta</h2><p>body</p>' +
+      '<h2>Gamma</h2><p>body</p>'
+
+    await input(page).setInputFiles({
+      name: 'doc.html',
+      mimeType: 'text/html',
+      buffer: Buffer.from(html),
+    })
+
+    await expect
+      .poll(() => textarea.inputValue(), { timeout: 5000 })
+      .toContain('## Contents')
+    const body = await textarea.inputValue()
+    expect(body.indexOf('## Contents')).toBeLessThan(body.indexOf('## Alpha'))
+    expect(body).toContain('- [Alpha](#alpha)')
+    expect(body).toContain('- [Beta](#beta)')
+    expect(body).toContain('- [Gamma](#gamma)')
+  })
+
+  test('html with fewer than 3 headings is left without a TOC', async ({
+    page,
+  }) => {
+    await edit(page)
+    const textarea = page.locator('[data-testid="editor-body"]')
+    await textarea.fill('')
+
+    await input(page).setInputFiles({
+      name: 'doc.html',
+      mimeType: 'text/html',
+      buffer: Buffer.from('<h2>Only One</h2><p>body</p>'),
+    })
+
+    await expect
+      .poll(() => textarea.inputValue(), { timeout: 5000 })
+      .toContain('## Only One')
+    expect(await textarea.inputValue()).not.toContain('## Contents')
+  })
 })
