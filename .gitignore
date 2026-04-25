@@ -35,6 +35,9 @@ coverage
 # Vitest
 __screenshots__/
 
+# Prod-verify Playwright probe artefacts
+screenshots/
+
 # Vite
 *.timestamp-*-*.mjs
 
