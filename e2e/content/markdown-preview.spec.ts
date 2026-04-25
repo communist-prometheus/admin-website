@@ -2,11 +2,13 @@ import { expect, test } from '@playwright/test'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 test.describe('Markdown Preview', () => {
-  test('preview toggle is visible in editor', async ({ page }) => {
+  test('the page-level Preview button is visible in edit mode', async ({
+    page,
+  }) => {
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')
 
-    await expect(page.locator('[data-testid="preview-toggle"]')).toBeVisible()
+    await expect(page.locator('[data-testid="preview-button"]')).toBeVisible()
   })
 
   test('clicking preview shows rendered HTML', async ({ page }) => {
