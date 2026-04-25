@@ -22,7 +22,6 @@ export const pageFieldsBySlug: Readonly<
   home: [
     ...basePageFields,
     { key: 'heroTitle', label: 'Hero Title', type: 'text' },
-    { key: 'subtitle', label: 'Subtitle', type: 'textarea' },
     {
       key: 'latestNews',
       label: 'Latest News Label',
@@ -48,5 +47,8 @@ export const pageFieldsBySlug: Readonly<
     { key: 'heading', label: 'Heading', type: 'text' },
   ],
   manifest: basePageFields,
-  about: basePageFields,
+  about: [
+    ...basePageFields,
+    { key: 'subtitle', label: 'Subtitle', type: 'textarea' },
+  ],
 }
