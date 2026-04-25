@@ -22,6 +22,7 @@ export const pageFieldsBySlug: Readonly<
   home: [
     ...basePageFields,
     { key: 'heroTitle', label: 'Hero Title', type: 'text' },
+    { key: 'subtitle', label: 'Subtitle', type: 'textarea' },
     {
       key: 'latestNews',
       label: 'Latest News Label',
