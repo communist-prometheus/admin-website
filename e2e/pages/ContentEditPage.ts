@@ -38,8 +38,18 @@ export class ContentEditPage {
     return this.page.locator('[data-testid="editor-body"]')
   }
 
+  /**
+   * Enter the global preview screen by clicking the page-level
+   * "Preview" button at the bottom of the edit area. After issue #36
+   * the in-editor preview-toggle was removed: the page-level Preview
+   * is the single entry point that exposes the Save button.
+   */
   async togglePreview(): Promise<void> {
-    await this.page.locator('[data-testid="preview-toggle"]').click()
+    const back = this.page.locator('[data-testid="back-to-edit-button"]')
+    const target = (await back.isVisible())
+      ? back
+      : this.page.locator('[data-testid="preview-button"]')
+    await target.click()
   }
 
   async expectPreviewVisible(): Promise<void> {

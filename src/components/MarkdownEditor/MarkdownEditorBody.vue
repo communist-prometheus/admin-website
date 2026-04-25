@@ -7,8 +7,6 @@ import { handleKeyboard } from './handle-keyboard'
 import { insertUploadTag } from './handle-upload'
 import ImportDocsButton from './ImportDocs/ImportDocsButton.vue'
 import { insertImported } from './ImportDocs/insert-imported'
-import MarkdownPreview from './MarkdownPreview.vue'
-import PreviewToggle from './PreviewToggle.vue'
 import { execBlock, execMedia, execWrap } from './use-commands'
 
 defineProps<{
@@ -24,7 +22,6 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
-const previewing = ref(false)
 const textareaRef = ref<HTMLTextAreaElement>()
 const emitUpload = (f: File) => emit('upload-asset', f)
 const { onPaste, onDrop } = createPasteDrop({
@@ -54,22 +51,11 @@ const handleImported = (markdown: string, images: readonly File[]) =>
 
 <template>
   <section class="editor-body">
-    <PreviewToggle
-      :previewing="previewing"
-      @toggle="() => { previewing = !previewing }"
-    />
     <ImportDocsButton
-      v-if="!previewing"
       @imported="handleImported"
       @error="msg => $emit('error', msg)"
     />
-    <MarkdownPreview
-      v-if="previewing"
-      :content="modelValue"
-      :asset-url-map="assetUrlMap"
-    />
     <CommandPanel
-      v-if="!previewing"
       :assets="assets"
       @wrap="wrap"
       @block="p => textareaRef && execBlock(textareaRef, p)"
@@ -77,7 +63,6 @@ const handleImported = (markdown: string, images: readonly File[]) =>
       @upload-asset="handleUpload"
     />
     <textarea
-      v-if="!previewing"
       ref="textareaRef"
       data-testid="editor-body"
       :value="modelValue"
