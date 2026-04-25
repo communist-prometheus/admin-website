@@ -47,4 +47,5 @@ export const pageFieldsBySlug: Readonly<
     { key: 'heading', label: 'Heading', type: 'text' },
   ],
   manifest: basePageFields,
+  about: basePageFields,
 }
