@@ -18,7 +18,7 @@
   "env": {
     // Develop environment — deploys from the `develop` branch into a
     // separate CF Worker (admin-website-develop) bound to
-    // admin-dev.comprom.org. Reads/writes content from the `develop`
+    // dev-admin.comprom.org. Reads/writes content from the `develop`
     // branch of public-website-content (set by the deploy workflow via
     // VITE_GITHUB_BRANCH). The deploy-status panel reads dev-side CF
     // workflow runs by pointing CF_PROJECT_NAME at the dev public
@@ -26,7 +26,7 @@
     "develop": {
       "name": "admin-website-develop",
       "routes": [
-        { "pattern": "admin-dev.comprom.org", "custom_domain": true }
+        { "pattern": "dev-admin.comprom.org", "custom_domain": true }
       ],
       "vars": {
         "CF_ACCOUNT_ID": "c5b8f26375cab6f66eab9981fe3b6d3a",
