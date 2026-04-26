@@ -2,19 +2,32 @@ name: Deploy admin to Cloudflare Workers
 
 on:
   push:
-    branches: [master]
+    branches: [master, develop]
+
+# Serialise per branch — when a fresh master commit lands while an
+# older deploy is still building, cancel the in-flight one. Same on
+# develop. Master and develop never collide because the group key
+# includes `github.ref`.
+concurrency:
+  group: deploy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # VITE_* env vars are injected into the client bundle at build time by
-    # Vite. Without this, `import.meta.env.VITE_GITHUB_CLIENT_ID` resolves
-    # to undefined and the admin sends an empty client_id to GitHub on
-    # Login click — which renders as a 404 on github.com/login/oauth/authorize.
+    # VITE_* env vars are injected into the client bundle at build time
+    # by Vite. Branch-aware: master deploys point the SW at the
+    # public-website-content master branch and the prod public worker;
+    # develop deploys point at the develop branch and the dev public
+    # worker. VITE_OAUTH_REDIRECT_URI is hard-pinned to the prod
+    # callback so a single GitHub OAuth App handles both deployments —
+    # the popup runs on admin.comprom.org and cross-posts the token
+    # back to the original opener (allowlisted in useOAuthPopup).
     env:
       VITE_GITHUB_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID }}
       VITE_MOCK_AUTH: 'false'
-      VITE_GITHUB_BRANCH: master
+      VITE_GITHUB_BRANCH: ${{ github.ref_name == 'develop' && 'develop' || 'master' }}
+      VITE_OAUTH_REDIRECT_URI: 'https://admin.comprom.org/auth/github/callback'
     steps:
       - name: Cloning git repository
         uses: actions/checkout@v4
@@ -92,7 +105,7 @@ jobs:
           GITHUB_E2E_KEY: ${{ secrets.GH_E2E_PAT }}
           GITHUB_OWNER: communist-prometheus
           GITHUB_REPO: public-website-content
-          GITHUB_BRANCH: master
+          GITHUB_BRANCH: ${{ github.ref_name == 'develop' && 'develop' || 'master' }}
         run: |
           bunx playwright test --config=playwright.config.prod.ts \
             e2e-prod/prod-bundle-smoke.pw.ts --reporter=line
@@ -104,3 +117,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: bun
           wranglerVersion: "4.80.0"
+          # Master deploys to the production worker; develop deploys to
+          # the `develop` env in wrangler.jsonc which targets the dev
+          # worker (admin-website-develop) on admin-dev.comprom.org.
+          command: ${{ github.ref_name == 'develop' && 'deploy --env develop' || 'deploy' }}
