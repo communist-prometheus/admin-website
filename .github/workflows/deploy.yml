@@ -19,15 +19,16 @@ jobs:
     # by Vite. Branch-aware: master deploys point the SW at the
     # public-website-content master branch and the prod public worker;
     # develop deploys point at the develop branch and the dev public
-    # worker. VITE_OAUTH_REDIRECT_URI is hard-pinned to the prod
-    # callback so a single GitHub OAuth App handles both deployments —
-    # the popup runs on admin.comprom.org and cross-posts the token
-    # back to the original opener (allowlisted in useOAuthPopup).
+    # worker. VITE_OAUTH_REDIRECT_URI is per-branch so each deployment
+    # uses its own callback URL — the GitHub App has both URLs
+    # registered. This keeps PKCE same-origin: the popup callback runs
+    # on the same hostname as the opener and can read the verifier
+    # from the same localStorage. No cross-origin postMessage hack.
     env:
       VITE_GITHUB_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID }}
       VITE_MOCK_AUTH: 'false'
       VITE_GITHUB_BRANCH: ${{ github.ref_name == 'develop' && 'develop' || 'master' }}
-      VITE_OAUTH_REDIRECT_URI: 'https://admin.comprom.org/auth/github/callback'
+      VITE_OAUTH_REDIRECT_URI: ${{ github.ref_name == 'develop' && 'https://dev-admin.comprom.org/auth/github/callback' || 'https://admin.comprom.org/auth/github/callback' }}
     steps:
       - name: Cloning git repository
         uses: actions/checkout@v4
