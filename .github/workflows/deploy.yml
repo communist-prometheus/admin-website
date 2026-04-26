@@ -15,17 +15,20 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Per-branch values come from repo Variables:
-    #   OAUTH_REDIRECT_URI_MASTER  / OAUTH_REDIRECT_URI_DEVELOP
-    # The "Resolve branch env" step picks the right one and exports it
-    # via $GITHUB_ENV so subsequent steps see plain VITE_* env vars.
+    # Per-branch values come from repo Variables suffixed by branch:
+    #   OAUTH_REDIRECT_URI_{MASTER,DEVELOP}
+    #   VITE_GITHUB_CLIENT_ID_{MASTER,DEVELOP}
+    # The "Resolve branch env" step picks the right pair and exports
+    # it via $GITHUB_ENV so subsequent steps see plain env vars.
     # Keeps the workflow free of inline ternaries and centralises
-    # hostnames in one place editable via the GitHub UI / `gh variable`.
+    # secrets/hostnames in one place editable via the GitHub UI or
+    # `gh variable`.
     env:
-      VITE_GITHUB_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID }}
       VITE_MOCK_AUTH: 'false'
       OAUTH_REDIRECT_URI_MASTER: ${{ vars.OAUTH_REDIRECT_URI_MASTER }}
       OAUTH_REDIRECT_URI_DEVELOP: ${{ vars.OAUTH_REDIRECT_URI_DEVELOP }}
+      VITE_GITHUB_CLIENT_ID_MASTER: ${{ vars.VITE_GITHUB_CLIENT_ID_MASTER }}
+      VITE_GITHUB_CLIENT_ID_DEVELOP: ${{ vars.VITE_GITHUB_CLIENT_ID_DEVELOP }}
     steps:
       - name: Cloning git repository
         uses: actions/checkout@v4
@@ -35,11 +38,13 @@ jobs:
           if [ "$GITHUB_REF_NAME" = "develop" ]; then
             echo "VITE_GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
             echo "VITE_OAUTH_REDIRECT_URI=$OAUTH_REDIRECT_URI_DEVELOP" >> "$GITHUB_ENV"
+            echo "VITE_GITHUB_CLIENT_ID=$VITE_GITHUB_CLIENT_ID_DEVELOP" >> "$GITHUB_ENV"
             echo "GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
             echo "WRANGLER_COMMAND=deploy --env develop" >> "$GITHUB_ENV"
           else
             echo "VITE_GITHUB_BRANCH=master" >> "$GITHUB_ENV"
             echo "VITE_OAUTH_REDIRECT_URI=$OAUTH_REDIRECT_URI_MASTER" >> "$GITHUB_ENV"
+            echo "VITE_GITHUB_CLIENT_ID=$VITE_GITHUB_CLIENT_ID_MASTER" >> "$GITHUB_ENV"
             echo "GITHUB_BRANCH=master" >> "$GITHUB_ENV"
             echo "WRANGLER_COMMAND=deploy" >> "$GITHUB_ENV"
           fi
