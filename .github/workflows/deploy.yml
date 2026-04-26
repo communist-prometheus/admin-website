@@ -15,23 +15,34 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # VITE_* env vars are injected into the client bundle at build time
-    # by Vite. Branch-aware: master deploys point the SW at the
-    # public-website-content master branch and the prod public worker;
-    # develop deploys point at the develop branch and the dev public
-    # worker. VITE_OAUTH_REDIRECT_URI is per-branch so each deployment
-    # uses its own callback URL — the GitHub App has both URLs
-    # registered. This keeps PKCE same-origin: the popup callback runs
-    # on the same hostname as the opener and can read the verifier
-    # from the same localStorage. No cross-origin postMessage hack.
+    # Per-branch values come from repo Variables:
+    #   OAUTH_REDIRECT_URI_MASTER  / OAUTH_REDIRECT_URI_DEVELOP
+    # The "Resolve branch env" step picks the right one and exports it
+    # via $GITHUB_ENV so subsequent steps see plain VITE_* env vars.
+    # Keeps the workflow free of inline ternaries and centralises
+    # hostnames in one place editable via the GitHub UI / `gh variable`.
     env:
       VITE_GITHUB_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID }}
       VITE_MOCK_AUTH: 'false'
-      VITE_GITHUB_BRANCH: ${{ github.ref_name == 'develop' && 'develop' || 'master' }}
-      VITE_OAUTH_REDIRECT_URI: ${{ github.ref_name == 'develop' && 'https://dev-admin.comprom.org/auth/github/callback' || 'https://admin.comprom.org/auth/github/callback' }}
+      OAUTH_REDIRECT_URI_MASTER: ${{ vars.OAUTH_REDIRECT_URI_MASTER }}
+      OAUTH_REDIRECT_URI_DEVELOP: ${{ vars.OAUTH_REDIRECT_URI_DEVELOP }}
     steps:
       - name: Cloning git repository
         uses: actions/checkout@v4
+
+      - name: Resolve branch env
+        run: |
+          if [ "$GITHUB_REF_NAME" = "develop" ]; then
+            echo "VITE_GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
+            echo "VITE_OAUTH_REDIRECT_URI=$OAUTH_REDIRECT_URI_DEVELOP" >> "$GITHUB_ENV"
+            echo "GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
+            echo "WRANGLER_COMMAND=deploy --env develop" >> "$GITHUB_ENV"
+          else
+            echo "VITE_GITHUB_BRANCH=master" >> "$GITHUB_ENV"
+            echo "VITE_OAUTH_REDIRECT_URI=$OAUTH_REDIRECT_URI_MASTER" >> "$GITHUB_ENV"
+            echo "GITHUB_BRANCH=master" >> "$GITHUB_ENV"
+            echo "WRANGLER_COMMAND=deploy" >> "$GITHUB_ENV"
+          fi
 
       - name: Installing tools and dependencies
         uses: oven-sh/setup-bun@v2
@@ -106,7 +117,8 @@ jobs:
           GITHUB_E2E_KEY: ${{ secrets.GH_E2E_PAT }}
           GITHUB_OWNER: communist-prometheus
           GITHUB_REPO: public-website-content
-          GITHUB_BRANCH: ${{ github.ref_name == 'develop' && 'develop' || 'master' }}
+          # GITHUB_BRANCH was resolved by the "Resolve branch env" step
+          # at the top of the job and is already in the environment.
         run: |
           bunx playwright test --config=playwright.config.prod.ts \
             e2e-prod/prod-bundle-smoke.pw.ts --reporter=line
@@ -118,7 +130,6 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: bun
           wranglerVersion: "4.80.0"
-          # Master deploys to the production worker; develop deploys to
-          # the `develop` env in wrangler.jsonc which targets the dev
-          # worker (admin-website-develop) on admin-dev.comprom.org.
-          command: ${{ github.ref_name == 'develop' && 'deploy --env develop' || 'deploy' }}
+          # WRANGLER_COMMAND was resolved by the "Resolve branch env"
+          # step (deploy --env develop on develop, deploy on master).
+          command: ${{ env.WRANGLER_COMMAND }}
