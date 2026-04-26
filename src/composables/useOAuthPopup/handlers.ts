@@ -1,22 +1,21 @@
-import { fetchGitHubUser } from '@/composables/useAuth/fetch-github-user'
-import { saveToken } from '@/composables/useAuth/token-storage'
 import type { User } from '@/types/user'
 import { decodeOrUndefined } from '@/validation/decode'
 import { OAuthMessageSchema } from '@/validation/schemas/oauth-message'
+import { handleCode } from './handle-code'
+import { handleToken } from './handle-token'
 
 /**
- * Origins allowed to deliver OAuth success messages to the admin.
+ * Origins allowed to deliver OAuth messages to the admin opener.
  *
- * When the OAuth popup's redirect_uri points to one of these hostnames,
- * the callback page runs there (cross-origin from the opener) and uses
- * `postMessage(..., '*')` to deliver the token. We gate trust on the
- * receiving side: any message whose `event.origin` is NOT in this list
- * is silently dropped.
- *
- * The opener's own origin is always trusted (same-origin popup case).
+ * When the popup's redirect_uri points to one of these hostnames it
+ * runs cross-origin from the opener and uses `postMessage(..., '*')`.
+ * We gate trust on the receiving side: any message whose
+ * `event.origin` is NOT in this list (and not the opener's own
+ * origin) is silently dropped.
  */
 const TRUSTED_ORIGINS: readonly string[] = [
   'https://admin.comprom.org',
+  'https://dev-admin.comprom.org',
   'https://admin-website.igor-ganov.workers.dev',
   'http://localhost:5173',
   'http://localhost:4173',
@@ -25,26 +24,6 @@ const TRUSTED_ORIGINS: readonly string[] = [
 const isTrustedOrigin = (origin: string): boolean =>
   typeof globalThis.location !== 'undefined' &&
   (origin === globalThis.location.origin || TRUSTED_ORIGINS.includes(origin))
-
-/**
- * Handle received token: save and fetch user profile.
- * @param token - GitHub access token from callback
- * @param onSuccess - Callback with complete User
- * @param onError - Optional error callback
- */
-const handleToken = async (
-  token: string,
-  onSuccess: (user: User) => void,
-  onError: ((error: string) => void) | undefined
-): Promise<void> => {
-  try {
-    saveToken(token)
-    const user = await fetchGitHubUser(token)
-    onSuccess(user)
-  } catch {
-    onError?.('Failed to fetch user after token exchange')
-  }
-}
 
 /**
  * Creates message event handler for OAuth popup.
@@ -64,9 +43,11 @@ export const createMessageHandler =
     if (!isTrustedOrigin(event.origin)) return
     const msg = decodeOrUndefined(OAuthMessageSchema)(event.data)
     if (!msg) return
-    if (msg.type === 'github-oauth-success') {
+    if (msg.type === 'github-oauth-success')
       handleToken(msg.token, onSuccess, onError).finally(cleanup)
-    } else {
+    else if (msg.type === 'github-oauth-code')
+      handleCode(msg.code, onSuccess, onError).finally(cleanup)
+    else {
       onError?.(msg.error ?? 'Authentication failed')
       cleanup()
     }
