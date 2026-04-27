@@ -1,12 +1,9 @@
 import type { PendingAsset } from './types'
 
-const revokeIfMatch = (
-  asset: PendingAsset,
-  name: string
-): PendingAsset | undefined =>
-  asset.name === name
-    ? (URL.revokeObjectURL(asset.blobUrl), undefined)
-    : asset
+const revoke = (asset: PendingAsset): readonly PendingAsset[] => {
+  URL.revokeObjectURL(asset.blobUrl)
+  return []
+}
 
 /**
  * Drop any pending entries whose name matches `name`, revoking the
@@ -20,10 +17,7 @@ export const dedupPending = (
   pending: readonly PendingAsset[],
   name: string
 ): readonly PendingAsset[] =>
-  pending.flatMap(a => {
-    const kept = revokeIfMatch(a, name)
-    return kept === undefined ? [] : [kept]
-  })
+  pending.flatMap(a => (a.name === name ? revoke(a) : [a]))
 
 const addToSet = <T>(s: ReadonlySet<T>, v: T): ReadonlySet<T> => {
   const next = new Set(s)
