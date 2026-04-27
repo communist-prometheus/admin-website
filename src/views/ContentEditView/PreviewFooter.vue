@@ -72,4 +72,27 @@ button:disabled {
 .done {
   color: hsl(140deg 60% 50%);
 }
+
+/*
+ * Spinner during save. Button text is cleared while `saving` is true,
+ * a rotating ring renders in its place. The same rule lived on the
+ * previous-generation Save button in EditorFooter and was lost when
+ * the button moved to PreviewFooter in #14.
+ */
+.saving::after {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--color-text-secondary);
+  border-top-color: var(--color-text);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 </style>
