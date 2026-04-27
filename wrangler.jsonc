@@ -7,31 +7,19 @@
     "not_found_handling": "single-page-application",
     "binding": "ASSETS"
   },
-  // OAuth token exchange needs the client secret
-  // Deploy status needs CF API credentials
-  // Set these as secrets: wrangler secret put <NAME>
-  // Required secrets: GITHUB_CLIENT_SECRET, CF_API_TOKEN, CF_ACCOUNT_ID, CF_PROJECT_NAME
-  "vars": {
-    "CF_ACCOUNT_ID": "c5b8f26375cab6f66eab9981fe3b6d3a",
-    "CF_PROJECT_NAME": "public-website"
-  },
+  // The OAuth token exchange handler reads the GitHub App client
+  // secret. Set with: wrangler secret put GITHUB_CLIENT_SECRET
   "env": {
     // Develop environment — deploys from the `develop` branch into a
     // separate CF Worker (admin-website-develop) bound to
     // dev-admin.comprom.org. Reads/writes content from the `develop`
     // branch of public-website-content (set by the deploy workflow via
-    // VITE_GITHUB_BRANCH). The deploy-status panel reads dev-side CF
-    // workflow runs by pointing CF_PROJECT_NAME at the dev public
-    // worker.
+    // VITE_GITHUB_BRANCH).
     "develop": {
       "name": "admin-website-develop",
       "routes": [
         { "pattern": "dev-admin.comprom.org", "custom_domain": true }
-      ],
-      "vars": {
-        "CF_ACCOUNT_ID": "c5b8f26375cab6f66eab9981fe3b6d3a",
-        "CF_PROJECT_NAME": "public-website-develop"
-      }
+      ]
     }
   }
 }
