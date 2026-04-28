@@ -89,6 +89,7 @@ button {
   font-size: clamp(0.875rem, 2vw, 1rem);
   cursor: pointer;
   border: 1px solid var(--color-border);
+  transition: background var(--transition-fast);
 }
 
 .btn-primary {
@@ -97,8 +98,16 @@ button {
   border: none;
 }
 
+.btn-primary:hover {
+  background: var(--color-border);
+}
+
 .btn-cancel {
   background: transparent;
   color: var(--color-text);
+}
+
+.btn-cancel:hover {
+  background: var(--color-background-soft);
 }
 </style>
