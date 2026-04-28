@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { createSlugInputHandler } from '@/components/CreateContentDialog/slug-input'
 import { validateSlug } from '@/utils/validate-slug'
 
 const props = defineProps<{
@@ -41,6 +42,8 @@ const onKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Enter') confirm()
   if (e.key === 'Escape') cancel()
 }
+
+const onSlugInput = createSlugInputHandler(draft)
 </script>
 
 <template>
@@ -54,9 +57,12 @@ const onKeydown = (e: KeyboardEvent) => {
   </h1>
   <span v-else class="slug-editor">
     <input
-      v-model="draft"
+      :value="draft"
       data-testid="slug-input"
       class="slug-input"
+      autocomplete="off"
+      spellcheck="false"
+      @input="onSlugInput"
       @keydown="onKeydown"
       @blur="confirm"
     />
