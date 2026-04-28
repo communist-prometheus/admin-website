@@ -29,7 +29,13 @@ describe('createSwitchLanguage — entity-level metadata', () => {
     const fileSha = ref('sha-en')
     const loadFn = vi.fn(async (_path: string) => undefined)
 
-    const switchLang = createSwitchLanguage(cache, state, fileSha, loadFn)
+    const switchLang = createSwitchLanguage(
+      cache,
+      new Map(),
+      state,
+      fileSha,
+      loadFn
+    )
     await switchLang('it')
 
     expect(state.currentLang.value).toBe('it')
@@ -46,7 +52,13 @@ describe('createSwitchLanguage — entity-level metadata', () => {
     const fileSha = ref('sha-en')
     const loadFn = vi.fn(async (_path: string) => undefined)
 
-    const switchLang = createSwitchLanguage(cache, state, fileSha, loadFn)
+    const switchLang = createSwitchLanguage(
+      cache,
+      new Map(),
+      state,
+      fileSha,
+      loadFn
+    )
     await switchLang('ru', 'blog/x/index.ru.md')
 
     expect(loadFn).toHaveBeenCalledWith('blog/x/index.ru.md')
@@ -58,7 +70,13 @@ describe('createSwitchLanguage — entity-level metadata', () => {
     const fileSha = ref('sha-en')
     const loadFn = vi.fn(async (_path: string) => undefined)
 
-    const switchLang = createSwitchLanguage(cache, state, fileSha, loadFn)
+    const switchLang = createSwitchLanguage(
+      cache,
+      new Map(),
+      state,
+      fileSha,
+      loadFn
+    )
     await switchLang('it')
 
     expect(state.bodyContent.value).toBe('')

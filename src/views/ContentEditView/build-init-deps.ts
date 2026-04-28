@@ -6,23 +6,22 @@ import { createInitEditor } from './useEditPageInit'
 type Page = ReturnType<typeof useEditPage>
 
 /*
- * Some pages slugs (home, blog-listing, positions-listing) are
- * frontmatter-only landing pages: their body is never rendered. Wrap
- * the editor init so any body content from disk is cleared on entry,
- * making the next save commit a clean frontmatter-only file.
+ * For entries whose public-website template does not render a body
+ * (newspaper, common, the frontmatter-only `pages` slugs), drop any
+ * body content loaded from disk AND realign both caches so isDirty
+ * reports clean post-init. Without realigning, the unsaved-changes
+ * guard would fire on first navigation because draft.body='' would
+ * not match originalCache.body=<loaded>.
  */
-const clearBodyless = (page: Page): void => {
-  page.editor.bodyContent.value = hasBodyEditor(
-    page.contentType.value,
-    page.slug
-  )
-    ? page.editor.bodyContent.value
-    : ''
+const applyBodylessReset = (page: Page): void => {
+  page.editor.bodyContent.value = ''
+  page.editor.markSaved()
 }
 
 const wrapBodyless = (page: Page, init: () => Promise<void>) => async () => {
   await init()
-  clearBodyless(page)
+  const showBody = hasBodyEditor(page.contentType.value, page.slug)
+  return showBody ? undefined : applyBodylessReset(page)
 }
 
 /**

@@ -1,16 +1,24 @@
 /*
- * Some `pages` slugs are pure containers for landing-page labels —
- * the public site reads their frontmatter (title, heroTitle, heading,
- * etc.) but never renders the body. Showing a markdown body editor
- * for them is misleading and pollutes the committed file with content
- * that is never used.
+ * Decide where a markdown body editor is meaningful, by mirroring
+ * exactly what public-website actually renders. Anywhere the
+ * template only consumes frontmatter (`entry.data.*`) and never
+ * calls `entry.render()` / `<Content />`, showing a body editor in
+ * admin would let editors type text into a void.
  *
- * Mirrors the templates in public-website/src/pages/[lang]/*.astro:
- *   - home: BaseLayout + Hero + NewsSection + PositionsWidget, no body.
- *   - blog-listing: posts grid, no body.
- *   - positions-listing: positions grid, no body.
- *   - manifest, about: do render body and stay editable.
+ * Public-website rendering map (verified in
+ * public-website/src/pages/[lang]/*.astro):
+ *   - blog/<slug>: body rendered  -> editor SHOWN
+ *   - positions/<slug>: body rendered -> editor SHOWN
+ *   - pages/manifest, pages/about: body rendered -> editor SHOWN
+ *   - pages/home, pages/blog-listing, pages/positions-listing:
+ *     frontmatter only -> editor HIDDEN
+ *   - newspaper/<slug>: only a list page exists; the detail "page"
+ *     is the PDF download. Body never rendered -> editor HIDDEN
+ *   - common/<slug> (menu, labels, ...): translation tables read
+ *     via `entry.data.*` only -> editor HIDDEN
  */
+const ALWAYS_BODYLESS: ReadonlySet<string> = new Set(['common', 'newspaper'])
+
 const BODYLESS_PAGE_SLUGS: ReadonlySet<string> = new Set([
   'home',
   'blog-listing',
@@ -18,10 +26,7 @@ const BODYLESS_PAGE_SLUGS: ReadonlySet<string> = new Set([
 ])
 
 /**
- * Whether the markdown body editor should render for this pages slug.
- * Always true for non-pages content types — only pages have the
- * frontmatter-only landing slugs.
- *
+ * Whether the markdown body editor should render for this entry.
  * @param contentType - Content type of the entry being edited
  * @param slug - Slug of the entry
  * @returns true when a body editor is meaningful for this entry
@@ -30,6 +35,8 @@ export const hasBodyEditor = (
   contentType: string,
   slug: string | undefined
 ): boolean =>
-  contentType !== 'pages' || slug === undefined
-    ? true
-    : !BODYLESS_PAGE_SLUGS.has(slug)
+  ALWAYS_BODYLESS.has(contentType)
+    ? false
+    : contentType !== 'pages' || slug === undefined
+      ? true
+      : !BODYLESS_PAGE_SLUGS.has(slug)
