@@ -36,11 +36,15 @@ const emit = defineEmits<{ save: []; back: [] }>()
 
 <style scoped>
 .preview-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
   padding: clamp(0.75rem, 2vw, 1rem);
   border-top: 1px solid var(--color-border);
+  background: var(--color-background);
 }
 
 button {
@@ -51,6 +55,7 @@ button {
   border-radius: var(--radius-md);
   font-size: clamp(0.875rem, 2vw, 1rem);
   cursor: pointer;
+  transition: background var(--transition-fast);
 }
 
 .btn-primary {
@@ -59,9 +64,17 @@ button {
   border: none;
 }
 
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-border);
+}
+
 .btn-secondary {
   background: transparent;
   color: var(--color-text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-background-soft);
 }
 
 button:disabled {
