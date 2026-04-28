@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { acceptAltDialog } from '../helpers/auto-alt-dialog'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 const SLUG = 'media-showcase'
@@ -7,6 +8,7 @@ test.describe('Upload Insert', () => {
   test('should insert media tag when file is uploaded via picker', async ({
     page,
   }) => {
+    acceptAltDialog(page, 'uploaded')
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
 
@@ -27,7 +29,7 @@ test.describe('Upload Insert', () => {
     })
 
     await expect(ta).toHaveValue(
-      /!\[uploaded-test\.png\]\(\.\/assets\/uploaded-test\.png\)/,
+      /!\[uploaded\]\(\.\/assets\/uploaded-test\.png\)/,
       { timeout: 10000 }
     )
   })
