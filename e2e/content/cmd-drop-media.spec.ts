@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { acceptAltDialog } from '../helpers/auto-alt-dialog'
 import { dispatchDrop } from '../helpers/dispatch-drop'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
@@ -6,16 +7,16 @@ const SLUG = 'media-showcase'
 
 test.describe('Drop media insertion', () => {
   test('drop image produces markdown img', async ({ page }) => {
+    acceptAltDialog(page, 'a photo')
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
     const ta = ep.getEditorBody()
     await ta.focus()
     await ta.fill('')
     await dispatchDrop(page, 'photo.png', 'image/png')
-    await expect(ta).toHaveValue(
-      /!\[photo\.png\]\(\.\/assets\/photo\.png\)/,
-      { timeout: 10000 }
-    )
+    await expect(ta).toHaveValue(/!\[a photo\]\(\.\/assets\/photo\.png\)/, {
+      timeout: 10000,
+    })
   })
 
   test('drop video produces <video> tag', async ({ page }) => {

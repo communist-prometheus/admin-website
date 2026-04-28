@@ -15,12 +15,36 @@ test.describe('Rename Slug', () => {
     const input = page.locator('[data-testid="slug-input"]')
     await expect(input).toBeVisible({ timeout: 5000 })
 
+    // Sanitization strips non-[a-z0-9-]; "!!!" reduces to "" so the
+    // validator fires its empty-slug error.
     await input.clear()
-    await input.type('INVALID', { delay: 30 })
+    await input.type('!!!', { delay: 30 })
     await input.press('Enter')
     await expect(page.locator('[data-testid="slug-error"]')).toBeVisible({
       timeout: 5000,
     })
+  })
+
+  test('lowercases uppercase keystrokes on the fly', async ({ page }) => {
+    const ep = new ContentEditPage(page)
+    await ep.navigate('blog', SLUG)
+
+    await page.locator('[data-testid="edit-title"]').click()
+    const input = page.locator('[data-testid="slug-input"]')
+    await input.clear()
+    await input.type('FooBar', { delay: 30 })
+    await expect(input).toHaveValue('foobar')
+  })
+
+  test('strips non-Latin keystrokes', async ({ page }) => {
+    const ep = new ContentEditPage(page)
+    await ep.navigate('blog', SLUG)
+
+    await page.locator('[data-testid="edit-title"]').click()
+    const input = page.locator('[data-testid="slug-input"]')
+    await input.clear()
+    await input.type('пост-test', { delay: 30 })
+    await expect(input).toHaveValue('-test')
   })
 
   test('should reject slug exceeding max length', async ({ page }) => {

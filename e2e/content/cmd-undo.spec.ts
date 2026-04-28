@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { acceptAltDialog } from '../helpers/auto-alt-dialog'
 import { dispatchMediaPaste } from '../helpers/dispatch-paste'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
@@ -28,6 +29,7 @@ test.describe('Undo (Ctrl+Z)', () => {
   })
 
   test('undo reverts paste insertion', async ({ page }) => {
+    acceptAltDialog(page, 'a test')
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', 'media-showcase')
     const ta = ep.getEditorBody()
@@ -35,7 +37,7 @@ test.describe('Undo (Ctrl+Z)', () => {
     await ta.fill('before')
 
     await dispatchMediaPaste(page, 'test.png', 'image/png')
-    await expect(ta).toHaveValue(/!\[test\.png\]/, {
+    await expect(ta).toHaveValue(/!\[a test\]/, {
       timeout: 10000,
     })
 

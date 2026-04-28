@@ -82,17 +82,25 @@ test('probe: PDF upload on dev', async ({ browser }) => {
     .waitFor({ state: 'visible', timeout: 60_000 })
 
   // Probe the pdfjs vendor lib explicitly so we know whether it loads.
-  const vendorCheck = await page.evaluate(async () => {
-    try {
-      const mod = await import('/vendor/pdf.min.mjs')
-      return {
-        ok: true,
-        hasGetDocument: typeof mod.getDocument === 'function',
+  // Wrapped in catch because the page may still be navigating when this
+  // fires (SW registration trips a re-render); this is a diagnostic, not
+  // a load-bearing assertion.
+  const vendorCheck = await page
+    .evaluate(async () => {
+      try {
+        const mod = await import('/vendor/pdf.min.mjs')
+        return {
+          ok: true,
+          hasGetDocument: typeof mod.getDocument === 'function',
+        }
+      } catch (e) {
+        return {
+          ok: false,
+          error: e instanceof Error ? e.message : String(e),
+        }
       }
-    } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : String(e) }
-    }
-  })
+    })
+    .catch(e => ({ ok: false, error: `evaluate failed: ${String(e)}` }))
   out(`[probe] pdfjs vendor: ${JSON.stringify(vendorCheck)}`)
 
   // Now drive the actual UI upload path.

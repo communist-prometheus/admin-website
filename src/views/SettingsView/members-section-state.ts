@@ -24,6 +24,7 @@ export const buildMembersState = () => {
   const { canEditSettings } = usePermissions()
   const dialogOpen = ref(false)
   const busy = ref(false)
+  const error = ref<string | undefined>(undefined)
   const sorted = computed(() => sortByRank(members.value))
   const disabled = computed(() => busy.value || !canEditSettings.value)
   return {
@@ -34,6 +35,7 @@ export const buildMembersState = () => {
     canEditSettings,
     dialogOpen,
     busy,
+    error,
     sorted,
     disabled,
   }

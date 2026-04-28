@@ -53,9 +53,18 @@ const s = useMembersSection()
     >
       Read-only — your role does not allow changes.
     </p>
+    <p
+      v-if="s.error.value && !s.dialogOpen.value"
+      class="op-error"
+      data-testid="members-error"
+      role="alert"
+    >
+      {{ s.error.value }}
+    </p>
     <InviteDialog
       :open="s.dialogOpen.value"
       :busy="s.busy.value"
+      :error="s.error.value"
       @submit="s.onInvite"
       @cancel="s.closeDialog"
     />
@@ -102,5 +111,12 @@ h2 {
 .read-only {
   margin-top: 0.5rem;
   font-style: italic;
+}
+
+.op-error {
+  margin-top: 0.75rem;
+  color: var(--color-error, #e53935);
+  font-size: 0.875rem;
+  white-space: pre-wrap;
 }
 </style>

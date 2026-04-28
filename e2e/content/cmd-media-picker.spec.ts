@@ -1,10 +1,12 @@
 import { expect, test } from '@playwright/test'
+import { acceptAltDialog } from '../helpers/auto-alt-dialog'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 const SLUG = 'media-showcase'
 
 test.describe('Media picker insertion', () => {
   test('inserts image markdown via picker', async ({ page }) => {
+    acceptAltDialog(page)
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
 

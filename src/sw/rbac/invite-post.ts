@@ -19,12 +19,17 @@ const postInvite = async (
     : errorResponse(txt || `github ${res.status}`, res.status)
 }
 
+const toMessage = (e: unknown): string =>
+  e instanceof Error ? e.message : String(e)
+
 const runInvite = async (
   owner: string,
   token: string,
   b: InviteBody
 ): Promise<Response> =>
-  postInvite(owner, token, await buildInvite(owner, token, b))
+  buildInvite(owner, token, b)
+    .then(payload => postInvite(owner, token, payload))
+    .catch(e => errorResponse(toMessage(e), 400))
 
 const validate = (b: Partial<InviteBody>): Option.Option<InviteBody> =>
   b.role && (b.email || b.login)
