@@ -1,42 +1,53 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
-const props = defineProps<{ readonly open: boolean; readonly busy: boolean }>()
+const props = defineProps<{
+  readonly open: boolean
+  readonly busy: boolean
+  readonly error?: string
+}>()
 const emit = defineEmits<{
-  submit: [payload: {
-    readonly email?: string
-    readonly login?: string
-    readonly role: 'admin' | 'chief-editor' | 'editor'
-  }]
+  submit: [
+    payload: {
+      readonly email?: string
+      readonly login?: string
+      readonly role: 'admin' | 'chief-editor' | 'editor'
+    },
+  ]
   cancel: []
 }>()
 
 const identifier = ref('')
 const role = ref<'admin' | 'chief-editor' | 'editor'>('editor')
-const error = ref<string | undefined>(undefined)
+const localError = ref<string | undefined>(undefined)
+const shownError = computed(() => localError.value ?? props.error)
 
 const reset = () => {
   identifier.value = ''
   role.value = 'editor'
-  error.value = undefined
+  localError.value = undefined
 }
 
 const onSubmit = () => {
   const v = identifier.value.trim()
   if (v === '') {
-    error.value = 'Enter a GitHub login or email'
+    localError.value = 'Enter a GitHub login or email'
     return
   }
+  localError.value = undefined
   const looksLikeEmail = v.includes('@')
-  emit('submit', looksLikeEmail ? { email: v, role: role.value } : { login: v, role: role.value })
+  emit(
+    'submit',
+    looksLikeEmail
+      ? { email: v, role: role.value }
+      : { login: v, role: role.value }
+  )
 }
 
 const onCancel = () => {
   reset()
   emit('cancel')
 }
-
-void props
 </script>
 
 <template>
@@ -73,7 +84,13 @@ void props
           <option value="admin">Admin</option>
         </select>
       </label>
-      <p v-if="error" class="error-hint">{{ error }}</p>
+      <p
+        v-if="shownError"
+        class="error-hint"
+        data-testid="invite-error"
+      >
+        {{ shownError }}
+      </p>
       <div class="actions">
         <button
           type="button"
