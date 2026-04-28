@@ -195,21 +195,12 @@ test('repro: blog create then save must succeed', async ({ page }) => {
   for (const c of cap.commits)
     out(`     status=${c.status} body=${c.body.slice(0, 400)}`)
 
-  const errText = await errEl.innerText().catch(() => '<no error message>')
-  out(`error-message text: ${errText}`)
-
-  // Also peek at save state directly via the page.
-  const state = await page.evaluate(() => ({
-    url: location.href,
-    bodyHasSaveBtn: !!document.querySelector('[data-testid="save-button"]'),
-    bodyHasPreviewBtn: !!document.querySelector(
-      '[data-testid="preview-button"]'
-    ),
-    errorMsg:
-      document.querySelector('[data-testid="error-message"]')?.textContent ??
-      '',
-  }))
-  out(`page state: ${JSON.stringify(state)}`)
+  if (winner !== 'ok') {
+    const errText = await errEl
+      .innerText({ timeout: 1000 })
+      .catch(() => '<no error message>')
+    out(`error-message text: ${errText}`)
+  }
 
   expect(winner).toBe('ok')
   expect(cap.stagePuts.length).toBeGreaterThan(0)
