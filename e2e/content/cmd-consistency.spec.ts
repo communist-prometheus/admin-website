@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { acceptAltDialog } from '../helpers/auto-alt-dialog'
 import { dispatchDrop } from '../helpers/dispatch-drop'
 import { dispatchMediaPaste } from '../helpers/dispatch-paste'
 import { ContentEditPage } from '../pages/ContentEditPage'
@@ -7,6 +8,7 @@ const SLUG = 'media-showcase'
 
 test.describe('Paste vs Drop consistency', () => {
   test('paste and drop produce same image tag', async ({ page }) => {
+    acceptAltDialog(page, 'consistency')
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
     const ta = ep.getEditorBody()
