@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref, useTemplateRef, watch } from 'vue'
+import { useTemplateRef, watch } from 'vue'
 import type { LabelEntry } from '@/stores/labels'
 import type { ContentType, Language } from '@/types/content'
+import { useCreateForm } from './form-state'
 import {
   buildCreateData,
   type CreateContentData,
   isFormValid,
 } from './helpers'
+import { createSlugInputHandler } from './slug-input'
 
 const props = defineProps<{
   readonly show: boolean
@@ -22,30 +24,15 @@ const emit = defineEmits<{
 }>()
 
 const dialogRef = useTemplateRef<HTMLDialogElement>('dialogRef')
+const { refs, snapshot } = useCreateForm(() => props.lang)
+const { slug, title, description, category, reset } = refs
+const onSlugInput = createSlugInputHandler(slug)
 
-const slug = ref('')
-const title = ref('')
-const description = ref('')
-const category = ref('')
-
-const reset = () => {
-  slug.value = ''
-  title.value = ''
-  description.value = ''
-  category.value = ''
-}
-
-const formState = () => ({
-  slug: slug.value, lang: props.lang, title: title.value,
-  description: description.value, category: category.value,
-})
-
+// Parent closes via `:show` once the request lands; on failure the
+// dialog stays open with the user's input intact for retry.
 const handleCreate = () => {
-  if (!isFormValid(formState())) return
-  emit('create', buildCreateData(props.contentType, formState()))
-  // Do NOT reset here — wait for parent to close via :show prop. If parent
-  // fails (network/API error), dialog stays open with the user's input intact
-  // so they can retry without re-typing.
+  if (!isFormValid(snapshot())) return
+  emit('create', buildCreateData(props.contentType, snapshot()))
 }
 
 const handleClose = () => {
@@ -53,13 +40,9 @@ const handleClose = () => {
   emit('close')
 }
 
-watch(() => props.show, (visible) => {
-  if (visible) {
-    reset()
-    dialogRef.value?.showModal()
-  } else {
-    dialogRef.value?.close()
-  }
+watch(() => props.show, visible => {
+  if (visible) { reset(); dialogRef.value?.showModal() }
+  else dialogRef.value?.close()
 })
 </script>
 
@@ -80,7 +63,17 @@ watch(() => props.show, (visible) => {
     </button>
     <fieldset :disabled="submitting" class="field-group">
       <label for="slug" class="field-label">Slug *</label>
-      <input id="slug" v-model="slug" type="text" required placeholder="my-article-slug" class="field-input" />
+      <input
+        id="slug"
+        :value="slug"
+        type="text"
+        required
+        placeholder="my-article-slug"
+        autocomplete="off"
+        spellcheck="false"
+        class="field-input"
+        @input="onSlugInput"
+      />
       <label for="title" class="field-label">Title *</label>
       <input id="title" v-model="title" type="text" required placeholder="Article Title" class="field-input" />
       <template v-if="contentType === 'blog' || contentType === 'positions' || contentType === 'newspaper'">
