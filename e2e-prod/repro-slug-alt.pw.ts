@@ -72,9 +72,11 @@ test.describe('post-deploy slug + alt', () => {
         '[data-testid="editor-body"]'
       ) as HTMLTextAreaElement
       const dt = new DataTransfer()
-      dt.items.add(new File([new Uint8Array([137, 80, 78, 71])], 'pic.png', {
-        type: 'image/png',
-      }))
+      dt.items.add(
+        new File([new Uint8Array([137, 80, 78, 71])], 'pic.png', {
+          type: 'image/png',
+        })
+      )
       el.dispatchEvent(
         new ClipboardEvent('paste', {
           clipboardData: dt,
