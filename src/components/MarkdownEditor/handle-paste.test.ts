@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildPasteTag, extractMediaFile } from './handle-paste'
 
 /**
@@ -45,21 +45,34 @@ describe('extractMediaFile', () => {
 })
 
 describe('buildPasteTag', () => {
-  it('produces image markdown', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('produces image markdown with prompted alt text', () => {
+    vi.spyOn(globalThis, 'prompt').mockReturnValue('an apple')
     const f = new File([''], 'pic.png', { type: 'image/png' })
-    expect(buildPasteTag(f)).toBe('\n![pic.png](./assets/pic.png)\n')
+    expect(buildPasteTag(f)).toBe('\n![an apple](./assets/pic.png)\n')
   })
 
-  it('produces video HTML', () => {
+  it('returns undefined when the editor cancels the alt prompt', () => {
+    vi.spyOn(globalThis, 'prompt').mockReturnValue(null)
+    const f = new File([''], 'pic.png', { type: 'image/png' })
+    expect(buildPasteTag(f)).toBeUndefined()
+  })
+
+  it('produces video HTML without prompting', () => {
+    const spy = vi.spyOn(globalThis, 'prompt').mockReturnValue(null)
     const f = new File([''], 'clip.mp4', { type: 'video/mp4' })
     const tag = buildPasteTag(f)
+    expect(spy).not.toHaveBeenCalled()
     expect(tag).toContain('<video controls>')
     expect(tag).toContain('src="./assets/clip.mp4"')
   })
 
-  it('produces audio HTML', () => {
+  it('produces audio HTML without prompting', () => {
+    const spy = vi.spyOn(globalThis, 'prompt').mockReturnValue(null)
     const f = new File([''], 'song.mp3', { type: 'audio/mpeg' })
     const tag = buildPasteTag(f)
+    expect(spy).not.toHaveBeenCalled()
     expect(tag).toContain('<audio controls>')
     expect(tag).toContain('src="./assets/song.mp3"')
   })

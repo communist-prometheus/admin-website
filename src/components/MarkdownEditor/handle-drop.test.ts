@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildDropTag, extractDropFile } from './handle-drop'
 
 /**
@@ -27,20 +27,33 @@ describe('extractDropFile', () => {
 })
 
 describe('buildDropTag', () => {
-  it('wraps image tag in newlines', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('wraps image tag with prompted alt in newlines', () => {
+    vi.spyOn(globalThis, 'prompt').mockReturnValue('a fish')
     const f = new File([''], 'pic.png', { type: 'image/png' })
-    expect(buildDropTag(f)).toBe('\n![pic.png](./assets/pic.png)\n')
+    expect(buildDropTag(f)).toBe('\n![a fish](./assets/pic.png)\n')
   })
 
-  it('wraps video tag in newlines', () => {
+  it('returns undefined when the editor cancels the alt prompt', () => {
+    vi.spyOn(globalThis, 'prompt').mockReturnValue(null)
+    const f = new File([''], 'pic.png', { type: 'image/png' })
+    expect(buildDropTag(f)).toBeUndefined()
+  })
+
+  it('wraps video tag in newlines without prompting', () => {
+    const spy = vi.spyOn(globalThis, 'prompt').mockReturnValue(null)
     const f = new File([''], 'clip.mp4', { type: 'video/mp4' })
     const tag = buildDropTag(f)
+    expect(spy).not.toHaveBeenCalled()
     expect(tag).toMatch(/^\n<video controls>.*<\/video>\n$/)
   })
 
-  it('wraps audio tag in newlines', () => {
+  it('wraps audio tag in newlines without prompting', () => {
+    const spy = vi.spyOn(globalThis, 'prompt').mockReturnValue(null)
     const f = new File([''], 'song.mp3', { type: 'audio/mpeg' })
     const tag = buildDropTag(f)
+    expect(spy).not.toHaveBeenCalled()
     expect(tag).toMatch(/^\n<audio controls>.*<\/audio>\n$/)
   })
 })
