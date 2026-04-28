@@ -44,6 +44,7 @@ export const buildNavActions = (
 ) => ({
   switchLanguage: createSwitchLanguage(
     ctx.cache,
+    ctx.originalCache,
     ctx.state,
     ctx.fileSha,
     loadLang
