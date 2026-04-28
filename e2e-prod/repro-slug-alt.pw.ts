@@ -31,13 +31,29 @@ test.describe('post-deploy slug + alt', () => {
   test('slug input strips uppercase + non-Latin keystrokes', async ({
     page,
   }) => {
-    const heading = page.locator('[data-testid="edit-title"]')
-    await heading.waitFor({ state: 'visible', timeout: 60_000 })
-    await heading.click()
-    const input = page.locator('[data-testid="slug-input"]')
-    await input.waitFor({ state: 'visible', timeout: 10_000 })
-    await input.fill('')
+    // Wait for the editor body to load — until then a click on the
+    // heading races with Vue re-rendering EditableSlug and silently
+    // gets eaten. The test was flaky in suite mode because the prior
+    // test left network in flight; isolation fixed it but only by
+    // accident. Hold for editor-body before touching the heading.
+    await page
+      .locator('[data-testid="editor-body"]')
+      .waitFor({ state: 'visible', timeout: 60_000 })
 
+    const heading = page.locator('[data-testid="edit-title"]')
+    await heading.waitFor({ state: 'visible', timeout: 30_000 })
+    const input = page.locator('[data-testid="slug-input"]')
+    await expect
+      .poll(
+        async () => {
+          await heading.click({ trial: false }).catch(() => undefined)
+          return await input.isVisible().catch(() => false)
+        },
+        { timeout: 15_000, intervals: [500, 1000] }
+      )
+      .toBe(true)
+
+    await input.fill('')
     await input.type('FooBar', { delay: 20 })
     expect(await input.inputValue()).toBe('foobar')
 
@@ -72,9 +88,11 @@ test.describe('post-deploy slug + alt', () => {
         '[data-testid="editor-body"]'
       ) as HTMLTextAreaElement
       const dt = new DataTransfer()
-      dt.items.add(new File([new Uint8Array([137, 80, 78, 71])], 'pic.png', {
-        type: 'image/png',
-      }))
+      dt.items.add(
+        new File([new Uint8Array([137, 80, 78, 71])], 'pic.png', {
+          type: 'image/png',
+        })
+      )
       el.dispatchEvent(
         new ClipboardEvent('paste', {
           clipboardData: dt,
