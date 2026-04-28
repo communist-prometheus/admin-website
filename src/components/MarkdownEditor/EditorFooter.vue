@@ -24,10 +24,14 @@ const emit = defineEmits<{ preview: [] }>()
 
 <style scoped>
 .editor-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   display: flex;
   padding: clamp(0.75rem, 2vw, 1rem);
   border-top: 1px solid var(--color-border);
   justify-content: flex-end;
+  background: var(--color-background);
 }
 
 button {

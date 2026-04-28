@@ -3,6 +3,7 @@ import EditorFooter from '@/components/MarkdownEditor/EditorFooter.vue'
 import FrontmatterEditor from '@/components/MarkdownEditor/FrontmatterEditor.vue'
 import MarkdownEditorBody from '@/components/MarkdownEditor/MarkdownEditorBody.vue'
 import PdfUpload from '@/components/MarkdownEditor/PdfUpload.vue'
+import { hasBodyEditor } from '@/components/MarkdownEditor/page-body-policy'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import type { ContentType } from '@/types/content'
 
@@ -26,6 +27,11 @@ defineEmits<{
 }>()
 
 const isNewspaper = (type: ContentType) => type === 'newspaper'
+
+const currentCover = (fm: Record<string, unknown>): string | undefined => {
+  const v = fm['image']
+  return typeof v === 'string' && v.length > 0 ? v : undefined
+}
 </script>
 
 <template>
@@ -39,12 +45,13 @@ const isNewspaper = (type: ContentType) => type === 'newspaper'
   <PdfUpload
     v-if="isNewspaper(contentType)"
     :assets="assets"
+    :current-cover="currentCover(frontmatterData)"
     @upload-pdf="$emit('upload-asset', $event)"
     @upload-cover="$emit('upload-asset', $event)"
     @set-cover="$emit('set-cover', $event)"
   />
   <MarkdownEditorBody
-    v-else
+    v-else-if="hasBodyEditor(contentType, slug)"
     :model-value="bodyContent"
     :asset-url-map="assetUrlMap"
     :assets="assets"

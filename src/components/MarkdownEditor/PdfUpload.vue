@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
+import { shouldAutoSetCover } from './pdf-cover-policy'
 import { createDragHandlers } from './pdf-upload-handlers'
 
 const props = defineProps<{
   readonly assets?: readonly AssetDisplay[]
+  readonly currentCover?: string
 }>()
 
 const emit = defineEmits<{
@@ -24,12 +26,20 @@ const pdfAsset = computed(() =>
 
 const triggerUpload = () => { inputRef.value?.click() }
 
+/*
+ * On every PDF upload we extract the first page and add it to assets
+ * (so editors can swap to it later). We only auto-set frontmatter.image
+ * when there is no cover yet — if the user has chosen a custom cover
+ * we must not silently overwrite it.
+ */
 const handleFile = async (file: File) => {
   if (file.type !== 'application/pdf') return
   emit('upload-pdf', file)
   const m = await import('@/features/newspaper/extract-pdf-cover')
   const cover = await m.extractPdfCover(file)
-  if (cover) { emit('upload-cover', cover); emit('set-cover', 'cover.png') }
+  if (!cover) return
+  emit('upload-cover', cover)
+  if (shouldAutoSetCover(props.currentCover)) emit('set-cover', 'cover.png')
 }
 
 const handleChange = (event: Event) => {
