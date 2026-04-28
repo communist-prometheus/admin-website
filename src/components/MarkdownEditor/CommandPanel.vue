@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { AssetDisplay } from '@/composables/useAssets/types'
-import { buildMediaTag } from './build-media-tag'
 import CmdButton from './CommandPanel/CmdButton.vue'
 import MediaPicker from './CommandPanel/MediaPicker.vue'
 import { BLOCK_CMDS, WRAP_CMDS } from './command-defs'
+import { buildInsertableMediaTag } from './insertable-media'
 import { COMMAND_PANEL_ID } from './test-ids'
 
 defineProps<{
@@ -18,7 +18,8 @@ const emit = defineEmits<{
 }>()
 
 const onMedia = (a: AssetDisplay) => {
-  emit('insert-media', buildMediaTag(a.name, a.mimeType))
+  const tag = buildInsertableMediaTag(a.name, a.mimeType)
+  if (tag) emit('insert-media', tag)
 }
 </script>
 

@@ -22,14 +22,18 @@ export const createPasteDrop = (deps: Deps) => ({
     const file = extractMediaFile(event)
     if (!file || !deps.textareaRef.value) return
     event.preventDefault()
-    insert(buildPasteTag(file))
+    const tag = buildPasteTag(file)
+    if (!tag) return
+    insert(tag)
     deps.emitPaste(file)
   },
   onDrop: (event: DragEvent): void => {
     const file = extractDropFile(event)
     if (!file || !deps.textareaRef.value) return
     event.preventDefault()
-    insert(buildDropTag(file))
+    const tag = buildDropTag(file)
+    if (!tag) return
+    insert(tag)
     deps.emitUpload(file)
   },
 })
