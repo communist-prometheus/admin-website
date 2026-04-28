@@ -1,12 +1,13 @@
 import { onMounted } from 'vue'
 import { buildMemberActions } from './members-actions'
+import { projectMembersPublic } from './members-public-state'
 import { buildMembersState } from './members-section-state'
 
 /**
  * Own the Members section state: list, invites, dialog, busy flag,
- * and the three mutation handlers (role change, invite, revoke).
+ * error ref, and the three mutation handlers.
  *
- * @returns reactive state + handlers for MembersSection.vue
+ * @returns Reactive state + handlers for MembersSection.vue
  */
 export const useMembersSection = () => {
   const s = buildMembersState()
@@ -17,17 +18,11 @@ export const useMembersSection = () => {
     s.dialogOpen.value = false
   }
   onMounted(s.load)
-  const actions = buildMemberActions(s.busy, s.load, closeDialog)
-  return {
-    sorted: s.sorted,
-    invitations: s.invitations,
-    loading: s.loading,
-    dialogOpen: s.dialogOpen,
+  const actions = buildMemberActions({
     busy: s.busy,
-    disabled: s.disabled,
-    canEditSettings: s.canEditSettings,
-    openDialog,
+    error: s.error,
+    reload: s.load,
     closeDialog,
-    ...actions,
-  }
+  })
+  return projectMembersPublic(s, { openDialog, closeDialog }, actions)
 }
