@@ -1,6 +1,7 @@
 import { FLUSH_AT_MS, FLUSH_AT_SPANS } from './exporter-config'
 import { sendBatch } from './exporter-send'
 import type { FlushOutcome } from './exporter-types'
+import { enqueueBatch } from './queue-idb-write'
 import type { Span } from './span-types'
 
 let buffer: Span[] = []
@@ -35,8 +36,9 @@ export const recordSpan = (span: Span): void => {
 }
 
 /**
- * Flush the buffer immediately. Failed sends keep the spans
- * around so the next call retries them.
+ * Flush the buffer immediately. Successful sends drain the
+ * buffer; failed sends persist the batch to IDB so the
+ * connectivity-online drain (#7.2) picks it up later.
  * @returns Outcome describing what was sent.
  */
 export const flushNow = async (): Promise<FlushOutcome> => {
@@ -46,8 +48,9 @@ export const flushNow = async (): Promise<FlushOutcome> => {
   const empty = pending.length === 0
   const ok = empty ? false : await sendBatch(pending)
   const sent = !empty && ok
-  buffer = sent ? [] : pending
-  firstAddedAt = sent ? undefined : firstAddedAt
+  buffer = sent ? [] : []
+  firstAddedAt = undefined
+  await (!empty && !ok ? enqueueBatch(pending) : Promise.resolve())
   return empty
     ? { kind: 'idle' }
     : sent

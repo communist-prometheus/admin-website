@@ -1,3 +1,4 @@
+import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   bufferedSpanCount,
@@ -6,6 +7,8 @@ import {
   resetExporter,
 } from './exporter'
 import { FLUSH_AT_MS, FLUSH_AT_SPANS } from './exporter-config'
+import { listQueued } from './queue-idb'
+import { clearQueuedBatches } from './queue-idb-write'
 import type { Span } from './span-types'
 
 const span = (id: string): Span => ({
@@ -20,18 +23,20 @@ const span = (id: string): Span => ({
 })
 
 describe('exporter', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     resetExporter()
+    await clearQueuedBatches()
     vi.useFakeTimers()
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(new Response(null, { status: 200 }))
     )
   })
-  afterEach(() => {
+  afterEach(async () => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
     resetExporter()
+    await clearQueuedBatches()
   })
 
   it('flushes immediately at FLUSH_AT_SPANS', async () => {
@@ -52,7 +57,8 @@ describe('exporter', () => {
     expect(globalThis.fetch).toHaveBeenCalledTimes(1)
   })
 
-  it('retains spans on failed flush', async () => {
+  it('persists failed batches to the IDB queue', async () => {
+    vi.useRealTimers()
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(new Response(null, { status: 500 }))
@@ -61,7 +67,10 @@ describe('exporter', () => {
     recordSpan(span('b'))
     const result = await flushNow()
     expect(result.kind).toBe('fail')
-    expect(bufferedSpanCount()).toBe(2)
+    expect(bufferedSpanCount()).toBe(0)
+    const queued = await listQueued()
+    expect(queued).toHaveLength(1)
+    expect(queued[0]?.spans).toHaveLength(2)
   })
 
   it('returns idle when nothing buffered', async () => {
