@@ -12,4 +12,9 @@ export type PushControlMessage =
       readonly file: string
       readonly strategy: ResolveStrategy
     }
+  | {
+      readonly type: 'resolve-file-content'
+      readonly file: string
+      readonly content: string
+    }
   | { readonly type: 'finalize-resolution' }

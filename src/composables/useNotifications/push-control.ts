@@ -40,6 +40,21 @@ export const requestResolveFile = (
 }
 
 /**
+ * Ask the SW to write a manually-merged content to a conflicted
+ * file and stage it. Used by the visual merge editor when the
+ * user has edited the merged result themselves.
+ * @param file Path of the conflicted file relative to repo root.
+ * @param content Resolved text the user produced in the editor.
+ * @returns void
+ */
+export const requestResolveFileContent = (
+  file: string,
+  content: string
+): void => {
+  send({ type: 'resolve-file-content', file, content })
+}
+
+/**
  * Ask the SW to finalize the conflict resolution: commit the
  * staged files and push the merge commit (force-with-lease when
  * any file used `force-mine`).

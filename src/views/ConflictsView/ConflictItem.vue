@@ -1,14 +1,20 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import type { ResolveStrategy } from '@/sw/protocol/push-control'
 import { CONFLICT_TEST_IDS } from './test-ids'
 
-defineProps<{
+const props = defineProps<{
   readonly path: string
   readonly resolved: ResolveStrategy | undefined
 }>()
 defineEmits<{
   readonly resolve: [strategy: ResolveStrategy]
 }>()
+
+const router = useRouter()
+const onVisualMerge = (): void => {
+  void router.push(`/conflicts/merge/${encodeURIComponent(props.path)}`)
+}
 </script>
 
 <template>
@@ -53,6 +59,15 @@ defineEmits<{
       @click="$emit('resolve', 'force-mine')"
     >
       force push mine
+    </button>
+    <button
+      v-if="resolved === undefined"
+      type="button"
+      class="btn merge"
+      :data-testid="CONFLICT_TEST_IDS.visualMerge"
+      @click="onVisualMerge"
+    >
+      visual merge
     </button>
   </li>
 </template>
@@ -106,5 +121,10 @@ defineEmits<{
 .btn.force {
   border-color: var(--color-error, #e53935);
   color: var(--color-error, #e53935);
+}
+
+.btn.merge {
+  border-color: var(--color-accent, #4fc3f7);
+  color: var(--color-accent, #4fc3f7);
 }
 </style>

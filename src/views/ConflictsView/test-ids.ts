@@ -11,4 +11,5 @@ export const CONFLICT_TEST_IDS = {
   takeTheirs: 'conflicts-item-take-theirs',
   forceMine: 'conflicts-item-force-mine',
   resolved: 'conflicts-item-resolved',
+  visualMerge: 'conflicts-item-visual-merge',
 } as const
