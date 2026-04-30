@@ -1,8 +1,15 @@
 <script setup lang="ts">
+import type { ResolveStrategy } from '@/sw/protocol/push-control'
 import ConflictItem from './ConflictItem.vue'
 import { CONFLICT_TEST_IDS } from './test-ids'
 
-defineProps<{ readonly files: ReadonlyArray<string> }>()
+defineProps<{
+  readonly files: ReadonlyArray<string>
+  readonly resolutions: ReadonlyMap<string, ResolveStrategy>
+}>()
+defineEmits<{
+  readonly resolve: [file: string, strategy: ResolveStrategy]
+}>()
 </script>
 
 <template>
@@ -11,6 +18,8 @@ defineProps<{ readonly files: ReadonlyArray<string> }>()
       v-for="file in files"
       :key="file"
       :path="file"
+      :resolved="resolutions.get(file)"
+      @resolve="strategy => $emit('resolve', file, strategy)"
     />
   </ul>
 </template>

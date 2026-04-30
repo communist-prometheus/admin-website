@@ -1,4 +1,6 @@
 import { Match } from 'effect'
+import { finalizeResolution } from '../conflicts/finalize'
+import { resolveFile } from '../conflicts/resolve-file'
 import {
   type PushControlMessage,
   SW_PUSH_CONTROL_CHANNEL,
@@ -6,13 +8,21 @@ import {
 
 let controlChannel: BroadcastChannel | undefined
 
+const handleRetry = async (): Promise<void> => {
+  const { drainPushes } = await import('./drain')
+  await drainPushes()
+}
+
 const dispatch = async (msg: PushControlMessage): Promise<void> => {
-  await Match.value(msg.type).pipe(
-    Match.when('retry-now', async () => {
-      const { drainPushes } = await import('./drain')
-      await drainPushes()
-    }),
-    Match.orElse(async () => undefined)
+  await Match.value(msg).pipe(
+    Match.discriminator('type')('retry-now', () => handleRetry()),
+    Match.discriminator('type')('resolve-file', ({ file, strategy }) =>
+      resolveFile(file, strategy)
+    ),
+    Match.discriminator('type')('finalize-resolution', () =>
+      finalizeResolution().then(() => undefined)
+    ),
+    Match.exhaustive
   )
 }
 
