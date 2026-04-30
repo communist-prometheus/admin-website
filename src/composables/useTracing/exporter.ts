@@ -5,7 +5,6 @@ import { enqueueBatch } from './queue-idb-write'
 import type { Span } from './span-types'
 
 let buffer: Span[] = []
-let firstAddedAt: number | undefined
 let timer: ReturnType<typeof setTimeout> | undefined
 
 const scheduleFlush = (run: () => void): void => {
@@ -22,7 +21,6 @@ const scheduleFlush = (run: () => void): void => {
  */
 export const recordSpan = (span: Span): void => {
   buffer = [...buffer, span]
-  firstAddedAt ??= Date.now()
   const trigger =
     buffer.length >= FLUSH_AT_SPANS
       ? () => {
@@ -49,7 +47,6 @@ export const flushNow = async (): Promise<FlushOutcome> => {
   const ok = empty ? false : await sendBatch(pending)
   const sent = !empty && ok
   buffer = sent ? [] : []
-  firstAddedAt = undefined
   await (!empty && !ok ? enqueueBatch(pending) : Promise.resolve())
   return empty
     ? { kind: 'idle' }
@@ -63,7 +60,6 @@ export const resetExporter = (): void => {
   globalThis.clearTimeout(timer)
   timer = undefined
   buffer = []
-  firstAddedAt = undefined
 }
 
 /**
