@@ -26,4 +26,10 @@ export const nonContentRoutes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
     component: () => import('../views/VisualMergeView/VisualMergeView.vue'),
   },
+  {
+    path: '/live-traces',
+    name: 'live-traces',
+    meta: { requiresAuth: true },
+    component: () => import('../views/LiveTracesView/LiveTracesView.vue'),
+  },
 ]
