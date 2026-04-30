@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { isOnline } from '@/composables/useConnectivity'
 import { usePermissions } from '@/composables/usePermissions'
 import type { OrgMember } from './roles-api-types'
 import { useOrgMembers } from './useOrgMembers'
@@ -26,7 +27,10 @@ export const buildMembersState = () => {
   const busy = ref(false)
   const error = ref<string | undefined>(undefined)
   const sorted = computed(() => sortByRank(members.value))
-  const disabled = computed(() => busy.value || !canEditSettings.value)
+  const offline = computed(() => !isOnline.value)
+  const disabled = computed(
+    () => busy.value || !canEditSettings.value || offline.value
+  )
   return {
     members,
     invitations,
@@ -38,5 +42,6 @@ export const buildMembersState = () => {
     error,
     sorted,
     disabled,
+    offline,
   }
 }

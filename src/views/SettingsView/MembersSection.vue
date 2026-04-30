@@ -16,12 +16,26 @@ const s = useMembersSection()
         type="button"
         class="btn-invite"
         data-testid="invite-open"
-        :disabled="s.busy.value"
+        :disabled="s.busy.value || s.offline.value"
+        :aria-disabled="s.disabled.value"
+        :title="
+          s.offline.value
+            ? 'Offline: invitations require network'
+            : undefined
+        "
         @click="s.openDialog"
       >
         + Invite
       </button>
     </header>
+    <p
+      v-if="s.offline.value"
+      class="offline-banner"
+      data-testid="members-offline-banner"
+      role="status"
+    >
+      Working offline — member changes are paused until reconnect.
+    </p>
     <p v-if="s.loading.value" class="hint">Loading organisation members…</p>
     <InviteList
       v-if="s.invitations.value.length > 0"

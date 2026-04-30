@@ -4,6 +4,7 @@
  * via load-git.ts to enable code-splitting. This keeps
  * the main SW chunk small for fast installation.
  */
+import { registerConnectivityListener } from './connectivity/sw-connectivity-state'
 import { registerFetchListener } from './core/fetch-listener'
 import { registerLifecycle } from './core/lifecycle'
 import { registerMessageListener } from './core/messaging/message-listener'
@@ -18,5 +19,6 @@ registerLifecycle()
 registerFetchListener()
 registerMessageListener()
 registerPushControlListener()
+registerConnectivityListener()
 
 log('info', 'lifecycle', 'SW ready', { version: SW_VERSION })
