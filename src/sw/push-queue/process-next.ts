@@ -1,28 +1,25 @@
 import { Option } from 'effect'
 import type { workerState } from '../state/state'
 import { publishPushState } from './broadcast'
-import { dequeue } from './enqueue'
+import { publishPushError } from './error-broadcast'
+import { pushOnce } from './push-once'
 import type { PushQueueEntry } from './types'
 
-const tryPush = async (
+const haltOnFailure = (
   entry: PushQueueEntry,
-  config: NonNullable<typeof workerState.config>
-): Promise<boolean> => {
-  const { pushToRemote } = await import('../git/remote/push-to-remote')
-  await pushToRemote(config)
-  await dequeue(entry.sha)
-  return true
-}
-
-const haltOnFailure = (remaining: number): Promise<void> => {
+  remaining: number,
+  error: unknown
+): Promise<void> => {
   publishPushState({ status: 'error', pending: remaining })
+  publishPushError(entry, error)
   return Promise.resolve()
 }
 
 /**
  * Recursively push the queue starting at `index`. Stops on the
- * first failure and emits an error state covering the entries
- * that remain unprocessed.
+ * first failure, emits an error state covering the unprocessed
+ * entries, and broadcasts a classified `PushErrorEvent` so the
+ * client can surface a typed notification.
  * @param pending Entries to process (oldest-first).
  * @param index Current position in `pending`.
  * @param config SW git configuration.
@@ -36,9 +33,9 @@ export const processNext = (
   Option.match(Option.fromNullable(pending[index]), {
     onNone: () => Promise.resolve(),
     onSome: async entry => {
-      const ok = await tryPush(entry, config).catch(() => false)
-      return ok
+      const result = await pushOnce(entry, config)
+      return result.ok
         ? processNext(pending, index + 1, config)
-        : haltOnFailure(pending.length - index)
+        : haltOnFailure(entry, pending.length - index, result.error)
     },
   })
