@@ -1,5 +1,6 @@
 import { log } from '../../logging/logger'
 import type { SWGitConfig } from '../../protocol'
+import { loadTracedHttp } from '../../tracing/load-traced-http'
 import { loadGit } from '../load-git'
 import { buildAuthOpts } from './build-auth-opts'
 
@@ -10,7 +11,7 @@ import { buildAuthOpts } from './build-auth-opts'
  */
 export const pushToRemote = async (config: SWGitConfig): Promise<void> => {
   const git = await loadGit()
-  const { default: http } = await import('isomorphic-git/http/web')
+  const http = await loadTracedHttp()
   const opts = buildAuthOpts(config, http)
   await git
     .pull({

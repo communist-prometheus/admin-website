@@ -2,6 +2,7 @@ import { fs, REPO_DIR } from '../git/fs'
 import { loadGit } from '../git/load-git'
 import { buildAuthOpts } from '../git/remote/build-auth-opts'
 import type { SWGitConfig } from '../protocol'
+import { loadTracedHttp } from '../tracing/load-traced-http'
 import { filesFromError, filesFromStatus } from './merge-conflict-files'
 
 /** Outcome of a single auto-merge attempt. */
@@ -34,7 +35,7 @@ export const attemptMerge = async (
   config: SWGitConfig
 ): Promise<MergeOutcome> => {
   const git = await loadGit()
-  const { default: http } = await import('isomorphic-git/http/web')
+  const http = await loadTracedHttp()
   const opts = buildAuthOpts(config, http)
   try {
     await git.pull({
