@@ -6,6 +6,18 @@ export const MAX_SPANS = 500
 
 let active: Span[] = []
 let completed: Span[] = []
+let onFinishHook: ((span: Span) => void) | undefined
+
+/**
+ * Register a single hook to receive every span as it finishes.
+ * Used by the exporter (7.1) to ship spans to the collector.
+ * Idempotent — repeat calls overwrite the previous hook.
+ * @param hook Callback that runs synchronously on `finishSpan`.
+ * @returns void
+ */
+export const onFinishSpan = (hook: (span: Span) => void): void => {
+  onFinishHook = hook
+}
 
 const evictOldest = (): void => {
   completed = completed.slice(Math.max(0, completed.length - MAX_SPANS))
@@ -48,6 +60,12 @@ export const finishSpan = (
       : { ...found, finishedAt: Date.now(), status }
   completed = finished === undefined ? completed : [...completed, finished]
   evictOldest()
+  const noop = (): void => undefined
+  const fire =
+    finished === undefined || onFinishHook === undefined
+      ? noop
+      : () => onFinishHook?.(finished)
+  fire()
   return finished
 }
 
@@ -69,4 +87,5 @@ export const listAllSpans = (): readonly Span[] => [...completed]
 export const clearSpans = (): void => {
   active = []
   completed = []
+  onFinishHook = undefined
 }

@@ -1,4 +1,10 @@
-/** W3C trace-context + span recording helpers. */
+/** W3C trace-context + span recording + OTLP exporter helpers. */
+export {
+  bufferedSpanCount,
+  flushNow,
+  recordSpan,
+  resetExporter,
+} from './exporter'
 export type { Span, SpanStatus } from './span-types'
 export {
   clearSpans,
@@ -6,6 +12,7 @@ export {
   finishSpan,
   listAllSpans,
   MAX_SPANS,
+  onFinishSpan,
   startSpan,
 } from './spans-store'
 export {
