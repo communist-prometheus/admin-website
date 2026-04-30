@@ -35,6 +35,12 @@ export const contentRoutes: RouteRecordRaw[] = [
     component: () => import('../views/SettingsView/SettingsView.vue'),
   },
   {
+    path: '/conflicts',
+    name: 'conflicts',
+    meta: { requiresAuth: true },
+    component: () => import('../views/ConflictsView/ConflictsView.vue'),
+  },
+  {
     path: '/content/:type/edit/:slug',
     name: 'content-edit',
     meta: { requiresAuth: true },

@@ -1,36 +1,27 @@
 import { onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useConflictsStore } from '@/stores/conflicts'
 import {
   type PushConflictEvent,
   SW_PUSH_CONFLICT_CHANNEL,
 } from '@/sw/protocol/push-conflict'
 import { notifyConflictDetected } from './notify-conflict-detected'
 
-let pendingConflict: PushConflictEvent | undefined
-
-/**
- * Read the most recent conflict event seen by the bridge. Used by
- * the conflict view to render the file list without re-listening
- * on the channel.
- * @returns Last conflict event, or undefined when none yet.
- */
-export const lastConflictEvent = (): PushConflictEvent | undefined =>
-  pendingConflict
-
-const dispatch = (event: PushConflictEvent): void => {
-  pendingConflict = event
-  notifyConflictDetected(event.files)
-}
-
-const subscribe = (channel: BroadcastChannel): void => {
+const subscribe = (
+  channel: BroadcastChannel,
+  store: ReturnType<typeof useConflictsStore>,
+  goToConflicts: () => void
+): void => {
   channel.onmessage = (event: MessageEvent<PushConflictEvent>): void => {
-    dispatch(event.data)
+    store.record({ ...event.data })
+    notifyConflictDetected(event.data.files, goToConflicts)
   }
 }
 
 /**
- * Subscribe to SW-broadcast merge conflict events and dispatch a
- * sticky notification per occurrence. The most recent event is
- * cached for later inspection by the conflict view (4.2+).
+ * Subscribe to SW-broadcast merge conflict events. Each event is
+ * persisted into the conflicts store and surfaces a sticky toast
+ * with a "Resolve" CTA that navigates to `/conflicts`.
  * @returns void
  */
 export const usePushConflictBridge = (): void => {
@@ -38,7 +29,14 @@ export const usePushConflictBridge = (): void => {
   const channel = supported
     ? new BroadcastChannel(SW_PUSH_CONFLICT_CHANNEL)
     : undefined
+  const store = useConflictsStore()
+  const router = useRouter()
+  const goToConflicts = (): void => {
+    void router.push('/conflicts')
+  }
   const noop = (): void => undefined
-  ;(channel === undefined ? noop : () => subscribe(channel))()
+  ;(channel === undefined
+    ? noop
+    : () => subscribe(channel, store, goToConflicts))()
   onUnmounted(() => channel?.close())
 }
