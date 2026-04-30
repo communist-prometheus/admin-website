@@ -7,4 +7,5 @@ export type PushQueueEntry = {
   readonly branch: string
   readonly message: string
   readonly enqueuedAt: number
+  readonly attempt?: number
 }
