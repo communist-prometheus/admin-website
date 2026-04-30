@@ -5,10 +5,11 @@ import {
 import { filtersToQuery } from './filters-to-query'
 import type { SearchFilters, SearchResponse } from './search-types'
 
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  v !== null && typeof v === 'object'
+
 const isResponse = (v: unknown): v is SearchResponse =>
-  v !== null &&
-  typeof v === 'object' &&
-  Array.isArray((v as { traces?: unknown }).traces)
+  isObject(v) && Array.isArray(v['traces'])
 
 const empty: SearchResponse = { traces: [], nextCursor: undefined }
 
