@@ -6,4 +6,9 @@ export const CONFLICT_TEST_IDS = {
   item: 'conflicts-item',
   filePath: 'conflicts-item-path',
   resolveAll: 'conflicts-resolve-all',
+  finalize: 'conflicts-finalize',
+  keepMine: 'conflicts-item-keep-mine',
+  takeTheirs: 'conflicts-item-take-theirs',
+  forceMine: 'conflicts-item-force-mine',
+  resolved: 'conflicts-item-resolved',
 } as const

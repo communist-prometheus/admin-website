@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-const broadcastConflict = (
-  files: ReadonlyArray<string>
-): string => `
+const broadcastConflict = (files: ReadonlyArray<string>): string => `
 const ch = new BroadcastChannel('sw-push-conflict')
 ch.postMessage({
   sha: 'abc123',
@@ -15,9 +13,9 @@ ch.close()
 
 test.describe('conflicts view (4.2)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.evaluate(() =>
-      globalThis.localStorage?.removeItem('admin-conflicts')
-    ).catch(() => undefined)
+    await page
+      .evaluate(() => globalThis.localStorage?.removeItem('admin-conflicts'))
+      .catch(() => undefined)
     await page.goto('/')
     await page.waitForLoadState('networkidle')
     await page
@@ -38,22 +36,22 @@ test.describe('conflicts view (4.2)', () => {
   test('reload preserves the conflict list', async ({ page }) => {
     await page.evaluate(broadcastConflict(['c.md']))
     await page.locator('[data-testid="notification-toast-cta"]').click()
-    await expect(
-      page.locator('[data-testid="conflicts-item"]')
-    ).toHaveCount(1)
+    await expect(page.locator('[data-testid="conflicts-item"]')).toHaveCount(
+      1
+    )
     await page.reload()
     await page.waitForLoadState('networkidle')
-    await expect(
-      page.locator('[data-testid="conflicts-item"]')
-    ).toHaveCount(1)
+    await expect(page.locator('[data-testid="conflicts-item"]')).toHaveCount(
+      1
+    )
   })
 
   test('mark all resolved empties the list', async ({ page }) => {
     await page.evaluate(broadcastConflict(['x.md', 'y.md']))
     await page.locator('[data-testid="notification-toast-cta"]').click()
-    await expect(
-      page.locator('[data-testid="conflicts-item"]')
-    ).toHaveCount(2)
+    await expect(page.locator('[data-testid="conflicts-item"]')).toHaveCount(
+      2
+    )
     await page.locator('[data-testid="conflicts-resolve-all"]').click()
     await expect(
       page.locator('[data-testid="conflicts-empty"]')
