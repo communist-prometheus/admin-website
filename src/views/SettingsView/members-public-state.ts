@@ -28,6 +28,7 @@ export const projectMembersPublic = <A extends Record<string, unknown>>(
   busy: s.busy,
   error: s.error,
   disabled: s.disabled,
+  offline: s.offline,
   canEditSettings: s.canEditSettings,
   openDialog: ctl.openDialog,
   closeDialog: ctl.closeDialog,
