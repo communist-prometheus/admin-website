@@ -15,13 +15,13 @@ const dataAttributes = (
 
 /**
  * Convert a Service Worker log entry into a collector log record.
- * Preserves the SW span id and category; the trace id is filled
- * by the SW context once 7.4b lands.
+ * Preserves SW trace+span ids stamped by the dispatcher so the
+ * viewer can stitch logs into the originating client trace.
  * @param entry Log entry broadcast by the SW.
  * @returns Collector-shaped log record.
  */
 export const logFromSWEntry = (entry: LogEntry): LogRecord => ({
-  traceId: undefined,
+  traceId: entry.traceId,
   spanId: entry.spanId,
   level: entry.level,
   message: entry.msg,

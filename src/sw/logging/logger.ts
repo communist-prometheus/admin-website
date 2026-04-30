@@ -1,5 +1,6 @@
 import type { LogCategory, LogEntry, LogLevel } from '../protocol'
 import { SW_LOG_CHANNEL } from '../protocol'
+import { activeContext } from '../tracing/active-context'
 import type { RingBuffer } from './ring-buffer/ring-buffer'
 import { createRingBuffer } from './ring-buffer/ring-buffer'
 
@@ -39,7 +40,16 @@ export const log = (
   msg: string,
   data?: Record<string, unknown>
 ): void => {
-  const entry: LogEntry = { ts: Date.now(), level, cat, msg, data }
+  const ctx = activeContext()
+  const entry: LogEntry = {
+    ts: Date.now(),
+    level,
+    cat,
+    msg,
+    data,
+    spanId: ctx?.spanId,
+    traceId: ctx?.traceId,
+  }
   state.buffer.push(entry)
   state.channel?.postMessage(entry)
 }

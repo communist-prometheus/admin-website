@@ -21,6 +21,11 @@ describe('logFromSWEntry', () => {
     expect(out.traceId).toBeUndefined()
   })
 
+  it('passes the SW-stamped traceId through', () => {
+    const out = logFromSWEntry({ ...baseEntry, traceId: 'tttt' })
+    expect(out.traceId).toBe('tttt')
+  })
+
   it('flattens data fields into stringified attributes', () => {
     const out = logFromSWEntry({
       ...baseEntry,
