@@ -1,12 +1,16 @@
 import type { SpanRecord } from './otlp-types'
+import { append, resetBuffer, type SpanEvent } from './sse-buffer'
 
-/** Predicate that decides whether a subscriber receives a span. */
+export type { SpanEvent } from './sse-buffer'
+export { MAX_BUFFER, replay } from './sse-buffer'
+
+/** Predicate that decides whether a subscriber receives an event. */
 export type SpanFilter = (span: SpanRecord) => boolean
 
 /** A live subscriber: filter + send callback. */
 export type Subscriber = {
   readonly filter: SpanFilter
-  readonly send: (span: SpanRecord) => void
+  readonly send: (event: SpanEvent) => void
 }
 
 const subscribers = new Set<Subscriber>()
@@ -24,22 +28,32 @@ export const subscribe = (sub: Subscriber): (() => void) => {
   }
 }
 
-const fanout = (sub: Subscriber, span: SpanRecord): void => {
-  const send = sub.filter(span) ? () => sub.send(span) : (): void => undefined
+const fanout = (sub: Subscriber, event: SpanEvent): void => {
+  const send = sub.filter(event.span)
+    ? () => sub.send(event)
+    : (): void => undefined
   send()
 }
 
 /**
- * Fan out a span to every matching subscriber. No-op when the
- * registry is empty so ingest stays cheap when no one is
- * watching.
+ * Append a span to the replay buffer and fan it out to every
+ * matching subscriber. Returns the freshly assigned event id so
+ * callers (e.g. ingest handlers) can echo it for diagnostics.
  * @param span Span to broadcast.
- * @returns void
+ * @returns Event id assigned by the buffer.
  */
-export const broadcast = (span: SpanRecord): void => {
+export const broadcast = (span: SpanRecord): number => {
+  const event = append(span)
   subscribers.forEach(sub => {
-    fanout(sub, span)
+    fanout(sub, event)
   })
+  return event.id
+}
+
+/** Reset the bus — used by tests to isolate fixtures. */
+export const resetSseBus = (): void => {
+  subscribers.clear()
+  resetBuffer()
 }
 
 /**
