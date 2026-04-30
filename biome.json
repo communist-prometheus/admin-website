@@ -121,7 +121,7 @@
       }
     },
     {
-      "includes": ["scripts/*.ts"],
+      "includes": ["scripts/**/*.ts"],
       "linter": {
         "rules": {
           "suspicious": {
