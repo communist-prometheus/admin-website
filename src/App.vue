@@ -64,5 +64,7 @@ watch(
 
 <template>
   <RouterView :key="route.fullPath" />
+  <NotificationToastStack />
+  <NotificationDevTrigger />
   <SWDebugPanel />
 </template>
