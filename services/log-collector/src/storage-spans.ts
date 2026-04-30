@@ -1,27 +1,11 @@
 import type { SpanRecord } from './otlp-types'
+import { writeSpanAnalytics } from './storage-spans-analytics'
 import type { StorageBindings } from './storage-types'
 
-const INSERT_TRACE_SQL =
-  'INSERT INTO traces (trace_id, user, op, started_at) VALUES (?, ?, ?, ?)'
-
-const writeSpanAnalytics = (
-  bindings: StorageBindings,
-  span: SpanRecord,
-  user: string
-): void => {
-  const ds = bindings.ANALYTICS_DATASET
-  const noop = (): void => undefined
-  const fire =
-    ds === undefined
-      ? noop
-      : () =>
-          ds.writeDataPoint({
-            indexes: [span.traceId, user],
-            blobs: [span.name, span.spanId, span.status],
-            doubles: [span.startedAt, span.finishedAt],
-          })
-  fire()
-}
+const INSERT_SPAN_SQL =
+  'INSERT OR REPLACE INTO spans ' +
+  '(trace_id, span_id, parent_span_id, name, started_at, finished_at, status, attrs, user) ' +
+  'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
 
 const indexSpanD1 = (
   bindings: StorageBindings,
@@ -32,8 +16,18 @@ const indexSpanD1 = (
   return db === undefined
     ? Promise.resolve()
     : db
-        .prepare(INSERT_TRACE_SQL)
-        .bind(span.traceId, user, span.name, span.startedAt)
+        .prepare(INSERT_SPAN_SQL)
+        .bind(
+          span.traceId,
+          span.spanId,
+          span.parentSpanId ?? null,
+          span.name,
+          span.startedAt,
+          span.finishedAt,
+          span.status,
+          JSON.stringify(span.attributes ?? {}),
+          user
+        )
         .run()
 }
 
