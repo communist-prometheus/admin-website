@@ -14,11 +14,7 @@ const sample = [
 describe('parseThreeWays', () => {
   it('returns ours / theirs / merged from a marker file', () => {
     const split = parseThreeWays(sample)
-    expect(split.ours.split('\n')).toEqual([
-      'header',
-      'mine line',
-      'footer',
-    ])
+    expect(split.ours.split('\n')).toEqual(['header', 'mine line', 'footer'])
     expect(split.theirs.split('\n')).toEqual([
       'header',
       'theirs line',
