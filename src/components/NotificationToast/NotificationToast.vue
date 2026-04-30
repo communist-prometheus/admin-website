@@ -13,6 +13,11 @@ const onDismiss = (): void => {
   dismiss(props.entry.id)
 }
 
+const onCta = (): void => {
+  props.entry.cta?.action()
+  dismiss(props.entry.id)
+}
+
 let cancel: (() => void) | undefined
 onMounted(() => {
   cancel = scheduleAutoDismiss(props.entry.kind, onDismiss)
@@ -38,6 +43,15 @@ onUnmounted(() => {
       :data-testid="TOAST_TEST_IDS.message"
       class="toast-message"
     >{{ entry.message }}</span>
+    <button
+      v-if="entry.cta"
+      type="button"
+      class="toast-cta"
+      :data-testid="TOAST_TEST_IDS.cta"
+      @click="onCta"
+    >
+      {{ entry.cta.label }}
+    </button>
     <button
       type="button"
       class="toast-dismiss"
@@ -80,8 +94,26 @@ onUnmounted(() => {
   color: var(--color-text, #444);
 }
 
-.toast-dismiss {
+.toast-cta {
   margin-left: auto;
+  background: var(--color-accent, #4fc3f7);
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+  min-height: 28px;
+}
+
+.toast-cta:hover,
+.toast-cta:focus-visible {
+  filter: brightness(110%);
+  outline: none;
+}
+
+.toast-dismiss {
   background: transparent;
   border: 0;
   font-size: 1.25rem;
@@ -90,6 +122,11 @@ onUnmounted(() => {
   min-width: 32px;
   min-height: 32px;
   border-radius: 4px;
+  margin-left: auto;
+}
+
+.toast-cta + .toast-dismiss {
+  margin-left: 0;
 }
 
 .toast-dismiss:hover,

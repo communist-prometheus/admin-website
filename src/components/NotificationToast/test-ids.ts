@@ -5,4 +5,5 @@ export const TOAST_TEST_IDS = {
   title: 'notification-toast-title',
   message: 'notification-toast-message',
   dismiss: 'notification-toast-dismiss',
+  cta: 'notification-toast-cta',
 } as const
