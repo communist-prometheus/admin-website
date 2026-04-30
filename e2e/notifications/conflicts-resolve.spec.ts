@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-const broadcastConflict = (
-  files: ReadonlyArray<string>
-): string => `
+const broadcastConflict = (files: ReadonlyArray<string>): string => `
 const ch = new BroadcastChannel('sw-push-conflict')
 ch.postMessage({
   sha: 'def456',
@@ -23,9 +21,7 @@ globalThis.__resolveChannel = ch
 test.describe('per-file conflict resolution (4.3)', () => {
   test.beforeEach(async ({ page }) => {
     await page
-      .evaluate(() =>
-        globalThis.localStorage?.removeItem('admin-conflicts')
-      )
+      .evaluate(() => globalThis.localStorage?.removeItem('admin-conflicts'))
       .catch(() => undefined)
     await page.goto('/')
     await page.waitForLoadState('networkidle')
@@ -40,9 +36,7 @@ test.describe('per-file conflict resolution (4.3)', () => {
   }) => {
     await page.evaluate(broadcastConflict(['a.md']))
     await page.locator('[data-testid="notification-toast-cta"]').click()
-    await page
-      .locator('[data-testid="conflicts-item-keep-mine"]')
-      .click()
+    await page.locator('[data-testid="conflicts-item-keep-mine"]').click()
     await expect(
       page.locator('[data-testid="conflicts-item-resolved"]')
     ).toContainText('mine')
@@ -52,9 +46,7 @@ test.describe('per-file conflict resolution (4.3)', () => {
     expect(messages.some(m => m.type === 'resolve-file')).toBe(true)
   })
 
-  test('finalize appears once every file is resolved', async ({
-    page,
-  }) => {
+  test('finalize appears once every file is resolved', async ({ page }) => {
     await page.evaluate(broadcastConflict(['a.md', 'b.md']))
     await page.locator('[data-testid="notification-toast-cta"]').click()
     const finalize = page.locator('[data-testid="conflicts-finalize"]')
@@ -76,9 +68,7 @@ test.describe('per-file conflict resolution (4.3)', () => {
   }) => {
     await page.evaluate(broadcastConflict(['a.md']))
     await page.locator('[data-testid="notification-toast-cta"]').click()
-    await page
-      .locator('[data-testid="conflicts-item-force-mine"]')
-      .click()
+    await page.locator('[data-testid="conflicts-item-force-mine"]').click()
     await page.locator('[data-testid="conflicts-finalize"]').click()
     await expect(
       page.locator('[data-testid="conflicts-empty"]')
@@ -86,8 +76,6 @@ test.describe('per-file conflict resolution (4.3)', () => {
     const messages = await page.evaluate<readonly { type: string }[]>(
       () => globalThis.__resolveMessages ?? []
     )
-    expect(
-      messages.some(m => m.type === 'finalize-resolution')
-    ).toBe(true)
+    expect(messages.some(m => m.type === 'finalize-resolution')).toBe(true)
   })
 })

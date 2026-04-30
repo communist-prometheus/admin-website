@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 import type { ContentType } from '@/types/content'
+import { nonContentRoutes } from './non-content-routes'
 
 const CONTENT_SECTIONS: readonly ContentType[] = [
   'blog',
@@ -19,32 +20,17 @@ const sectionRoutes: RouteRecordRaw[] = CONTENT_SECTIONS.map(type => ({
   props: { contentType: type },
 }))
 
+const editRoute: RouteRecordRaw = {
+  path: '/content/:type/edit/:slug',
+  name: 'content-edit',
+  meta: { requiresAuth: true },
+  component: () => import('../views/ContentEditView.vue'),
+  props: true,
+}
+
 /** Routes for content management (require authentication) */
 export const contentRoutes: RouteRecordRaw[] = [
   ...sectionRoutes,
-  {
-    path: '/tickets',
-    name: 'tickets',
-    meta: { requiresAuth: true },
-    component: () => import('../views/TicketsView/TicketsView.vue'),
-  },
-  {
-    path: '/settings',
-    name: 'settings',
-    meta: { requiresAuth: true },
-    component: () => import('../views/SettingsView/SettingsView.vue'),
-  },
-  {
-    path: '/conflicts',
-    name: 'conflicts',
-    meta: { requiresAuth: true },
-    component: () => import('../views/ConflictsView/ConflictsView.vue'),
-  },
-  {
-    path: '/content/:type/edit/:slug',
-    name: 'content-edit',
-    meta: { requiresAuth: true },
-    component: () => import('../views/ContentEditView.vue'),
-    props: true,
-  },
+  ...nonContentRoutes,
+  editRoute,
 ]
