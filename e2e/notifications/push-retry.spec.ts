@@ -37,9 +37,7 @@ test.describe('push retry CTA (2.4)', () => {
 
   test('retriable terminal error attaches a Retry CTA', async ({ page }) => {
     await page.evaluate(broadcastTerminal('network'))
-    const cta = page
-      .locator('[data-testid="notification-toast-cta"]')
-      .first()
+    const cta = page.locator('[data-testid="notification-toast-cta"]').first()
     await expect(cta).toBeVisible()
     await expect(cta).toHaveText('Retry')
   })
@@ -64,9 +62,7 @@ test.describe('push retry CTA (2.4)', () => {
     await expect
       .poll(
         async () =>
-          await page.evaluate<number>(
-            () => globalThis.__retryHits ?? 0
-          ),
+          await page.evaluate<number>(() => globalThis.__retryHits ?? 0),
         { timeout: 5_000 }
       )
       .toBe(1)
