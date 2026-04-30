@@ -1,6 +1,7 @@
 import type { Context, Hono } from 'hono'
 import type { AuthVariables } from './auth-middleware'
 import { parseLogBatch, parseTraceBatch } from './otlp-validate'
+import { broadcast } from './sse-bus'
 import { persistLogs, persistSpans } from './storage'
 import type { StorageBindings } from './storage-types'
 
@@ -23,6 +24,7 @@ const runPersistSpans = async (
 ): Promise<Response> => {
   const user = c.get('user').sub
   await persistSpans(c.env, spans, user)
+  spans.forEach(broadcast)
   return c.json({ accepted: spans.length })
 }
 

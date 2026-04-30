@@ -12,6 +12,7 @@ import {
 import { registerHealthRoute } from './health'
 import { type OtlpBindings, registerOtlpRoutes } from './otlp-handlers'
 import { rateLimit } from './rate-limit'
+import { registerSseRoute } from './sse-handler'
 
 /** Combined worker bindings across all registered routes. */
 export type Bindings = AuthBindings &
@@ -27,6 +28,7 @@ app.use('/v1/*', rateLimit())
 registerHealthRoute(app)
 registerExchangeRoute(app)
 registerOtlpRoutes(app)
+registerSseRoute(app)
 
 /** Cloudflare Worker entry — delegates everything to Hono. */
 export default {
