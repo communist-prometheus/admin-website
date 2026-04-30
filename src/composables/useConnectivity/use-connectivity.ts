@@ -1,4 +1,5 @@
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
+import { broadcastConnectivity } from './broadcast'
 import { isOnline } from './connectivity-state'
 import { HEARTBEAT_INTERVAL_MS, probeReachability } from './heartbeat'
 import { isPageVisible } from './page-visibility'
@@ -25,25 +26,27 @@ const handleOffline = (): void => {
   isOnline.value = false
 }
 
+const wireListeners = (): void => {
+  globalThis.addEventListener('online', handleOnline)
+  globalThis.addEventListener('offline', handleOffline)
+  setInterval(() => {
+    void tick()
+  }, HEARTBEAT_INTERVAL_MS)
+  watch(isOnline, next => broadcastConnectivity(next), { immediate: true })
+}
+
 const ensureRegistered = (): void => {
   const already = registered
   registered = true
-  const wire = (): void => {
-    globalThis.addEventListener('online', handleOnline)
-    globalThis.addEventListener('offline', handleOffline)
-    setInterval(() => {
-      void tick()
-    }, HEARTBEAT_INTERVAL_MS)
-  }
   const noop = (): void => undefined
-  ;(already ? noop : wire)()
+  ;(already ? noop : wireListeners)()
 }
 
 /**
  * Reactive connectivity probe. Returns the shared `isOnline` ref
- * and registers `online`/`offline` listeners plus a 30s heartbeat
- * when called for the first time. The heartbeat skips ticks while
- * the tab is hidden so background tabs don't generate traffic.
+ * and registers `online`/`offline` listeners + a 30 s heartbeat
+ * + an SW broadcast on the first call. Heartbeat skips ticks
+ * while the tab is hidden so background tabs are silent.
  * @returns Object exposing the reactive `isOnline` ref.
  */
 export const useConnectivity = () => {
