@@ -2,6 +2,7 @@ import { Option } from 'effect'
 import { isOnlineInSw } from '../connectivity/sw-connectivity-state'
 import { workerState } from '../state/state'
 import { publishPushState } from './broadcast'
+import { announceDrainSummary } from './drain-summary'
 import { listPending } from './idb'
 import { processNext } from './process-next'
 
@@ -26,8 +27,10 @@ const processPending = async (): Promise<void> => {
 
 const runOnce = async (): Promise<void> => {
   inFlight = true
+  const initial = (await listPending()).length
   try {
     await processPending()
+    await announceDrainSummary(initial)
   } finally {
     inFlight = false
   }
