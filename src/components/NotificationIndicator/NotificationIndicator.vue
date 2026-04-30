@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useNotificationDrawer } from '@/composables/useNotificationDrawer'
 import { useNotifications } from '@/composables/useNotifications'
 import { formatCount } from './format-count'
 import { INDICATOR_TEST_IDS } from './test-ids'
 
+const drawer = useNotificationDrawer()
 const { entries } = useNotifications()
 const count = computed(() => entries.value.length)
 const badge = computed(() => formatCount(count.value))
@@ -20,7 +22,7 @@ const ariaLabel = computed(() =>
     class="indicator"
     :data-testid="INDICATOR_TEST_IDS.root"
     :aria-label="ariaLabel"
-    :aria-disabled="true"
+    @click="drawer.toggle"
   >
     <BellIcon />
     <span
@@ -42,7 +44,7 @@ const ariaLabel = computed(() =>
   background: transparent;
   border: 0;
   border-radius: 50%;
-  cursor: not-allowed;
+  cursor: pointer;
   color: inherit;
 }
 
