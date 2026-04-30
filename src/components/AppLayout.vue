@@ -34,6 +34,7 @@ const hash = __COMMIT_HASH__
 
 <template>
   <AppHeader>
+    <NotificationIndicator />
     <AuthButton />
   </AppHeader>
 

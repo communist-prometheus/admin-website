@@ -14,12 +14,14 @@ import {
 } from '@/composables/useDeployStatus/pending-deploy'
 import { useDeployPolling } from '@/composables/useDeployStatus/use-deploy-polling'
 import type { DeployBuild } from '@/composables/useDeployStatus/workflow-types'
+import { useNotificationsPersistence } from '@/composables/useNotifications/use-notification-persistence'
 import { useAuthStore } from '@/stores/auth'
 import { useContentStore } from '@/stores/content'
 
 const route = useRoute()
 const authStore = useAuthStore()
 const contentStore = useContentStore()
+useNotificationsPersistence()
 
 // Single app-wide poller. Pauses automatically once every visible
 // run is terminal; resumes when a save hits `requestPoll` via
@@ -64,5 +66,8 @@ watch(
 
 <template>
   <RouterView :key="route.fullPath" />
+  <NotificationToastStack />
+  <NotificationDrawer />
+  <NotificationDevTrigger />
   <SWDebugPanel />
 </template>

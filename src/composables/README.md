@@ -12,3 +12,4 @@ Vue composables encapsulating business logic. Each composable is decomposed into
 - `useOAuthPopup` -- PKCE OAuth popup flow (authorize URL, popup monitor, token exchange)
 - `useDropdown` -- dropdown open/close state
 - `useUnsavedGuard` -- warn before navigating away with unsaved changes
+- `useNotifications` -- reactive notifications API; returns readonly entries and bound `notify` / `dismiss` / `clear` actions backed by the `notifications` Pinia store
