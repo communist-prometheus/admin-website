@@ -2,7 +2,8 @@ import type { LogRecord } from './otlp-types'
 import type { StorageBindings } from './storage-types'
 
 const INSERT_LOG_SQL =
-  'INSERT INTO logs (trace_id, level, at) VALUES (?, ?, ?)'
+  'INSERT INTO logs (trace_id, span_id, level, message, at, attrs) ' +
+  'VALUES (?, ?, ?, ?, ?, ?)'
 
 const indexLogD1 = (
   bindings: StorageBindings,
@@ -13,7 +14,14 @@ const indexLogD1 = (
     ? Promise.resolve()
     : db
         .prepare(INSERT_LOG_SQL)
-        .bind(log.traceId ?? '', log.level, log.at)
+        .bind(
+          log.traceId ?? null,
+          log.spanId ?? null,
+          log.level,
+          log.message,
+          log.at,
+          JSON.stringify(log.attributes ?? {})
+        )
         .run()
 }
 

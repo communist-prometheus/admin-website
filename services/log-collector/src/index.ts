@@ -5,6 +5,7 @@ import {
   authMiddleware,
 } from './auth-middleware'
 import { batchSizeGuard } from './batch-size-guard'
+import { type DetailBindings, registerDetailRoute } from './detail-handler'
 import {
   type ExchangeBindings,
   registerExchangeRoute,
@@ -18,7 +19,8 @@ import { registerSseRoute } from './sse-handler'
 /** Combined worker bindings across all registered routes. */
 export type Bindings = AuthBindings &
   ExchangeBindings &
-  OtlpBindings & {
+  OtlpBindings &
+  DetailBindings & {
     readonly VERSION: string
   }
 
@@ -30,6 +32,7 @@ registerHealthRoute(app)
 registerExchangeRoute(app)
 registerOtlpRoutes(app)
 registerSearchRoute(app)
+registerDetailRoute(app)
 registerSseRoute(app)
 
 /** Cloudflare Worker entry — delegates everything to Hono. */
