@@ -1,4 +1,5 @@
-import { fromRequest, txStore } from './idb'
+import { publishPushState } from './broadcast'
+import { fromRequest, listPending, txStore } from './idb'
 import type { PushQueueEntry } from './types'
 
 const writeIfFresh = async (
@@ -12,6 +13,13 @@ const writeIfFresh = async (
   return fresh
 }
 
+const refreshPendingCount = async (
+  status: 'idle' | 'syncing' | 'error'
+): Promise<void> => {
+  const pending = (await listPending()).length
+  publishPushState({ status, pending })
+}
+
 /**
  * Persist a push queue entry. Idempotent on `sha` — re-enqueueing
  * the same commit is a no-op. Returns whether the entry was newly
@@ -22,7 +30,9 @@ const writeIfFresh = async (
 export const enqueue = async (entry: PushQueueEntry): Promise<boolean> => {
   const store = await txStore('readonly')
   const existing = await fromRequest(store.get(entry.sha))
-  return writeIfFresh(entry, existing !== undefined)
+  const fresh = await writeIfFresh(entry, existing !== undefined)
+  await (fresh ? refreshPendingCount('syncing') : Promise.resolve())
+  return fresh
 }
 
 /**
@@ -34,6 +44,11 @@ export const enqueue = async (entry: PushQueueEntry): Promise<boolean> => {
 export const dequeue = async (sha: string): Promise<void> => {
   const store = await txStore('readwrite')
   await fromRequest(store.delete(sha))
+  const remaining = (await listPending()).length
+  publishPushState({
+    status: remaining === 0 ? 'idle' : 'syncing',
+    pending: remaining,
+  })
 }
 
 /**
@@ -44,4 +59,5 @@ export const dequeue = async (sha: string): Promise<void> => {
 export const clearQueue = async (): Promise<void> => {
   const store = await txStore('readwrite')
   await fromRequest(store.clear())
+  publishPushState({ status: 'idle', pending: 0 })
 }
