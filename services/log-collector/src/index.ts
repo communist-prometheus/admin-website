@@ -4,12 +4,14 @@ import {
   type AuthVariables,
   authMiddleware,
 } from './auth-middleware'
+import { batchSizeGuard } from './batch-size-guard'
 import {
   type ExchangeBindings,
   registerExchangeRoute,
 } from './exchange-handler'
 import { registerHealthRoute } from './health'
 import { type OtlpBindings, registerOtlpRoutes } from './otlp-handlers'
+import { rateLimit } from './rate-limit'
 
 /** Combined worker bindings across all registered routes. */
 export type Bindings = AuthBindings &
@@ -20,6 +22,8 @@ export type Bindings = AuthBindings &
 
 const app = new Hono<{ Bindings: Bindings; Variables: AuthVariables }>()
 app.use('*', authMiddleware())
+app.use('/v1/*', batchSizeGuard())
+app.use('/v1/*', rateLimit())
 registerHealthRoute(app)
 registerExchangeRoute(app)
 registerOtlpRoutes(app)
