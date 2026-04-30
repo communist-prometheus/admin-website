@@ -1,16 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { isOnline } from '@/composables/useConnectivity'
 import { usePushState } from '@/composables/useSWBridge/use-push-state'
 import { PUSH_SYNC_TEST_IDS } from './test-ids'
 
 const { state } = usePushState()
+const offline = computed(() => !isOnline.value)
 const visible = computed(
-  () => state.value.status !== 'idle' || state.value.pending > 0
+  () =>
+    state.value.status !== 'idle' ||
+    state.value.pending > 0 ||
+    offline.value
 )
 const ariaLabel = computed(() =>
-  state.value.status === 'error'
-    ? `Push sync error, ${state.value.pending} pending`
-    : `Push syncing, ${state.value.pending} pending`
+  offline.value
+    ? `Working offline, ${state.value.pending} pending`
+    : state.value.status === 'error'
+      ? `Push sync error, ${state.value.pending} pending`
+      : `Push syncing, ${state.value.pending} pending`
 )
 </script>
 
@@ -20,6 +27,7 @@ const ariaLabel = computed(() =>
     class="push-sync"
     :data-testid="PUSH_SYNC_TEST_IDS.root"
     :data-status="state.status"
+    :data-offline="String(offline)"
     :aria-label="ariaLabel"
     aria-live="polite"
   >
@@ -51,6 +59,11 @@ const ariaLabel = computed(() =>
 
 .push-sync[data-status='error'] {
   background: var(--color-error, #e53935);
+  animation: none;
+}
+
+.push-sync[data-offline='true'] {
+  background: var(--color-text-muted, #888);
   animation: none;
 }
 
