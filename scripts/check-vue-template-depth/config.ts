@@ -18,6 +18,7 @@ export const config: Config = {
     'src/views/SettingsView/MembersSection.vue',
     'src/views/TracesView/ResultsTable.vue',
     'src/views/TracesView/StatusField.vue',
+    'src/views/TracesView/SavedQueriesBar.vue',
   ],
 } as const
 
