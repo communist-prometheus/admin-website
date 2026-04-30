@@ -10,6 +10,7 @@ import { useDeployPolling } from '@/composables/useDeployStatus/use-deploy-polli
 import { useMergedEntries } from '@/composables/useDeployStatus/use-merged-entries'
 import { useNotificationsPersistence } from '@/composables/useNotifications/use-notification-persistence'
 import { useOfflineWatcher } from '@/composables/useNotifications/use-offline-watcher'
+import { usePushConflictBridge } from '@/composables/useNotifications/use-push-conflict-bridge'
 import { usePushErrorBridge } from '@/composables/useNotifications/use-push-error-bridge'
 import { usePushSummaryBridge } from '@/composables/useNotifications/use-push-summary-bridge'
 import { useAuthStore } from '@/stores/auth'
@@ -22,6 +23,7 @@ useNotificationsPersistence()
 usePushErrorBridge()
 useOfflineWatcher()
 usePushSummaryBridge()
+usePushConflictBridge()
 
 const poll = useDeployPolling()
 const mergedEntries = useMergedEntries(poll.entries)

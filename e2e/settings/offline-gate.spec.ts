@@ -13,9 +13,7 @@ test.describe('settings offline gate (3.4)', () => {
     page,
     context,
   }) => {
-    const banner = page.locator(
-      '[data-testid="members-offline-banner"]'
-    )
+    const banner = page.locator('[data-testid="members-offline-banner"]')
     await expect(banner).toBeHidden()
     await context.setOffline(true)
     await expect(banner).toBeVisible()
