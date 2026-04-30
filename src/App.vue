@@ -46,5 +46,6 @@ watch(
   <NotificationToastStack />
   <NotificationDrawer />
   <NotificationDevTrigger />
+  <TraceOverlay />
   <SWDebugPanel />
 </template>
