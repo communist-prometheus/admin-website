@@ -17,14 +17,19 @@ const entry: LogEntry = {
 }
 
 describe('bridgeSWLogs', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    resetLogExporter()
+    // Drain any pending BroadcastChannel deliveries from a prior test
+    // before re-resetting so the buffer starts truly empty.
+    await new Promise(resolve => setTimeout(resolve, 0))
     resetLogExporter()
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(new Response(null, { status: 200 }))
     )
   })
-  afterEach(() => {
+  afterEach(async () => {
+    await new Promise(resolve => setTimeout(resolve, 0))
     resetLogExporter()
     vi.unstubAllGlobals()
   })
