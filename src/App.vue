@@ -13,6 +13,7 @@ import { useOfflineWatcher } from '@/composables/useNotifications/use-offline-wa
 import { usePushConflictBridge } from '@/composables/useNotifications/use-push-conflict-bridge'
 import { usePushErrorBridge } from '@/composables/useNotifications/use-push-error-bridge'
 import { usePushSummaryBridge } from '@/composables/useNotifications/use-push-summary-bridge'
+import { useExporterBootstrap } from '@/composables/useTracing/use-exporter-bootstrap'
 import { useAuthStore } from '@/stores/auth'
 import { useContentStore } from '@/stores/content'
 
@@ -24,6 +25,7 @@ usePushErrorBridge()
 useOfflineWatcher()
 usePushSummaryBridge()
 usePushConflictBridge()
+useExporterBootstrap()
 
 const poll = useDeployPolling()
 const mergedEntries = useMergedEntries(poll.entries)
