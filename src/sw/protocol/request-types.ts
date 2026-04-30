@@ -19,6 +19,7 @@ export interface SWFetchRequest {
   readonly method?: string
   readonly headers?: Record<string, string>
   readonly body?: string
+  readonly traceparent?: string
 }
 
 /** Response from SW_FETCH proxy */
@@ -28,13 +29,16 @@ export interface SWFetchResponse {
   readonly headers: Record<string, string>
 }
 
+/** Fields shared by every SW request envelope. */
+type Traced = { readonly traceparent?: string }
+
 /** Messages from client to Service Worker */
 export type SWRequest =
-  | { readonly type: 'SW_INIT'; readonly config: SWGitConfig }
-  | { readonly type: 'SW_STATUS' }
-  | { readonly type: 'SW_INVALIDATE' }
-  | { readonly type: 'SW_METRICS' }
-  | { readonly type: 'SW_LOG_SUBSCRIBE' }
+  | (Traced & { readonly type: 'SW_INIT'; readonly config: SWGitConfig })
+  | (Traced & { readonly type: 'SW_STATUS' })
+  | (Traced & { readonly type: 'SW_INVALIDATE' })
+  | (Traced & { readonly type: 'SW_METRICS' })
+  | (Traced & { readonly type: 'SW_LOG_SUBSCRIBE' })
   | SWFetchRequest
 
 /** Service Worker readiness state */

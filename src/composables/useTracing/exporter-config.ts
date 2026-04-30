@@ -1,6 +1,9 @@
 /** Default flush trigger: 100 spans. */
 export const FLUSH_AT_SPANS = 100
 
+/** Default flush trigger: 200 log entries. */
+export const FLUSH_AT_LOGS = 200
+
 /** Default flush trigger: 30 seconds since the first add. */
 export const FLUSH_AT_MS = 30_000
 

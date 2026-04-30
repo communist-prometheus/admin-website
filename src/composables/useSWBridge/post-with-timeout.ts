@@ -1,5 +1,6 @@
 import { Duration, Effect } from 'effect'
 import type { SWRequest } from '@/sw/protocol'
+import { stampTraceparent } from './stamp-traceparent'
 
 const TIMEOUT = Duration.seconds(15)
 
@@ -24,7 +25,8 @@ const listen = <T>(
 
 /**
  * Send a message to a ServiceWorker via MessageChannel.
- * Used for init (when no controller) and data fallback.
+ * Stamps the active client span's traceparent on the envelope
+ * so the SW can correlate logs and outbound calls.
  * @param worker - Target ServiceWorker
  * @param message - Request payload
  * @returns Response from the SW
@@ -32,12 +34,14 @@ const listen = <T>(
 export const postWithTimeout = <T>(
   worker: ServiceWorker,
   message: SWRequest
-): Promise<T> =>
-  Effect.runPromise(
-    listen<T>(worker, message).pipe(
+): Promise<T> => {
+  const stamped = stampTraceparent(message)
+  return Effect.runPromise(
+    listen<T>(worker, stamped).pipe(
       Effect.timeoutFail({
         duration: TIMEOUT,
-        onTimeout: () => new Error(`SW message timeout: ${message.type}`),
+        onTimeout: () => new Error(`SW message timeout: ${stamped.type}`),
       })
     )
   )
+}

@@ -2,6 +2,7 @@ import { fs, REPO_DIR } from '../git/fs'
 import { loadGit } from '../git/load-git'
 import { buildAuthOpts } from '../git/remote/build-auth-opts'
 import { workerState } from '../state/state'
+import { loadTracedHttp } from '../tracing/load-traced-http'
 import { clearForcePending, hasForcePending } from './resolve-file'
 
 const commitResolution = async (
@@ -24,7 +25,7 @@ const pushResolution = async (
   force: boolean
 ): Promise<void> => {
   const git = await loadGit()
-  const { default: http } = await import('isomorphic-git/http/web')
+  const http = await loadTracedHttp()
   const opts = buildAuthOpts(config, http)
   await git.push({ ...opts, force })
 }

@@ -18,4 +18,5 @@ export interface LogEntry {
   readonly msg: string
   readonly data?: Record<string, unknown>
   readonly spanId?: string
+  readonly traceId?: string
 }

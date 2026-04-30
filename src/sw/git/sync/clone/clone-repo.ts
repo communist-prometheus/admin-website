@@ -1,6 +1,7 @@
 import { log } from '../../../logging/logger'
 import { recordOp } from '../../../logging/metrics'
 import type { SWGitConfig } from '../../../protocol'
+import { loadTracedHttp } from '../../../tracing/load-traced-http'
 import { loadGit } from '../../load-git'
 import { buildCloneOptions } from './clone-options'
 
@@ -16,7 +17,7 @@ export const cloneRepo = async (config: SWGitConfig): Promise<void> => {
     repo: config.repo,
   })
   const git = await loadGit()
-  const { default: http } = await import('isomorphic-git/http/web')
+  const http = await loadTracedHttp()
   await git.clone(buildCloneOptions(config, http))
   recordOp('clone', Date.now() - start)
   log('info', 'git', 'Clone complete')
