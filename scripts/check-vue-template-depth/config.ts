@@ -16,6 +16,8 @@ export const config: Config = {
     'src/views/SettingsView/InviteDialog.vue',
     'src/views/SettingsView/MemberRow.vue',
     'src/views/SettingsView/MembersSection.vue',
+    'src/views/TracesView/ResultsTable.vue',
+    'src/views/TracesView/StatusField.vue',
   ],
 } as const
 
