@@ -1,25 +1,13 @@
 import { Option } from 'effect'
 import type { workerState } from '../state/state'
-import { publishPushState } from './broadcast'
-import { publishPushError } from './error-broadcast'
+import { handleFailure } from './handle-failure'
 import { pushOnce } from './push-once'
 import type { PushQueueEntry } from './types'
 
-const haltOnFailure = (
-  entry: PushQueueEntry,
-  remaining: number,
-  error: unknown
-): Promise<void> => {
-  publishPushState({ status: 'error', pending: remaining })
-  publishPushError(entry, error)
-  return Promise.resolve()
-}
-
 /**
  * Recursively push the queue starting at `index`. Stops on the
- * first failure, emits an error state covering the unprocessed
- * entries, and broadcasts a classified `PushErrorEvent` so the
- * client can surface a typed notification.
+ * first failure, delegating retry policy + broadcasting to
+ * `handleFailure`. Successful pushes advance to the next entry.
  * @param pending Entries to process (oldest-first).
  * @param index Current position in `pending`.
  * @param config SW git configuration.
@@ -36,6 +24,6 @@ export const processNext = (
       const result = await pushOnce(entry, config)
       return result.ok
         ? processNext(pending, index + 1, config)
-        : haltOnFailure(entry, pending.length - index, result.error)
+        : handleFailure(entry, pending.length - index, result.error)
     },
   })

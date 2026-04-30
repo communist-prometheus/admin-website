@@ -18,4 +18,6 @@ export type PushErrorEvent = {
   readonly sha: string
   readonly target: string
   readonly at: number
+  readonly terminal: boolean
+  readonly attempt: number
 }

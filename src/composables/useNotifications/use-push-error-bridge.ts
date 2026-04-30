@@ -4,19 +4,30 @@ import {
   SW_PUSH_ERROR_CHANNEL,
 } from '@/sw/protocol/push-error'
 import { notifyPushFailure } from './notify-push-failure'
+import { requestPushRetry } from './push-retry'
+
+const RETRIABLE_REASONS: ReadonlySet<string> = new Set(['network', 'unknown'])
+
+const dispatch = (event: PushErrorEvent): void => {
+  const offerRetry = event.terminal && RETRIABLE_REASONS.has(event.reason)
+  notifyPushFailure(
+    event.reason,
+    event.target,
+    offerRetry ? requestPushRetry : undefined
+  )
+}
 
 const subscribe = (channel: BroadcastChannel): void => {
   channel.onmessage = (event: MessageEvent<PushErrorEvent>): void => {
-    const data = event.data
-    notifyPushFailure(data.reason, data.target)
+    dispatch(event.data)
   }
 }
 
 /**
  * Subscribe to SW-broadcast push errors and dispatch a typed
- * notification per event. Mount once near the app root so every
- * push failure surfaces to the user without coupling the SW to
- * the client store.
+ * notification per event. Terminal failures on retriable reasons
+ * (network / unknown) get a Retry CTA wired to the manual SW
+ * control channel.
  * @returns void
  */
 export const usePushErrorBridge = (): void => {
