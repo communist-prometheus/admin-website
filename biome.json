@@ -100,7 +100,8 @@
         "e2e/auth/setup.ts",
         "eslint.config.js",
         "src/router/index.ts",
-        "worker.ts"
+        "worker.ts",
+        "services/log-collector/src/index.ts"
       ],
       "linter": {
         "rules": {

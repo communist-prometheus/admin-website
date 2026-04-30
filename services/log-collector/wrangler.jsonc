@@ -1,0 +1,13 @@
+{
+  "name": "log-collector",
+  "compatibility_date": "2026-03-23",
+  "main": "src/index.ts",
+  // Bindings declared but optional at deploy time so 6.1 can ship
+  // before the secrets land (added in 6.2 / 6.3).
+  // - JWT_SECRET — HS256 signing secret (set via `wrangler secret put`)
+  // - ANALYTICS_DATASET — Workers Analytics Engine dataset for spans
+  // - D1 — D1 database for trace metadata index
+  "vars": {
+    "VERSION": "0.1.0"
+  }
+}
