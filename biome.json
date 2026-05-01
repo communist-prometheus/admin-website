@@ -11,7 +11,8 @@
       "!!**/dist",
       "!!cors-proxy",
       "!!.wrangler",
-      "!!public/vendor"
+      "!!public/vendor",
+      "!!e2e-toolkit"
     ],
     "ignoreUnknown": false
   },
