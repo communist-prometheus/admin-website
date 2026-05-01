@@ -1,10 +1,9 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 import { waitForContentReady } from '../helpers/content-ready'
 
 test.describe('Content Creation', () => {
   test('should show create button on blog page', async ({ page }) => {
     await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
 
     await expect(page.getByRole('button', { name: /new/i })).toBeVisible()
@@ -12,7 +11,6 @@ test.describe('Content Creation', () => {
 
   test('should show create button on positions page', async ({ page }) => {
     await page.goto('/content/positions')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
 
     await expect(page.getByRole('button', { name: /new/i })).toBeVisible()
@@ -22,7 +20,6 @@ test.describe('Content Creation', () => {
     page,
   }) => {
     await page.goto('/content/pages')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
 
     // pages are a fixed set (home, blog-listing, positions-listing, manifest)
@@ -34,7 +31,6 @@ test.describe('Content Creation', () => {
     page,
   }) => {
     await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
 
     await page.click('button:has-text("New")')
@@ -46,7 +42,6 @@ test.describe('Content Creation', () => {
     page,
   }) => {
     await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
     await page.click('button:has-text("New")')
 
@@ -60,7 +55,6 @@ test.describe('Content Creation', () => {
     page,
   }) => {
     await page.goto('/content/positions')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
     await page.click('button:has-text("New")')
 
@@ -75,7 +69,6 @@ test.describe('Content Creation', () => {
     page,
   }) => {
     await page.goto('/content/pages')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
 
     // No New button → no dialog to open. This replaces the old broken
@@ -88,7 +81,6 @@ test.describe('Content Creation', () => {
     page,
   }) => {
     await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
     await page.click('button:has-text("New")')
 
@@ -104,7 +96,6 @@ test.describe('Content Creation', () => {
     page,
   }) => {
     await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
     await page.click('button:has-text("New")')
     await expect(page.locator('.create-dialog')).toBeVisible()
@@ -127,7 +118,6 @@ test.describe('Content Creation', () => {
 
   test('should close dialog after successful creation', async ({ page }) => {
     await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
     await page.click('button:has-text("New")')
 

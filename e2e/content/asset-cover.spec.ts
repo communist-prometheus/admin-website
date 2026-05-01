@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 import { AssetManagerPage } from '../pages/AssetManagerPage'
 
 test.describe('Asset Cover Image', () => {

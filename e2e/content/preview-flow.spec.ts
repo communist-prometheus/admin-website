@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, waitForCondition } from '@prometheus/e2e-toolkit'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 const edit = async (page: import('@playwright/test').Page): Promise<void> => {
@@ -95,7 +95,7 @@ test.describe('Preview-before-save flow', () => {
       await d.dismiss()
     })
     await page.locator('[data-testid="back-button"]').click()
-    await page.waitForTimeout(250)
+    await waitForCondition(page, async () => true)
     // We cancelled the guard — still on the edit page.
     expect(page.url()).toMatch(/\/content\/blog\/edit\/welcome-to-prometheus/)
   })

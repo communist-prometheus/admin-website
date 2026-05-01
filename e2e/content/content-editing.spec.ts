@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 import { waitForContentReady } from '../helpers/content-ready'
 import { ContentEditPage } from '../pages/ContentEditPage'
 import { ContentPage } from '../pages/ContentPage'

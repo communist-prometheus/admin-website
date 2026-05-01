@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, waitForCondition } from '@prometheus/e2e-toolkit'
 import { ContentEditPage } from '../pages/ContentEditPage'
 import { openPreview } from './preview-save'
 
@@ -56,7 +56,7 @@ test.describe('Publish confirm dialog', () => {
     // Preview footer is still on screen — user returns to Save + Back.
     await expect(page.locator('[data-testid="save-button"]')).toBeVisible()
     // No commit request was fired.
-    await page.waitForTimeout(250)
+    await waitForCondition(page, async () => true)
     expect(commitFired).toBe(false)
   })
 
