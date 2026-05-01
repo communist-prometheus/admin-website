@@ -2,11 +2,11 @@ import {
   click,
   expect,
   expectCount,
-  type Page,
   expectText,
   expectValue,
   expectVisible,
   fill,
+  type Page,
   test,
   visit,
 } from '@prometheus/e2e-toolkit'
