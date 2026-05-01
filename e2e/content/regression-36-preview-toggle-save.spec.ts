@@ -1,4 +1,9 @@
-import { expect, test } from '@playwright/test'
+import {
+  click,
+  expectCount,
+  expectVisible,
+  test,
+} from '@prometheus/e2e-toolkit'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 /**
@@ -24,17 +29,13 @@ test.describe('Issue #36 — single "Preview" entry leads to Save', () => {
   test('the redundant in-editor preview-toggle is gone', async ({ page }) => {
     const ep = new ContentEditPage(page)
     await ep.navigate('pages', 'manifest')
-    await expect(page.locator('[data-testid="preview-toggle"]')).toHaveCount(
-      0
-    )
+    await expectCount(page, page.locator('[data-testid="preview-toggle"]'), 0)
   })
 
   test('the only Preview button reveals Save', async ({ page }) => {
     const ep = new ContentEditPage(page)
     await ep.navigate('pages', 'manifest')
-    await page.locator('[data-testid="preview-button"]').click()
-    await expect(page.locator('[data-testid="save-button"]')).toBeVisible({
-      timeout: 5000,
-    })
+    await click(page, page.locator('[data-testid="preview-button"]'))
+    await expectVisible(page, page.locator('[data-testid="save-button"]'))
   })
 })

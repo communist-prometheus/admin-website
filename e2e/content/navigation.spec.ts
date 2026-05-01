@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 import { ContentPage } from '../pages/ContentPage'
 
 test.describe('Content Navigation', () => {

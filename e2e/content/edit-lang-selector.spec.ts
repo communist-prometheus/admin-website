@@ -1,4 +1,11 @@
-import { expect, test } from '@playwright/test'
+import {
+  expect,
+  expectClass,
+  expectCount,
+  expectValue,
+  expectVisible,
+  test,
+} from '@prometheus/e2e-toolkit'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 const SLUG = 'media-showcase'
@@ -9,26 +16,20 @@ test.describe('Edit Page Language Selector', () => {
     await ep.navigate('blog', SLUG)
 
     const selector = page.locator('[data-testid="language-selector"]')
-    await expect(selector).toBeVisible({ timeout: 10000 })
-
-    const buttons = selector.locator('button')
-    await expect(buttons).toHaveCount(4)
+    await expectVisible(page, selector)
+    await expectCount(page, selector.locator('button'), 4)
   })
 
   test('current language should be active', async ({ page }) => {
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
-
-    const enBtn = ep.getLanguageButton('en')
-    await expect(enBtn).toHaveClass(/active/, { timeout: 10000 })
+    await expectClass(page, ep.getLanguageButton('en'), /active/)
   })
 
   test('available langs should have exists class', async ({ page }) => {
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
-
-    const enBtn = ep.getLanguageButton('en')
-    await expect(enBtn).toHaveClass(/exists/, { timeout: 10000 })
+    await expectClass(page, ep.getLanguageButton('en'), /exists/)
   })
 
   test('clicking another language should switch editor content', async ({
@@ -40,18 +41,17 @@ test.describe('Edit Page Language Selector', () => {
     const ta = ep.getEditorBody()
     const beforeContent = await ta.inputValue()
 
-    // Check if ru version exists (has exists class)
     const ruBtn = ep.getLanguageButton('ru')
     const hasRu = await ruBtn.evaluate(el => el.classList.contains('exists'))
 
     await ruBtn.click()
 
     if (hasRu) {
-      // Content should have changed
-      await expect(ta).not.toHaveValue(beforeContent, { timeout: 10000 })
+      /* ru variant exists — editor body should swap. */
+      await expect(ta).not.toHaveValue(beforeContent)
     } else {
-      // Editor should be empty for new translation
-      await expect(ta).toHaveValue('', { timeout: 10000 })
+      /* No ru variant yet — editor blanks for the new translation. */
+      await expectValue(page, ta, '')
     }
   })
 })

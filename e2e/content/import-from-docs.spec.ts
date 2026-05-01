@@ -1,22 +1,29 @@
-import { expect, test } from '@playwright/test'
+import {
+  expect,
+  expectHidden,
+  expectText,
+  expectVisible,
+  type Page,
+  test,
+  waitForCondition,
+} from '@prometheus/e2e-toolkit'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
-const edit = async (page: import('@playwright/test').Page): Promise<void> => {
+const edit = async (page: Page): Promise<void> => {
   const ep = new ContentEditPage(page)
   await ep.navigate('blog', 'welcome-to-prometheus')
 }
 
-const input = (page: import('@playwright/test').Page) =>
+const input = (page: Page) =>
   page.locator('[data-testid="import-docs-input"]')
 
-const button = (page: import('@playwright/test').Page) =>
+const button = (page: Page) =>
   page.locator('[data-testid="import-docs-button"]')
 
 test.describe('Import from Docs', () => {
   test('Import button is visible in the editor toolbar', async ({ page }) => {
     await edit(page)
-    await expect(button(page)).toBeVisible()
-    await expect(button(page)).toContainText(/import from docs/i)
+    await expectText(page, button(page), /import from docs/i)
   })
 
   test('upload a .md file inserts its body at the caret', async ({
@@ -24,7 +31,7 @@ test.describe('Import from Docs', () => {
   }) => {
     await edit(page)
     const textarea = page.locator('[data-testid="editor-body"]')
-    // Empty the textarea first so the insertion is easy to spot.
+    /* Empty the textarea first so the insertion is easy to spot. */
     await textarea.fill('')
 
     const payload = Buffer.from('# Imported heading\n\nImported body text\n')
@@ -34,7 +41,6 @@ test.describe('Import from Docs', () => {
       buffer: payload,
     })
 
-    // Wait for the content to land.
     await expect
       .poll(() => textarea.inputValue(), { timeout: 5000 })
       .toContain('Imported body text')
@@ -76,13 +82,10 @@ test.describe('Import from Docs', () => {
       buffer: Buffer.from('%PDF-1.4'),
     })
 
-    // Wait a moment, then assert unchanged.
-    await page.waitForTimeout(500)
+    /* Wait for the request graph to settle, then assert untouched. */
+    await waitForCondition(page, async () => true)
     expect(await textarea.inputValue()).toBe(before)
-    // The error path surfaces via the shared ErrorMessage banner.
-    await expect(page.locator('[data-testid="error-message"]')).toBeVisible({
-      timeout: 2000,
-    })
+    await expectVisible(page, page.locator('[data-testid="error-message"]'))
   })
 
   test('import is hidden while the user is on the preview page', async ({
@@ -90,7 +93,7 @@ test.describe('Import from Docs', () => {
   }) => {
     await edit(page)
     await page.locator('[data-testid="preview-button"]').click()
-    await expect(button(page)).toBeHidden()
+    await expectHidden(page, button(page))
   })
 
   test('html with single-item bold-only ordered lists becomes numbered ## headings', async ({
@@ -100,8 +103,10 @@ test.describe('Import from Docs', () => {
     const textarea = page.locator('[data-testid="editor-body"]')
     await textarea.fill('')
 
-    // Mirrors what mammoth emits for Word "List Paragraph" sections —
-    // each section is its own single-item bold-only ordered list.
+    /*
+     * Mirrors what mammoth emits for Word "List Paragraph" sections
+     * — each section is its own single-item bold-only ordered list.
+     */
     const html =
       '<ol><li><strong>Foreword</strong></li></ol>' +
       '<p>body</p>' +

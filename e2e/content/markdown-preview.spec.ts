@@ -1,4 +1,10 @@
-import { expect, test } from '@playwright/test'
+import {
+  expectAttribute,
+  expectCount,
+  expectText,
+  expectVisible,
+  test,
+} from '@prometheus/e2e-toolkit'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 test.describe('Markdown Preview', () => {
@@ -7,8 +13,7 @@ test.describe('Markdown Preview', () => {
   }) => {
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')
-
-    await expect(page.locator('[data-testid="preview-button"]')).toBeVisible()
+    await expectVisible(page, page.locator('[data-testid="preview-button"]'))
   })
 
   test('clicking preview shows rendered HTML', async ({ page }) => {
@@ -19,8 +24,8 @@ test.describe('Markdown Preview', () => {
     await editPage.expectPreviewVisible()
 
     const preview = page.locator('[data-testid="markdown-preview"]')
-    await expect(preview.locator('h1')).toBeVisible()
-    await expect(preview.locator('strong').first()).toBeVisible()
+    await expectVisible(page, preview.locator('h1'))
+    await expectVisible(page, preview.locator('strong').first())
   })
 
   test('clicking toggle again returns to textarea', async ({ page }) => {
@@ -47,12 +52,14 @@ test.describe('Markdown Preview', () => {
     await editPage.expectPreviewVisible()
 
     const preview = page.locator('[data-testid="markdown-preview"]')
-    await expect(preview.locator('h1')).toHaveText('Main Title')
-    await expect(preview.locator('h2')).toHaveText('Subtitle')
-    await expect(preview.locator('a')).toHaveAttribute(
+    await expectText(page, preview.locator('h1'), 'Main Title')
+    await expectText(page, preview.locator('h2'), 'Subtitle')
+    await expectAttribute(
+      page,
+      preview.locator('a'),
       'href',
       'https://example.com'
     )
-    await expect(preview.locator('li')).toHaveCount(2)
+    await expectCount(page, preview.locator('li'), 2)
   })
 })
