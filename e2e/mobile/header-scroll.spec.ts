@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 
 test.describe('Header Scroll Behavior', () => {
   test('scrolling down hides the header', async ({ page }) => {

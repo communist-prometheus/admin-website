@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import process from 'node:process'
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Page, test } from '@prometheus/e2e-toolkit'
 
 /**
  * Red repro: full create-then-save flow against dev-admin.

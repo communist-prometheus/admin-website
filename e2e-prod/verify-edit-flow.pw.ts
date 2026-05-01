@@ -1,8 +1,8 @@
 import 'dotenv/config'
 import { mkdirSync } from 'node:fs'
 import process from 'node:process'
-import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import type { Page } from '@prometheus/e2e-toolkit'
+import { expect, test } from '@prometheus/e2e-toolkit'
 
 /**
  * Manual prod verification for issues #36, #37, #38.

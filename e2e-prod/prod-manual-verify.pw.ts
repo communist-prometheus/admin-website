@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Page, test } from '@prometheus/e2e-toolkit'
 import { openPreview, saveAndConfirm } from './preview-save'
 
 // Manual verification probe run against the real prod admin. Inject

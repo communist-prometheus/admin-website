@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 import { MOBILE_FAB } from '../helpers/mobile-constants'
 
 test.describe('FAB Visibility', () => {

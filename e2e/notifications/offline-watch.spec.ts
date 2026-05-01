@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 
 test.describe('offline watcher (3.2)', () => {
   test.beforeEach(async ({ page }) => {

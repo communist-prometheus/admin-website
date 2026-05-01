@@ -1,4 +1,4 @@
-import { test } from '@playwright/test'
+import { test } from '@prometheus/e2e-toolkit'
 import { playAudit } from 'playwright-lighthouse'
 
 const MOBILE_VIEWPORT = { width: 390, height: 844 }

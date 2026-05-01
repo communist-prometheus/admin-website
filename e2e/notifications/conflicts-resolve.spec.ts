@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 
 const broadcastConflict = (files: ReadonlyArray<string>): string => `
 const ch = new BroadcastChannel('sw-push-conflict')
