@@ -1,180 +1,156 @@
-import { expect, test } from '@playwright/test'
+import {
+  click,
+  expectCount,
+  expectMinCount,
+  expectText,
+  expectValue,
+  expectVisible,
+  fill,
+  test,
+  visit,
+} from '@prometheus/e2e-toolkit'
 
 test.describe('Settings - Languages', () => {
   test('should show Settings link in header navigation', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('.app-nav', { timeout: 20000 })
+    await visit(page, '/')
     const settingsLink = page.locator('.app-nav a[href="/settings"]')
-    await expect(settingsLink).toBeVisible()
-    await expect(settingsLink).toHaveText('Settings')
+    await expectText(page, settingsLink, 'Settings')
   })
 
   test('should navigate to settings page', async ({ page }) => {
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' })
-    await expect(page.locator('h1')).toHaveText('Settings')
-    // Settings has two sections (Languages + Labels). Assert the first h2
-    // rather than pinning all h2 text.
-    await expect(page.locator('h2').first()).toHaveText('Languages')
+    await visit(page, '/settings')
+    await expectText(page, page.locator('h1'), 'Settings')
+    /*
+     * Settings has two sections (Languages + Labels). Assert the
+     * first h2 rather than pinning all h2 text.
+     */
+    await expectText(page, page.locator('h2').first(), 'Languages')
   })
 
   test('should show languages editor with table', async ({ page }) => {
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' })
-    const editor = page.locator('[data-testid="languages-editor"]')
-    await expect(editor).toBeVisible({ timeout: 20000 })
-
-    const table = page.locator('[data-testid="languages-table"]')
-    await expect(table).toBeVisible()
+    await visit(page, '/settings')
+    await expectVisible(
+      page,
+      page.locator('[data-testid="languages-editor"]')
+    )
+    await expectVisible(page, page.locator('[data-testid="languages-table"]'))
   })
 
   test('should display language rows from settings', async ({ page }) => {
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('[data-testid="language-row"]', {
-      timeout: 20000,
-    })
-
+    await visit(page, '/settings')
     const rows = page.locator('[data-testid="language-row"]')
-    const count = await rows.count()
-    expect(count).toBeGreaterThanOrEqual(1)
+    await expectMinCount(page, rows, 1)
 
     const firstCode = rows.first().locator('[data-testid="language-code"]')
-    await expect(firstCode).toHaveValue('en')
+    await expectValue(page, firstCode, 'en')
   })
 
   test('should add a new language row', async ({ page }) => {
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('[data-testid="language-row"]', {
-      timeout: 20000,
-    })
+    await visit(page, '/settings')
+    const rows = page.locator('[data-testid="language-row"]')
+    await expectMinCount(page, rows, 1)
 
-    const initialCount = await page
-      .locator('[data-testid="language-row"]')
-      .count()
-
-    await page.locator('[data-testid="add-language"]').click()
-
-    await expect(page.locator('[data-testid="language-row"]')).toHaveCount(
-      initialCount + 1
-    )
+    const initialCount = await rows.count()
+    await click(page, page.locator('[data-testid="add-language"]'))
+    await expectCount(page, rows, initialCount + 1)
   })
 
   test('should remove a language row', async ({ page }) => {
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('[data-testid="language-row"]', {
-      timeout: 20000,
-    })
+    await visit(page, '/settings')
+    const rows = page.locator('[data-testid="language-row"]')
+    await expectMinCount(page, rows, 1)
 
-    const initialCount = await page
-      .locator('[data-testid="language-row"]')
-      .count()
-
-    await page.locator('[data-testid="remove-language"]').last().click()
-
-    await expect(page.locator('[data-testid="language-row"]')).toHaveCount(
-      initialCount - 1
-    )
+    const initialCount = await rows.count()
+    await click(page, page.locator('[data-testid="remove-language"]').last())
+    await expectCount(page, rows, initialCount - 1)
   })
 
   test('should show save button', async ({ page }) => {
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('[data-testid="languages-editor"]', {
-      timeout: 20000,
-    })
+    await visit(page, '/settings')
+    await expectVisible(
+      page,
+      page.locator('[data-testid="languages-editor"]')
+    )
 
     const saveBtn = page.locator('[data-testid="save-languages"]')
-    await expect(saveBtn).toBeVisible()
-    await expect(saveBtn).toHaveText('Save')
+    await expectText(page, saveBtn, 'Save')
   })
 
   test('should save languages and persist after reload', async ({ page }) => {
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('[data-testid="language-row"]', {
-      timeout: 20000,
-    })
+    await visit(page, '/settings')
+    const rows = page.locator('[data-testid="language-row"]')
+    await expectMinCount(page, rows, 1)
 
-    const initialCount = await page
-      .locator('[data-testid="language-row"]')
-      .count()
+    const initialCount = await rows.count()
 
-    // Add a new language
-    await page.locator('[data-testid="add-language"]').click()
-    const newRow = page.locator('[data-testid="language-row"]').last()
-    await newRow.locator('[data-testid="language-code"]').fill('de')
-    await newRow.locator('[data-testid="language-label"]').fill('Deutsch')
-
-    // Save
-    await page.locator('[data-testid="save-languages"]').click()
-
-    // Wait for save to complete (button text reverts from "Saving..." to "Save")
-    await expect(page.locator('[data-testid="save-languages"]')).toHaveText(
-      'Save',
-      { timeout: 10000 }
+    await click(page, page.locator('[data-testid="add-language"]'))
+    const newRow = rows.last()
+    await fill(page, newRow.locator('[data-testid="language-code"]'), 'de')
+    await fill(
+      page,
+      newRow.locator('[data-testid="language-label"]'),
+      'Deutsch'
     )
 
-    // Reload page completely
+    await click(page, page.locator('[data-testid="save-languages"]'))
+    /*
+     * Save button text reverts from "Saving..." to "Save" once the
+     * commit lands; that's what we wait on to know the persistence
+     * round-trip is done.
+     */
+    await expectText(
+      page,
+      page.locator('[data-testid="save-languages"]'),
+      'Save'
+    )
+
     await page.reload({ waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('[data-testid="language-row"]', {
-      timeout: 20000,
-    })
+    await expectCount(page, rows, initialCount + 1)
+    const lastCode = rows.last().locator('[data-testid="language-code"]')
+    await expectValue(page, lastCode, 'de')
 
-    // Verify new language persisted
-    await expect(page.locator('[data-testid="language-row"]')).toHaveCount(
-      initialCount + 1
-    )
-    const lastCode = page
-      .locator('[data-testid="language-row"]')
-      .last()
-      .locator('[data-testid="language-code"]')
-    await expect(lastCode).toHaveValue('de')
-
-    // Clean up: remove the added language and save again
-    await page.locator('[data-testid="remove-language"]').last().click()
-    await page.locator('[data-testid="save-languages"]').click()
-    await expect(page.locator('[data-testid="save-languages"]')).toHaveText(
-      'Save',
-      { timeout: 10000 }
+    await click(page, page.locator('[data-testid="remove-language"]').last())
+    await click(page, page.locator('[data-testid="save-languages"]'))
+    await expectText(
+      page,
+      page.locator('[data-testid="save-languages"]'),
+      'Save'
     )
   })
 
   test('should remove a language, save, and verify removal persists', async ({
     page,
   }) => {
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('[data-testid="language-row"]', {
-      timeout: 20000,
-    })
+    await visit(page, '/settings')
+    const rows = page.locator('[data-testid="language-row"]')
+    await expectMinCount(page, rows, 1)
 
-    const initialCount = await page
-      .locator('[data-testid="language-row"]')
-      .count()
+    const initialCount = await rows.count()
 
-    // Remove last language
-    await page.locator('[data-testid="remove-language"]').last().click()
-    await page.locator('[data-testid="save-languages"]').click()
-    await expect(page.locator('[data-testid="save-languages"]')).toHaveText(
-      'Save',
-      { timeout: 10000 }
+    await click(page, page.locator('[data-testid="remove-language"]').last())
+    await click(page, page.locator('[data-testid="save-languages"]'))
+    await expectText(
+      page,
+      page.locator('[data-testid="save-languages"]'),
+      'Save'
     )
 
-    // Reload
     await page.reload({ waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('[data-testid="language-row"]', {
-      timeout: 20000,
-    })
+    await expectCount(page, rows, initialCount - 1)
 
-    // Verify removal persisted
-    await expect(page.locator('[data-testid="language-row"]')).toHaveCount(
-      initialCount - 1
+    await click(page, page.locator('[data-testid="add-language"]'))
+    const newRow = rows.last()
+    await fill(page, newRow.locator('[data-testid="language-code"]'), 'es')
+    await fill(
+      page,
+      newRow.locator('[data-testid="language-label"]'),
+      'Español'
     )
-
-    // Restore: add back the language and save
-    await page.locator('[data-testid="add-language"]').click()
-    const newRow = page.locator('[data-testid="language-row"]').last()
-    await newRow.locator('[data-testid="language-code"]').fill('es')
-    await newRow.locator('[data-testid="language-label"]').fill('Español')
-    await page.locator('[data-testid="save-languages"]').click()
-    await expect(page.locator('[data-testid="save-languages"]')).toHaveText(
-      'Save',
-      { timeout: 10000 }
+    await click(page, page.locator('[data-testid="save-languages"]'))
+    await expectText(
+      page,
+      page.locator('[data-testid="save-languages"]'),
+      'Save'
     )
   })
 })
