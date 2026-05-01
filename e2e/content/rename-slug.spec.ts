@@ -1,5 +1,13 @@
-import { expect, test } from '@playwright/test'
-import { waitForNetworkIdle } from '../helpers/network'
+import {
+  click,
+  expect,
+  expectCount,
+  expectHidden,
+  expectValue,
+  expectVisible,
+  test,
+  waitForCondition,
+} from '@prometheus/e2e-toolkit'
 import { AssetManagerPage } from '../pages/AssetManagerPage'
 import { ContentEditPage } from '../pages/ContentEditPage'
 import { openPreview, saveAndConfirm } from './preview-save'
@@ -11,80 +19,80 @@ test.describe('Rename Slug', () => {
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
 
-    await page.locator('[data-testid="edit-title"]').click()
+    await click(page, page.locator('[data-testid="edit-title"]'))
     const input = page.locator('[data-testid="slug-input"]')
-    await expect(input).toBeVisible({ timeout: 5000 })
+    await expectVisible(page, input)
 
-    // Sanitization strips non-[a-z0-9-]; "!!!" reduces to "" so the
-    // validator fires its empty-slug error.
+    /*
+     * Sanitization strips non-[a-z0-9-]; "!!!" reduces to "" so the
+     * validator fires its empty-slug error.
+     */
     await input.clear()
     await input.type('!!!', { delay: 30 })
     await input.press('Enter')
-    await expect(page.locator('[data-testid="slug-error"]')).toBeVisible({
-      timeout: 5000,
-    })
+    await expectVisible(page, page.locator('[data-testid="slug-error"]'))
   })
 
   test('lowercases uppercase keystrokes on the fly', async ({ page }) => {
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
 
-    await page.locator('[data-testid="edit-title"]').click()
+    await click(page, page.locator('[data-testid="edit-title"]'))
     const input = page.locator('[data-testid="slug-input"]')
     await input.clear()
     await input.type('FooBar', { delay: 30 })
-    await expect(input).toHaveValue('foobar')
+    await expectValue(page, input, 'foobar')
   })
 
   test('strips non-Latin keystrokes', async ({ page }) => {
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
 
-    await page.locator('[data-testid="edit-title"]').click()
+    await click(page, page.locator('[data-testid="edit-title"]'))
     const input = page.locator('[data-testid="slug-input"]')
     await input.clear()
     await input.type('пост-test', { delay: 30 })
-    await expect(input).toHaveValue('-test')
+    await expectValue(page, input, '-test')
   })
 
   test('should reject slug exceeding max length', async ({ page }) => {
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
 
-    await page.locator('[data-testid="edit-title"]').click()
+    await click(page, page.locator('[data-testid="edit-title"]'))
     const input = page.locator('[data-testid="slug-input"]')
     await input.clear()
     await input.type('a'.repeat(21), { delay: 10 })
     await input.press('Enter')
-    await expect(page.locator('[data-testid="slug-error"]')).toBeVisible({
-      timeout: 5000,
-    })
+    await expectVisible(page, page.locator('[data-testid="slug-error"]'))
   })
 
   test('should cancel edit on Escape', async ({ page }) => {
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
 
-    await page.locator('[data-testid="edit-title"]').click()
+    await click(page, page.locator('[data-testid="edit-title"]'))
     const input = page.locator('[data-testid="slug-input"]')
-    await expect(input).toBeVisible()
+    await expectVisible(page, input)
 
     await input.press('Escape')
-    await expect(input).not.toBeVisible()
-    await expect(page.locator('[data-testid="edit-title"]')).toBeVisible()
+    await expectHidden(page, input)
+    await expectVisible(page, page.locator('[data-testid="edit-title"]'))
   })
 
   test('valid rename should redirect to new URL', async ({ page }) => {
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
 
-    await page.locator('[data-testid="edit-title"]').click()
+    await click(page, page.locator('[data-testid="edit-title"]'))
     const input = page.locator('[data-testid="slug-input"]')
     await input.clear()
     await input.type('showcase-renamed', { delay: 30 })
     await input.press('Enter')
 
-    await page.waitForURL(/showcase-renamed/, { timeout: 15000 })
+    await waitForCondition(page, async () =>
+      /showcase-renamed/.test(page.url())
+    )
   })
 
   test('rename preserves assets and content', async ({ page }) => {
@@ -96,25 +104,23 @@ test.describe('Rename Slug', () => {
     const ep = new ContentEditPage(page)
     const bodyBefore = await ep.getEditorBody().inputValue()
 
-    await page.locator('[data-testid="edit-title"]').click()
+    await click(page, page.locator('[data-testid="edit-title"]'))
     const input = page.locator('[data-testid="slug-input"]')
     await input.clear()
     await input.type('renamed-showcase', { delay: 30 })
     await input.press('Enter')
-    await page.waitForURL(/renamed-showcase/, { timeout: 15000 })
+    await waitForCondition(page, async () =>
+      /renamed-showcase/.test(page.url())
+    )
 
-    // Wait for page to fully load after location.replace
-    await expect(ep.getEditorBody()).toBeVisible({ timeout: 20000 })
-    await expect(ep.getEditorBody()).not.toHaveValue('', {
-      timeout: 20000,
-    })
+    /* Wait for page to fully load after location.replace. */
+    await expectVisible(page, ep.getEditorBody())
+    await expect(ep.getEditorBody()).not.toHaveValue('')
 
     const bodyAfter = await ep.getEditorBody().inputValue()
     expect(bodyAfter).toBe(bodyBefore)
 
-    await expect(am.getAssetThumbnails()).toHaveCount(assetCount, {
-      timeout: 10000,
-    })
+    await expectCount(page, am.getAssetThumbnails(), assetCount)
   })
 
   test('rename + save does not create duplicate articles', async ({
@@ -123,29 +129,21 @@ test.describe('Rename Slug', () => {
     const ep = new ContentEditPage(page)
     await ep.navigate('blog', SLUG)
 
-    await page.locator('[data-testid="edit-title"]').click()
+    await click(page, page.locator('[data-testid="edit-title"]'))
     const input = page.locator('[data-testid="slug-input"]')
     await input.clear()
     await input.type('showcase-save', { delay: 30 })
     await input.press('Enter')
-    await page.waitForURL(/showcase-save/, { timeout: 15000 })
+    await waitForCondition(page, async () => /showcase-save/.test(page.url()))
 
-    await expect(ep.getEditorBody()).toBeVisible({ timeout: 20000 })
-    await expect(ep.getEditorBody()).not.toHaveValue('', {
-      timeout: 20000,
-    })
+    await expectVisible(page, ep.getEditorBody())
+    await expect(ep.getEditorBody()).not.toHaveValue('')
 
-    // Save
     await saveAndConfirm(page, await openPreview(page))
-    await waitForNetworkIdle(page, { idleTime: 1000 })
 
-    // Navigate back to list
-    await page.locator('[data-testid="back-button"]').click()
-    await expect(page.locator('[data-testid="content-list"]')).toBeVisible({
-      timeout: 10000,
-    })
+    await click(page, page.locator('[data-testid="back-button"]'))
+    await expectVisible(page, page.locator('[data-testid="content-list"]'))
 
-    // Count items with "Rich Media" title (should be exactly 1)
     const items = page.locator('[data-testid="content-item"]')
     const count = await items.count()
     let richMediaCount = 0

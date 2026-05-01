@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expectVisible, test } from '@prometheus/e2e-toolkit'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 test.describe('Markdown Editor', () => {
@@ -8,18 +8,14 @@ test.describe('Markdown Editor', () => {
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')
 
-    const textarea = editPage.getEditorBody()
-    await textarea.waitFor({ state: 'visible', timeout: 10000 })
-    await expect(textarea).toBeVisible()
+    await expectVisible(page, editPage.getEditorBody())
   })
 
   test('should display preview button', async ({ page }) => {
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')
 
-    const textarea = editPage.getEditorBody()
-    await textarea.waitFor({ state: 'visible', timeout: 10000 })
-
-    await expect(page.locator('[data-testid="preview-button"]')).toBeVisible()
+    await expectVisible(page, editPage.getEditorBody())
+    await expectVisible(page, page.locator('[data-testid="preview-button"]'))
   })
 })
