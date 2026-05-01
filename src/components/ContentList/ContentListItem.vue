@@ -11,6 +11,8 @@ const props = defineProps<{
   readonly selected: boolean
   readonly hideDelete?: boolean
   readonly deleting?: boolean
+  readonly selectMode?: boolean
+  readonly checked?: boolean
 }>()
 
 const emit = defineEmits<{ click: []; delete: [] }>()
@@ -48,15 +50,18 @@ const description = computed(() => {
 <template>
   <article
     class="content-item"
-    :class="{ selected, deleting }"
+    :class="{ selected, deleting, 'in-select': selectMode, checked }"
     :inert="deleting || undefined"
     data-testid="content-item"
+    :data-selected="checked ? 'true' : undefined"
     @click="emit('click')"
   >
     <ItemHeader
       :title="String(item.frontmatter.title ?? '')"
       :lang="item.lang"
-      :show-delete="!hideDelete"
+      :show-delete="!hideDelete && !selectMode"
+      :show-checkbox="selectMode ?? false"
+      :checked="checked ?? false"
       @delete="emit('delete')"
     />
     <p
@@ -115,6 +120,19 @@ const description = computed(() => {
 .content-item.selected {
   background: var(--color-background-mute);
   border-color: var(--color-heading);
+}
+
+.content-item.in-select {
+  cursor: default;
+}
+
+.content-item.checked {
+  background: color-mix(
+    in srgb,
+    var(--color-accent) 12%,
+    var(--color-background)
+  );
+  border-color: var(--color-accent);
 }
 
 @media (hover: none) {

@@ -13,22 +13,38 @@ const props = defineProps<{
   readonly hideCreate?: boolean
   readonly hideDelete?: boolean
   readonly deletingSlugs?: ReadonlySet<string>
+  readonly selectMode?: boolean
+  readonly selectedSlugs?: ReadonlySet<string>
 }>()
 
 const emit = defineEmits<{
   select: [item: ContentItem]
   create: []
   delete: [item: ContentItem]
+  enterSelect: []
+  exitSelect: []
+  bulkDelete: []
+  toggleSelect: [slug: string]
 }>()
 
 const filteredItems = computed(() =>
-  props.items.filter(item => item.lang === props.selectedLang)
+  props.items.filter((item) => item.lang === props.selectedLang)
 )
+
+const selectedCount = computed(() => props.selectedSlugs?.size ?? 0)
 </script>
 
 <template>
   <section class="content-list" data-testid="content-list">
-    <ContentListHeader v-if="!hideCreate" @create="emit('create')" />
+    <ContentListHeader
+      v-if="!hideCreate"
+      :select-mode="selectMode"
+      :selected-count="selectedCount"
+      @create="emit('create')"
+      @enter-select="emit('enterSelect')"
+      @exit-select="emit('exitSelect')"
+      @bulk-delete="emit('bulkDelete')"
+    />
     <output v-if="loading" class="loading">Loading content...</output>
     <ContentListEmpty
       v-else-if="filteredItems.length === 0"
@@ -42,7 +58,11 @@ const filteredItems = computed(() =>
       :selected="selectedPath === item.path"
       :hide-delete="hideDelete"
       :deleting="deletingSlugs?.has(item.slug) ?? false"
-      @click="emit('select', item)"
+      :select-mode="selectMode ?? false"
+      :checked="selectedSlugs?.has(item.slug) ?? false"
+      @click="
+        selectMode ? emit('toggleSelect', item.slug) : emit('select', item)
+      "
       @delete="emit('delete', item)"
     />
   </section>
