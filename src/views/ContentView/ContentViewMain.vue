@@ -9,6 +9,7 @@ defineProps<{
   readonly loading?: boolean
   readonly hideCreate?: boolean
   readonly hideDelete?: boolean
+  readonly deletingSlugs?: ReadonlySet<string>
 }>()
 
 const emit = defineEmits<{
@@ -27,6 +28,7 @@ const emit = defineEmits<{
       :loading="loading"
       :hide-create="hideCreate"
       :hide-delete="hideDelete"
+      :deleting-slugs="deletingSlugs"
       @select="emit('select', $event)"
       @create="isAuthenticated ? emit('create') : undefined"
       @delete="emit('delete', $event)"

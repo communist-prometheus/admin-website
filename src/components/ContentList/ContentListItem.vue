@@ -10,6 +10,7 @@ const props = defineProps<{
   readonly item: ContentItem
   readonly selected: boolean
   readonly hideDelete?: boolean
+  readonly deleting?: boolean
 }>()
 
 const emit = defineEmits<{ click: []; delete: [] }>()
@@ -47,7 +48,8 @@ const description = computed(() => {
 <template>
   <article
     class="content-item"
-    :class="{ selected }"
+    :class="{ selected, deleting }"
+    :inert="deleting || undefined"
     data-testid="content-item"
     @click="emit('click')"
   >
@@ -78,6 +80,36 @@ const description = computed(() => {
   background: var(--color-background);
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+/*
+ * Optimistic-deletion fade. Mounted via :class="{ deleting }".
+ * `inert` blocks pointer events so a half-faded row cannot
+ * intercept clicks, but the surrounding list still scrolls and
+ * other items remain fully interactive — that's what makes the
+ * delete feel non-blocking.
+ */
+.content-item.deleting {
+  pointer-events: none;
+  animation: content-item-fade-out 320ms ease-out forwards;
+}
+
+@keyframes content-item-fade-out {
+  0% {
+    opacity: 100%;
+    transform: translateX(0);
+  }
+
+  100% {
+    opacity: 0%;
+    transform: translateX(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content-item.deleting {
+    animation-duration: 0.01ms;
+  }
 }
 
 .content-item.selected {

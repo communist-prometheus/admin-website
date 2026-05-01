@@ -1,24 +1,19 @@
-import type { Ref } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, type Ref, ref } from 'vue'
 import type { ContentItem, ContentType, Language } from '@/types/content'
 import { createDeleteHandlers } from './create-delete-handlers'
+import { createDeletingState, type DeletingState } from './deleting-state'
+import { runOptimisticDelete } from './run-optimistic-delete'
 
-/**
- * Build handlers from target ref and delete ops.
- * @param target - Reactive delete target ref
- * @param h - Delete handler operations
- * @returns Delete all and delete lang handlers
- */
-const buildHandlers = (
+const buildOptimistic = (
   target: Ref<ContentItem | undefined>,
-  h: ReturnType<typeof createDeleteHandlers>
+  deleting: DeletingState,
+  clear: () => void,
+  raw: ReturnType<typeof createDeleteHandlers>
 ) => ({
-  handleDeleteAll: () => {
-    if (target.value) h.deleteAll(target.value)
-  },
-  handleDeleteLang: () => {
-    if (target.value) h.deleteLang(target.value)
-  },
+  handleDeleteAll: () =>
+    runOptimisticDelete({ target, deleting, clear }, raw.deleteAll),
+  handleDeleteLang: () =>
+    runOptimisticDelete({ target, deleting, clear }, raw.deleteLang),
 })
 
 /**
@@ -27,7 +22,9 @@ const buildHandlers = (
  * @param selectedLang - Current selected language
  * @param reload - Reload callback
  * @param pushAndTrack - Unified push+track function
- * @returns Delete state and handlers
+ * @returns Delete state + handlers + a reactive set of slugs that
+ * are currently animating their delete (drives the fade CSS on
+ * ContentListItem).
  */
 export const createDeleteState = (
   contentType: Ref<ContentType>,
@@ -36,21 +33,21 @@ export const createDeleteState = (
   pushAndTrack: (message: string) => Promise<string>
 ) => {
   const deleteTarget = ref<ContentItem | undefined>()
-  const showDeleteDialog = computed(() => deleteTarget.value !== undefined)
-  const clear = () => {
+  const deleting = createDeletingState()
+  const clear = (): void => {
     deleteTarget.value = undefined
   }
-  const mkHandlers = () =>
-    createDeleteHandlers({
-      contentType: contentType.value,
-      selectedLang: selectedLang.value,
-      reload,
-      clearTarget: clear,
-      pushAndTrack,
-    })
+  const raw = createDeleteHandlers({
+    contentType: contentType.value,
+    selectedLang: selectedLang.value,
+    reload,
+    clearTarget: () => undefined,
+    pushAndTrack,
+  })
   return {
     deleteTarget,
-    showDeleteDialog,
-    ...buildHandlers(deleteTarget, mkHandlers()),
+    showDeleteDialog: computed(() => deleteTarget.value !== undefined),
+    deletingSlugs: deleting.slugs,
+    ...buildOptimistic(deleteTarget, deleting, clear, raw),
   }
 }
