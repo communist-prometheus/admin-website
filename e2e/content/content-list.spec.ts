@@ -1,4 +1,4 @@
-import { test } from '@playwright/test'
+import { test } from '@prometheus/e2e-toolkit'
 import { ContentPage } from '../pages/ContentPage'
 
 test.describe('Content List', () => {

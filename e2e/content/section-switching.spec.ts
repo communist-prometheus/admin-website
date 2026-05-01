@@ -1,58 +1,65 @@
-import { expect, test } from '@playwright/test'
+import {
+  click,
+  expect,
+  expectVisible,
+  test,
+  visit,
+  waitForCondition,
+} from '@prometheus/e2e-toolkit'
 import { waitForContentReady } from '../helpers/content-ready'
 
 test.describe('Content Section Switching', () => {
-  // Content views do not render an h1 — the active nav link identifies the
-  // current section. These tests assert the URL and that the list renders.
+  /*
+   * Content views do not render an h1 — the active nav link
+   * identifies the current section. These tests assert the URL
+   * and that the list renders.
+   */
   test('should load blog content when navigating to /content/blog', async ({
     page,
   }) => {
-    await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
+    await visit(page, '/content/blog')
     await waitForContentReady(page)
 
     expect(page.url()).toContain('/content/blog')
-    await expect(page.locator('[data-testid="content-list"]')).toBeVisible()
+    await expectVisible(page, page.locator('[data-testid="content-list"]'))
   })
 
   test('should load positions content when navigating to /content/positions', async ({
     page,
   }) => {
-    await page.goto('/content/positions')
-    await page.waitForLoadState('networkidle')
+    await visit(page, '/content/positions')
     await waitForContentReady(page)
 
     expect(page.url()).toContain('/content/positions')
-    await expect(page.locator('[data-testid="content-list"]')).toBeVisible()
+    await expectVisible(page, page.locator('[data-testid="content-list"]'))
   })
 
   test('should load pages content when navigating to /content/pages', async ({
     page,
   }) => {
-    await page.goto('/content/pages')
-    await page.waitForLoadState('networkidle')
+    await visit(page, '/content/pages')
     await waitForContentReady(page)
 
     expect(page.url()).toContain('/content/pages')
-    await expect(page.locator('[data-testid="content-list"]')).toBeVisible()
+    await expectVisible(page, page.locator('[data-testid="content-list"]'))
   })
 
   test('should update content list when switching from blog to positions', async ({
     page,
   }) => {
-    await page.goto('/content/blog')
-    await page
-      .locator('[data-testid="content-item"]')
-      .first()
-      .waitFor({ state: 'visible', timeout: 15000 })
-
+    await visit(page, '/content/blog')
+    await expectVisible(
+      page,
+      page.locator('[data-testid="content-item"]').first()
+    )
     const blogItems = await page
       .locator('[data-testid="content-item"]')
       .count()
 
-    await page.click('a[href="/content/positions"]')
-    await page.waitForURL('/content/positions')
-    await page.waitForLoadState('networkidle')
+    await click(page, page.locator('a[href="/content/positions"]'))
+    await waitForCondition(page, async () =>
+      page.url().includes('/content/positions')
+    )
     await waitForContentReady(page)
 
     expect(blogItems).toBeGreaterThan(0)
@@ -61,32 +68,31 @@ test.describe('Content Section Switching', () => {
   test('should update content list when switching from positions to pages', async ({
     page,
   }) => {
-    await page.goto('/content/positions')
-    await page.waitForLoadState('networkidle')
+    await visit(page, '/content/positions')
     await waitForContentReady(page)
 
-    await page.click('a[href="/content/pages"]')
-    await page.waitForURL('/content/pages')
-    await page.waitForLoadState('networkidle')
+    await click(page, page.locator('a[href="/content/pages"]'))
+    await waitForCondition(page, async () =>
+      page.url().includes('/content/pages')
+    )
     await waitForContentReady(page)
 
-    await expect(page.locator('[data-testid="content-list"]')).toBeVisible()
+    await expectVisible(page, page.locator('[data-testid="content-list"]'))
   })
 
   test('clicking item navigates to edit page instead of inline editor', async ({
     page,
   }) => {
-    await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
+    await visit(page, '/content/blog')
     await waitForContentReady(page)
 
     const firstItem = page.locator('[data-testid="content-item"]').first()
-    await firstItem.waitFor({ state: 'visible', timeout: 30000 })
-    await firstItem.click()
+    await expectVisible(page, firstItem)
+    await click(page, firstItem)
 
-    await page.waitForURL(/\/content\/blog\/edit\//, { timeout: 10000 })
-    await expect(
-      page.locator('[data-testid="markdown-editor"]')
-    ).toBeVisible()
+    await waitForCondition(page, async () =>
+      /\/content\/blog\/edit\//.test(page.url())
+    )
+    await expectVisible(page, page.locator('[data-testid="markdown-editor"]'))
   })
 })

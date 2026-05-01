@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, expectVisible, test, visit } from '@prometheus/e2e-toolkit'
 import { waitForContentReady } from '../helpers/content-ready'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
@@ -11,30 +11,22 @@ test.describe('Content Loading', () => {
     }
 
     for (const section of ['blog', 'pages', 'positions']) {
-      await page.goto(`/content/${section}`)
-      await page.waitForLoadState('networkidle')
+      await visit(page, `/content/${section}`)
       await waitForContentReady(page)
 
       const items = page.locator('[data-testid="content-item"]')
-      await items.first().waitFor({
-        state: 'visible',
-        timeout: 15000,
-      })
+      await expectVisible(page, items.first())
       expect(await items.count()).toBe(expected[section])
     }
   })
 
   test('should display correct titles per language', async ({ page }) => {
-    await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
+    await visit(page, '/content/blog')
     await waitForContentReady(page)
 
     await page.getByRole('button', { name: 'English' }).click()
     const items = page.locator('[data-testid="content-item"]')
-    await items.first().waitFor({
-      state: 'visible',
-      timeout: 15000,
-    })
+    await expectVisible(page, items.first())
 
     const enTitles = (await items.allTextContents()).join(' ')
     expect(enTitles).toContain('Welcome to Prometheus')
@@ -45,28 +37,16 @@ test.describe('Content Loading', () => {
 
     for (const lang of ['Русский', 'Italiano', 'Español']) {
       await page.getByRole('button', { name: lang }).click()
-      await items.first().waitFor({
-        state: 'visible',
-        timeout: 15000,
-      })
+      await expectVisible(page, items.first())
       expect(await items.count()).toBe(5)
     }
   })
 
   test('should load article body on navigation', async ({ page }) => {
     const entries = [
-      {
-        title: 'Welcome to Prometheus',
-        slug: 'welcome-to-prometheus',
-      },
-      {
-        title: 'Why Choose Astro Framework',
-        slug: 'astro-framework',
-      },
-      {
-        title: 'Rich Media in Blog Posts',
-        slug: 'media-showcase',
-      },
+      { title: 'Welcome to Prometheus', slug: 'welcome-to-prometheus' },
+      { title: 'Why Choose Astro Framework', slug: 'astro-framework' },
+      { title: 'Rich Media in Blog Posts', slug: 'media-showcase' },
     ]
 
     for (const entry of entries) {
