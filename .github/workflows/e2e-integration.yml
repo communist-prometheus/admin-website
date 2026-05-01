@@ -23,6 +23,8 @@ jobs:
       VITE_MOCK_AUTH: 'false'
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile

@@ -32,6 +32,12 @@ jobs:
     steps:
       - name: Cloning git repository
         uses: actions/checkout@v4
+        with:
+          # e2e-toolkit lives in a separate repo and is wired in as a
+          # submodule. Without this, e2e tsconfig path mapping points
+          # at an empty directory and astro check fails with cannot
+          # find module '@prometheus/e2e-toolkit'.
+          submodules: true
 
       - name: Resolve branch env
         run: |
