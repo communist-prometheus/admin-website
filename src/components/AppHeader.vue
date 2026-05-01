@@ -33,7 +33,9 @@ const headerStyle = computed(() => ({
     class="app-header"
     :style="headerStyle"
   >
-    <RouterLink to="/" class="logo">Prometheus</RouterLink>
+    <RouterLink to="/" class="logo" aria-label="Communist Prometheus">
+      <img src="/logo.svg" alt="" class="logo-img">
+    </RouterLink>
     <AppNav />
     <slot />
   </header>
@@ -55,17 +57,20 @@ const headerStyle = computed(() => ({
 }
 
 .logo {
-  font-size: clamp(1.25rem, 3vw, 1.5rem);
-  font-weight: 700;
-  color: var(--color-heading);
   text-decoration: none;
-  white-space: nowrap;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
+  transition: opacity var(--transition-fast);
 }
 
 .logo:hover {
-  color: var(--color-accent);
+  opacity: 80%;
+}
+
+.logo-img {
+  height: clamp(28px, 4.5vw, 36px);
+  width: auto;
+  display: block;
 }
 </style>
