@@ -49,6 +49,15 @@ jobs:
             echo "WRANGLER_COMMAND=deploy" >> "$GITHUB_ENV"
           fi
 
+      # Wrangler 4 (used by `bunx wrangler dev` below) requires Node 22+.
+      # setup-bun ships bundled Node, but `bunx wrangler` resolves against
+      # whatever node is on $PATH. Pin Node 22 so the wrangler CLI doesn't
+      # refuse to start with "requires at least Node.js v22".
+      - name: Installing Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Installing tools and dependencies
         uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
