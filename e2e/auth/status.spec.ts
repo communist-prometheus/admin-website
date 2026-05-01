@@ -1,15 +1,12 @@
-import { expect, test } from '@playwright/test'
+import { expect, expectVisible, test, visit } from '@prometheus/e2e-toolkit'
 
 test('should verify mock auth provides user', async ({ page }) => {
-  await page.goto('/')
-  await page.waitForLoadState('networkidle')
+  await visit(page, '/')
 
   const hasUser = await page.evaluate(
     () => !!localStorage.getItem('gh_token')
   )
   expect(hasUser).toBe(true)
 
-  await expect(page.getByRole('button', { name: /test user/i })).toBeVisible({
-    timeout: 10000,
-  })
+  await expectVisible(page, page.getByRole('button', { name: /test user/i }))
 })

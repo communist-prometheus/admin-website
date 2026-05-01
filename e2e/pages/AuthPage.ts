@@ -1,7 +1,9 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
+import {
+  expectVisible,
+  type Page,
+  waitForCondition,
+} from '@prometheus/e2e-toolkit'
 import { login } from '../auth/helpers'
-import { waitForNetworkIdle } from '../helpers/network'
 
 /**
  * Page object for auth-related test interactions.
@@ -14,16 +16,14 @@ export class AuthPage {
    */
   async clickUserMenu(): Promise<void> {
     await this.page.getByRole('button', { name: /test user/i }).click()
-    await waitForNetworkIdle(this.page, { idleTime: 200 })
+    await waitForCondition(this.page, async () => true)
   }
 
   /**
    * Click the logout button in the dropdown.
    */
   async clickLogout(): Promise<void> {
-    await this.page
-      .locator('.dropdown')
-      .waitFor({ state: 'visible', timeout: 5000 })
+    await expectVisible(this.page, this.page.locator('.dropdown'))
     await this.page.getByRole('button', { name: /logout/i }).click()
   }
 
@@ -31,25 +31,27 @@ export class AuthPage {
    * Assert login button is visible.
    */
   async expectLoginButtonVisible(): Promise<void> {
-    await expect(
+    await expectVisible(
+      this.page,
       this.page.getByRole('button', { name: /login/i })
-    ).toBeVisible()
+    )
   }
 
   /**
    * Assert user menu button is visible.
    */
   async expectUserMenuVisible(): Promise<void> {
-    await expect(
+    await expectVisible(
+      this.page,
       this.page.getByRole('button', { name: /test user/i })
-    ).toBeVisible({ timeout: 10000 })
+    )
   }
 
   /**
    * Assert dropdown menu is visible.
    */
   async expectDropdownVisible(): Promise<void> {
-    await expect(this.page.locator('.dropdown')).toBeVisible()
+    await expectVisible(this.page, this.page.locator('.dropdown'))
   }
 
   /**
@@ -64,7 +66,7 @@ export class AuthPage {
    */
   async clearAuth(): Promise<void> {
     await this.page.evaluate(() => localStorage.removeItem('gh_token'))
-    await this.page.reload()
-    await waitForNetworkIdle(this.page)
+    await this.page.reload({ waitUntil: 'domcontentloaded' })
+    await waitForCondition(this.page, async () => true)
   }
 }

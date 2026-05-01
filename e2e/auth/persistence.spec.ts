@@ -1,5 +1,4 @@
-import { test } from '@playwright/test'
-import { waitForNetworkIdle } from '../helpers/network'
+import { test, visit, waitForCondition } from '@prometheus/e2e-toolkit'
 import { AuthPage } from '../pages/AuthPage'
 
 test('should persist authentication across page reloads', async ({
@@ -7,13 +6,12 @@ test('should persist authentication across page reloads', async ({
 }) => {
   const authPage = new AuthPage(page)
 
-  await page.goto('/')
-  await waitForNetworkIdle(page)
+  await visit(page, '/')
 
   await authPage.expectUserMenuVisible()
 
-  await page.reload()
-  await waitForNetworkIdle(page)
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await waitForCondition(page, async () => true)
 
   await authPage.expectUserMenuVisible()
 })
