@@ -1,59 +1,62 @@
-import { expect, test } from '@playwright/test'
+import {
+  click,
+  expectHidden,
+  expectVisible,
+  test,
+  visit,
+} from '@prometheus/e2e-toolkit'
 import { waitForContentReady } from '../helpers/content-ready'
 
 test.describe('GitHub Content - Create', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
+    await visit(page, '/content/blog')
     await waitForContentReady(page)
   })
 
   test('should open create dialog', async ({ page }) => {
-    await page.click('button:has-text("New")')
-    await expect(page.locator('.create-dialog')).toBeVisible()
+    await click(page, page.getByRole('button', { name: /new/i }).first())
+    await expectVisible(page, page.locator('.create-dialog'))
   })
 
   test('should show required fields in create dialog', async ({ page }) => {
-    await page.click('button:has-text("New")')
-    const dialog = page.locator('.create-dialog')
-    await expect(dialog).toBeVisible()
-    await expect(page.getByLabel(/slug/i)).toBeVisible()
-    await expect(page.getByLabel(/title/i)).toBeVisible()
+    await click(page, page.getByRole('button', { name: /new/i }).first())
+    await expectVisible(page, page.locator('.create-dialog'))
+    await expectVisible(page, page.getByLabel(/slug/i))
+    await expectVisible(page, page.getByLabel(/title/i))
   })
 
   test('should show blog-specific fields for blog content', async ({
     page,
   }) => {
-    await page.click('button:has-text("New")')
-    await expect(page.getByLabel(/description/i)).toBeVisible()
-    await expect(page.getByLabel(/category/i)).toBeVisible()
+    await click(page, page.getByRole('button', { name: /new/i }).first())
+    await expectVisible(page, page.getByLabel(/description/i))
+    await expectVisible(page, page.getByLabel(/category/i))
   })
 
   test('should show position-specific fields for positions', async ({
     page,
   }) => {
-    await page.goto('/content/positions')
-    await page.waitForLoadState('networkidle')
+    await visit(page, '/content/positions')
     await waitForContentReady(page)
-    await page.click('button:has-text("New")')
-    await expect(page.getByLabel(/description/i)).toBeVisible()
-    // Positions no longer expose an Order field (migrated to pubDate).
-    await expect(page.locator('#order')).toBeHidden()
+    await click(page, page.getByRole('button', { name: /new/i }).first())
+    await expectVisible(page, page.getByLabel(/description/i))
+    /* Positions no longer expose an Order field (migrated to pubDate). */
+    await expectHidden(page, page.locator('#order'))
   })
 
   test('should keep dialog open when submitting empty form', async ({
     page,
   }) => {
-    await page.click('button:has-text("New")')
-    await expect(page.locator('.create-dialog')).toBeVisible()
-    await page.click('button:has-text("Create")')
-    await expect(page.locator('.create-dialog')).toBeVisible()
+    await click(page, page.getByRole('button', { name: /new/i }).first())
+    await expectVisible(page, page.locator('.create-dialog'))
+    await click(page, page.getByRole('button', { name: /^create$/i }))
+    await expectVisible(page, page.locator('.create-dialog'))
   })
 
   test('should close dialog after cancel', async ({ page }) => {
-    await page.click('button:has-text("New")')
-    await expect(page.locator('.create-dialog')).toBeVisible()
-    await page.click('button:has-text("Cancel")')
-    await expect(page.locator('.create-dialog')).not.toBeVisible()
+    await click(page, page.getByRole('button', { name: /new/i }).first())
+    await expectVisible(page, page.locator('.create-dialog'))
+    await click(page, page.getByRole('button', { name: /cancel/i }))
+    await expectHidden(page, page.locator('.create-dialog'))
   })
 })

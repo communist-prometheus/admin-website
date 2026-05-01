@@ -1,4 +1,11 @@
-import { expect, test } from '@playwright/test'
+import {
+  click,
+  expect,
+  expectText,
+  expectVisible,
+  test,
+  waitForCondition,
+} from '@prometheus/e2e-toolkit'
 import { ContentPage } from '../pages/ContentPage'
 
 test.describe('GitHub Content - List', () => {
@@ -18,35 +25,34 @@ test.describe('GitHub Content - List', () => {
     const items = page.locator('[data-testid="content-item"]')
     const count = await items.count()
     if (count > 0) {
-      const langBadge = items.first().locator('.lang-badge')
-      await expect(langBadge).toContainText('ru')
+      await expectText(page, items.first().locator('.lang-badge'), 'ru')
     }
   })
 
   test('should select content item', async ({ page }) => {
     const firstItem = page.locator('[data-testid="content-item"]').first()
-    await firstItem.waitFor({ state: 'visible', timeout: 30000 })
-    await firstItem.click()
-
-    const editor = page.locator('[data-testid="markdown-editor"]')
-    await expect(editor).toBeVisible()
+    await expectVisible(page, firstItem)
+    await click(page, firstItem)
+    await expectVisible(page, page.locator('[data-testid="markdown-editor"]'))
   })
 
   test('should display content types navigation', async ({ page }) => {
-    await expect(page.getByRole('link', { name: /blog/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /pages/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /positions/i })).toBeVisible()
+    await expectVisible(page, page.getByRole('link', { name: /blog/i }))
+    await expectVisible(page, page.getByRole('link', { name: /pages/i }))
+    await expectVisible(page, page.getByRole('link', { name: /positions/i }))
   })
 
   test('should navigate between content types', async ({ page }) => {
-    await page.click('a[href="/content/pages"]')
-    await page.waitForURL('/content/pages')
-    // There's no page heading in ContentView — assert by URL + content list.
+    await click(page, page.locator('a[href="/content/pages"]'))
+    await waitForCondition(page, async () =>
+      page.url().includes('/content/pages')
+    )
+    /* No page heading on ContentView — assert by URL + content list. */
     expect(page.url()).toContain('/content/pages')
-    await expect(page.locator('[data-testid="content-list"]')).toBeVisible()
+    await expectVisible(page, page.locator('[data-testid="content-list"]'))
   })
 
   test('should show create button', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /new/i })).toBeVisible()
+    await expectVisible(page, page.getByRole('button', { name: /new/i }))
   })
 })

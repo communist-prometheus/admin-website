@@ -1,34 +1,43 @@
-import { expect, test } from '@playwright/test'
+import {
+  click,
+  expectHidden,
+  expectVisible,
+  pressKey,
+  test,
+  visit,
+} from '@prometheus/e2e-toolkit'
 
 test.describe('trace overlay (5.4)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
-    await page
-      .locator('[data-testid="notification-indicator"]')
-      .waitFor({ state: 'visible', timeout: 15_000 })
+    await visit(page, '/')
+    await expectVisible(
+      page,
+      page.locator('[data-testid="notification-indicator"]')
+    )
   })
 
   test('Ctrl+Shift+T toggles the overlay', async ({ page }) => {
     const overlay = page.locator('[data-testid="trace-overlay"]')
-    await expect(overlay).toBeHidden()
-    await page.keyboard.press('Control+Shift+T')
-    await expect(overlay).toBeVisible()
-    await page.keyboard.press('Control+Shift+T')
-    await expect(overlay).toBeHidden()
+    await expectHidden(page, overlay)
+    await pressKey(page, 'Control+Shift+T')
+    await expectVisible(page, overlay)
+    await pressKey(page, 'Control+Shift+T')
+    await expectHidden(page, overlay)
   })
 
   test('close button hides the overlay', async ({ page }) => {
-    await page.keyboard.press('Control+Shift+T')
+    await pressKey(page, 'Control+Shift+T')
     const overlay = page.locator('[data-testid="trace-overlay"]')
-    await expect(overlay).toBeVisible()
-    await page.locator('[data-testid="trace-overlay-close"]').click()
-    await expect(overlay).toBeHidden()
+    await expectVisible(page, overlay)
+    await click(page, page.locator('[data-testid="trace-overlay-close"]'))
+    await expectHidden(page, overlay)
   })
 
   test('shows empty state when no spans recorded', async ({ page }) => {
-    await page.keyboard.press('Control+Shift+T')
-    await expect(
+    await pressKey(page, 'Control+Shift+T')
+    await expectVisible(
+      page,
       page.locator('[data-testid="trace-overlay-empty"]')
-    ).toBeVisible()
+    )
   })
 })

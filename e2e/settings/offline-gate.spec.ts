@@ -1,12 +1,15 @@
-import { expect, test } from '@playwright/test'
+import { expect, expectVisible, test, visit } from '@prometheus/e2e-toolkit'
 
+/*
+ * Once `context.setOffline(true)` flips, the request graph stops
+ * settling — heartbeats fire, fail, fire again. Toolkit waits that
+ * gate on idle would hang. Use raw Playwright `expect` for the
+ * offline-state assertions; its retries don't depend on network.
+ */
 test.describe('settings offline gate (3.4)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/settings')
-    await page.waitForLoadState('networkidle')
-    await page
-      .locator('[data-testid="members-section"]')
-      .waitFor({ state: 'visible' })
+    await visit(page, '/settings')
+    await expectVisible(page, page.locator('[data-testid="members-section"]'))
   })
 
   test('offline disables invite + shows banner', async ({

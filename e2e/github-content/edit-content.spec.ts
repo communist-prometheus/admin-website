@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, expectVisible, test } from '@prometheus/e2e-toolkit'
 import { openPreview, saveAndConfirm } from '../content/preview-save'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
@@ -27,8 +27,7 @@ test.describe('GitHub Content - Edit', () => {
     const editPage = new ContentEditPage(page)
     await editPage.navigate('blog', 'welcome-to-prometheus')
 
-    const previewBtn = page.locator('[data-testid="preview-button"]')
-    await expect(previewBtn).toBeVisible()
+    await expectVisible(page, page.locator('[data-testid="preview-button"]'))
   })
 
   test('should save content with commit message via API', async ({
@@ -42,10 +41,8 @@ test.describe('GitHub Content - Edit', () => {
 
     await saveAndConfirm(page, await openPreview(page))
 
-    // Wait for preview to auto-close, then re-navigate and verify.
-    await expect(page.locator('[data-testid="preview-button"]')).toBeVisible({
-      timeout: 15000,
-    })
+    /* Preview auto-closes after save; re-navigate and verify. */
+    await expectVisible(page, page.locator('[data-testid="preview-button"]'))
     await editPage.navigate('blog', 'welcome-to-prometheus')
     const savedContent = await textarea.inputValue()
     expect(savedContent).toContain('Updated via E2E test')
