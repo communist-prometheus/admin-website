@@ -12,6 +12,7 @@ const props = defineProps<{
   readonly loading?: boolean
   readonly hideCreate?: boolean
   readonly hideDelete?: boolean
+  readonly deletingSlugs?: ReadonlySet<string>
 }>()
 
 const emit = defineEmits<{
@@ -40,6 +41,7 @@ const filteredItems = computed(() =>
       :item="item"
       :selected="selectedPath === item.path"
       :hide-delete="hideDelete"
+      :deleting="deletingSlugs?.has(item.slug) ?? false"
       @click="emit('select', item)"
       @delete="emit('delete', item)"
     />

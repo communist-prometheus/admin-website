@@ -46,6 +46,7 @@ const handleCreate = (data: CreateContentData) => {
       :items="items" :selected-lang="selectedLang"
       :is-authenticated="isAuthenticated" :loading="loadingList"
       :hide-create="isFixedStructure" :hide-delete="isFixedStructure"
+      :deleting-slugs="del.deletingSlugs.value"
       @select="handleSelect"
       @create="() => { showCreateDialog = true }"
       @delete="item => { del.deleteTarget.value = item }"
