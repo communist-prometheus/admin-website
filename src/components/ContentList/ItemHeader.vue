@@ -6,6 +6,8 @@ defineProps<{
   title: string
   lang: Language
   showDelete?: boolean
+  showCheckbox?: boolean
+  checked?: boolean
 }>()
 
 const emit = defineEmits<{ delete: [] }>()
@@ -13,6 +15,15 @@ const emit = defineEmits<{ delete: [] }>()
 
 <template>
   <header class="item-header">
+    <input
+      v-if="showCheckbox"
+      type="checkbox"
+      class="bulk-check"
+      data-testid="bulk-checkbox"
+      :checked="checked"
+      tabindex="-1"
+      aria-hidden="true"
+    >
     <h3>{{ title }}</h3>
     <DeleteButton
       v-if="showDelete"
@@ -40,6 +51,15 @@ h3 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.bulk-check {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  pointer-events: none;
+  accent-color: var(--color-accent);
+  flex-shrink: 0;
 }
 
 .lang-badge {
