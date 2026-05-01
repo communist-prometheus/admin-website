@@ -1,5 +1,4 @@
-import { test } from '@playwright/test'
-import { waitForNetworkIdle } from '../helpers/network'
+import { test, visit } from '@prometheus/e2e-toolkit'
 import { AuthPage } from '../pages/AuthPage'
 import { login } from './helpers'
 
@@ -9,8 +8,7 @@ test('should logout and show login button again', async ({ page }) => {
   const authPage = new AuthPage(page)
 
   await login(page)
-  await page.goto('/')
-  await waitForNetworkIdle(page)
+  await visit(page, '/')
 
   await authPage.expectUserMenuVisible()
 
