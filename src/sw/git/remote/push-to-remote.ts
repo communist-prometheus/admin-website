@@ -12,6 +12,14 @@ export const pushToRemote = async (config: SWGitConfig): Promise<void> => {
   const git = await loadGit()
   const { default: http } = await import('isomorphic-git/http/web')
   const opts = buildAuthOpts(config, http)
+  /*
+   * Best-effort pre-pull keeps the push fast-forward. A failure
+   * here is NOT fatal — the explicit NFF recovery in
+   * handle-failure → tryMergeAfterNff handles real merges. But the
+   * actual error MUST surface; the old blanket `.catch(() => …)`
+   * swallowed everything, leaving "save said OK but nothing
+   * reached the remote" as the only observable symptom.
+   */
   await git
     .pull({
       ...opts,
@@ -22,7 +30,13 @@ export const pushToRemote = async (config: SWGitConfig): Promise<void> => {
         email: config.authorEmail ?? 'admin@prometheus.org',
       },
     })
-    .catch(() => log('warn', 'git', 'pull before push failed'))
+    .catch((err: unknown) =>
+      log(
+        'warn',
+        'git',
+        `pull before push failed: ${err instanceof Error ? err.message : String(err)}`
+      )
+    )
   const result = await git.push(opts)
   if (result.error) throw new Error(`Push rejected: ${result.error}`)
   log('info', 'git', 'pushed to remote')

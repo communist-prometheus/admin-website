@@ -6,6 +6,19 @@ import { workerState } from '../state/state'
 
 let pending: Promise<boolean> | undefined
 
+/*
+ * Pending push entries live in IndexedDB and outlive SW evictions,
+ * but the `setTimeout`-based retry that scheduleRetry sets up does
+ * NOT — it lives in the in-memory SW that just got evicted. So the
+ * queue can accumulate stuck entries that have no trigger to drain
+ * until the user happens to commit again. Kicking a drain right
+ * after auto-recover is what unblocks them in practice.
+ */
+const drainAfterRecover = async (): Promise<void> => {
+  const { drainPushes } = await import('../push-queue/drain')
+  await drainPushes()
+}
+
 const recoverEffect: Effect.Effect<boolean, never> = Effect.tryPromise(() =>
   loadConfig()
 ).pipe(
@@ -18,6 +31,7 @@ const recoverEffect: Effect.Effect<boolean, never> = Effect.tryPromise(() =>
           workerState.config = config
           await checkRepoAndSync(config)
           log('info', 'lifecycle', 'Auto-recovered after SW restart')
+          if (workerState.state === 'ready') void drainAfterRecover()
           return workerState.state === 'ready'
         }),
     })
