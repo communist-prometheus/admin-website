@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 import { waitForNetworkIdle } from '../helpers/network'
 import { ContentEditPage } from '../pages/ContentEditPage'
 import { openPreview, saveAndConfirm } from './preview-save'

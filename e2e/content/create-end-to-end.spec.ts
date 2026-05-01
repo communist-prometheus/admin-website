@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 import { waitForContentReady } from '../helpers/content-ready'
 
 /**
@@ -18,7 +18,6 @@ test.describe('Create content end-to-end (draft flow)', () => {
     })
 
     await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
 
     await page.click('button:has-text("New")')
@@ -53,7 +52,6 @@ test.describe('Create content end-to-end (draft flow)', () => {
     const slug = `e2e-pos-${Date.now()}`
 
     await page.goto('/content/positions')
-    await page.waitForLoadState('networkidle')
     await waitForContentReady(page)
 
     await page.click('button:has-text("New")')

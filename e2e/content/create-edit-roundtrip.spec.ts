@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 import { openPreview, saveAndConfirm } from './preview-save'
 
 // Regression test for "creating article wipes frontmatter on next save":
@@ -37,8 +37,6 @@ test.describe('Content - create → edit round-trip', () => {
     const description = 'regression-roundtrip-description'
 
     await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
-
     await page.locator('[data-testid="create-button"]').click()
     await page.locator('input#slug').fill(slug)
     await page.locator('input#title').fill(title)
@@ -123,8 +121,6 @@ test.describe('Content - create → edit round-trip', () => {
     const slug = `nav-${Date.now()}`
 
     await page.goto('/content/blog')
-    await page.waitForLoadState('networkidle')
-
     await page.locator('[data-testid="create-button"]').click()
     await page.locator('input#slug').fill(slug)
     await page.locator('input#title').fill(`Nav ${slug}`)
