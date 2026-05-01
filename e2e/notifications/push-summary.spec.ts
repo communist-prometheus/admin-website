@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 
 const broadcastSummary = (synced: number): string => `
 const ch = new BroadcastChannel('sw-push-summary')

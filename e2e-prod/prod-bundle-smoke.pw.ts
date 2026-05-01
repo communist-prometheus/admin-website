@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 
 // Deploy-gate smoke test. Runs against a localhost preview of the
 // already-rebuilt production bundle right before wrangler deploys,

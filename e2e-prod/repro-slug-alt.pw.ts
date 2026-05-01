@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import process from 'node:process'
-import { type Dialog, expect, test } from '@playwright/test'
+import { type Dialog, expect, test } from '@prometheus/e2e-toolkit'
 
 /**
  * Regression coverage for #67 (slug input sanitization) and #68

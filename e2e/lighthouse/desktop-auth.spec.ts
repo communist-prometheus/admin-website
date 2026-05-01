@@ -1,4 +1,4 @@
-import { test } from '@playwright/test'
+import { test } from '@prometheus/e2e-toolkit'
 import { playAudit } from 'playwright-lighthouse'
 
 test('should achieve 100 on desktop with auth', async ({ page }) => {

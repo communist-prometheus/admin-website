@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { existsSync } from 'node:fs'
 import process from 'node:process'
-import { test } from '@playwright/test'
+import { test } from '@prometheus/e2e-toolkit'
 
 /**
  * Investigation probe: PDF upload on dev. Drives dev-admin live with a

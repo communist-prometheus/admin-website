@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 
 test.describe('notifications: toast + indicator (1.2)', () => {
   test.beforeEach(async ({ page }) => {

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 
 test.describe('notifications: history drawer (1.3)', () => {
   test.beforeEach(async ({ page }) => {

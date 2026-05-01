@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 import { login } from '../auth/helpers'
 import { ContentPage } from '../pages/ContentPage'
 import { CreateDialog } from '../pages/CreateDialog'
