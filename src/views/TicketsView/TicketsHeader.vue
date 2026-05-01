@@ -3,20 +3,16 @@ import type { Ticket } from '@/features/tickets/api/gh-tickets'
 import { createTicket } from '@/features/tickets/api/ticket-actions'
 import CreateTicketForm from '@/features/tickets/components/CreateTicketForm.vue'
 import TicketCard from '@/features/tickets/components/TicketCard.vue'
-import TicketDetail from '@/features/tickets/components/TicketDetail.vue'
 import { useAuthStore } from '@/stores/auth'
 
-const props = defineProps<{
+defineProps<{
   readonly showCreate: boolean
   readonly loading: boolean
-  readonly selected: Ticket | undefined
   readonly tickets: readonly Ticket[]
 }>()
 
 const emit = defineEmits<{
   'toggle-create': []
-  select: [ticket: Ticket]
-  back: []
   reload: []
 }>()
 
@@ -26,7 +22,7 @@ const handleCreate = async (
   title: string,
   body: string,
   labels: readonly string[]
-) => {
+): Promise<void> => {
   if (!auth.user) return
   try {
     await createTicket(auth.user.accessToken, title, body, labels)
@@ -42,18 +38,12 @@ const handleCreate = async (
 <template>
   <section class="tickets-page">
     <h2>Tickets</h2>
-    <button v-if="!selected" type="button" class="btn-new" @click="emit('toggle-create')">
+    <button type="button" class="btn-new" @click="emit('toggle-create')">
       {{ showCreate ? 'Cancel' : '+ New Ticket' }}
     </button>
-    <CreateTicketForm v-if="showCreate && !selected" @create="handleCreate" />
-    <TicketDetail v-if="selected" :ticket="selected" @back="emit('back')" @reload="emit('reload')" />
+    <CreateTicketForm v-if="showCreate" @create="handleCreate" />
     <p v-if="loading" class="status">Loading tickets...</p>
-    <TicketCard
-      v-for="t in selected ? [] : tickets"
-      :key="t.number"
-      :ticket="t"
-      @click="emit('select', t)"
-    />
+    <TicketCard v-for="t in tickets" :key="t.number" :ticket="t" />
   </section>
 </template>
 
