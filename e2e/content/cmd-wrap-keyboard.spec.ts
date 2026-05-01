@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 import { ContentEditPage } from '../pages/ContentEditPage'
 
 const SLUG = 'welcome-to-prometheus'

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@prometheus/e2e-toolkit'
 import { acceptAltDialog } from '../helpers/auto-alt-dialog'
 import { dispatchDrop } from '../helpers/dispatch-drop'
 import { ContentEditPage } from '../pages/ContentEditPage'
