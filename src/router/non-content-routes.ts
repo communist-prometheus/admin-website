@@ -9,6 +9,12 @@ export const nonContentRoutes: RouteRecordRaw[] = [
     component: () => import('../views/TicketsView/TicketsView.vue'),
   },
   {
+    path: '/tickets/:number(\\d+)',
+    name: 'ticket-detail',
+    meta: { requiresAuth: true },
+    component: () => import('../views/TicketDetailView/TicketDetailView.vue'),
+  },
+  {
     path: '/settings',
     name: 'settings',
     meta: { requiresAuth: true },

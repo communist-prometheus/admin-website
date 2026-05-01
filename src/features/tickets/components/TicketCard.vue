@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import type { Ticket } from '../api/gh-tickets'
 
 defineProps<{ readonly ticket: Ticket }>()
-defineEmits<{ click: [] }>()
 
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat('en-US', {
@@ -12,18 +12,18 @@ const formatDate = (iso: string) =>
 </script>
 
 <template>
-  <article
+  <RouterLink
+    :to="{ name: 'ticket-detail', params: { number: ticket.number } }"
     class="ticket-card"
     :class="{ closed: ticket.state === 'closed' }"
     data-testid="ticket-card"
-    @click="$emit('click')"
   >
     <span class="ticket-num">#{{ ticket.number }}</span>
     <span class="ticket-title">{{ ticket.title }}</span>
     <span class="ticket-meta">
       {{ ticket.user.login }} · {{ formatDate(ticket.created_at) }}
     </span>
-  </article>
+  </RouterLink>
 </template>
 
 <style scoped>
@@ -36,6 +36,8 @@ const formatDate = (iso: string) =>
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: background 0.2s;
+  text-decoration: none;
+  color: inherit;
 }
 
 .ticket-card:hover {

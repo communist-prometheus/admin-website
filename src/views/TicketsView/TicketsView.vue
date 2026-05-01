@@ -10,9 +10,8 @@ const auth = useAuthStore()
 const tickets = ref<readonly Ticket[]>([])
 const loading = ref(true)
 const showCreate = ref(false)
-const selectedTicket = ref<Ticket | undefined>()
 
-const load = async () => {
+const load = async (): Promise<void> => {
   if (!auth.user) return
   loading.value = true
   try {
@@ -22,9 +21,9 @@ const load = async () => {
   }
 }
 
-const toggleCreate = () => { showCreate.value = !showCreate.value }
-const onSelect = (t: Ticket) => { selectedTicket.value = t }
-const onBack = () => { selectedTicket.value = undefined }
+const toggleCreate = (): void => {
+  showCreate.value = !showCreate.value
+}
 
 onMounted(load)
 </script>
@@ -34,11 +33,8 @@ onMounted(load)
     <TicketsHeader
       :show-create="showCreate"
       :loading="loading"
-      :selected="selectedTicket"
       :tickets="tickets"
       @toggle-create="toggleCreate"
-      @select="onSelect"
-      @back="onBack"
       @reload="load"
     />
   </AppLayout>
