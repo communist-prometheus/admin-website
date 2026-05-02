@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DocxUpload from '@/components/MarkdownEditor/DocxUpload.vue'
 import EditorFooter from '@/components/MarkdownEditor/EditorFooter.vue'
 import FrontmatterEditor from '@/components/MarkdownEditor/FrontmatterEditor.vue'
 import MarkdownEditorBody from '@/components/MarkdownEditor/MarkdownEditorBody.vue'
@@ -49,6 +50,11 @@ const currentCover = (fm: Record<string, unknown>): string | undefined => {
     @upload-pdf="$emit('upload-asset', $event)"
     @upload-cover="$emit('upload-asset', $event)"
     @set-cover="$emit('set-cover', $event)"
+  />
+  <DocxUpload
+    v-if="isNewspaper(contentType)"
+    :assets="assets"
+    @upload-docx="$emit('upload-asset', $event)"
   />
   <MarkdownEditorBody
     v-else-if="hasBodyEditor(contentType, slug)"
