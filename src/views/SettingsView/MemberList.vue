@@ -28,12 +28,23 @@ defineEmits<{
 </template>
 
 <style scoped>
+/*
+ * Members render as a responsive card grid: 1 column on phones,
+ * 2 columns starting from tablet. Each row's own borders handle
+ * the card frame so the parent doesn't need an outer border.
+ */
 .member-list {
   list-style: none;
   padding: 0;
   margin: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (width >= 720px) {
+  .member-list {
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  }
 }
 </style>
