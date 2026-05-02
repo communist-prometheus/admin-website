@@ -16,4 +16,5 @@ export const newspaperFields: readonly FieldDefinition[] = [
   },
   { key: 'published', label: 'Published', type: 'checkbox' },
   { key: 'publishDate', label: 'Publish Date', type: 'date' },
+  { key: 'articles', label: 'Articles in this issue', type: 'articles' },
 ]

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ArticlesPicker from './ArticlesPicker/ArticlesPicker.vue'
 import type { FieldDefinition } from './frontmatter-fields'
 import { formatDateValue, parseFieldValue } from './frontmatter-values'
 
@@ -18,6 +19,11 @@ const displayValue = (): string => {
 
 const isChecked = (): boolean =>
   props.value === true || props.value === 'true'
+
+const articlesValue = (): readonly string[] | undefined =>
+  Array.isArray(props.value)
+    ? props.value.filter((s): s is string => typeof s === 'string')
+    : undefined
 
 const handleInput = (event: Event) => {
   const target = event.target
@@ -58,6 +64,11 @@ const handleInput = (event: Event) => {
     />
     <span class="checkbox-label">{{ field.label }}</span>
   </label>
+  <ArticlesPicker
+    v-else-if="field.type === 'articles'"
+    :value="articlesValue()"
+    @update="emit('update', $event)"
+  />
   <input
     v-else
     :id="`fm-${field.key}`"

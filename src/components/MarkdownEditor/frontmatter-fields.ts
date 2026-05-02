@@ -15,7 +15,13 @@ import {
 export interface FieldDefinition {
   readonly key: string
   readonly label: string
-  readonly type: 'text' | 'textarea' | 'number' | 'date' | 'checkbox'
+  readonly type:
+    | 'text'
+    | 'textarea'
+    | 'number'
+    | 'date'
+    | 'checkbox'
+    | 'articles'
   readonly required?: boolean
 }
 
