@@ -1,13 +1,6 @@
 import { swFetch } from '@/composables/useSWBridge/sw-fetch'
 import type { InviteRequest } from './roles-api-types'
-
-const errorBody = async (res: Response): Promise<string> => {
-  const txt = await res.text().catch(() => '')
-  return txt.length > 0 ? txt : `github ${res.status}`
-}
-
-const okOrThrow = async (res: Response): Promise<Response> =>
-  res.ok ? res : Promise.reject(new Error(await errorBody(res)))
+import { okOrThrow } from './sw-response'
 
 /**
  * Create a pending GitHub org invitation with the requested app
