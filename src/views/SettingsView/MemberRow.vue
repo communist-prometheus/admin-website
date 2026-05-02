@@ -61,12 +61,17 @@ const onChange =
   grid-template-columns: 32px 1fr auto;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--color-border);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  transition: border-color var(--transition-fast),
+    background-color var(--transition-fast);
 }
 
-.member-row:last-child {
-  border-bottom: none;
+.member-row:hover {
+  border-color: var(--color-text-secondary);
+  background: var(--color-surface-elevated);
 }
 
 .avatar {

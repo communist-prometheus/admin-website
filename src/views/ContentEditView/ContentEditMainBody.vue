@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import DocxUpload from '@/components/MarkdownEditor/DocxUpload.vue'
-import EditorFooter from '@/components/MarkdownEditor/EditorFooter.vue'
-import Fb2Upload from '@/components/MarkdownEditor/Fb2Upload.vue'
 import FrontmatterEditor from '@/components/MarkdownEditor/FrontmatterEditor.vue'
-import MarkdownEditorBody from '@/components/MarkdownEditor/MarkdownEditorBody.vue'
-import PdfUpload from '@/components/MarkdownEditor/PdfUpload.vue'
-import { hasBodyEditor } from '@/components/MarkdownEditor/page-body-policy'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import type { ContentType } from '@/types/content'
+import EditBodyArea from './EditBodyArea.vue'
 
 defineProps<{
   readonly bodyContent: string
@@ -27,58 +22,45 @@ defineEmits<{
   'set-cover': [name: string]
   error: [message: string]
 }>()
-
-const isNewspaper = (type: ContentType) => type === 'newspaper'
-
-const currentCover = (fm: Record<string, unknown>): string | undefined => {
-  const v = fm['image']
-  return typeof v === 'string' && v.length > 0 ? v : undefined
-}
 </script>
 
 <template>
   <FrontmatterEditor
     v-if="Object.keys(frontmatterData).length > 0"
+    class="edit-meta"
     :frontmatter="frontmatterData"
     :content-type="contentType"
     :slug="slug"
     @update:frontmatter="$emit('update:frontmatter', $event)"
   />
-  <PdfUpload
-    v-if="isNewspaper(contentType)"
-    :assets="assets"
-    :current-cover="currentCover(frontmatterData)"
-    @upload-pdf="$emit('upload-asset', $event)"
-    @upload-cover="$emit('upload-asset', $event)"
-    @set-cover="$emit('set-cover', $event)"
-  />
-  <DocxUpload
-    v-if="isNewspaper(contentType)"
-    :assets="assets"
-    :issue-title="(frontmatterData.title as string) ?? undefined"
-    :issue-lang="(frontmatterData.lang as string) ?? undefined"
-    :issue-description="(frontmatterData.description as string) ?? undefined"
-    @upload-fb2="$emit('upload-asset', $event)"
-    @error="$emit('error', $event)"
-  />
-  <Fb2Upload
-    v-if="isNewspaper(contentType)"
-    :assets="assets"
-    @upload-fb2="$emit('upload-asset', $event)"
-    @error="$emit('error', $event)"
-  />
-  <MarkdownEditorBody
-    v-else-if="hasBodyEditor(contentType, slug)"
-    :model-value="bodyContent"
+  <EditBodyArea
+    class="edit-body"
+    :body-content="bodyContent"
+    :frontmatter-data="frontmatterData"
+    :content-type="contentType"
+    :slug="slug"
     :asset-url-map="assetUrlMap"
     :assets="assets"
-    @update:model-value="$emit('update:bodyContent', $event)"
+    @update:body-content="$emit('update:bodyContent', $event)"
+    @preview="$emit('preview')"
     @paste:image="$emit('paste:image', $event)"
     @upload-asset="$emit('upload-asset', $event)"
+    @set-cover="$emit('set-cover', $event)"
     @error="$emit('error', $event)"
   />
-  <EditorFooter
-    :disabled="false"
-    @preview="$emit('preview')"
-  />
 </template>
+
+<style scoped>
+.edit-meta {
+  grid-column: meta;
+  align-self: start;
+}
+
+.edit-body {
+  grid-column: body;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 2vw, 1.25rem);
+  min-width: 0;
+}
+</style>
