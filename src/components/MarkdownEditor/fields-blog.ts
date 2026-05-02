@@ -22,4 +22,9 @@ export const blogFields: readonly FieldDefinition[] = [
   },
   { key: 'published', label: 'Published', type: 'checkbox' },
   { key: 'publishDate', label: 'Publish Date', type: 'date' },
+  {
+    key: 'newspaper',
+    label: 'Newspaper issue (optional)',
+    type: 'issue',
+  },
 ]

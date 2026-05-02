@@ -22,6 +22,7 @@ export interface FieldDefinition {
     | 'date'
     | 'checkbox'
     | 'articles'
+    | 'issue'
   readonly required?: boolean
 }
 
