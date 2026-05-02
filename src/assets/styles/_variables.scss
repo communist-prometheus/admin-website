@@ -19,6 +19,20 @@
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
 
+  /*
+   * Content-frame tokens — the bounded container width every top
+   * level view sits inside so cards, lists and forms stop
+   * stretching to whatever the viewport is on a wide monitor.
+   *
+   *   --content-narrow  prose / forms / single-column dialogs.
+   *   --content-medium  lists / dashboards / mixed content.
+   *   --content-wide    editor + preview, two-up layouts.
+   */
+  --content-narrow: 56rem;
+  --content-medium: 72rem;
+  --content-wide: 90rem;
+  --content-frame-padding: clamp(1rem, 3vw, 2rem);
+
   --border-width: 1px;
 
   --font-sans: system-ui, -apple-system, sans-serif;

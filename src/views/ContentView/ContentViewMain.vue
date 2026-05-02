@@ -53,7 +53,10 @@ const emit = defineEmits<{
 
 <style scoped>
 .view-content {
-  padding: clamp(1rem, 3vw, 2rem);
+  padding: var(--content-frame-padding);
+  max-width: var(--content-medium);
+  width: 100%;
+  margin-inline: auto;
   flex: 1;
   overflow: auto;
 }

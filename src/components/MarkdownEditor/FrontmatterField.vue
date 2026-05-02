@@ -2,6 +2,7 @@
 import ArticlesPicker from './ArticlesPicker/ArticlesPicker.vue'
 import type { FieldDefinition } from './frontmatter-fields'
 import { formatDateValue, parseFieldValue } from './frontmatter-values'
+import IssuePicker from './IssuePicker/IssuePicker.vue'
 
 const props = defineProps<{
   readonly field: FieldDefinition
@@ -23,6 +24,11 @@ const isChecked = (): boolean =>
 const articlesValue = (): readonly string[] | undefined =>
   Array.isArray(props.value)
     ? props.value.filter((s): s is string => typeof s === 'string')
+    : undefined
+
+const issueValue = (): string | undefined =>
+  typeof props.value === 'string' && props.value !== ''
+    ? props.value
     : undefined
 
 const handleInput = (event: Event) => {
@@ -67,6 +73,11 @@ const handleInput = (event: Event) => {
   <ArticlesPicker
     v-else-if="field.type === 'articles'"
     :value="articlesValue()"
+    @update="emit('update', $event)"
+  />
+  <IssuePicker
+    v-else-if="field.type === 'issue'"
+    :value="issueValue()"
     @update="emit('update', $event)"
   />
   <input
