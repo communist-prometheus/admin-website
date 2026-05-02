@@ -4,16 +4,12 @@ import {
   expectVisible,
   pressKey,
   test,
-  visit,
 } from '@prometheus/e2e-toolkit'
+import { visitSettled } from '../helpers/visit-settled'
 
 test.describe('trace overlay (5.4)', () => {
   test.beforeEach(async ({ page }) => {
-    await visit(page, '/')
-    await expectVisible(
-      page,
-      page.locator('[data-testid="notification-indicator"]')
-    )
+    await visitSettled(page, '/', 'notification-indicator')
   })
 
   test('Ctrl+Shift+T toggles the overlay', async ({ page }) => {

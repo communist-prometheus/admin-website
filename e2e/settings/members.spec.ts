@@ -8,12 +8,11 @@ import {
   fill,
   type Page,
   test,
-  visit,
 } from '@prometheus/e2e-toolkit'
+import { visitSettled } from '../helpers/visit-settled'
 
 const gotoSettings = async (page: Page): Promise<void> => {
-  await visit(page, '/settings')
-  await expectVisible(page, page.locator('[data-testid="members-section"]'))
+  await visitSettled(page, '/settings', 'members-section')
 }
 
 test.describe('Members — unified org list with CRUD', () => {

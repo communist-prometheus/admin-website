@@ -1,15 +1,20 @@
-import { expect, expectVisible, test, visit } from '@prometheus/e2e-toolkit'
+import { expect, test } from '@prometheus/e2e-toolkit'
+import { visitSettled } from '../helpers/visit-settled'
 
 /*
  * Once `context.setOffline(true)` flips, the request graph stops
  * settling — heartbeats fire, fail, fire again. Toolkit waits that
  * gate on idle would hang. Use raw Playwright `expect` for the
  * offline-state assertions; its retries don't depend on network.
+ *
+ * The pre-offline navigation goes through visitSettled so the SW
+ * lifecycle has finished before context.setOffline is flipped —
+ * otherwise the activate's controllerchange could fire mid-test
+ * and tear the dialog locator the body assertion is racing on.
  */
 test.describe('settings offline gate (3.4)', () => {
   test.beforeEach(async ({ page }) => {
-    await visit(page, '/settings')
-    await expectVisible(page, page.locator('[data-testid="members-section"]'))
+    await visitSettled(page, '/settings', 'members-section')
   })
 
   test('offline disables invite + shows banner', async ({
