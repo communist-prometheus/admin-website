@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DocxUpload from '@/components/MarkdownEditor/DocxUpload.vue'
 import EditorFooter from '@/components/MarkdownEditor/EditorFooter.vue'
+import Fb2Upload from '@/components/MarkdownEditor/Fb2Upload.vue'
 import FrontmatterEditor from '@/components/MarkdownEditor/FrontmatterEditor.vue'
 import MarkdownEditorBody from '@/components/MarkdownEditor/MarkdownEditorBody.vue'
 import PdfUpload from '@/components/MarkdownEditor/PdfUpload.vue'
@@ -54,7 +55,17 @@ const currentCover = (fm: Record<string, unknown>): string | undefined => {
   <DocxUpload
     v-if="isNewspaper(contentType)"
     :assets="assets"
-    @upload-docx="$emit('upload-asset', $event)"
+    :issue-title="(frontmatterData.title as string) ?? undefined"
+    :issue-lang="(frontmatterData.lang as string) ?? undefined"
+    :issue-description="(frontmatterData.description as string) ?? undefined"
+    @upload-fb2="$emit('upload-asset', $event)"
+    @error="$emit('error', $event)"
+  />
+  <Fb2Upload
+    v-if="isNewspaper(contentType)"
+    :assets="assets"
+    @upload-fb2="$emit('upload-asset', $event)"
+    @error="$emit('error', $event)"
   />
   <MarkdownEditorBody
     v-else-if="hasBodyEditor(contentType, slug)"
