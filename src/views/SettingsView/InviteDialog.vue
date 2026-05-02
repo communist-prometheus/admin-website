@@ -1,5 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import {
+  usernameGuess as guessFor,
+  isEmailLookupMiss as isMiss,
+} from './invite-error'
+import {
+  type InvitePayload,
+  type InviteRole,
+  inviteHandlers,
+} from './invite-handlers'
 
 const props = defineProps<{
   readonly open: boolean
@@ -7,47 +16,22 @@ const props = defineProps<{
   readonly error?: string
 }>()
 const emit = defineEmits<{
-  submit: [
-    payload: {
-      readonly email?: string
-      readonly login?: string
-      readonly role: 'admin' | 'chief-editor' | 'editor'
-    },
-  ]
+  submit: [payload: InvitePayload]
   cancel: []
 }>()
 
 const identifier = ref('')
-const role = ref<'admin' | 'chief-editor' | 'editor'>('editor')
+const role = ref<InviteRole>('editor')
 const localError = ref<string | undefined>(undefined)
 const shownError = computed(() => localError.value ?? props.error)
+const isEmailLookupMiss = computed(() => isMiss(shownError.value))
+const usernameGuess = computed(() => guessFor(identifier.value))
 
-const reset = () => {
-  identifier.value = ''
-  role.value = 'editor'
-  localError.value = undefined
-}
-
-const onSubmit = () => {
-  const v = identifier.value.trim()
-  if (v === '') {
-    localError.value = 'Enter a GitHub login or email'
-    return
-  }
-  localError.value = undefined
-  const looksLikeEmail = v.includes('@')
-  emit(
-    'submit',
-    looksLikeEmail
-      ? { email: v, role: role.value }
-      : { login: v, role: role.value }
-  )
-}
-
-const onCancel = () => {
-  reset()
-  emit('cancel')
-}
+const { onSubmit, onTryAsUsername, onCancel } = inviteHandlers(
+  { identifier, role, localError },
+  (event, payload) =>
+    event === 'submit' && payload ? emit('submit', payload) : emit('cancel'),
+)
 </script>
 
 <template>
@@ -90,6 +74,23 @@ const onCancel = () => {
         data-testid="invite-error"
       >
         {{ shownError }}
+      </p>
+      <p
+        v-if="isEmailLookupMiss && usernameGuess !== ''"
+        class="hint"
+      >
+        If
+        <code>{{ usernameGuess }}</code>
+        is their GitHub username:
+        <button
+          type="button"
+          class="link-btn"
+          :disabled="busy"
+          data-testid="invite-try-username"
+          @click="onTryAsUsername(usernameGuess)"
+        >
+          send invite as @{{ usernameGuess }}
+        </button>
       </p>
       <div class="actions">
         <button
@@ -163,6 +164,34 @@ h3 {
   color: var(--color-error, #e53935);
   font-size: 0.8rem;
   margin: 0;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.hint code {
+  background: var(--color-background-soft);
+  padding: 0 0.25em;
+  border-radius: 0.2em;
+  font-family: var(--font-mono, monospace);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-accent);
+  cursor: pointer;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+.link-btn:disabled {
+  opacity: 50%;
+  cursor: not-allowed;
 }
 
 .actions {
