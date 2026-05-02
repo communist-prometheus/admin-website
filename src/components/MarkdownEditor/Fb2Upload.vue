@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
-import { docxFileToFb2 } from './docx-to-fb2'
 import { createDragHandlers } from './pdf-upload-handlers'
 
 const props = defineProps<{
   readonly assets?: readonly AssetDisplay[]
-  readonly issueTitle?: string
-  readonly issueLang?: string
-  readonly issueDescription?: string
 }>()
 
 const emit = defineEmits<{
@@ -18,9 +14,6 @@ const emit = defineEmits<{
 
 const inputRef = ref<HTMLInputElement>()
 const dragging = ref(false)
-
-const DOCX_MIME =
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
 const fb2Asset = computed(() =>
   props.assets?.find(
@@ -32,19 +25,21 @@ const triggerUpload = () => {
   inputRef.value?.click()
 }
 
-const handleFile = async (file: File): Promise<void> => {
-  if (file.type !== DOCX_MIME) {
-    emit('error', 'Only .docx files (Office Open XML) are accepted here')
+/*
+ * Direct FB2 upload — the editor already has the FB2 produced
+ * elsewhere (Calibre, scribus → fb2, hand-written, etc.) and just
+ * wants it shipped. Validates by extension since browsers don't
+ * agree on a MIME for application/x-fictionbook+xml.
+ */
+const handleFile = (file: File): void => {
+  if (!file.name.toLowerCase().endsWith('.fb2')) {
+    emit('error', 'Only .fb2 files are accepted here')
     return
   }
-  const fb2 = await docxFileToFb2(file, {
-    ...(props.issueTitle === undefined ? {} : { issueTitle: props.issueTitle }),
-    ...(props.issueLang === undefined ? {} : { issueLang: props.issueLang }),
-    ...(props.issueDescription === undefined
-      ? {}
-      : { issueDescription: props.issueDescription }),
+  const renamed = new File([file], 'gazette.fb2', {
+    type: file.type || 'application/x-fictionbook+xml',
   })
-  emit('upload-fb2', fb2)
+  emit('upload-fb2', renamed)
 }
 
 const handleChange = (event: Event): void => {
@@ -63,47 +58,44 @@ const { onDrop, onDragOver, onDragLeave } = createDragHandlers(
 <template>
   <article
     v-if="fb2Asset"
-    class="docx-current"
-    data-testid="docx-current"
+    class="fb2-current"
+    data-testid="fb2-current"
   >
-    <span class="docx-icon" aria-hidden="true">FB2</span>
-    <span class="docx-name">FB2 ready ({{ fb2Asset.name }})</span>
+    <span class="fb2-icon" aria-hidden="true">FB2</span>
+    <span class="fb2-name">{{ fb2Asset.name }}</span>
     <button
       type="button"
-      class="docx-replace"
+      class="fb2-replace"
       @click="triggerUpload"
     >
-      Re-import from DOCX
+      Replace FB2
     </button>
   </article>
   <button
     v-else
     type="button"
-    class="docx-dropzone"
+    class="fb2-dropzone"
     :class="{ dragging }"
-    data-testid="docx-dropzone"
+    data-testid="fb2-dropzone"
     @click="triggerUpload"
     @drop.prevent="onDrop"
     @dragover="onDragOver"
     @dragleave="onDragLeave"
   >
-    <span class="dropzone-icon" aria-hidden="true">DOCX</span>
-    <span class="dropzone-label">
-      Drop a .docx to import (auto-converts to FB2; the .docx is
-      not stored — only the FB2 ships)
-    </span>
+    <span class="dropzone-icon" aria-hidden="true">FB2</span>
+    <span class="dropzone-label">Drop a .fb2 file directly</span>
   </button>
   <input
     ref="inputRef"
     type="file"
-    :accept="DOCX_MIME"
+    accept=".fb2"
     hidden
     @change="handleChange"
   />
 </template>
 
 <style scoped>
-.docx-current {
+.fb2-current {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -113,21 +105,21 @@ const { onDrop, onDragOver, onDragLeave } = createDragHandlers(
   background: var(--color-background-soft);
 }
 
-.docx-icon {
+.fb2-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 48px;
   height: 48px;
   border-radius: var(--radius-sm);
-  background: var(--color-info, #1976d2);
+  background: var(--color-success, #2e7d32);
   color: #fff;
   font-weight: 700;
   font-size: 0.75rem;
   flex-shrink: 0;
 }
 
-.docx-name {
+.fb2-name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -136,7 +128,7 @@ const { onDrop, onDragOver, onDragLeave } = createDragHandlers(
   font-size: clamp(0.875rem, 2vw, 1rem);
 }
 
-.docx-replace {
+.fb2-replace {
   padding: 0.375rem 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -147,17 +139,17 @@ const { onDrop, onDragOver, onDragLeave } = createDragHandlers(
   flex-shrink: 0;
 }
 
-.docx-replace:hover {
+.fb2-replace:hover {
   background: var(--color-background-mute);
 }
 
-.docx-dropzone {
+.fb2-dropzone {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  padding: 2rem;
+  padding: 1.5rem;
   border: 2px dashed var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-background-soft);
@@ -165,8 +157,8 @@ const { onDrop, onDragOver, onDragLeave } = createDragHandlers(
   transition: border-color 0.2s, background 0.2s;
 }
 
-.docx-dropzone:hover,
-.docx-dropzone.dragging {
+.fb2-dropzone:hover,
+.fb2-dropzone.dragging {
   border-color: var(--color-accent);
   background: var(--color-background-mute);
 }
@@ -178,7 +170,7 @@ const { onDrop, onDragOver, onDragLeave } = createDragHandlers(
   width: 64px;
   height: 64px;
   border-radius: var(--radius-md);
-  background: var(--color-info, #1976d2);
+  background: var(--color-success, #2e7d32);
   color: #fff;
   font-weight: 700;
   font-size: 1rem;
