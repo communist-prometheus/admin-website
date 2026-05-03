@@ -1,5 +1,14 @@
 import { mount } from '@vue/test-utils'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import FrontmatterEditor from './FrontmatterEditor.vue'
 
 const TODAY = '2026-04-23'
@@ -7,6 +16,7 @@ const TODAY = '2026-04-23'
 const mountEditor = (frontmatter: Record<string, unknown>) =>
   mount(FrontmatterEditor, {
     props: { frontmatter, contentType: 'blog' as const },
+    global: { plugins: [createPinia()] },
   })
 
 const lastEmit = (
@@ -21,6 +31,10 @@ describe('FrontmatterEditor — publishDate auto-fill', () => {
   beforeAll(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(`${TODAY}T12:00:00Z`))
+  })
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
   })
 
   afterAll(() => {

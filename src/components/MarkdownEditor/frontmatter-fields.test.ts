@@ -8,10 +8,10 @@ describe('getFields', () => {
       const keys = fields.map(f => f.key)
       expect(keys).toEqual([
         'title',
-        'description',
         'category',
         'published',
         'publishDate',
+        'newspaper',
       ])
     })
   })
@@ -20,12 +20,7 @@ describe('getFields', () => {
     it('returns positions fields', () => {
       const fields = getFields('positions')
       const keys = fields.map(f => f.key)
-      expect(keys).toEqual([
-        'title',
-        'description',
-        'published',
-        'publishDate',
-      ])
+      expect(keys).toEqual(['title', 'published', 'publishDate'])
     })
   })
 
