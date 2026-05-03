@@ -1,17 +1,14 @@
 import type { FieldDefinition } from './frontmatter-fields'
 
-/** Frontmatter fields for newspaper entries */
+/**
+ * Frontmatter fields shown on the newspaper-issue edit page.
+ * `description` retired — see fields-blog.ts.
+ */
 export const newspaperFields: readonly FieldDefinition[] = [
   {
     key: 'title',
     label: 'Title',
     type: 'text',
-    required: true,
-  },
-  {
-    key: 'description',
-    label: 'Description',
-    type: 'textarea',
     required: true,
   },
   { key: 'published', label: 'Published', type: 'checkbox' },

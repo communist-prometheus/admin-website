@@ -7,7 +7,8 @@ import { Schema } from 'effect'
  */
 export const BlogFrontmatterSchema = Schema.Struct({
   title: Schema.String.pipe(Schema.nonEmptyString()),
-  description: Schema.String.pipe(Schema.nonEmptyString()),
+  /* Description is optional now (#3) — see public-website#77. */
+  description: Schema.optional(Schema.String),
   category: Schema.String.pipe(Schema.nonEmptyString()),
   lang: Schema.String.pipe(Schema.nonEmptyString()),
   published: Schema.optional(Schema.Boolean),
