@@ -18,7 +18,7 @@ describe('extractFootnotes', () => {
           '<li id="footnote-1">body<a href="#footnote-ref-1">↑</a></li>'
         )
     )
-    expect(r.html).toBe('<p>see@@FOOTNOTE_REF_1@@</p>')
+    expect(r.html).toBe('<p>seeXXFOOTNOTEREFXX1XX</p>')
     expect(r.footnotes).toEqual([{ id: 1, html: 'body' }])
   })
 
@@ -58,7 +58,7 @@ describe('extractFootnotes', () => {
           '<li id="footnote-1">one<a href="#footnote-ref-1">↑</a></li>'
         )
     )
-    expect(r.html).toBe('<p>a@@FOOTNOTE_REF_1@@ b@@FOOTNOTE_REF_1@@</p>')
+    expect(r.html).toBe('<p>aXXFOOTNOTEREFXX1XX bXXFOOTNOTEREFXX1XX</p>')
     expect(r.footnotes).toEqual([{ id: 1, html: 'one' }])
   })
 
@@ -77,7 +77,7 @@ describe('extractFootnotes', () => {
     const r = extractFootnotes(
       '<p>see<sup><a href="#footnote-9">[9]</a></sup></p>'
     )
-    expect(r.html).toBe('<p>see@@FOOTNOTE_REF_9@@</p>')
+    expect(r.html).toBe('<p>seeXXFOOTNOTEREFXX9XX</p>')
     expect(r.footnotes).toEqual([])
   })
 })

@@ -14,7 +14,7 @@ const toMd = (html: string): string => {
 describe('assembleWithFootnotes', () => {
   it('swaps placeholders with [^N] and appends definitions', () => {
     const out = assembleWithFootnotes(
-      'text @@FOOTNOTE_REF_1@@ more @@FOOTNOTE_REF_2@@',
+      'text XXFOOTNOTEREFXX1XX more XXFOOTNOTEREFXX2XX',
       [
         { id: 1, html: 'one' },
         { id: 2, html: 'two' },
@@ -26,7 +26,7 @@ describe('assembleWithFootnotes', () => {
 
   it('emits only one definition when the same footnote is referenced twice', () => {
     const out = assembleWithFootnotes(
-      '@@FOOTNOTE_REF_3@@ and again @@FOOTNOTE_REF_3@@',
+      'XXFOOTNOTEREFXX3XX and again XXFOOTNOTEREFXX3XX',
       [{ id: 3, html: 'thrice' }],
       toMd
     )
@@ -38,13 +38,13 @@ describe('assembleWithFootnotes', () => {
   })
 
   it('strips orphan placeholders when no definition exists', () => {
-    const out = assembleWithFootnotes('word @@FOOTNOTE_REF_9@@ end', [], toMd)
+    const out = assembleWithFootnotes('word XXFOOTNOTEREFXX9XX end', [], toMd)
     expect(out).toBe('word  end')
   })
 
   it('keeps footnote bodies on a single line', () => {
     const out = assembleWithFootnotes(
-      '@@FOOTNOTE_REF_1@@',
+      'XXFOOTNOTEREFXX1XX',
       [{ id: 1, html: '<p>line one</p><p>line two</p>' }],
       toMd
     )
@@ -53,10 +53,30 @@ describe('assembleWithFootnotes', () => {
 
   it('renders markdown inside footnote bodies (em + link)', () => {
     const out = assembleWithFootnotes(
-      '@@FOOTNOTE_REF_4@@',
+      'XXFOOTNOTEREFXX4XX',
       [{ id: 4, html: 'see <em>ref</em> at <a href="http://x">x</a>' }],
       toMd
     )
     expect(out).toBe('[^4]\n\n[^4]: see *ref* at [x](http://x)')
+  })
+
+  it('strips legacy underscore placeholders (raw + turndown-escaped)', () => {
+    /*
+     * Earlier importer version emitted `@@FOOTNOTE_REF_N@@`.
+     * Turndown escapes `_` to `\_`, producing
+     * `@@FOOTNOTE\_REF\_N@@` in markdown — that escaped form
+     * silently bypassed the strip regex and leaked into saved
+     * files, forcing the editor to clean by hand. This test pins
+     * the back-compat path so a re-save of an old article wipes
+     * both shapes.
+     */
+    const raw = assembleWithFootnotes('a @@FOOTNOTE_REF_1@@ b', [], toMd)
+    expect(raw).toBe('a  b')
+    const escaped = assembleWithFootnotes(
+      'c @@FOOTNOTE\\_REF\\_2@@ d',
+      [],
+      toMd
+    )
+    expect(escaped).toBe('c  d')
   })
 })

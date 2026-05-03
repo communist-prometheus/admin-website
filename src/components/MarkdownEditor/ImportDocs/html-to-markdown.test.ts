@@ -32,4 +32,24 @@ describe('htmlToMarkdown', () => {
     const md = htmlToMarkdown('<img src="./assets/x.png" alt="alt"/>')
     expect(md).toContain('![alt](./assets/x.png)')
   })
+
+  it('replaces mammoth footnote refs with GFM markers (no leftover placeholders)', () => {
+    /*
+     * Regression test for the docx-import bug the editor hit in
+     * the content-repo "from-manchester-to-global" article: the
+     * old underscore placeholder collided with turndown's
+     * markdown-italic escaping, so saved files had literal
+     * `@@FOOTNOTE\_REF\_1@@` leak through. Now: footnote ref
+     * should always become `[^N]` and a `[^N]: body` definition
+     * appended at the end. No leftover placeholder of any shape.
+     */
+    const html =
+      '<p>see<sup><a href="#footnote-1">[1]</a></sup></p>' +
+      '<hr><ol><li id="footnote-1">body<a href="#footnote-ref-1">↑</a></li></ol>'
+    const md = htmlToMarkdown(html)
+    expect(md).toContain('see[^1]')
+    expect(md).toContain('[^1]: body')
+    expect(md).not.toContain('@@FOOTNOTE')
+    expect(md).not.toContain('XXFOOTNOTE')
+  })
 })
