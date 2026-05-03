@@ -23,7 +23,27 @@ const BACKLINK =
 
 const TRAILING_OL = /<hr[^>]*>\s*<ol>[\s\S]*?<\/ol>\s*$/i
 
-const placeholder = (id: number): string => `@@FOOTNOTE_REF_${id}@@`
+/*
+ * Placeholder injected before markdown conversion. The previous
+ * shape used underscores (`@@FOOTNOTE_REF_N@@`); turndown escapes
+ * `_` as `\_` to neuter markdown italic interpretation, which
+ * silently broke the strip regex — the placeholder leaked into
+ * saved files (the editor had to manually rewrite them as
+ * `[N](#footnote-ref-N)` markers). Pure alphanumerics survive
+ * turndown verbatim.
+ */
+const placeholder = (id: number): string => `XXFOOTNOTEREFXX${id}XX`
+
+/** Regex matching the alphanumeric placeholder shape. */
+export const PLACEHOLDER_RE = /XXFOOTNOTEREFXX(\d+)XX/g
+
+/**
+ * Backwards-compat regex matching the legacy underscore placeholder
+ * shape, raw or turndown-escaped (`@@FOOTNOTE_REF_N@@` /
+ * `@@FOOTNOTE\_REF\_N@@`). On re-save of an article imported by the
+ * previous version, the orphan placeholders get cleaned up.
+ */
+export const LEGACY_PLACEHOLDER_RE = /@@FOOTNOTE\\?_REF\\?_(\d+)@@/g
 
 const stripBacklink = (html: string): string =>
   html.replace(BACKLINK, '').trim()
