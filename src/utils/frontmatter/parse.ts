@@ -1,3 +1,5 @@
+import { parse as yamlParse } from 'yaml'
+
 /**
  * Parsed markdown content with frontmatter
  */
@@ -6,46 +8,35 @@ export interface ParsedContent {
   readonly content: string
 }
 
-const parseValue = (value: string): unknown => {
-  if (value.match(/^\d{4}-\d{2}-\d{2}$/)) return new Date(value)
-  if (value === 'true') return true
-  if (value === 'false') return false
-  if (!Number.isNaN(Number(value)) && value !== '') return Number(value)
-  return value
-}
+const FM_REGEX = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/
 
-const parseFrontmatterLines = (text: string): Record<string, unknown> => {
-  const frontmatter: Record<string, unknown> = {}
-
-  for (const line of text.split('\n')) {
-    const colonIndex = line.indexOf(':')
-    if (colonIndex === -1) continue
-
-    const key = line.slice(0, colonIndex).trim()
-    const value = line.slice(colonIndex + 1).trim()
-    frontmatter[key] = parseValue(value)
-  }
-
-  return frontmatter
-}
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v)
 
 /**
- * Parse frontmatter from markdown content.
- * Normalizes CRLF/CR line endings to LF before matching so files authored
- * on Windows or round-tripped through CRLF-normalizing tooling parse correctly.
+ * Parse frontmatter from markdown content via the `yaml` lib.
+ * Normalises CRLF/CR to LF before matching so Windows-authored or
+ * round-tripped files parse identically. Returns an empty
+ * frontmatter on either no fence or malformed YAML rather than
+ * throwing — the caller may surface a banner without taking down
+ * the editor.
  * @param markdown - Markdown content with frontmatter
  * @returns Parsed content with frontmatter and body
  */
 export const parseFrontmatter = (markdown: string): ParsedContent => {
   const normalized = markdown.replace(/\r\n?/g, '\n')
-  const match = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
-
-  if (!match) {
-    return { frontmatter: {}, content: normalized }
-  }
+  const match = normalized.match(FM_REGEX)
+  if (!match) return { frontmatter: {}, content: normalized }
 
   const [, frontmatterText = '', content = ''] = match
-  const frontmatter = parseFrontmatterLines(frontmatterText)
-
-  return { frontmatter, content: content.trim() }
+  let parsed: unknown
+  try {
+    parsed = yamlParse(frontmatterText)
+  } catch {
+    return { frontmatter: {}, content: content.trim() }
+  }
+  return {
+    frontmatter: isRecord(parsed) ? parsed : {},
+    content: content.trim(),
+  }
 }

@@ -18,7 +18,14 @@ Content here`
     expect(result.content).toBe('Content here')
   })
 
-  it('parses frontmatter with date values', () => {
+  /*
+   * `yaml` lib v2 keeps plain `YYYY-MM-DD` as strings (YAML 1.2 does
+   * not auto-tag dates without an explicit `!!timestamp` tag). The
+   * downstream schema accepts both — see frontmatter-blog.ts where
+   * publishDate is `Schema.Union(Schema.String, Schema.DateFromSelf)`
+   * — so leaving it a string everywhere is the simpler contract.
+   */
+  it('parses date-shaped values as strings (YAML 1.2 default)', () => {
     const markdown = `---
 date: 2024-01-15
 ---
@@ -26,11 +33,7 @@ Content`
 
     const result = parseFrontmatter(markdown)
 
-    const date = result.frontmatter.date
-    expect(date).toBeInstanceOf(Date)
-    if (date instanceof Date) {
-      expect(date.toISOString()).toContain('2024-01-15')
-    }
+    expect(result.frontmatter.date).toBe('2024-01-15')
   })
 
   it('parses frontmatter with boolean values', () => {
@@ -86,6 +89,59 @@ Content`
 
     expect(result.frontmatter.title).toBe('X')
     expect(result.frontmatter.lang).toBe('en')
+    expect(result.content).toBe('Body')
+  })
+
+  /*
+   * Regression: from-manchester-to-global/index.it.md took prod red
+   * for two days because the description contained "predatoria: ha
+   * semplicemente" and the previous self-rolled splitter saw two
+   * keys ("predatoria") with bad indentation. Quoted descriptions
+   * must round-trip cleanly.
+   */
+  it('parses a quoted description containing colons', () => {
+    const markdown = [
+      '---',
+      'title: Article',
+      `description: 'Capital has not changed: it just scaled up'`,
+      'lang: it',
+      '---',
+      'Body',
+    ].join('\n')
+
+    const result = parseFrontmatter(markdown)
+
+    expect(result.frontmatter.description).toBe(
+      'Capital has not changed: it just scaled up'
+    )
+    expect(result.frontmatter.title).toBe('Article')
+  })
+
+  it('parses a folded block scalar (>-) description', () => {
+    const markdown = [
+      '---',
+      'title: Article',
+      'description: >-',
+      '  Capital has not changed: it just scaled the conditions',
+      '  of 19th-century Manchester to the entire planet.',
+      'lang: it',
+      '---',
+      'Body',
+    ].join('\n')
+
+    const result = parseFrontmatter(markdown)
+
+    expect(result.frontmatter.description).toBe(
+      'Capital has not changed: it just scaled the conditions of 19th-century Manchester to the entire planet.'
+    )
+  })
+
+  it('returns empty frontmatter when YAML is malformed', () => {
+    const markdown = '---\ntitle: A\n  bad: indent\nweird:\n---\nBody'
+
+    const result = parseFrontmatter(markdown)
+
+    expect(result.frontmatter).toEqual({})
     expect(result.content).toBe('Body')
   })
 })

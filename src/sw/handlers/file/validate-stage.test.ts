@@ -52,4 +52,67 @@ describe('guardStagePayload', () => {
       )
     ).toBeUndefined()
   })
+
+  /*
+   * The from-manchester-to-global regression: a description with an
+   * unquoted colon emits "predatoria: ha …" which Astro's parser
+   * sees as a new mapping key with bad indentation. The stage guard
+   * MUST reject this payload before it reaches git so prod never
+   * goes red on a frontmatter parse error again.
+   */
+  it('rejects a content md whose frontmatter does not parse as YAML', () => {
+    const broken = [
+      '---',
+      'title: A',
+      'description: capital changed: scaled up to the entire planet',
+      'category: General',
+      'pubDate: 2026-01-01',
+      'lang: en',
+      '---',
+      '',
+      'body',
+    ].join('\n')
+
+    const reason = guardStagePayload('src/content/blog/x/index.en.md', broken)
+
+    expect(reason).toBeTruthy()
+    expect(reason).toMatch(/frontmatter is not valid YAML/i)
+  })
+
+  it('accepts the same description once it is single-quoted', () => {
+    const fixed = [
+      '---',
+      'title: A',
+      `description: 'capital changed: scaled up to the entire planet'`,
+      'category: General',
+      'pubDate: 2026-01-01',
+      'lang: en',
+      '---',
+      '',
+      'body',
+    ].join('\n')
+
+    expect(
+      guardStagePayload('src/content/blog/x/index.en.md', fixed)
+    ).toBeUndefined()
+  })
+
+  it('accepts the same description once it is a folded scalar', () => {
+    const fixed = [
+      '---',
+      'title: A',
+      'description: >-',
+      '  capital changed: scaled up to the entire planet',
+      'category: General',
+      'pubDate: 2026-01-01',
+      'lang: en',
+      '---',
+      '',
+      'body',
+    ].join('\n')
+
+    expect(
+      guardStagePayload('src/content/blog/x/index.en.md', fixed)
+    ).toBeUndefined()
+  })
 })
