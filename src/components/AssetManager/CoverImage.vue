@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CoverEmpty from './CoverEmpty.vue'
 import CoverOverlay from './CoverOverlay.vue'
 import { COVER_IMAGE_ID } from './test-ids'
 
@@ -22,8 +23,9 @@ defineEmits<{
       :src="coverUrl"
       alt="Article cover"
     />
-    <p v-else class="no-cover">No cover image</p>
+    <CoverEmpty v-else @upload="$emit('upload-cover', $event)" />
     <CoverOverlay
+      v-if="coverUrl"
       @delete="$emit('delete-cover')"
       @upload="$emit('upload-cover', $event)"
     />
@@ -36,23 +38,19 @@ defineEmits<{
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
-  margin: 0;
+  margin: 0 auto;
+  max-width: 32rem;
+  width: 100%;
   background: var(--color-background-soft);
 }
 
 img {
   width: 100%;
-  max-height: 200px;
+  max-height: 16rem;
   display: block;
   object-fit: contain;
 }
 
-.no-cover {
-  padding: 2rem;
-  text-align: center;
-  color: var(--color-text-secondary);
-  margin: 0;
-}
 </style>
 
 <style>

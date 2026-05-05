@@ -145,15 +145,14 @@ const { onDrop, onDragOver, onDragLeave } = createDragHandlers(
 
 .fb2-dropzone {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 0.75rem;
-  padding: 1.5rem;
-  border: 2px dashed var(--color-border);
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-background-soft);
   cursor: pointer;
+  text-align: left;
   transition: border-color 0.2s, background 0.2s;
 }
 
@@ -167,18 +166,19 @@ const { onDrop, onDragOver, onDragLeave } = createDragHandlers(
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-md);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
   background: var(--color-success, #2e7d32);
   color: #fff;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.75rem;
+  flex-shrink: 0;
 }
 
 .dropzone-label {
   color: var(--color-text-secondary);
-  font-size: clamp(0.875rem, 2vw, 1rem);
-  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.3;
 }
 </style>
