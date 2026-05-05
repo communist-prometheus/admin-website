@@ -27,7 +27,13 @@ const labelsStore = useLabelsStore()
 onMounted(() => labelsStore.ensureLoaded())
 const handleSelect = createSelectHandler(router, typeRef)
 const pushAndTrack = usePushAndTrack()
-const del = createDeleteState(typeRef, selectedLang, reloadContent, pushAndTrack)
+const del = createDeleteState({
+  contentType: typeRef,
+  selectedLang,
+  listItems: items,
+  reload: reloadContent,
+  pushAndTrack,
+})
 
 const handleCreate = (data: CreateContentData) => {
   setNewContentDraft(data)
