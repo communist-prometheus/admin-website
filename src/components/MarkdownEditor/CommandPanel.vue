@@ -14,6 +14,7 @@ const emit = defineEmits<{
   wrap: [pre: string, suf: string]
   block: [prefix: string]
   'insert-media': [tag: string]
+  'insert-footnote': []
   'upload-asset': [file: File]
 }>()
 
@@ -54,6 +55,12 @@ const onMedia = (a: AssetDisplay) => {
       label="―"
       title="Horizontal rule"
       @click="$emit('block', '---\n')"
+    />
+    <CmdButton
+      label="[†]"
+      title="Footnote (insert [^N] + definition)"
+      test-id="cmd-footnote"
+      @click="$emit('insert-footnote')"
     />
     <span
       v-if="assets"
