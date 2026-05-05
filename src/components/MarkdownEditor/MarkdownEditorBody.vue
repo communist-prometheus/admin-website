@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import CommandPanel from './CommandPanel.vue'
 import { createPasteDrop } from './editor-paste-drop'
+import { execFootnote } from './exec-footnote'
 import { handleKeyboard } from './handle-keyboard'
 import { insertUploadTag } from './handle-upload'
 import ImportDocsButton from './ImportDocs/ImportDocsButton.vue'
@@ -60,6 +61,7 @@ const handleImported = (markdown: string, images: readonly File[]) =>
       @wrap="wrap"
       @block="p => textareaRef && execBlock(textareaRef, p)"
       @insert-media="t => textareaRef && execMedia(textareaRef, t)"
+      @insert-footnote="textareaRef && execFootnote(textareaRef)"
       @upload-asset="handleUpload"
     />
     <textarea
