@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import DeployItemHeader from './DeployItemHeader.vue'
+import { RouterLink } from 'vue-router'
+import DeployToggleButton from './DeployToggleButton.vue'
 
 defineProps<{
   readonly message: string
@@ -7,74 +8,60 @@ defineProps<{
   readonly expanded: boolean
   readonly hasSteps: boolean
   readonly controls: string
+  readonly detailHref: string
+  readonly runId: number
 }>()
 
 defineEmits<{ toggle: [] }>()
 </script>
 
 <template>
-  <button
-    type="button"
-    class="summary"
-    :disabled="!hasSteps"
-    :aria-expanded="expanded"
-    :aria-controls="controls"
-    data-testid="deploy-item-toggle"
-    @click="$emit('toggle')"
-  >
-    <span
-      :class="hasSteps ? 'chevron' : 'chevron placeholder'"
-      aria-hidden="true"
-    >
-      {{ hasSteps ? (expanded ? '▾' : '▸') : '' }}
-    </span>
-    <DeployItemHeader :message="message" :status="status" />
-  </button>
+  <header class="summary-row">
+    <DeployToggleButton
+      :message="message"
+      :status="status"
+      :expanded="expanded"
+      :has-steps="hasSteps"
+      :controls="controls"
+      @toggle="$emit('toggle')"
+    />
+    <RouterLink
+      :to="detailHref"
+      class="detail-link"
+      :data-testid="`deploy-item-link-${runId}`"
+      title="Open detail page"
+      aria-label="Open deploy detail page"
+    >↗</RouterLink>
+  </header>
 </template>
 
 <style scoped>
-.summary {
+.summary-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  width: 100%;
   min-width: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
 }
 
-.summary:disabled {
-  cursor: default;
-}
-
-.chevron {
+.detail-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1rem;
+  width: 1.75rem;
+  height: 1.75rem;
   flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
-  font-size: 0.75rem;
+  text-decoration: none;
+  font-size: 0.875rem;
   line-height: 1;
 }
 
-.chevron.placeholder {
-  visibility: hidden;
-}
-
-.summary:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.summary > :deep(.deploy-header) {
-  flex: 1 1 0;
-  min-width: 0;
+.detail-link:hover,
+.detail-link:focus-visible {
+  background: var(--color-background-mute);
+  color: var(--color-text);
+  border-color: var(--color-text-secondary);
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { describeJobLogFailure } from '@/composables/useDeployStatus/describe-log-failure'
 import { fetchJobLog } from '@/composables/useDeployStatus/job-logs'
 import { sliceLogByStep, tailLog } from '@/composables/useDeployStatus/slice-log'
 import type {
@@ -18,19 +19,20 @@ const log = ref<string | undefined>(undefined)
 const loading = ref(false)
 const error = ref<string | undefined>(undefined)
 
-const FETCH_FAIL =
-  'Could not fetch the log from GitHub — token missing or job too young.'
-
 const load = async (): Promise<void> => {
   loading.value = true
   error.value = undefined
+  log.value = undefined
   try {
-    const text = await fetchJobLog(props.job.id)
-    error.value = text === undefined ? FETCH_FAIL : undefined
-    const sections = text === undefined ? {} : sliceLogByStep(text)
-    const stepName = failedStep.value?.name
-    const section = stepName ? sections[stepName] : undefined
-    log.value = text === undefined ? undefined : tailLog(section ?? text, 200)
+    const r = await fetchJobLog(props.job.id)
+    if (r.kind === 'ok') {
+      const sections = sliceLogByStep(r.text)
+      const stepName = failedStep.value?.name
+      const section = stepName ? sections[stepName] : undefined
+      log.value = tailLog(section ?? r.text, 200)
+      return
+    }
+    error.value = describeJobLogFailure(r)
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {

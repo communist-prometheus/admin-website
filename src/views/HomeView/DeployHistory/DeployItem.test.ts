@@ -70,23 +70,53 @@ describe('DeployItem', () => {
     expect(wrapper.text()).toContain('updated Home in pages')
   })
 
+  it('starts collapsed (no steps visible)', () => {
+    const wrapper = mountItem(buildWith([step('compile'), step('test')]))
+    expect(wrapper.find('[data-testid="deploy-item-steps"]').exists()).toBe(
+      false
+    )
+    const toggle = wrapper.get('[data-testid="deploy-item-toggle"]')
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+  })
+
+  it('expands inline on toggle click and shows steps', async () => {
+    const wrapper = mountItem(buildWith([step('compile'), step('test')]))
+    await wrapper.get('[data-testid="deploy-item-toggle"]').trigger('click')
+    expect(wrapper.find('[data-testid="deploy-item-steps"]').exists()).toBe(
+      true
+    )
+    expect(
+      wrapper
+        .get('[data-testid="deploy-item-toggle"]')
+        .attributes('aria-expanded')
+    ).toBe('true')
+  })
+
+  it('collapses again on second click', async () => {
+    const wrapper = mountItem(buildWith([step('compile')]))
+    const toggle = wrapper.get('[data-testid="deploy-item-toggle"]')
+    await toggle.trigger('click')
+    await toggle.trigger('click')
+    expect(wrapper.find('[data-testid="deploy-item-steps"]').exists()).toBe(
+      false
+    )
+  })
+
+  it('disables toggle when there are no steps', () => {
+    const wrapper = mountItem(buildWith([]))
+    const toggle = wrapper.get('[data-testid="deploy-item-toggle"]')
+    expect(toggle.attributes('disabled')).toBeDefined()
+  })
+
   /*
-   * The deploy item used to expand inline steps via a toggle. The
-   * details now live on /deploys/:runId — a dedicated page with the
-   * full step list AND the failed-step log tail. Clicking a list
-   * row therefore navigates rather than toggling.
+   * The detail link sits next to the toggle as a small "↗" button.
+   * Clicking it navigates to /deploys/:runId; clicking the
+   * commit-message text only toggles the inline steps. Two distinct
+   * affordances on the same row.
    */
-  it('links to /deploys/:runId for navigation to the detail page', () => {
+  it('exposes a separate detail-page link next to the toggle', () => {
     const wrapper = mountItem(buildWith([step('compile')]))
     const link = wrapper.get('[data-testid="deploy-item-link-456"]')
     expect(link.attributes('href')).toBe('/deploys/456')
-  })
-
-  it('renders without steps when the build has no jobs', () => {
-    const wrapper = mountItem(buildWith([]))
-    /* No crash, no toggle, link still present. */
-    expect(
-      wrapper.find('[data-testid="deploy-item-link-456"]').exists()
-    ).toBe(true)
   })
 })
