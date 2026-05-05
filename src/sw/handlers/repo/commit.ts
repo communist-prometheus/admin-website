@@ -1,4 +1,5 @@
 import { commitAndPush } from '../../git/remote/commit-and-push'
+import { describeError } from '../shared/describe-error'
 import { errorResponse, jsonResponse } from '../shared/json-response'
 
 /**
@@ -14,7 +15,6 @@ export const handleCommit = async (request: Request): Promise<Response> => {
     const sha = await commitAndPush(message)
     return jsonResponse({ success: true, sha })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    return errorResponse(`Commit failed: ${msg}`, 500)
+    return errorResponse(`Commit failed: ${describeError(err)}`, 500)
   }
 }

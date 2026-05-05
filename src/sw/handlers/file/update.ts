@@ -2,6 +2,7 @@ import { computeBlobSha } from '../../git/blob-sha'
 import { writeAndStage } from '../../git/io/write-file'
 import { commitAndPush } from '../../git/remote/commit-and-push'
 import { log } from '../../logging/logger'
+import { describeError } from '../shared/describe-error'
 import { errorResponse, jsonResponse } from '../shared/json-response'
 
 interface UpdateFileBody {
@@ -47,7 +48,7 @@ export const handleFileUpdate = async (
       commit: { sha: commitSha },
     })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
+    const msg = describeError(err)
     log('error', 'cache', `file update failed for ${path}: ${msg}`)
     return errorResponse(`Failed to update file: ${msg}`, 500)
   }
