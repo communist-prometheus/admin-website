@@ -32,6 +32,8 @@ defineProps<{
   gap: 0.5rem;
   padding: clamp(1rem, 3vw, 2rem);
   max-width: 48rem;
+  width: 100%;
+  margin-inline: auto;
   min-width: 0;
 }
 

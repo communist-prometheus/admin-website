@@ -52,15 +52,15 @@ defineEmits<{
 
 <style scoped>
 .edit-meta {
-  grid-column: meta;
-  align-self: start;
+  align-self: stretch;
+  width: 100%;
 }
 
 .edit-body {
-  grid-column: body;
   display: flex;
   flex-direction: column;
   gap: clamp(0.75rem, 2vw, 1.25rem);
   min-width: 0;
+  width: 100%;
 }
 </style>

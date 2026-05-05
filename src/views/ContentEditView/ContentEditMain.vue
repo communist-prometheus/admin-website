@@ -49,33 +49,26 @@ defineEmits<{
 </template>
 
 <style scoped>
+/*
+ * Single-column stack everywhere — frontmatter on top, body
+ * underneath. The earlier two-column grid (meta left, body right)
+ * was confusing once meta got long enough to scroll while body
+ * stayed put, and editors lost track of where they were on the
+ * page. Top-down scroll matches the public site's article shape.
+ */
 .edit-main {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   gap: clamp(1rem, 2vw, 2rem);
   padding: var(--content-frame-padding);
-  max-width: var(--content-wide);
+  max-width: var(--content-narrow);
   width: 100%;
   margin-inline: auto;
   box-sizing: border-box;
-  align-content: start;
-}
-
-/*
- * On wide screens dock frontmatter to a fixed-ish meta column on
- * the left and let the body take the rest. Below 1024px the grid
- * collapses to a single column so phone/tablet still scroll
- * top-to-bottom.
- */
-@media (width >= 1024px) {
-  .edit-main {
-    grid-template-columns: [meta] 22rem [body] minmax(0, 1fr);
-  }
 }
 
 .loading-state {
-  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: center;
