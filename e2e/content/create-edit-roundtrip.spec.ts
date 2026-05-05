@@ -63,8 +63,11 @@ test.describe('Content - create → edit round-trip', () => {
 
     // Verify each required blog field is bound in the form — the actual
     // regression was that the form rendered with empty values.
+    // Description retired from the FrontmatterEditor for blog in #187,
+    // so we don't probe `#fm-description` here. The create dialog still
+    // collects description and the field round-trips into the file body
+    // — checked via the file-content assertions below.
     await expect(page.locator('#fm-title')).toHaveValue(title)
-    await expect(page.locator('#fm-description')).toHaveValue(description)
     await expect(page.locator('#fm-category')).not.toHaveValue('')
 
     // Type a change into the body, then save. Use the editor-body
