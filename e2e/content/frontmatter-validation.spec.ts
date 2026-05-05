@@ -37,20 +37,14 @@ test.describe('Frontmatter validation before save', () => {
     expect(commitFired).toBe(false)
   })
 
-  test('clearing the description blocks the save', async ({ page }) => {
-    await edit(page)
-    await page.locator('#fm-description').fill('')
-
-    let commitFired = false
-    page.on('response', r => {
-      if (r.url().includes('/api/github/commit')) commitFired = true
-    })
-
-    await saveAndConfirm(page, await openPreview(page))
-    await expectVisible(page, errorBanner(page))
-    await waitForCondition(page, async () => true)
-    expect(commitFired).toBe(false)
-  })
+  /*
+   * "clearing the description blocks the save" was retired with #187 —
+   * description is no longer a required field for blog (or any other
+   * collection). Listings derive a card preview from the body's first
+   * paragraph; the article page renders the description as a lead block
+   * only when an old entry still carries one. Title is now the sole
+   * mandatory text field — covered by the test above.
+   */
 
   test('valid frontmatter allows the save to complete', async ({ page }) => {
     await edit(page)

@@ -77,8 +77,8 @@ watch(() => props.show, visible => {
       <label for="title" class="field-label">Title *</label>
       <input id="title" v-model="title" type="text" required placeholder="Article Title" class="field-input" />
       <template v-if="contentType === 'blog' || contentType === 'positions' || contentType === 'newspaper'">
-        <label for="description" class="field-label">Description *</label>
-        <textarea id="description" v-model="description" required placeholder="Brief description..." rows="3" class="field-input" />
+        <label for="description" class="field-label">Description (optional)</label>
+        <textarea id="description" v-model="description" placeholder="Optional — listings derive a preview from the body's first paragraph when blank." rows="3" class="field-input" />
       </template>
       <template v-if="contentType === 'blog'">
         <label for="category" class="field-label">Category *</label>
