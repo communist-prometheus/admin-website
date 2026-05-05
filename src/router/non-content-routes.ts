@@ -32,4 +32,10 @@ export const nonContentRoutes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
     component: () => import('../views/VisualMergeView/VisualMergeView.vue'),
   },
+  {
+    path: '/deploys/:runId(\\d+)',
+    name: 'deploy-detail',
+    meta: { requiresAuth: true },
+    component: () => import('../views/DeployDetailView/DeployDetailView.vue'),
+  },
 ]

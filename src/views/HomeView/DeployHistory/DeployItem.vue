@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { clearPendingDeploy } from '@/composables/useDeployStatus/pending-deploy'
 import { PENDING_RUN_PREFIX } from '@/composables/useDeployStatus/pending-deploy-projection'
 import type { DeployBuild } from '@/composables/useDeployStatus/workflow-types'
 import { calcProgress, formatElapsed } from './build-progress'
 import DeployItemMeta from './DeployItemMeta.vue'
-import DeployItemSummary from './DeployItemSummary.vue'
+import DeployItemTitle from './DeployItemTitle.vue'
 import DeployProgressBar from './DeployProgressBar.vue'
-import DeploySteps from './DeploySteps.vue'
 
 const props = defineProps<{ readonly build: DeployBuild }>()
 
 const isPending = computed(() =>
-  props.build.run.head_sha.startsWith(PENDING_RUN_PREFIX),
+  props.build.run.head_sha.startsWith(PENDING_RUN_PREFIX)
 )
-
-const expanded = ref(false)
 
 const badge = computed<string>(() => {
   const { status, conclusion } = props.build.run
-  if (status === 'completed')
-    return conclusion === 'success' ? 'success' : (conclusion ?? 'failure')
-  if (status === 'in_progress') return 'building'
-  return 'queued'
+  return status === 'completed'
+    ? conclusion === 'success'
+      ? 'success'
+      : (conclusion ?? 'failure')
+    : status === 'in_progress'
+      ? 'building'
+      : 'queued'
 })
 
 const formatDate = (iso: string): string =>
@@ -34,43 +34,31 @@ const formatDate = (iso: string): string =>
   })
 
 const firstJob = computed(() => props.build.jobs[0])
-const hasSteps = computed(() => (firstJob.value?.steps?.length ?? 0) > 0)
 const startedAt = computed(
-  () => firstJob.value?.started_at ?? props.build.run.created_at,
+  () => firstJob.value?.started_at ?? props.build.run.created_at
 )
 const completedAt = computed(() => firstJob.value?.completed_at)
 const progress = computed(() =>
-  calcProgress(firstJob.value, props.build.run.status),
+  calcProgress(firstJob.value, props.build.run.status)
 )
 const elapsed = computed(() =>
-  formatElapsed(startedAt.value, completedAt.value),
+  formatElapsed(startedAt.value, completedAt.value)
 )
-const stepsId = computed(() => `deploy-steps-${props.build.run.id}`)
 const messageLine = computed(
   () => props.build.run.head_commit?.message?.split('\n')[0] ?? ''
 )
-
-const toggle = (): void => {
-  if (hasSteps.value) expanded.value = !expanded.value
-}
 </script>
 
 <template>
   <article
     class="deploy-item"
-    :class="{
-      active: build.run.status !== 'completed',
-      expanded,
-    }"
+    :class="{ active: build.run.status !== 'completed' }"
     :data-testid="`deploy-item-${build.run.id}`"
   >
-    <DeployItemSummary
+    <DeployItemTitle
+      :run-id="build.run.id"
       :message="messageLine"
       :status="badge"
-      :expanded="expanded"
-      :has-steps="hasSteps"
-      :controls="stepsId"
-      @toggle="toggle"
     />
     <DeployItemMeta
       :author="build.run.head_commit?.author?.name ?? ''"
@@ -82,12 +70,6 @@ const toggle = (): void => {
       :conclusion="build.run.conclusion"
       :progress="progress"
       :elapsed="elapsed"
-    />
-    <DeploySteps
-      v-if="expanded && hasSteps"
-      :id="stepsId"
-      :steps="firstJob?.steps ?? []"
-      data-testid="deploy-item-steps"
     />
     <button
       v-if="isPending"
