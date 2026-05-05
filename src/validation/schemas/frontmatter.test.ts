@@ -28,11 +28,16 @@ describe('validateFrontmatter', () => {
     expect(Either.isLeft(r)).toBe(true)
   })
 
-  it('rejects a positions missing description', () => {
+  it('accepts a positions without description (#3)', () => {
     const r = validateFrontmatter('positions', {
       title: 'T',
       lang: 'en',
     })
+    expect(Either.isRight(r)).toBe(true)
+  })
+
+  it('rejects a positions missing title', () => {
+    const r = validateFrontmatter('positions', { lang: 'en' })
     expect(Either.isLeft(r)).toBe(true)
   })
 
