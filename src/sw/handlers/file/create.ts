@@ -1,6 +1,7 @@
 import { computeBlobSha } from '../../git/blob-sha'
 import { writeAndStage } from '../../git/io/write-file'
 import { log } from '../../logging/logger'
+import { describeError } from '../shared/describe-error'
 import { errorResponse, jsonResponse } from '../shared/json-response'
 
 interface CreateFileBody {
@@ -34,7 +35,7 @@ export const handleFileCreate = async (
       staged: true,
     })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
+    const msg = describeError(err)
     log('error', 'cache', `file create failed for ${path}: ${msg}`)
     return errorResponse(`Failed to create file: ${msg}`, 500)
   }

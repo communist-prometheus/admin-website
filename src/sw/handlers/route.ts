@@ -5,6 +5,7 @@ import { routeContentRequest } from './content/route'
 import { routeFileRequest } from './file/route'
 import { recoverAndRetry } from './recover-and-retry'
 import { matchRbacRoute } from './route-rbac'
+import { describeError } from './shared/describe-error'
 import type { RouteHandler } from './shared/first-match'
 import { firstMatch } from './shared/first-match'
 import { errorResponse } from './shared/json-response'
@@ -21,9 +22,6 @@ const routes: readonly RouteHandler[] = [
   routeAssetRequest,
   routeContentRequest,
 ]
-
-const toMessage = (err: unknown): string =>
-  err instanceof Error ? err.message : String(err)
 
 const exec = (request: Request): Promise<Response> =>
   pipe(
@@ -43,7 +41,7 @@ const exec = (request: Request): Promise<Response> =>
 export const routeRequest = async (request: Request): Promise<Response> => {
   const replay = request.clone()
   return exec(request).catch(err => {
-    log('error', 'cache', `Handler error: ${toMessage(err)}`)
+    log('error', 'cache', `Handler error: ${describeError(err)}`)
     return recoverAndRetry(replay, exec)
   })
 }
