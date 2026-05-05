@@ -38,8 +38,18 @@ const fetchLogText = async (
   token: string
 ): Promise<JobLogResult> => {
   try {
+    /*
+     * GitHub's REST API rejects `Accept: text/plain` on the
+     * /actions/jobs/:id/logs endpoint with a 415 — even though the
+     * eventual blob storage redirect target serves plain text.
+     * Send the canonical GH API mime; the 302 to blob storage is
+     * followed transparently and the body comes back as plain text.
+     */
     const r = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}`, Accept: 'text/plain' },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+      },
       cache: 'no-store',
     })
     return onHttp(r)
