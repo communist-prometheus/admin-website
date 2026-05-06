@@ -3,6 +3,7 @@ import { createApp as vueCreateApp } from 'vue'
 import type { Router } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
+import { installRouterRecording } from './features/action-history/install-router'
 import { routes } from './router'
 import { installAuthGuard } from './router/auth-guard'
 
@@ -20,6 +21,7 @@ export const createApp = () => {
   })
 
   installAuthGuard(router)
+  installRouterRecording(router)
 
   app.use(pinia)
   app.use(router)

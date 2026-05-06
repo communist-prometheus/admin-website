@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { LabelEntry } from '@/stores/labels'
 import type { LanguageEntry } from '@/stores/settings'
+import ActionHistorySection from './ActionHistorySection.vue'
 import LabelsSection from './LabelsSection.vue'
 import LanguagesSection from './LanguagesSection.vue'
 import MembersSection from './MembersSection.vue'
@@ -38,6 +39,7 @@ defineEmits<{
       @save="$emit('save-labels', $event)"
     />
     <MembersSection />
+    <ActionHistorySection />
   </section>
 </template>
 
