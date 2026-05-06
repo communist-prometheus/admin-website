@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import type { Ticket } from '@/features/tickets/api/gh-tickets'
-import { createTicket } from '@/features/tickets/api/ticket-actions'
-import CreateTicketForm from '@/features/tickets/components/CreateTicketForm.vue'
+import CreateTicketContainer from '@/features/tickets/components/CreateTicketContainer.vue'
 import TicketCard from '@/features/tickets/components/TicketCard.vue'
-import { useAuthStore } from '@/stores/auth'
 
 defineProps<{
   readonly showCreate: boolean
@@ -16,32 +14,30 @@ const emit = defineEmits<{
   reload: []
 }>()
 
-const auth = useAuthStore()
+const onCreated = (): void => {
+  emit('toggle-create')
+  emit('reload')
+}
 
-const handleCreate = async (
-  title: string,
-  body: string,
-  labels: readonly string[]
-): Promise<void> => {
-  if (!auth.user) return
-  try {
-    await createTicket(auth.user.accessToken, title, body, labels)
-    emit('toggle-create')
-    emit('reload')
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Failed'
-    globalThis.alert(msg)
-  }
+const onError = (msg: string): void => {
+  globalThis.alert(msg)
 }
 </script>
 
 <template>
   <section class="tickets-page">
     <h2>Tickets</h2>
-    <button type="button" class="btn-new" @click="emit('toggle-create')">
+    <button
+      type="button" class="btn-new"
+      @click="emit('toggle-create')"
+    >
       {{ showCreate ? 'Cancel' : '+ New Ticket' }}
     </button>
-    <CreateTicketForm v-if="showCreate" @create="handleCreate" />
+    <CreateTicketContainer
+      v-if="showCreate"
+      @created="onCreated"
+      @error="onError"
+    />
     <p v-if="loading" class="status">Loading tickets...</p>
     <TicketCard v-for="t in tickets" :key="t.number" :ticket="t" />
   </section>
