@@ -13,6 +13,7 @@ const emit = defineEmits<{
   'upload-pdf': [file: File]
   'upload-cover': [file: File]
   'set-cover': [name: string]
+  error: [message: string]
 }>()
 
 const inputRef = ref<HTMLInputElement>()
@@ -32,12 +33,22 @@ const triggerUpload = () => { inputRef.value?.click() }
  * when there is no cover yet — if the user has chosen a custom cover
  * we must not silently overwrite it.
  */
+const extractCover = async (file: File): Promise<File | undefined> => {
+  try {
+    const m = await import('@/features/newspaper/extract-pdf-cover')
+    return await m.extractPdfCover(file)
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err)
+    emit('error', `PDF cover extraction failed: ${reason}`)
+    return undefined
+  }
+}
+
 const handleFile = async (file: File) => {
   if (file.type !== 'application/pdf') return
   emit('upload-pdf', file)
-  const m = await import('@/features/newspaper/extract-pdf-cover')
-  const cover = await m.extractPdfCover(file)
-  if (!cover) return
+  const cover = await extractCover(file)
+  if (cover === undefined) return
   emit('upload-cover', cover)
   if (shouldAutoSetCover(props.currentCover)) emit('set-cover', 'cover.png')
 }
