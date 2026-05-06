@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ContentType } from '@/types/content'
+import type { Language } from '@/types/language'
 import EditorFooter from './EditorFooter.vue'
 import EditorHeader from './EditorHeader.vue'
 import FrontmatterEditor from './FrontmatterEditor.vue'
@@ -11,6 +12,7 @@ defineProps<{
   readonly loading?: boolean
   readonly frontmatter?: Record<string, unknown>
   readonly contentType?: ContentType
+  readonly lang?: Language
 }>()
 
 const emit = defineEmits<{
@@ -26,9 +28,10 @@ const emit = defineEmits<{
     <output v-else-if="loading" class="loading-state">Loading file...</output>
     <EditorHeader v-else :file-path="filePath" />
     <FrontmatterEditor
-      v-if="filePath && !loading && frontmatter && contentType"
+      v-if="filePath && !loading && frontmatter && contentType && lang"
       :frontmatter="frontmatter"
       :content-type="contentType"
+      :lang="lang"
       @update:frontmatter="emit('update:frontmatter', $event)"
     />
     <MarkdownEditorBody

@@ -1,22 +1,25 @@
 <script setup lang="ts">
+import type { Language } from '@/types/language'
 import ArticlesPicker from './ArticlesPicker/ArticlesPicker.vue'
-import type { FieldDefinition } from './frontmatter-fields'
+import FrontmatterSelect from './FrontmatterSelect.vue'
+import type { FieldDefinition } from './field-types'
 import { formatDateValue, parseFieldValue } from './frontmatter-values'
 import IssuePicker from './IssuePicker/IssuePicker.vue'
 
 const props = defineProps<{
   readonly field: FieldDefinition
   readonly value: unknown
+  readonly lang: Language
 }>()
 
-const emit = defineEmits<{
-  update: [value: unknown]
-}>()
+const emit = defineEmits<{ update: [value: unknown] }>()
 
-const displayValue = (): string => {
-  if (props.field.type === 'date') return formatDateValue(props.value)
-  return String(props.value ?? '')
-}
+const stringValue = (): string => String(props.value ?? '')
+
+const displayValue = (): string =>
+  props.field.type === 'date'
+    ? formatDateValue(props.value)
+    : stringValue()
 
 const isChecked = (): boolean =>
   props.value === true || props.value === 'true'
@@ -32,17 +35,17 @@ const issueValue = (): string | undefined =>
     : undefined
 
 const handleInput = (event: Event) => {
-  const target = event.target
-  if (
-    !(target instanceof HTMLInputElement) &&
-    !(target instanceof HTMLTextAreaElement)
-  )
-    return
-  if (props.field.type === 'checkbox') {
-    emit('update', (target as HTMLInputElement).checked)
+  const t = event.target
+  if (t instanceof HTMLInputElement && props.field.type === 'checkbox') {
+    emit('update', t.checked)
     return
   }
-  emit('update', parseFieldValue(props.field.type, target.value))
+  if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement)
+    emit('update', parseFieldValue(props.field.type, t.value))
+}
+
+const onSelect = (v: string): void => {
+  emit('update', parseFieldValue('select', v))
 }
 </script>
 
@@ -73,12 +76,20 @@ const handleInput = (event: Event) => {
   <ArticlesPicker
     v-else-if="field.type === 'articles'"
     :value="articlesValue()"
+    :lang="lang"
     @update="emit('update', $event)"
   />
   <IssuePicker
     v-else-if="field.type === 'issue'"
     :value="issueValue()"
     @update="emit('update', $event)"
+  />
+  <FrontmatterSelect
+    v-else-if="field.type === 'select'"
+    :field="field"
+    :value="stringValue()"
+    :lang="lang"
+    @change="onSelect"
   />
   <input
     v-else

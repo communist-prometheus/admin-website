@@ -2,7 +2,8 @@ import type { FieldDefinition } from './frontmatter-fields'
 
 /**
  * Frontmatter fields shown on the newspaper-issue edit page.
- * `description` retired — see fields-blog.ts.
+ * Description is optional — kept for parity with the create
+ * dialog so editors can fill in a preface when wanted.
  */
 export const newspaperFields: readonly FieldDefinition[] = [
   {
@@ -10,6 +11,11 @@ export const newspaperFields: readonly FieldDefinition[] = [
     label: 'Title',
     type: 'text',
     required: true,
+  },
+  {
+    key: 'description',
+    label: 'Description',
+    type: 'textarea',
   },
   { key: 'published', label: 'Published', type: 'checkbox' },
   { key: 'publishDate', label: 'Publish Date', type: 'date' },

@@ -15,7 +15,7 @@ const TODAY = '2026-04-23'
 
 const mountEditor = (frontmatter: Record<string, unknown>) =>
   mount(FrontmatterEditor, {
-    props: { frontmatter, contentType: 'blog' as const },
+    props: { frontmatter, contentType: 'blog' as const, lang: 'en' as const },
     global: { plugins: [createPinia()] },
   })
 

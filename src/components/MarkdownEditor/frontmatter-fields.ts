@@ -1,3 +1,4 @@
+import { Match, pipe } from 'effect'
 import type { ContentType } from '@/types/content'
 import {
   basePageFields,
@@ -8,23 +9,9 @@ import {
   pageFieldsBySlug,
   positionsFields,
 } from './field-definitions'
+import type { FieldDefinition } from './field-types'
 
-/**
- * Schema for a frontmatter form field
- */
-export interface FieldDefinition {
-  readonly key: string
-  readonly label: string
-  readonly type:
-    | 'text'
-    | 'textarea'
-    | 'number'
-    | 'date'
-    | 'checkbox'
-    | 'articles'
-    | 'issue'
-  readonly required?: boolean
-}
+export type { FieldDefinition, SelectOptionsSource } from './field-types'
 
 const fieldsByContentType: Readonly<
   Record<ContentType, readonly FieldDefinition[]>
@@ -36,6 +23,20 @@ const fieldsByContentType: Readonly<
   newspaper: newspaperFields,
 }
 
+const fieldsForType = (type: ContentType): readonly FieldDefinition[] =>
+  fieldsByContentType[type] ?? []
+
+const resolveBySlug = (
+  type: ContentType,
+  slug: string
+): readonly FieldDefinition[] =>
+  pipe(
+    Match.value(type),
+    Match.when('pages', () => pageFieldsBySlug[slug] ?? basePageFields),
+    Match.when('common', () => commonFieldsBySlug[slug] ?? labelsFields),
+    Match.orElse(() => fieldsForType(type))
+  )
+
 /**
  * Get field definitions for a content type.
  * @param type - The content type
@@ -45,10 +46,5 @@ const fieldsByContentType: Readonly<
 export const getFields = (
   type: ContentType,
   slug?: string
-): readonly FieldDefinition[] => {
-  if (slug && type === 'pages')
-    return pageFieldsBySlug[slug] ?? basePageFields
-  if (slug && type === 'common')
-    return commonFieldsBySlug[slug] ?? labelsFields
-  return fieldsByContentType[type] ?? []
-}
+): readonly FieldDefinition[] =>
+  slug === undefined ? fieldsForType(type) : resolveBySlug(type, slug)

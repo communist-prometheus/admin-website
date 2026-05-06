@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ContentType } from '@/types/content'
+import type { Language } from '@/types/language'
 import FrontmatterField from './FrontmatterField.vue'
 import { getFields } from './frontmatter-fields'
 
@@ -7,6 +8,7 @@ const props = defineProps<{
   readonly frontmatter: Record<string, unknown>
   readonly contentType: ContentType
   readonly slug?: string
+  readonly lang: Language
 }>()
 
 const emit = defineEmits<{
@@ -34,6 +36,7 @@ const handleFieldUpdate = (key: string, value: unknown) => {
       :key="field.key"
       :field="field"
       :value="frontmatter[field.key]"
+      :lang="lang"
       @update="handleFieldUpdate(field.key, $event)"
     />
   </fieldset>

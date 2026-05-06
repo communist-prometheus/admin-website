@@ -1,59 +1,59 @@
 import type { ContentItem } from '@/types/content'
+import type { Language } from '@/types/language'
 
 /** A blog article available to be linked into a newspaper issue. */
 export interface ArticleOption {
   readonly slug: string
   readonly title: string
+  readonly publishedAt: number
 }
 
-const titleFromFrontmatter = (fm: ContentItem['frontmatter']): string => {
-  const t = fm['title']
-  return typeof t === 'string' && t.trim() !== '' ? t : ''
+/** Arguments for {@link articleOptions}. */
+export interface ArticleOptionsInput {
+  readonly items: readonly ContentItem[]
+  readonly lang: Language
+  readonly exclude: readonly string[]
 }
 
-const shouldOverwrite = (
-  existing: ArticleOption | undefined,
-  candidate: ArticleOption
-): boolean =>
-  existing === undefined ||
-  (existing.title === existing.slug && candidate.title !== candidate.slug)
+const stringFm = (fm: ContentItem['frontmatter'], key: string): string => {
+  const v = fm[key]
+  return typeof v === 'string' ? v : ''
+}
 
-const candidateFor = (item: ContentItem): ArticleOption => ({
+const titleOf = (item: ContentItem): string =>
+  stringFm(item.frontmatter, 'title').trim() || item.slug
+
+const dateOf = (item: ContentItem): number => {
+  const raw =
+    stringFm(item.frontmatter, 'publishDate') ||
+    stringFm(item.frontmatter, 'pubDate')
+  const ms = raw ? Date.parse(raw) : Number.NaN
+  return Number.isNaN(ms) ? Number.NEGATIVE_INFINITY : ms
+}
+
+const toOption = (item: ContentItem): ArticleOption => ({
   slug: item.slug,
-  title: titleFromFrontmatter(item.frontmatter) || item.slug,
+  title: titleOf(item),
+  publishedAt: dateOf(item),
 })
 
-const accumulate = (
-  acc: Map<string, ArticleOption>,
-  item: ContentItem,
-  taken: ReadonlySet<string>
-): Map<string, ArticleOption> => {
-  const candidate = candidateFor(item)
-  return taken.has(item.slug)
-    ? acc
-    : shouldOverwrite(acc.get(item.slug), candidate)
-      ? acc.set(item.slug, candidate)
-      : acc
-}
+const compare = (a: ArticleOption, b: ArticleOption): number =>
+  b.publishedAt - a.publishedAt || a.title.localeCompare(b.title)
 
 /**
- * Reduce the blog content store to a deduped, alphabetised list of
- * article slugs with the best human-readable title we can pull from
- * any of the language-specific frontmatters. Already-linked slugs
- * are filtered out so the picker offers only fresh choices.
- *
- * @param items All blog ContentItems from the store.
- * @param exclude Slugs already linked from the current newspaper.
- * @returns Alphabetised available articles.
+ * Build the available-articles list for the newspaper picker, scoped
+ * to a single language and sorted newest-first with an alphabetical
+ * title tie-break. Already-linked slugs and items in other languages
+ * are dropped.
+ * @param input Items, current language, and slugs to exclude.
+ * @returns Picker options for the current language.
  */
 export const articleOptions = (
-  items: readonly ContentItem[],
-  exclude: readonly string[]
+  input: ArticleOptionsInput
 ): readonly ArticleOption[] => {
-  const taken = new Set(exclude)
-  const bySlug = items.reduce<Map<string, ArticleOption>>(
-    (acc, item) => accumulate(acc, item, taken),
-    new Map()
-  )
-  return [...bySlug.values()].sort((a, b) => a.title.localeCompare(b.title))
+  const taken = new Set(input.exclude)
+  return input.items
+    .filter(it => it.lang === input.lang && !taken.has(it.slug))
+    .map(toOption)
+    .sort(compare)
 }
