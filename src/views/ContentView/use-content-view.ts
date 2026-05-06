@@ -5,7 +5,11 @@ import { useContentCreator } from '@/composables/useContent/useContentCreator'
 import { useContentList } from '@/composables/useContent/useContentList'
 import { usePermissions } from '@/composables/usePermissions'
 import { useAuthStore } from '@/stores/auth'
-import type { ContentType, Language } from '@/types/content'
+import type { ContentType } from '@/types/content'
+import { useSelectedLang } from './use-selected-lang'
+
+const langsOf = (items: ReturnType<typeof useContentList>['items']) =>
+  computed(() => [...new Set(items.value.map(i => i.lang))])
 
 const FIXED: ReadonlySet<ContentType> = new Set(['pages', 'common'])
 
@@ -30,7 +34,8 @@ export const useContentView = (contentType: Ref<ContentType>) => {
   const list = useContentList(contentType)
   const { createContent } = useContentCreator(() => contentType.value)
   const error = ref<string | null>(null)
-  const selectedLang = ref<Language>('en')
+  const availableLangs = langsOf(list.items)
+  const selectedLang = useSelectedLang(() => availableLangs.value)
   const showCreateDialog = ref(false)
 
   return {
