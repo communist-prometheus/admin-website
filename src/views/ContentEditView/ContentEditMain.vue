@@ -61,11 +61,8 @@ defineEmits<{
   flex-direction: column;
   flex: 1;
   gap: clamp(1rem, 2vw, 2rem);
-  padding: var(--content-frame-padding);
-  max-width: var(--content-narrow);
   width: 100%;
-  margin-inline: auto;
-  box-sizing: border-box;
+  min-width: 0;
 }
 
 .loading-state {

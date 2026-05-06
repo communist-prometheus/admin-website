@@ -14,6 +14,7 @@ import ContentViewHeader from './ContentView/ContentViewHeader.vue'
 import ContentViewMain from './ContentView/ContentViewMain.vue'
 import { createDeleteState } from './ContentView/delete-state'
 import { createSelectHandler } from './ContentView/select-handler'
+import { useBulkDelete } from './ContentView/use-bulk-delete'
 import { useContentView } from './ContentView/use-content-view'
 
 const props = defineProps<{ readonly contentType: ContentType }>()
@@ -31,6 +32,11 @@ const del = createDeleteState({
   contentType: typeRef,
   selectedLang,
   listItems: items,
+  reload: reloadContent,
+  pushAndTrack,
+})
+const bulk = useBulkDelete({
+  contentType: typeRef,
   reload: reloadContent,
   pushAndTrack,
 })
@@ -53,9 +59,15 @@ const handleCreate = (data: CreateContentData) => {
       :is-authenticated="isAuthenticated" :loading="loadingList"
       :hide-create="isFixedStructure" :hide-delete="isFixedStructure"
       :deleting-slugs="del.deletingSlugs.value"
+      :select-mode="bulk.selectMode.value"
+      :selected-slugs="bulk.selectedSlugs.value"
       @select="handleSelect"
       @create="() => { showCreateDialog = true }"
       @delete="item => { del.deleteTarget.value = item }"
+      @enter-select="bulk.enter"
+      @exit-select="bulk.exit"
+      @toggle-select="bulk.toggle"
+      @bulk-delete="bulk.runDelete"
     />
     <LoadingOverlay :show="loadingList" />
     <ErrorMessage :error="error" />

@@ -55,62 +55,64 @@ const setError = (msg: string): void => {
 
 <template>
   <AppLayout>
-    <nav class="edit-nav">
-      <EditBreadcrumb
-        :content-type="p.contentType.value"
-        :slug="slug" :renameable="isRenameable"
-        @rename="handleRename"
+    <section class="edit-frame">
+      <nav class="edit-nav">
+        <EditBreadcrumb
+          :content-type="p.contentType.value"
+          :slug="slug" :renameable="isRenameable"
+          @rename="handleRename"
+        />
+      </nav>
+      <LanguageSelector
+        v-if="!previewing"
+        :model-value="p.editor.currentLang.value"
+        :available-languages="p.langs.value"
+        @update:model-value="handleSwitchLang"
       />
-    </nav>
-    <LanguageSelector
-      v-if="!previewing"
-      :model-value="p.editor.currentLang.value"
-      :available-languages="p.langs.value"
-      @update:model-value="handleSwitchLang"
-    />
-    <CoverImage
-      v-if="!previewing && p.hasCover.value && !p.editor.loadingFile.value"
-      :cover-url="p.assets.coverUrl.value"
-      @delete-cover="p.ah.onRemoveCover"
-      @upload-cover="p.ah.onUploadCover"
-    />
-    <ContentEditMain
-      v-if="!previewing"
-      :body-content="p.editor.bodyContent.value"
-      :frontmatter-data="p.editor.frontmatterData.value"
-      :content-type="p.contentType.value"
-      :slug="p.slug"
-      :loading-file="p.editor.loadingFile.value"
-      :asset-url-map="p.hasAssets.value ? p.assets.urlMap.value : undefined"
-      :assets="p.hasAssets.value ? p.assets.allAssets.value : undefined"
-      @update:body-content="updateBody"
-      @update:frontmatter="updateFm"
-      @preview="enterPreview"
-      @paste:image="p.ah.onPasteImage"
-      @upload-asset="p.ah.onUploadAsset"
-      @set-cover="p.ah.onSetCover"
-      @error="setError"
-    />
-    <ContentPreview
-      v-else
-      :body-content="p.editor.bodyContent.value"
-      :frontmatter-data="p.editor.frontmatterData.value"
-      :cover-url="p.assets.coverUrl.value"
-      :asset-url-map="p.hasAssets.value ? p.assets.urlMap.value : undefined"
-    />
+      <CoverImage
+        v-if="!previewing && p.hasCover.value && !p.editor.loadingFile.value"
+        :cover-url="p.assets.coverUrl.value"
+        @delete-cover="p.ah.onRemoveCover"
+        @upload-cover="p.ah.onUploadCover"
+      />
+      <ContentEditMain
+        v-if="!previewing"
+        :body-content="p.editor.bodyContent.value"
+        :frontmatter-data="p.editor.frontmatterData.value"
+        :content-type="p.contentType.value"
+        :slug="p.slug"
+        :loading-file="p.editor.loadingFile.value"
+        :asset-url-map="p.hasAssets.value ? p.assets.urlMap.value : undefined"
+        :assets="p.hasAssets.value ? p.assets.allAssets.value : undefined"
+        @update:body-content="updateBody"
+        @update:frontmatter="updateFm"
+        @preview="enterPreview"
+        @paste:image="p.ah.onPasteImage"
+        @upload-asset="p.ah.onUploadAsset"
+        @set-cover="p.ah.onSetCover"
+        @error="setError"
+      />
+      <ContentPreview
+        v-else
+        :body-content="p.editor.bodyContent.value"
+        :frontmatter-data="p.editor.frontmatterData.value"
+        :cover-url="p.assets.coverUrl.value"
+        :asset-url-map="p.hasAssets.value ? p.assets.urlMap.value : undefined"
+      />
+      <AssetPanel
+        v-if="!previewing && p.hasAssets.value && !p.editor.loadingFile.value"
+        :assets="p.assets.allAssets.value"
+        @set-cover="p.ah.onSetCover"
+        @delete-asset="p.ah.onDeleteAsset"
+        @upload-asset="p.ah.onUploadAsset"
+      />
+    </section>
     <PreviewFooter
       v-if="previewing"
       :saving="saving"
       :saved="saved"
       @save="flow.onSave"
       @back="exitPreview"
-    />
-    <AssetPanel
-      v-if="!previewing && p.hasAssets.value && !p.editor.loadingFile.value"
-      :assets="p.assets.allAssets.value"
-      @set-cover="p.ah.onSetCover"
-      @delete-asset="p.ah.onDeleteAsset"
-      @upload-asset="p.ah.onUploadAsset"
     />
     <PublishConfirmDialog
       :show="flow.showDialog.value"
@@ -125,11 +127,29 @@ const setError = (msg: string): void => {
 </template>
 
 <style scoped>
+/*
+ * One frame for every edit-mode child: same max-width, same
+ * horizontal gutter, same vertical rhythm. Previously the breadcrumb
+ * sat flush at the viewport edge while the body had a 16-32px
+ * padding inset and the language fieldset had its own 8-16px inset —
+ * the result on mobile was a ragged left edge that the editor read
+ * as "more padding on the left than the right".
+ */
+.edit-frame {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 2vw, 1.25rem);
+  padding: var(--content-frame-padding);
+  max-width: var(--content-narrow);
+  width: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
 .edit-nav {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0;
   font-size: clamp(0.875rem, 2vw, 1rem);
 }
 </style>
