@@ -4,6 +4,7 @@ import type { ContentItem, Language } from '@/types/content'
 import ContentListEmpty from './ContentListEmpty.vue'
 import ContentListHeader from './ContentListHeader.vue'
 import ContentListItem from './ContentListItem.vue'
+import { sortByDateNewestFirst } from './sort-by-date'
 
 const props = defineProps<{
   readonly items: readonly ContentItem[]
@@ -28,7 +29,9 @@ const emit = defineEmits<{
 }>()
 
 const filteredItems = computed(() =>
-  props.items.filter((item) => item.lang === props.selectedLang)
+  sortByDateNewestFirst(
+    props.items.filter(item => item.lang === props.selectedLang)
+  )
 )
 
 const selectedCount = computed(() => props.selectedSlugs?.size ?? 0)
