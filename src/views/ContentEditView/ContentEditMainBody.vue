@@ -2,6 +2,7 @@
 import FrontmatterEditor from '@/components/MarkdownEditor/FrontmatterEditor.vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import type { ContentType } from '@/types/content'
+import type { Language } from '@/types/language'
 import EditBodyArea from './EditBodyArea.vue'
 
 defineProps<{
@@ -9,6 +10,7 @@ defineProps<{
   readonly frontmatterData: Record<string, unknown>
   readonly contentType: ContentType
   readonly slug?: string
+  readonly lang: Language
   readonly assetUrlMap?: ReadonlyMap<string, string>
   readonly assets?: readonly AssetDisplay[]
 }>()
@@ -31,6 +33,7 @@ defineEmits<{
     :frontmatter="frontmatterData"
     :content-type="contentType"
     :slug="slug"
+    :lang="lang"
     @update:frontmatter="$emit('update:frontmatter', $event)"
   />
   <EditBodyArea

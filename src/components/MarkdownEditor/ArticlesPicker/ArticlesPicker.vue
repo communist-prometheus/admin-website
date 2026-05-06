@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useContentStore } from '@/stores/content'
+import type { ContentItem } from '@/types/content'
+import type { Language } from '@/types/language'
 import AddArticleRow from './AddArticleRow.vue'
 import { articleOptions } from './article-options'
 import LinkedArticleRow from './LinkedArticleRow.vue'
@@ -8,6 +10,7 @@ import { moveDown, moveUp, removeAt } from './reorder'
 
 const props = defineProps<{
   readonly value: readonly string[] | undefined
+  readonly lang: Language
 }>()
 
 const emit = defineEmits<{
@@ -19,19 +22,32 @@ const blog = store.itemsByType('blog')
 
 const linked = computed<readonly string[]>(() => props.value ?? [])
 
+type Entry = readonly [slug: string, title: string]
+
+const toEntry = (item: ContentItem): Entry => {
+  const t = item.frontmatter['title']
+  const title = typeof t === 'string' && t.trim() !== '' ? t : ''
+  return [item.slug, title]
+}
+
 const titleBySlug = computed(() => {
-  const map = new Map<string, string>()
-  for (const item of blog.value) {
-    const t = item.frontmatter['title']
-    if (typeof t === 'string' && t.trim() !== '') map.set(item.slug, t)
-  }
-  return map
+  const entries: readonly Entry[] = blog.value
+    .filter(item => item.lang === props.lang)
+    .map(toEntry)
+    .filter(([, title]) => title !== '')
+  return new Map<string, string>(entries)
 })
 
 const labelFor = (slug: string): string =>
   titleBySlug.value.get(slug) ?? slug
 
-const options = computed(() => articleOptions(blog.value, linked.value))
+const options = computed(() =>
+  articleOptions({
+    items: blog.value,
+    lang: props.lang,
+    exclude: linked.value,
+  })
+)
 </script>
 
 <template>

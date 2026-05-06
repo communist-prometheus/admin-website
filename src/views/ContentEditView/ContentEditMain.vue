@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import type { ContentType } from '@/types/content'
+import type { Language } from '@/types/language'
 import ContentEditMainBody from './ContentEditMainBody.vue'
 
 defineProps<{
@@ -11,6 +12,7 @@ defineProps<{
   readonly loadingFile: boolean
   readonly assetUrlMap?: ReadonlyMap<string, string>
   readonly assets?: readonly AssetDisplay[]
+  readonly lang: Language
 }>()
 
 defineEmits<{
@@ -37,6 +39,7 @@ defineEmits<{
       :slug="slug"
       :asset-url-map="assetUrlMap"
       :assets="assets"
+      :lang="lang"
       @update:body-content="$emit('update:bodyContent', $event)"
       @update:frontmatter="$emit('update:frontmatter', $event)"
       @preview="$emit('preview')"

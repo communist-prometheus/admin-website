@@ -3,16 +3,43 @@ import { getFields } from './frontmatter-fields'
 
 describe('getFields', () => {
   describe('blog', () => {
-    it('returns blog fields', () => {
+    it('returns blog fields including description and category select', () => {
       const fields = getFields('blog')
       const keys = fields.map(f => f.key)
       expect(keys).toEqual([
         'title',
+        'description',
         'category',
         'published',
         'publishDate',
         'newspaper',
       ])
+    })
+
+    it('exposes description as an optional textarea', () => {
+      const fields = getFields('blog')
+      const description = fields.find(f => f.key === 'description')
+      expect(description?.type).toBe('textarea')
+      expect(description?.required).toBeUndefined()
+    })
+
+    it('exposes category as a required labels-sourced select', () => {
+      const fields = getFields('blog')
+      const category = fields.find(f => f.key === 'category')
+      expect(category?.type).toBe('select')
+      expect(category?.required).toBe(true)
+      expect(
+        category?.type === 'select' ? category.optionsSource : undefined
+      ).toBe('labels')
+    })
+  })
+
+  describe('newspaper', () => {
+    it('includes optional description', () => {
+      const fields = getFields('newspaper')
+      const description = fields.find(f => f.key === 'description')
+      expect(description?.type).toBe('textarea')
+      expect(description?.required).toBeUndefined()
     })
   })
 

@@ -83,6 +83,7 @@ const setError = (msg: string): void => {
       :loading-file="p.editor.loadingFile.value"
       :asset-url-map="p.hasAssets.value ? p.assets.urlMap.value : undefined"
       :assets="p.hasAssets.value ? p.assets.allAssets.value : undefined"
+      :lang="p.editor.currentLang.value"
       @update:body-content="updateBody"
       @update:frontmatter="updateFm"
       @preview="enterPreview"
