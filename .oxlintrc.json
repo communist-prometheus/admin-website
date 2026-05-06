@@ -76,6 +76,7 @@
   "ignorePatterns": [
     "eslint.config.js",
     "eslint.legacy-if.js",
+    ".claude/**",
     "src/auto-imports.d.ts",
     "src/components.d.ts",
     "cors-proxy/**",

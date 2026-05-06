@@ -8,14 +8,29 @@ const loadPdfJs = async () => {
   return mod
 }
 
+const toBlob = (canvas: HTMLCanvasElement): Promise<Blob> =>
+  new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(
+      b =>
+        b ? resolve(b) : reject(new Error('canvas.toBlob returned null')),
+      'image/png'
+    )
+  )
+
 /**
  * Render the first page of a PDF to a PNG Blob.
- * @param pdfFile - PDF file
- * @returns PNG blob or undefined
+ *
+ * Throws on any failure rather than returning undefined — the
+ * editor's upload pipeline catches and surfaces these via the error
+ * toast, so the "no cover appeared" symptom now carries a real
+ * message (worker fetch failed, canvas 2d context unavailable,
+ * pdfjs OOM, etc.) instead of being a silent no-op.
+ *
+ * @param pdfFile - PDF file to render
+ * @returns PNG blob of the first page
+ * @throws when pdfjs / canvas / worker fails
  */
-export const renderFirstPage = async (
-  pdfFile: File
-): Promise<Blob | undefined> => {
+export const renderFirstPage = async (pdfFile: File): Promise<Blob> => {
   const pdfjsLib = await loadPdfJs()
   const data = new Uint8Array(await pdfFile.arrayBuffer())
   const doc = await pdfjsLib.getDocument({ data }).promise
@@ -25,9 +40,9 @@ export const renderFirstPage = async (
   canvas.width = viewport.width
   canvas.height = viewport.height
   const ctx = canvas.getContext('2d')
-  if (!ctx) return undefined
+  if (ctx === null) {
+    throw new Error('canvas 2d context unavailable')
+  }
   await page.render({ canvasContext: ctx, viewport, canvas }).promise
-  return new Promise<Blob | undefined>(resolve =>
-    canvas.toBlob(b => resolve(b ?? undefined), 'image/png')
-  )
+  return toBlob(canvas)
 }

@@ -32,6 +32,7 @@ const HINT =
       @upload-pdf="$emit('upload-asset', $event)"
       @upload-cover="$emit('upload-asset', $event)"
       @set-cover="$emit('set-cover', $event)"
+      @error="$emit('error', $event)"
     />
     <DocxUpload
       :assets="assets"
