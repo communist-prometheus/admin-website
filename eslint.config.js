@@ -110,7 +110,7 @@ export default [
   // Unit tests may use if/switch freely — they describe behaviour,
   // not application flow.
   {
-    files: ['**/*.test.ts'],
+    files: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
       'no-restricted-syntax': 'off',
     },

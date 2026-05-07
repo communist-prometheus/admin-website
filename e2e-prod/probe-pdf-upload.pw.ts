@@ -12,8 +12,8 @@ import { test } from '@prometheus/e2e-toolkit'
  */
 const PAT = process.env.GITHUB_E2E_KEY ?? ''
 const PDF_PATH =
-  'C:/Projects/Prometheus/public-website-content/blog/demo-test-artiche/assets/pdf-sample_0 (1).pdf'
-const TARGET = 'https://dev-admin.comprom.org/content/newspaper/edit/test-2'
+  'C:/Projects/Prometheus/public-website/src/content/blog/demo-test-artiche/assets/pdf-sample_0 (1).pdf'
+const TARGET = 'https://admin.comprom.org/content/newspaper/edit/test-2'
 
 test('probe: PDF upload on dev', async ({ browser }) => {
   test.setTimeout(180_000)
@@ -70,7 +70,7 @@ test('probe: PDF upload on dev', async ({ browser }) => {
     }
   })
 
-  await page.goto('https://dev-admin.comprom.org/', {
+  await page.goto('https://admin.comprom.org/', {
     waitUntil: 'domcontentloaded',
   })
   await page.evaluate(t => localStorage.setItem('gh_token', t), PAT)
