@@ -56,3 +56,4 @@ public/sw.js
 src/components.d.ts
 .wrangler
 .claude/scheduled_tasks.lock
+.claude/
