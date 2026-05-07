@@ -4,13 +4,19 @@
  * internal font registry; on engines that haven't shipped it yet
  * (Chrome <138 / V8 <13.4 etc.) cover extraction crashes with
  * "this[#fr].getOrInsertComputed is not a function" before the
- * first page even renders. We install minimal implementations on
- * Map and WeakMap prototypes.
+ * first page even renders. We install a single implementation on
+ * both Map and WeakMap prototypes — they share the get/set shape.
  *
  * Note: pdfjs never stores `undefined` as a value, so we treat
- * "get() === undefined" as "key absent" and skip the spec-exact
- * `has()` branch — it would force a cast (project forbids `as`).
+ * "get() === undefined" as "key absent" — fully spec-compliant for
+ * the shapes pdfjs actually uses, and avoids casts the project
+ * style forbids.
  */
+
+interface UpsertTarget<K, V> {
+  get(key: K): V | undefined
+  set(key: K, value: V): unknown
+}
 
 declare global {
   interface Map<K, V> {
@@ -33,43 +39,37 @@ declare global {
   }
 }
 
-const upsertMap = function <K, V>(
-  this: Map<K, V>,
+const insertFresh = <K, V>(
+  target: UpsertTarget<K, V>,
   key: K,
   fn: (k: K) => V
-): V {
-  const cached = this.get(key)
-  if (cached !== undefined) return cached
+): V => {
   const fresh = fn(key)
-  this.set(key, fresh)
+  target.set(key, fresh)
   return fresh
 }
 
-const upsertWeakMap = function <K extends WeakKey, V>(
-  this: WeakMap<K, V>,
+const upsert = function <K, V>(
+  this: UpsertTarget<K, V>,
   key: K,
   fn: (k: K) => V
 ): V {
-  const cached = this.get(key)
-  if (cached !== undefined) return cached
-  const fresh = fn(key)
-  this.set(key, fresh)
-  return fresh
+  return this.get(key) ?? insertFresh(this, key, fn)
 }
 
-let installed = false
+const installIfAbsent = (proto: object, value: object): boolean =>
+  Reflect.has(proto, 'getOrInsertComputed') ||
+  Reflect.defineProperty(proto, 'getOrInsertComputed', {
+    value,
+    writable: true,
+    configurable: true,
+  })
 
 /**
  * Install the polyfill on Map.prototype + WeakMap.prototype if the
  * runtime is missing the methods. Idempotent and cheap to call.
  */
 export const ensureMapUpsertPolyfill = (): void => {
-  if (installed) return
-  installed = true
-  if (typeof Map.prototype.getOrInsertComputed !== 'function') {
-    Map.prototype.getOrInsertComputed = upsertMap
-  }
-  if (typeof WeakMap.prototype.getOrInsertComputed !== 'function') {
-    WeakMap.prototype.getOrInsertComputed = upsertWeakMap
-  }
+  installIfAbsent(Map.prototype, upsert)
+  installIfAbsent(WeakMap.prototype, upsert)
 }
