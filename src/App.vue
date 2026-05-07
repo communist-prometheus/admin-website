@@ -13,6 +13,7 @@ import { useOfflineWatcher } from '@/composables/useNotifications/use-offline-wa
 import { usePushConflictBridge } from '@/composables/useNotifications/use-push-conflict-bridge'
 import { usePushErrorBridge } from '@/composables/useNotifications/use-push-error-bridge'
 import { usePushSummaryBridge } from '@/composables/useNotifications/use-push-summary-bridge'
+import { installNotificationsRecording } from '@/features/action-history/install-notifications'
 import { useAuthStore } from '@/stores/auth'
 import { useContentStore } from '@/stores/content'
 
@@ -20,6 +21,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 const contentStore = useContentStore()
 useNotificationsPersistence()
+installNotificationsRecording()
 usePushErrorBridge()
 useOfflineWatcher()
 usePushSummaryBridge()
