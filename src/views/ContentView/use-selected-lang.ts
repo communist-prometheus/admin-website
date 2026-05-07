@@ -6,15 +6,6 @@ import { extractString } from '@/validation/extract-string'
 
 const DEFAULT_LANG: Language = 'en'
 
-const pickLang = (
-  raw: string | undefined,
-  available: readonly Language[],
-  fallback: Language
-): Language =>
-  raw !== undefined && available.includes(raw)
-    ? raw
-    : (available[0] ?? fallback)
-
 const writeLang = (
   router: Router,
   query: LocationQuery,
@@ -26,13 +17,20 @@ const writeLang = (
 /**
  * URL-bound selected-language ref.
  *
- * Reads `?lang=<code>` from the current route, validates it
- * against `available` (defaults to first available, then `en`),
- * and persists writes via `router.replace` so the value
- * survives back/forward navigation.
+ * Reads `?lang=<code>` from the current route as-is. The available-
+ * languages list is consulted only as a fallback default when the
+ * URL is missing the param — a code that the user has explicitly
+ * selected (even one with no content yet) MUST stay selected so they
+ * can land on an empty list and create the first entry.
+ *
+ * Earlier version validated `?lang=` against the loaded-content
+ * subset, which silently demoted `?lang=ru` to `en` when no Russian
+ * content existed — the URL stayed at `ru` but the selector rendered
+ * `en`, and the content area read "No content found for en".
+ *
  * @param available - Reactive set of language codes present in the
- *   current content list. The first entry is the fallback when the
- *   query param is missing or invalid.
+ *   current content list. Used only as the fallback default when
+ *   `?lang=` is absent.
  * @returns Computed get/set ref usable as a `v-model` target.
  */
 export const useSelectedLang = (available: () => readonly Language[]) => {
@@ -40,7 +38,7 @@ export const useSelectedLang = (available: () => readonly Language[]) => {
   const router = useRouter()
   return computed<Language>({
     get: () =>
-      pickLang(extractString(route.query.lang), available(), DEFAULT_LANG),
+      extractString(route.query.lang) ?? available()[0] ?? DEFAULT_LANG,
     set: lang => writeLang(router, route.query, lang),
   })
 }

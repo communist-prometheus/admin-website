@@ -58,12 +58,20 @@ describe('useSelectedLang', () => {
     expect(lang.value).toBe('it')
   })
 
-  it('falls back when query.lang not in available list', async () => {
-    const { lang } = await mountWith('/content/blog?lang=zz', () => [
+  it('honours query.lang even when not in the loaded-content subset', async () => {
+    /*
+     * Earlier version validated `?lang=` against `available()` (the
+     * loaded-content subset) and silently demoted out-of-set values
+     * to `available[0]`. That broke the "select РУССКИЙ on a
+     * newspaper page that has no Russian issue yet" flow — the URL
+     * stayed at `ru` but the selector rendered `en` and the content
+     * area read "No content found for en". The contract now is:
+     * trust the URL. Available is the fallback default only.
+     */
+    const { lang } = await mountWith('/content/newspaper?lang=ru', () => [
       'en',
-      'ru',
     ])
-    expect(lang.value).toBe('en')
+    expect(lang.value).toBe('ru')
   })
 
   it('falls back to "en" when neither query nor available match', async () => {
