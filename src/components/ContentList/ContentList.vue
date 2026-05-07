@@ -43,6 +43,7 @@ const selectedCount = computed(() => props.selectedSlugs?.size ?? 0)
       v-if="!hideCreate"
       :select-mode="selectMode"
       :selected-count="selectedCount"
+      :has-items="filteredItems.length > 0"
       @create="emit('create')"
       @enter-select="emit('enterSelect')"
       @exit-select="emit('exitSelect')"

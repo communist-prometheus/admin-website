@@ -2,6 +2,7 @@
 defineProps<{
   readonly selectMode?: boolean
   readonly selectedCount?: number
+  readonly hasItems?: boolean
 }>()
 
 defineEmits<{
@@ -37,6 +38,7 @@ defineEmits<{
   </template>
   <template v-else>
     <button
+      v-if="hasItems"
       type="button"
       class="btn btn-secondary"
       data-testid="select-mode"

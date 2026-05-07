@@ -4,6 +4,7 @@ import ListHeaderActions from './ListHeaderActions.vue'
 defineProps<{
   readonly selectMode?: boolean
   readonly selectedCount?: number
+  readonly hasItems?: boolean
 }>()
 
 defineEmits<{
@@ -20,6 +21,7 @@ defineEmits<{
     <ListHeaderActions
       :select-mode="selectMode"
       :selected-count="selectedCount"
+      :has-items="hasItems"
       @create="$emit('create')"
       @enter-select="$emit('enterSelect')"
       @exit-select="$emit('exitSelect')"
