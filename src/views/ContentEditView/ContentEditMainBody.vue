@@ -28,7 +28,6 @@ defineEmits<{
 
 <template>
   <FrontmatterEditor
-    v-if="Object.keys(frontmatterData).length > 0"
     class="edit-meta"
     :frontmatter="frontmatterData"
     :content-type="contentType"
