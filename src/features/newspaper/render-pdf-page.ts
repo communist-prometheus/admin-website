@@ -1,7 +1,10 @@
+import { ensureMapUpsertPolyfill } from './map-upsert-polyfill'
+
 const VENDOR = '/vendor/pdf.min.mjs'
 const WORKER = '/vendor/pdf.worker.min.mjs'
 
 const loadPdfJs = async () => {
+  ensureMapUpsertPolyfill()
   // @vite-ignore
   const mod = await import(VENDOR)
   mod.GlobalWorkerOptions.workerSrc = WORKER
