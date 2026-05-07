@@ -6,6 +6,7 @@ import { addComment } from '../api/add-comment'
 import type { Ticket, TicketComment } from '../api/gh-tickets'
 import { getComments } from '../api/ticket-actions'
 import { setTicketState } from '../api/ticket-state'
+import SectionedBody from './SectionedBody.vue'
 
 const props = defineProps<{ readonly ticket: Ticket }>()
 const emit = defineEmits<{ back: []; reload: [] }>()
@@ -44,7 +45,7 @@ onMounted(loadComments)
     &larr; Back to list
   </button>
   <h3>#{{ ticket.number }} {{ ticket.title }}</h3>
-  <p class="body">{{ ticket.body }}</p>
+  <SectionedBody :body="ticket.body" />
   <button
     v-if="isAdmin"
     type="button"
@@ -86,11 +87,6 @@ onMounted(loadComments)
 h3 {
   font-size: 1.25rem;
   margin: 0;
-}
-
-.body {
-  white-space: pre-wrap;
-  line-height: 1.6;
 }
 
 .state-btn {

@@ -1,63 +1,67 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import type { TicketAttachment } from '../templates/attachment-types'
+import type { TicketTemplate } from '../templates/types'
+import AttachmentField from './AttachmentField.vue'
+import TemplateFieldsSwitch from './TemplateFieldsSwitch.vue'
+import TemplateSelector from './TemplateSelector.vue'
+import TitleAndTargetFields from './TitleAndTargetFields.vue'
 
-const emit = defineEmits<{
-  create: [title: string, body: string, labels: readonly string[]]
+defineProps<{
+  readonly title: string
+  readonly target: 'public-website' | 'admin'
+  readonly template: TicketTemplate
+  readonly attachments: readonly TicketAttachment[]
+  readonly uploading: boolean
+  readonly missing: readonly string[]
 }>()
 
-const title = ref('')
-const body = ref('')
-const target = ref('public-website')
-const type = ref('bug')
-
-const handleSubmit = () => {
-  if (!title.value.trim()) return
-  emit('create', title.value.trim(), body.value, [target.value, type.value])
-  title.value = ''
-  body.value = ''
-}
+defineEmits<{
+  'update:title': [v: string]
+  'update:target': [v: 'public-website' | 'admin']
+  'update:template': [t: TicketTemplate]
+  'change-kind': [k: TicketTemplate['kind']]
+  upload: [files: readonly File[]]
+  'remove-attachment': [id: string]
+  submit: []
+}>()
 </script>
 
 <template>
-  <input
-    v-model="title" type="text"
-    placeholder="Title" class="field"
-  />
-  <select v-model="target" class="field">
-    <option value="public-website">Public Website</option>
-    <option value="admin">Admin Panel</option>
-  </select>
-  <select v-model="type" class="field">
-    <option value="bug">Bug</option>
-    <option value="enhancement">Feature Request</option>
-  </select>
-  <textarea
-    v-model="body"
-    placeholder="Description (Markdown supported)"
-    rows="4"
-    class="field"
-  />
-  <button type="button" class="submit-btn" @click="handleSubmit">
-    Create Ticket
-  </button>
+  <form class="create-form" @submit.prevent="$emit('submit')">
+    <TitleAndTargetFields
+      :title="title"
+      :target="target"
+      @update:title="$emit('update:title', $event)"
+      @update:target="$emit('update:target', $event)"
+    />
+    <TemplateSelector
+      :model-value="template.kind"
+      @update:model-value="$emit('change-kind', $event)"
+    />
+    <TemplateFieldsSwitch
+      :model-value="template"
+      @update:model-value="$emit('update:template', $event)"
+    />
+    <AttachmentField
+      :attachments="attachments"
+      :uploading="uploading"
+      @upload="$emit('upload', $event)"
+      @remove="$emit('remove-attachment', $event)"
+    />
+    <p v-if="missing.length > 0" class="errors" data-testid="ticket-errors">
+      Required: {{ missing.join(', ') }}
+    </p>
+    <button type="submit" class="submit-btn" data-testid="ticket-submit">
+      Create Ticket
+    </button>
+  </form>
 </template>
 
 <style scoped>
-.field {
-  display: block;
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-background);
-  color: var(--color-text);
-  font-size: 0.875rem;
-  font-family: inherit;
-  box-sizing: border-box;
-}
-
-.field[rows] {
-  resize: vertical;
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .submit-btn {
@@ -68,5 +72,12 @@ const handleSubmit = () => {
   color: #fff;
   cursor: pointer;
   font-size: 0.875rem;
+  align-self: flex-start;
+}
+
+.errors {
+  color: var(--color-danger, #d73a4a);
+  font-size: 0.8125rem;
+  margin: 0;
 }
 </style>

@@ -10,24 +10,27 @@ const headers = (token: string) => ({
   'Content-Type': 'application/json',
 })
 
+interface CreateArgs {
+  readonly token: string
+  readonly title: string
+  readonly body: string
+  readonly labels: readonly string[]
+}
+
 /**
  * Create a new ticket.
- * @param token - GitHub access token
- * @param title - Ticket title
- * @param body - Ticket description
- * @param labels - Labels to assign
+ * @param args - Token + title + pre-rendered body + labels
  * @returns Created ticket
  */
-export const createTicket = async (
-  token: string,
-  title: string,
-  body: string,
-  labels: readonly string[]
-): Promise<Ticket> => {
+export const createTicket = async (args: CreateArgs): Promise<Ticket> => {
   const res = await fetch(`${BASE}/issues`, {
     method: 'POST',
-    headers: headers(token),
-    body: JSON.stringify({ title, body, labels }),
+    headers: headers(args.token),
+    body: JSON.stringify({
+      title: args.title,
+      body: args.body,
+      labels: args.labels,
+    }),
   })
   if (!res.ok) throw new Error(`Create ticket failed: ${res.status}`)
   return (await res.json()) as Ticket
