@@ -35,8 +35,9 @@ const fmString = (key: string): string | undefined => {
 <template>
   <section class="edit-body-area">
     <NewspaperSourceUploads
-      v-if="isNewspaper(contentType)"
+      v-if="isNewspaper(contentType) && slug"
       :assets="assets"
+      :slug="slug"
       :current-cover="fmString('image')"
       :issue-title="fmString('title')"
       :issue-lang="fmString('lang')"

@@ -3,6 +3,7 @@ import { htmlToFb2 } from '@/features/newspaper/html-to-fb2/html-to-fb2'
 
 /** Issue metadata baked into the FB2 description block. */
 export interface IssueMeta {
+  readonly slug: string
   readonly issueTitle?: string
   readonly issueLang?: string
   readonly issueDescription?: string
@@ -21,8 +22,8 @@ const buildFb2Meta = (meta: IssueMeta) => ({
  * itself is never persisted — we only emit the converted FB2.
  *
  * @param file Original `.docx` File from the upload widget.
- * @param meta Issue metadata to bake into the FB2 title-info block.
- * @returns A `gazette.fb2` File ready to feed the asset pipeline.
+ * @param meta Issue metadata + slug used as the output filename.
+ * @returns A `<slug>.fb2` File ready to feed the asset pipeline.
  */
 export const docxFileToFb2 = async (
   file: File,
@@ -32,5 +33,5 @@ export const docxFileToFb2 = async (
   const html = await convertDocxToHtml(buffer)
   const fb2 = htmlToFb2(html, buildFb2Meta(meta))
   const blob = new Blob([fb2], { type: 'application/x-fictionbook+xml' })
-  return new File([blob], 'gazette.fb2', { type: blob.type })
+  return new File([blob], `${meta.slug}.fb2`, { type: blob.type })
 }

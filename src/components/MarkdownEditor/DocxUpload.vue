@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
+import { buildDocxMeta } from './docx-meta'
 import { docxFileToFb2 } from './docx-to-fb2'
 import { createDragHandlers } from './pdf-upload-handlers'
 
 const props = defineProps<{
   readonly assets?: readonly AssetDisplay[]
+  readonly slug: string
   readonly issueTitle?: string
   readonly issueLang?: string
   readonly issueDescription?: string
@@ -37,13 +39,7 @@ const handleFile = async (file: File): Promise<void> => {
     emit('error', 'Only .docx files (Office Open XML) are accepted here')
     return
   }
-  const fb2 = await docxFileToFb2(file, {
-    ...(props.issueTitle === undefined ? {} : { issueTitle: props.issueTitle }),
-    ...(props.issueLang === undefined ? {} : { issueLang: props.issueLang }),
-    ...(props.issueDescription === undefined
-      ? {}
-      : { issueDescription: props.issueDescription }),
-  })
+  const fb2 = await docxFileToFb2(file, buildDocxMeta(props))
   emit('upload-fb2', fb2)
 }
 
