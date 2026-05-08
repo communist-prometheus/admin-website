@@ -54,19 +54,37 @@
   color-scheme: dark;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --color-background: hsl(0, 0%, 100%);
-    --color-surface: hsl(0, 0%, 98%);
-    --color-surface-elevated: hsl(0, 0%, 100%);
-    --color-text-primary: hsl(0, 0%, 13%);
-    --color-text-secondary: hsl(0, 0%, 40%);
-    --color-border: hsl(0, 0%, 90%);
-    --color-accent: #c25434;
-    --color-accent-hover: #a84428;
+/*
+ * Light tokens. Apply on:
+ *   1. OS preference when no explicit override is set, AND
+ *   2. when the user pinned `light` via the in-app switcher
+ *      (`<html data-theme="light">`).
+ *
+ * `<html data-theme="dark">` keeps the :root dark defaults above —
+ * no separate block needed. `<html data-theme="system">` removes the
+ * attribute, falling back to the media query.
+ */
+@mixin light-tokens {
+  --color-background: hsl(0, 0%, 100%);
+  --color-surface: hsl(0, 0%, 98%);
+  --color-surface-elevated: hsl(0, 0%, 100%);
+  --color-text-primary: hsl(0, 0%, 13%);
+  --color-text-secondary: hsl(0, 0%, 40%);
+  --color-border: hsl(0, 0%, 90%);
+  --color-accent: #c25434;
+  --color-accent-hover: #a84428;
 
-    color-scheme: light;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    @include light-tokens;
   }
+}
+
+:root[data-theme='light'] {
+  @include light-tokens;
 }
 
 /* Backwards compatibility aliases */
