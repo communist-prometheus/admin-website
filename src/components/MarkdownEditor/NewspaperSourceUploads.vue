@@ -10,6 +10,7 @@ defineProps<{
   readonly currentCover?: string
   readonly issueTitle?: string
   readonly issueLang?: string
+  readonly slug: string
 }>()
 
 defineEmits<{
@@ -36,6 +37,7 @@ const HINT =
     />
     <DocxUpload
       :assets="assets"
+      :slug="slug"
       :issue-title="issueTitle"
       :issue-lang="issueLang"
       @upload-fb2="$emit('upload-asset', $event)"
@@ -43,6 +45,7 @@ const HINT =
     />
     <Fb2Upload
       :assets="assets"
+      :slug="slug"
       @upload-fb2="$emit('upload-asset', $event)"
       @error="$emit('error', $event)"
     />

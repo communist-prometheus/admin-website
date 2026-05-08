@@ -5,6 +5,7 @@ import { createDragHandlers } from './pdf-upload-handlers'
 
 const props = defineProps<{
   readonly assets?: readonly AssetDisplay[]
+  readonly slug: string
 }>()
 
 const emit = defineEmits<{
@@ -36,7 +37,7 @@ const handleFile = (file: File): void => {
     emit('error', 'Only .fb2 files are accepted here')
     return
   }
-  const renamed = new File([file], 'gazette.fb2', {
+  const renamed = new File([file], `${props.slug}.fb2`, {
     type: file.type || 'application/x-fictionbook+xml',
   })
   emit('upload-fb2', renamed)
