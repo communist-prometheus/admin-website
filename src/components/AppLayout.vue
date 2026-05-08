@@ -10,6 +10,7 @@ import AppMain from './AppMain.vue'
 import AuthButton from './AuthButton.vue'
 import DeployStatusBar from './DeployStatus/DeployStatusBar.vue'
 import MobileMenu from './MobileMenu/MobileMenu.vue'
+import ThemeToggle from './ThemeToggle.vue'
 
 const slots = useSlots()
 const entries = inject(
@@ -36,6 +37,7 @@ const hash = __COMMIT_HASH__
   <AppHeader>
     <PushSyncBadge />
     <NotificationIndicator />
+    <ThemeToggle />
     <AuthButton />
   </AppHeader>
 
