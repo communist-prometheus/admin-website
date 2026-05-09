@@ -83,6 +83,17 @@ describe('useSettingsStore', () => {
       json: async () => ({ content: { sha: 'sha2' } }),
     })
 
+    /* `updateLanguages` fans out to `seedNewLanguages` via
+     * `fireAndForward` — that path now surfaces rejections to the
+     * unhandled-rejection event, so the GET /api/github/content/...
+     * calls it makes need a default mock. Empty `items` short-
+     * circuits the seed; the test still asserts the SHA path on the
+     * Save call (mock.calls[1]). */
+    mockSwFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [] }),
+    })
+
     const newLangs = [
       { code: 'en', label: 'English' },
       { code: 'de', label: 'Deutsch' },
