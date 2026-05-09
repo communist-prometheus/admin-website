@@ -31,6 +31,19 @@ export const readBody = async (req: IncomingMessage): Promise<Buffer> => {
 
 /**
  * Forward a request to the Hono API and write the response.
+ *
+ * The body is forwarded as a `Buffer` so binary payloads (git pack
+ * files via /api/cors/...) round-trip byte-for-byte. The previous
+ * `response.text()` path decoded packfiles as UTF-8 and silently
+ * corrupted them — fine for /api/oauth/token JSON, fatal for git
+ * clone over the CORS proxy.
+ *
+ * Headers are forwarded wholesale (minus content-encoding and
+ * content-length). Node decompresses gzipped responses transparently
+ * via undici; re-emitting the original `content-encoding` header
+ * would tell the SW the bytes are still gzipped when they aren't.
+ * Likewise `content-length` would lie about the post-decompression
+ * size, so we let Node compute it.
  * @param request - Web API Request
  * @param res - Node.js ServerResponse
  */
@@ -44,9 +57,13 @@ export const forwardToApi = async (
     CF_ACCOUNT_ID: process.env.VITE_CF_ACCOUNT_ID ?? '',
     CF_PROJECT_NAME: process.env.VITE_CF_PROJECT_NAME ?? '',
   })
-  res.writeHead(response.status, {
-    'Content-Type':
-      response.headers.get('Content-Type') ?? 'application/json',
-  })
-  res.end(await response.text())
+  const headers: Record<string, string> = {}
+  for (const [k, v] of response.headers.entries()) {
+    const lk = k.toLowerCase()
+    if (lk === 'content-encoding' || lk === 'content-length') continue
+    headers[k] = v
+  }
+  const body = Buffer.from(await response.arrayBuffer())
+  res.writeHead(response.status, headers)
+  res.end(body)
 }

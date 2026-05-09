@@ -3,7 +3,8 @@
     "src/sw/**/*",
     "src/config/**/*",
     "src/validation/**/*",
-    "src/types/**/*"
+    "src/types/**/*",
+    "src/utils/**/*"
   ],
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.sw.tsbuildinfo",

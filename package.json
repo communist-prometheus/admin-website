@@ -12,6 +12,7 @@
     "build:client": "vite build --outDir dist/client",
     "build:sw": "vite build --config vite.sw.config.ts && bun scripts/verify-sw-browser-safe.ts",
     "build:e2e": "cross-env VITE_MOCK_AUTH=true bun run build:client && cross-env MOCK_OAUTH=true bun run build:sw",
+    "build:realmode": "cross-env VITE_GITHUB_OWNER=communist-prometheus VITE_GITHUB_REPO=admin-e2e-sandbox VITE_GITHUB_BRANCH=main bun run build:client && cross-env VITE_GITHUB_OWNER=communist-prometheus VITE_GITHUB_REPO=admin-e2e-sandbox VITE_GITHUB_BRANCH=main bun run build:sw",
     "preview": "vite preview --port 5173 --outDir dist/client",
     "preview:test": "vite preview --port 5173 --outDir dist/client",
     "test:unit": "vitest",
@@ -21,13 +22,16 @@
     "test:e2e:ui": "cross-env MOCK_OAUTH=true playwright test --ui",
     "test:e2e:debug": "cross-env MOCK_OAUTH=true playwright test --debug",
     "test:e2e:prod": "playwright test --config playwright.config.prod.ts",
+    "test:e2e:realmode": "playwright test --config playwright.config.realmode.ts",
+    "sandbox:setup": "bun scripts/setup-e2e-sandbox.ts",
+    "sandbox:reset": "bun scripts/reset-e2e-sandbox.ts",
     "type-check": "vue-tsc --build",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint --write .",
     "lint:check": "biome lint .",
     "lint:sonar": "oxlint --config .oxlintrc.json",
-    "lint:jsdoc": "eslint --config eslint.config.js --max-warnings 0 \"src/**/*.{ts,vue}\" \"e2e/**/*.ts\"",
+    "lint:jsdoc": "eslint --config eslint.config.js --max-warnings 0 \"src/**/*.{ts,vue}\" \"e2e/**/*.ts\" \"e2e-realmode/**/*.ts\" \"scripts/sandbox-*.ts\" \"scripts/setup-e2e-sandbox.ts\" \"scripts/reset-e2e-sandbox.ts\"",
     "lint:vue-depth": "bun scripts/check-vue-template-depth.ts",
     "lint:css": "stylelint \"**/*.{css,vue}\"",
     "lint:css:fix": "stylelint \"**/*.{css,vue}\" --fix",
@@ -99,7 +103,8 @@
     "vite": "^8.0.8",
     "vite-plugin-vue-devtools": "^8.0.6",
     "vitest": "^4.0.18",
-    "vue-tsc": "^3.2.4"
+    "vue-tsc": "^3.2.4",
+    "zod": "^4.4.3"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

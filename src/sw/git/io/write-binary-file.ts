@@ -3,6 +3,7 @@ import { recordOp } from '../../logging/metrics'
 import { workerState } from '../../state/state'
 import { fs, REPO_DIR } from '../fs'
 import { loadGit } from '../load-git'
+import { ensureDir } from './ensure-dir'
 
 /**
  * Ensure parent directories exist for a given file path.
@@ -13,7 +14,7 @@ const ensureBinaryDir = async (filepath: string): Promise<void> => {
   let current = REPO_DIR
   for (const part of parts.slice(0, -1)) {
     current = `${current}/${part}`
-    await fs.promises.mkdir(current).catch(() => {})
+    await ensureDir(current)
   }
 }
 

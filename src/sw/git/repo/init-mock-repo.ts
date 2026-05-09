@@ -3,6 +3,7 @@ import { recordOp } from '../../logging/metrics'
 import type { MockEntry } from '../../mock/all-entries'
 import { allMockEntries } from '../../mock/all-entries'
 import { fs, REPO_DIR } from '../fs'
+import { ensureDir } from '../io/ensure-dir'
 
 /**
  * Collect unique directory paths that need to be created.
@@ -28,7 +29,7 @@ const collectDirs = (entries: readonly MockEntry[]): readonly string[] => {
  */
 const writeAllFiles = async (entries: readonly MockEntry[]) => {
   for (const dir of collectDirs(entries)) {
-    await fs.promises.mkdir(dir).catch(() => {})
+    await ensureDir(dir)
   }
   await Promise.all(
     entries.map(e =>
@@ -49,7 +50,7 @@ export const initMockRepo = async (): Promise<string> => {
   const start = Date.now()
   log('info', 'git', 'Initializing mock repository')
 
-  await fs.promises.mkdir(REPO_DIR).catch(() => {})
+  await ensureDir(REPO_DIR)
   await writeAllFiles(allMockEntries)
 
   recordOp('initMock', Date.now() - start)

@@ -30,7 +30,12 @@ export default [
     },
   },
   {
-    files: ['src/**/*.ts', 'e2e/**/*.ts'],
+    files: [
+      'src/**/*.ts',
+      'e2e/**/*.ts',
+      'e2e-realmode/**/*.ts',
+      'scripts/**/*.ts',
+    ],
     languageOptions: {
       parser,
       parserOptions: {
@@ -99,6 +104,7 @@ export default [
       'src/router/**/*.ts',
       'scripts/**/*.ts',
       'e2e/**/*.ts',
+      'e2e-realmode/**/*.ts',
       'src/types/github-content.ts',
     ],
     rules: {
@@ -108,9 +114,19 @@ export default [
     },
   },
   // Unit tests may use if/switch freely — they describe behaviour,
-  // not application flow.
+  // not application flow. Same exemption applies to bootstrap
+  // scripts and E2E support code: they wire up CI plumbing rather
+  // than encoding application invariants, so the Match-only dogma
+  // does not buy clarity there.
   {
-    files: ['**/*.test.ts', '**/*.spec.ts'],
+    files: [
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      'scripts/**/*.ts',
+      'e2e/helpers/**/*.ts',
+      'e2e-realmode/helpers/**/*.ts',
+      'e2e-realmode/global-setup.ts',
+    ],
     rules: {
       'no-restricted-syntax': 'off',
     },

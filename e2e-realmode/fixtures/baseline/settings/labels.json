@@ -1,0 +1,16 @@
+[
+  {
+    "key": "technology",
+    "translations": {
+      "en": "Technology",
+      "ru": "Технологии"
+    }
+  },
+  {
+    "key": "general",
+    "translations": {
+      "en": "General",
+      "ru": "Общее"
+    }
+  }
+]

@@ -1,4 +1,5 @@
 import type { Ref } from 'vue'
+import { fireAndForward } from '@/utils/fire-and-forward'
 import type { LanguageEntry } from '@/validation/schemas/languages'
 import { seedNewLanguages } from './seed-translations'
 import { saveLanguagesFile } from './settings-api'
@@ -29,7 +30,12 @@ const applySaved = async (d: ApplyDeps): Promise<boolean> => {
   d.languages.value = d.entries
   const data = await d.res.json()
   d.fileSha.value = data.content?.sha ?? d.fileSha.value
-  await seedNewLanguages(d.newLangs).catch(() => undefined)
+  /* Best-effort fan-out — seed failures must reach the unhandled-
+   * rejection handler instead of disappearing. The previous
+   * `.catch(() => undefined)` swallowed the whole class of "lang
+   * added in settings but new placeholder files never committed"
+   * regressions. */
+  fireAndForward(seedNewLanguages(d.newLangs))
   return true
 }
 

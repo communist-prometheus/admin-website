@@ -1,0 +1,48 @@
+name: Real-mode E2E (real GitHub sandbox)
+
+on:
+  pull_request:
+    branches: [master, develop]
+  push:
+    branches: [master, develop]
+
+# Real-mode pushes to a single sandbox branch. Two runs racing for it
+# corrupt the working tree mid-clone — serialize at the workflow level
+# rather than relying on test-level retries.
+concurrency:
+  group: realmode-e2e
+  cancel-in-progress: false
+
+jobs:
+  realmode:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_E2E_KEY: ${{ secrets.GH_E2E_PAT }}
+      SANDBOX_OWNER: communist-prometheus
+      SANDBOX_REPO: admin-e2e-sandbox
+      SANDBOX_BRANCH: main
+      SANDBOX_BASELINE_TAG: baseline
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+
+      - name: Reset sandbox to baseline
+        run: bun run sandbox:reset
+
+      - name: Run real-mode suite
+        run: bun run test:e2e:realmode
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-realmode-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
