@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const writeAssetMock = vi.fn(async (_path: string, _b64: string) => {})
-const deleteAssetMock = vi.fn(async (_path: string) => {})
-const stageFileMock = vi.fn(async (_path: string, _content: string) => {})
+const writeAssetMock = vi.fn(
+  async (_path: string, _b64: string): Promise<void> => undefined
+)
+const deleteAssetMock = vi.fn(
+  async (_path: string): Promise<void> => undefined
+)
+const stageFileMock = vi.fn(
+  async (_path: string, _content: string): Promise<void> => undefined
+)
 const commitStagedMock = vi.fn(async (_msg: string) => ({ sha: 'deadbeef' }))
 
 vi.mock('../useGitHubApi/write-asset', () => ({

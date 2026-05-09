@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { workerState } from '../../state/state'
 import { guardStagePayload } from './validate-stage'
 
 const goodBlog = `---
@@ -114,5 +115,51 @@ describe('guardStagePayload', () => {
     expect(
       guardStagePayload('src/content/blog/x/index.en.md', fixed)
     ).toBeUndefined()
+  })
+
+  /*
+   * Flat layout — what current admin actually writes (the legacy
+   * `src/content/` prefix is gone). The pre-fix regex never
+   * matched these, so the gate was dead code in production.
+   */
+  it('runs against the flat layout that admin actually writes', () => {
+    expect(
+      guardStagePayload('blog/hello/index.en.md', goodBlog)
+    ).toBeUndefined()
+  })
+
+  /*
+   * The 2026-05-09 prod regression: pages/about/index.uk.md
+   * committed with a `lang` astro's enum rejected. With the
+   * sandbox default supportedLangs (en/ru/it/es), `uk` must be
+   * rejected at stage time so the bad bytes never reach git.
+   */
+  it('rejects a lang outside supportedLangs (filename side)', () => {
+    const ukBody = goodBlog.replace('lang: en', 'lang: uk')
+    const reason = guardStagePayload('blog/about/index.uk.md', ukBody)
+    expect(reason).toBeTruthy()
+    expect(reason).toMatch(/not in supported set/)
+  })
+
+  it('rejects a frontmatter lang that disagrees with filename', () => {
+    const reason = guardStagePayload(
+      'blog/about/index.en.md',
+      goodBlog.replace('lang: en', 'lang: ru')
+    )
+    expect(reason).toBeTruthy()
+    expect(reason).toMatch(/must match filename lang/)
+  })
+
+  it('accepts a lang once supportedLangs widens via state', () => {
+    const original = workerState.supportedLangs
+    workerState.supportedLangs = new Set([...original, 'uk'])
+    try {
+      const ukBody = goodBlog.replace('lang: en', 'lang: uk')
+      expect(
+        guardStagePayload('blog/about/index.uk.md', ukBody)
+      ).toBeUndefined()
+    } finally {
+      workerState.supportedLangs = original
+    }
   })
 })

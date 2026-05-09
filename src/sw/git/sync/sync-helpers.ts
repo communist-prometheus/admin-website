@@ -3,6 +3,7 @@ import { log } from '../../logging/logger'
 import type { SWGitConfig } from '../../protocol'
 import { workerState } from '../../state/state'
 import { fs, REPO_DIR } from '../fs'
+import { ensureDir } from '../io/ensure-dir'
 import { isMock } from '../is-mock'
 import { initMockRepo } from '../repo/init-mock-repo'
 import { markReady } from './mark-ready'
@@ -53,7 +54,7 @@ const toCloneError = (e: unknown): Error => {
 const performFreshClone = async (config: SWGitConfig): Promise<void> => {
   workerState.state = 'cloning'
   await wipeRepo()
-  await fs.promises.mkdir(REPO_DIR).catch(() => {})
+  await ensureDir(REPO_DIR)
   const { cloneRepo } = await import('./clone/clone-repo')
   await cloneRepo(config)
   markReady('SW state → ready (fresh clone)')
@@ -75,7 +76,7 @@ export const freshClone = (config: SWGitConfig) =>
 export const initMock = Effect.tryPromise(async () => {
   workerState.state = 'cloning'
   await wipeRepo()
-  await fs.promises.mkdir(REPO_DIR).catch(() => {})
+  await ensureDir(REPO_DIR)
   await initMockRepo()
   markReady('SW state → ready')
 })

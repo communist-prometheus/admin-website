@@ -50,6 +50,7 @@
         "**/*.spec.ts",
         "e2e/**/*.ts",
         "e2e-prod/**/*.ts",
+        "e2e-realmode/**/*.ts",
         "e2e-toolkit/**/*.ts"
       ],
       "rules": {

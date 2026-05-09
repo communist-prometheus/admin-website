@@ -1,0 +1,11 @@
+{
+  "extends": "@tsconfig/node24/tsconfig.json",
+  "include": ["./**/*", "../scripts/**/*", "../e2e-toolkit/**/*"],
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@prometheus/e2e-toolkit": ["../e2e-toolkit/src/index.ts"]
+    }
+  }
+}

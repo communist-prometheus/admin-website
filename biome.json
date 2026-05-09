@@ -29,7 +29,8 @@
       "recommended": true,
       "suspicious": {
         "noExplicitAny": "error",
-        "noConsole": "error"
+        "noConsole": "error",
+        "noEmptyBlockStatements": "error"
       },
       "style": {
         "useConst": "error",
@@ -99,7 +100,9 @@
         "vitest.config.ts",
         "playwright.config.ts",
         "playwright.config.prod.ts",
+        "playwright.config.realmode.ts",
         "e2e/auth/setup.ts",
+        "e2e-realmode/global-setup.ts",
         "eslint.config.js",
         "src/router/index.ts",
         "worker.ts",
