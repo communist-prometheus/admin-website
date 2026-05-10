@@ -55,7 +55,7 @@ not enough.
 | `delete-all-langs.spec.ts` | Card → Delete → "Delete all languages" removes the whole slug directory |
 | `rename-blog.spec.ts` | Inline slug rename rewrites the directory in a single commit |
 | `asset-upload.spec.ts` | Asset picker stages a binary, Save commits to `blog/<slug>/assets/<file>.png` |
-| `newspaper-fb2.spec.ts` | FB2 dropzone commits `newspaper/<slug>/assets/<slug>.fb2`, and the issue index passes astro's newspaper schema |
+| `newspaper-fb2.spec.ts` | FB2 dropzone commits `newspaper/<slug>/assets/<slug>.<lang>.fb2`, and the issue index passes astro's newspaper schema |
 | `schema-gate.spec.ts` | SW rejects writes whose filename lang is outside `supportedLangs`, and writes whose frontmatter `lang` disagrees with the filename |
 | `astro-schema-drift.spec.ts` | Vendored astro mirror has the same collection + field set as upstream `public-website/src/content.config.ts` |
 
