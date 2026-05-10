@@ -58,8 +58,15 @@ export const parseFrontmatterStrict = (
  * Serialize frontmatter and body to markdown. `yaml.stringify`
  * auto-quotes any value that would otherwise break the parser
  * (colon-in-text, leading reserved chars, embedded newlines, …).
- * Keep `lineWidth: 0` so long prose values stay on one line —
- * makes the diffs in the content repo readable.
+ *
+ * `blockQuote: false` disables block scalar (`|+`/`>`) output —
+ * fast-check found that block scalars silently lose a leading
+ * space when the value is `" \n"` (and similar whitespace-only
+ * shapes), so the round-trip fails. Forcing flow-style strings
+ * keeps the round-trip lossless while plain values still serialize
+ * unquoted, so the content-repo diffs stay readable.
+ *
+ * `lineWidth: 0` keeps long prose values on one line.
  * @param fm - Frontmatter key-value pairs
  * @param body - Markdown body
  * @returns Complete markdown string with YAML frontmatter
@@ -72,7 +79,7 @@ export const serializeFrontmatter = (
   for (const [k, v] of Object.entries(fm)) {
     if (v !== undefined) filtered[k] = v
   }
-  const yaml = yamlStringify(filtered, { lineWidth: 0 })
+  const yaml = yamlStringify(filtered, { lineWidth: 0, blockQuote: false })
   const trimmed = yaml.endsWith('\n') ? yaml.slice(0, -1) : yaml
   return `---\n${trimmed}\n---\n\n${body}`
 }
