@@ -2,10 +2,12 @@
 import { computed, ref } from 'vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import { createDragHandlers } from './pdf-upload-handlers'
+import { matchesSource, sourceName } from './source-asset-naming'
 
 const props = defineProps<{
   readonly assets?: readonly AssetDisplay[]
   readonly slug: string
+  readonly lang: string
 }>()
 
 const emit = defineEmits<{
@@ -17,27 +19,19 @@ const inputRef = ref<HTMLInputElement>()
 const dragging = ref(false)
 
 const fb2Asset = computed(() =>
-  props.assets?.find(
-    a => a.name.toLowerCase().endsWith('.fb2') && a.status !== 'pending-delete'
-  )
+  props.assets?.find(a => matchesSource(a, props.slug, props.lang, 'fb2'))
 )
 
 const triggerUpload = () => {
   inputRef.value?.click()
 }
 
-/*
- * Direct FB2 upload — the editor already has the FB2 produced
- * elsewhere (Calibre, scribus → fb2, hand-written, etc.) and just
- * wants it shipped. Validates by extension since browsers don't
- * agree on a MIME for application/x-fictionbook+xml.
- */
 const handleFile = (file: File): void => {
   if (!file.name.toLowerCase().endsWith('.fb2')) {
     emit('error', 'Only .fb2 files are accepted here')
     return
   }
-  const renamed = new File([file], `${props.slug}.fb2`, {
+  const renamed = new File([file], sourceName(props.slug, props.lang, 'fb2'), {
     type: file.type || 'application/x-fictionbook+xml',
   })
   emit('upload-fb2', renamed)

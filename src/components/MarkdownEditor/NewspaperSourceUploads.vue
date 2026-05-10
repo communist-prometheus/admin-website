@@ -30,6 +30,8 @@ const HINT =
     <PdfUpload
       :assets="assets"
       :current-cover="currentCover"
+      :slug="slug"
+      :lang="issueLang ?? 'en'"
       @upload-pdf="$emit('upload-asset', $event)"
       @upload-cover="$emit('upload-asset', $event)"
       @set-cover="$emit('set-cover', $event)"
@@ -38,6 +40,7 @@ const HINT =
     <DocxUpload
       :assets="assets"
       :slug="slug"
+      :lang="issueLang ?? 'en'"
       :issue-title="issueTitle"
       :issue-lang="issueLang"
       @upload-fb2="$emit('upload-asset', $event)"
@@ -46,6 +49,7 @@ const HINT =
     <Fb2Upload
       :assets="assets"
       :slug="slug"
+      :lang="issueLang ?? 'en'"
       @upload-fb2="$emit('upload-asset', $event)"
       @error="$emit('error', $event)"
     />

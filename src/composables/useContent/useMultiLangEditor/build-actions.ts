@@ -36,18 +36,22 @@ export const buildSaveActions = (ctx: EditorContext, update: UpdateFn) => ({
  * Build navigation editor actions from context.
  * @param ctx - Editor context
  * @param loadLang - Language loader function
+ * @param langScopedFields - Frontmatter keys to drop when seeding
+ *   a fresh-language draft
  * @returns Switch and reset functions
  */
 export const buildNavActions = (
   ctx: EditorContext,
-  loadLang: LoadLangFn
+  loadLang: LoadLangFn,
+  langScopedFields: readonly string[] = []
 ) => ({
   switchLanguage: createSwitchLanguage(
     ctx.cache,
     ctx.originalCache,
     ctx.state,
     ctx.fileSha,
-    loadLang
+    loadLang,
+    langScopedFields
   ),
   reset: createReset(ctx.cache, ctx.originalCache, ctx.state, ctx.fileSha),
 })

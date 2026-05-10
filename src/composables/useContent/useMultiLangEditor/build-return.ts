@@ -12,17 +12,20 @@ type UpdateFn = ReturnType<typeof useGitHubApi>['update']
  * @param loadLang - Language loader function
  * @param isDirty - Dirty state computed
  * @param update - GitHub update function
+ * @param langScopedFields - Frontmatter keys excluded from seeding
+ *   when switching to a brand-new lang
  * @returns Wired editor return object
  */
 export const buildEditorReturn = (
   ctx: EditorContext,
   loadLang: LoadLangFn,
   isDirty: ComputedRef<boolean>,
-  update: UpdateFn
+  update: UpdateFn,
+  langScopedFields: readonly string[] = []
 ) => ({
   ...ctx.state,
   isDirty,
   loadLanguageVersion: loadLang,
   ...buildSaveActions(ctx, update),
-  ...buildNavActions(ctx, loadLang),
+  ...buildNavActions(ctx, loadLang, langScopedFields),
 })
