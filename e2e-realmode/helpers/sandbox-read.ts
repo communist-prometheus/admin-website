@@ -42,3 +42,24 @@ export const listDir = async (
   }
   return (await res.json()) as readonly FileEntry[]
 }
+
+/**
+ * Read a file's bytes from the sandbox branch (PNG / PDF covers,
+ * binary assets). Returns undefined when the file is missing so
+ * tests can assert presence/absence with the same call.
+ * @param path - Repo-relative path
+ * @returns File bytes, or undefined when missing
+ */
+export const readBinary = async (
+  path: string
+): Promise<Uint8Array | undefined> => {
+  const res = await fetch(contentsUrl(path), { headers: apiHeaders() })
+  if (res.status === 404) return undefined
+  if (!res.ok) {
+    throw new Error(`readBinary ${path}: ${res.status} ${res.statusText}`)
+  }
+  const data = (await res.json()) as { content: string; encoding: string }
+  return new Uint8Array(
+    Buffer.from(data.content, data.encoding as BufferEncoding)
+  )
+}
