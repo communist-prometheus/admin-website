@@ -88,6 +88,36 @@ test('lang-switch newspaper: existing → dimmed preserves frontmatter', async (
   ).toBe('Sandbox issue 1')
 })
 
+/* The active language button must never carry the `dimmed` class
+ * even when the file does not yet exist. Otherwise the click
+ * produces ~50%-opacity heading-coloured feedback that reads as
+ * "nothing happened" on mobile (2026-05-10 user report:
+ * "кликаю кликаю и нихуя не открывается"). Pair the visual-state
+ * fix with an explicit "no XYZ version yet" hint below the tabs so
+ * the user sees a concrete affordance instead of guessing. */
+test('lang-switch newspaper: active button drops the dimmed modifier + missing-translation hint shows', async ({
+  page,
+}) => {
+  test.setTimeout(180_000)
+  wirePageLog(page, 'lang-switch-active-vis')
+  await bootRealmode(page, 'lang-switch-active-vis')
+  await visit(page, TARGET, SLOW)
+  await expectVisible(page, titleField(page), SLOW)
+
+  await langButton(page, 'Italiano').click()
+  await expectVisible(page, langButton(page, 'Italiano'), SLOW)
+  const klass =
+    (await langButton(page, 'Italiano').getAttribute('class')) ?? ''
+  expect(klass, `Italiano class is "${klass}"`).toContain('active')
+  expect(klass, 'active button must not carry dimmed').not.toContain('dimmed')
+
+  /* Hint is the unmistakable signal "yes you switched, but no file
+   * yet — type and Save". */
+  const hint = page.locator('[data-testid="missing-translation-hint"]')
+  await expectVisible(page, hint, SLOW)
+  await expect(hint).toContainText('Italiano')
+})
+
 /* Repro of the 2026-05-10 prod report: opening a single-lang issue
  * (only RU exists, EN dimmed), clicking English clears the title
  * field on prod even though seedFromCurrent's contract says
