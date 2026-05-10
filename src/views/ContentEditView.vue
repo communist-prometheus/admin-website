@@ -12,45 +12,33 @@ import EditBreadcrumb from './ContentEditView/EditBreadcrumb.vue'
 import { initEditPage } from './ContentEditView/init-edit-page'
 import PreviewFooter from './ContentEditView/PreviewFooter.vue'
 import PublishConfirmDialog from './ContentEditView/PublishConfirmDialog.vue'
+import { setupEditHandlers } from './ContentEditView/setup-handlers'
 import { useSaveFlow } from './ContentEditView/use-save-flow'
 import { useEditPage } from './ContentEditView/useEditPage'
-import {
-  makeRename,
-  makeSwitchLang,
-  makeUpdaters,
-} from './ContentEditView/wire-handlers'
 
 const props = defineProps<{ readonly type: string; readonly slug: string }>()
 const previewing = ref(false)
 const p = useEditPage(props.type, props.slug)
 const { handleSave, saving, saved, saveError } = initEditPage(p)
-const enterPreview = () => { previewing.value = true }
-const exitPreview = () => { previewing.value = false }
+const h = setupEditHandlers(p, {
+  type: props.type,
+  slug: props.slug,
+  previewing,
+  saveError,
+})
 const flow = useSaveFlow({
   contentType: () => p.contentType.value,
   frontmatter: () => p.editor.frontmatterData.value,
   handleSave,
   saveError,
-  exitPreview,
+  exitPreview: h.exitPreview,
 })
-
-const { updateBody, updateFm } = makeUpdaters(
-  p.editor.bodyContent,
-  p.editor.frontmatterData
+const title = computed(() =>
+  String(p.editor.frontmatterData.value.title ?? p.slug)
 )
-const handleSwitchLang = makeSwitchLang({
-  langs: p.langs,
-  switchLanguage: p.editor.switchLanguage,
-  buildPath: p.buildPath,
-})
-const handleRename = makeRename(props.type, props.slug)
-const title = computed(() => String(p.editor.frontmatterData.value.title ?? p.slug))
 const isRenameable = computed(
   () => p.contentType.value !== 'pages' && p.contentType.value !== 'common'
 )
-const setError = (msg: string): void => {
-  saveError.value = msg
-}
 </script>
 
 <template>
@@ -59,14 +47,14 @@ const setError = (msg: string): void => {
       <EditBreadcrumb
         :content-type="p.contentType.value"
         :slug="slug" :renameable="isRenameable"
-        @rename="handleRename"
+        @rename="h.handleRename"
       />
     </nav>
     <LanguageSelector
       v-if="!previewing"
       :model-value="p.editor.currentLang.value"
       :available-languages="p.langs.value"
-      @update:model-value="handleSwitchLang"
+      @update:model-value="h.handleSwitchLang"
     />
     <CoverImage
       v-if="!previewing && p.hasCover.value && !p.editor.loadingFile.value"
@@ -84,13 +72,13 @@ const setError = (msg: string): void => {
       :asset-url-map="p.hasAssets.value ? p.assets.urlMap.value : undefined"
       :assets="p.hasAssets.value ? p.assets.allAssets.value : undefined"
       :lang="p.editor.currentLang.value"
-      @update:body-content="updateBody"
-      @update:frontmatter="updateFm"
-      @preview="enterPreview"
+      @update:body-content="h.updateBody"
+      @update:frontmatter="h.updateFm"
+      @preview="h.enterPreview"
       @paste:image="p.ah.onPasteImage"
       @upload-asset="p.ah.onUploadAsset"
       @set-cover="p.ah.onSetCover"
-      @error="setError"
+      @error="h.setError"
     />
     <ContentPreview
       v-else
@@ -104,7 +92,7 @@ const setError = (msg: string): void => {
       :saving="saving"
       :saved="saved"
       @save="flow.onSave"
-      @back="exitPreview"
+      @back="h.exitPreview"
     />
     <AssetPanel
       v-if="!previewing && p.hasAssets.value && !p.editor.loadingFile.value"
