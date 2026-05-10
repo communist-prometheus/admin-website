@@ -17,8 +17,8 @@ defineEmits<{
 <template>
   <li class="linked-row" :data-testid="`linked-${slug}`">
     <span class="position">{{ position }}.</span>
-    <span class="title">{{ title }}</span>
-    <code class="slug">{{ slug }}</code>
+    <span class="title" :title="title">{{ title }}</span>
+    <code class="slug" :title="slug">{{ slug }}</code>
     <button
       type="button"
       class="row-btn"
@@ -59,6 +59,12 @@ defineEmits<{
   border-radius: var(--radius-sm);
   background: var(--color-background-soft);
   font-size: 0.875rem;
+
+  /* Long slugs / titles must not push the row past the viewport.
+   * Without `min-width: 0` flex children compute their hypothetical
+   * size from their content, the row hugs the widest piece, and the
+   * whole frontmatter editor overflows on mobile. */
+  min-width: 0;
 }
 
 .position {
@@ -77,10 +83,28 @@ defineEmits<{
 }
 
 .slug {
-  flex-shrink: 0;
+  /* Was `flex-shrink: 0` — kept the full slug visible at any cost,
+   * which broke 390-wide layouts whenever slugs were long
+   * (`programme-outline-intro` etc.). Allow shrinking + ellipsis so
+   * the row stays inside the viewport; full slug surfaces via the
+   * native title tooltip on hover. */
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text-secondary);
   font-family: var(--font-mono, monospace);
   font-size: 0.75rem;
+}
+
+/* Drop the slug entirely on the smallest viewports — title carries
+ * enough information for the editor and the slug is still on the
+ * detail page. */
+@media (width <= 480px) {
+  .slug {
+    display: none;
+  }
 }
 
 .row-btn {

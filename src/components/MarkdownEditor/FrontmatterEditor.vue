@@ -50,6 +50,16 @@ const handleFieldUpdate = (key: string, value: unknown) => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: clamp(0.75rem, 2vw, 1rem);
+
+  /* Without `min-width: 0`, a flex item's hypothetical size is at
+   * least its `min-content` — which for newspaper issues with long
+   * Russian article slugs in ArticlesPicker pushes the fieldset
+   * past the viewport. The parent `.edit-main` is constrained but
+   * can't force this child to shrink without it. Same trick on the
+   * inner LinkedArticleRow scope. */
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 legend {
