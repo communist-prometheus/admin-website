@@ -14,8 +14,7 @@ const COVER_FILENAME = 'cover.png'
  *
  * @param pdfFile - PDF file to extract cover from
  * @returns PNG File of the first page
- * @throws when pdfjs / canvas / worker fails (network, OOM,
- *   incompatible PDF, missing worker script, etc.)
+ * @throws when mupdf fails to load, parse, or render
  */
 export const extractPdfCover = async (pdfFile: File): Promise<File> => {
   const blob = await renderFirstPage(pdfFile)

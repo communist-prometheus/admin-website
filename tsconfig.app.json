@@ -1,7 +1,11 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "src/sw/protocol.ts"],
-  "exclude": ["src/**/__tests__/*", "src/sw/**/*"],
+  "exclude": [
+    "src/**/__tests__/*",
+    "src/**/*.fixture.test.ts",
+    "src/sw/**/*"
+  ],
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
 
