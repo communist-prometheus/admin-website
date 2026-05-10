@@ -1,29 +1,24 @@
 import type { ComputedRef, Ref } from 'vue'
 import { computed } from 'vue'
 import type { Language } from '@/types/content'
-import { snapshotDraft } from './draft-cache'
+import { computeDirty } from './dirty-helpers'
 import type { EditorDraft, MultiLangEditorState } from './types'
 
-const isDraftModified = (
-  draft: EditorDraft,
-  original: EditorDraft | undefined
-): boolean => {
-  if (!original) {
-    return draft.body !== '' || Object.keys(draft.frontmatter).length > 0
-  }
-  return (
-    draft.body !== original.body ||
-    JSON.stringify(draft.frontmatter) !== JSON.stringify(original.frontmatter)
-  )
-}
-
 /**
- * Creates a computed dirty flag across all language drafts
- * @param cache - Current draft cache
- * @param originalCache - Original (saved) draft cache
- * @param state - Editor state
- * @param fileSha - Current file SHA ref
- * @param saveVersion - Reactive counter incremented on save
+ * Computed dirty flag across all language drafts.
+ *
+ * The previous implementation called `snapshotDraft` here as a side
+ * effect to "freshen" the cache before iterating — that wrote
+ * `loaded: true` empty entries during init (currentLang briefly =
+ * 'en', frontmatter briefly = {}), and `tryRestoreCached('en')`
+ * later treated them as real loaded files, wiping the editor on
+ * lang switch (the 2026-05-10 newspaper regression). A computed
+ * must not mutate.
+ * @param cache - Per-lang draft cache
+ * @param originalCache - Per-lang baseline for diffing
+ * @param state - Editor state refs
+ * @param fileSha - File SHA ref for the current lang
+ * @param saveVersion - Reactive counter that re-triggers the compute
  * @returns Computed boolean indicating unsaved changes
  */
 export const createIsDirty = (
@@ -35,15 +30,5 @@ export const createIsDirty = (
 ): ComputedRef<boolean> =>
   computed(() => {
     void saveVersion.value
-    snapshotDraft(
-      cache,
-      state.currentLang.value,
-      state.frontmatterData.value,
-      state.bodyContent.value,
-      fileSha.value
-    )
-    for (const [lang, draft] of cache) {
-      if (isDraftModified(draft, originalCache.get(lang))) return true
-    }
-    return false
+    return computeDirty(cache, originalCache, state, fileSha)
   })
