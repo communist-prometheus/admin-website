@@ -4,10 +4,12 @@ import type { AssetDisplay } from '@/composables/useAssets/types'
 import { buildDocxMeta } from './docx-meta'
 import { docxFileToFb2 } from './docx-to-fb2'
 import { createDragHandlers } from './pdf-upload-handlers'
+import { matchesSource, sourceName } from './source-asset-naming'
 
 const props = defineProps<{
   readonly assets?: readonly AssetDisplay[]
   readonly slug: string
+  readonly lang: string
   readonly issueTitle?: string
   readonly issueLang?: string
   readonly issueDescription?: string
@@ -25,9 +27,7 @@ const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
 const fb2Asset = computed(() =>
-  props.assets?.find(
-    a => a.name.toLowerCase().endsWith('.fb2') && a.status !== 'pending-delete'
-  )
+  props.assets?.find(a => matchesSource(a, props.slug, props.lang, 'fb2'))
 )
 
 const triggerUpload = () => {
@@ -40,7 +40,9 @@ const handleFile = async (file: File): Promise<void> => {
     return
   }
   const fb2 = await docxFileToFb2(file, buildDocxMeta(props))
-  emit('upload-fb2', fb2)
+  emit('upload-fb2', new File([fb2], sourceName(props.slug, props.lang, 'fb2'), {
+    type: fb2.type || 'application/x-fictionbook+xml',
+  }))
 }
 
 const handleChange = (event: Event): void => {

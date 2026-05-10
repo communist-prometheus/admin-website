@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
-import { shouldAutoSetCover } from './pdf-cover-policy'
+import { runPdfUpload } from './pdf-upload-flow'
 import { createDragHandlers } from './pdf-upload-handlers'
+import { matchesSource } from './source-asset-naming'
 
 const props = defineProps<{
   readonly assets?: readonly AssetDisplay[]
   readonly currentCover?: string
+  readonly slug: string
+  readonly lang: string
 }>()
 
 const emit = defineEmits<{
@@ -21,37 +24,25 @@ const dragging = ref(false)
 
 const pdfAsset = computed(() =>
   props.assets?.find(
-    (a) => a.mimeType === 'application/pdf' && a.status !== 'pending-delete'
+    a =>
+      a.mimeType === 'application/pdf' &&
+      matchesSource(a, props.slug, props.lang, 'pdf')
   )
 )
 
-const triggerUpload = () => { inputRef.value?.click() }
-
-/*
- * On every PDF upload we extract the first page and add it to assets
- * (so editors can swap to it later). We only auto-set frontmatter.image
- * when there is no cover yet — if the user has chosen a custom cover
- * we must not silently overwrite it.
- */
-const extractCover = async (file: File): Promise<File | undefined> => {
-  try {
-    const m = await import('@/features/newspaper/extract-pdf-cover')
-    return await m.extractPdfCover(file)
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err)
-    emit('error', `PDF cover extraction failed: ${reason}`)
-    return undefined
-  }
+const triggerUpload = () => {
+  inputRef.value?.click()
 }
 
-const handleFile = async (file: File) => {
-  if (file.type !== 'application/pdf') return
-  emit('upload-pdf', file)
-  const cover = await extractCover(file)
-  if (cover === undefined) return
-  emit('upload-cover', cover)
-  if (shouldAutoSetCover(props.currentCover)) emit('set-cover', 'cover.png')
+const flowEmits = {
+  uploadPdf: (f: File) => emit('upload-pdf', f),
+  uploadCover: (f: File) => emit('upload-cover', f),
+  setCover: (n: string) => emit('set-cover', n),
+  error: (m: string) => emit('error', m),
 }
+
+const handleFile = (file: File) =>
+  runPdfUpload(file, { ...props, emits: flowEmits })
 
 const handleChange = (event: Event) => {
   if (!(event.target instanceof HTMLInputElement)) return
@@ -60,7 +51,10 @@ const handleChange = (event: Event) => {
   event.target.value = ''
 }
 
-const { onDrop, onDragOver, onDragLeave } = createDragHandlers(dragging, handleFile)
+const { onDrop, onDragOver, onDragLeave } = createDragHandlers(
+  dragging,
+  handleFile
+)
 </script>
 
 <template>

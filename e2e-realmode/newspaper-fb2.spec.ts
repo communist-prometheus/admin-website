@@ -13,7 +13,7 @@ test.beforeEach(async () => {
   await resetSandboxBaseline()
 })
 
-test('newspaper FB2 upload commits sources to assets/<slug>.fb2', async ({
+test('newspaper FB2 upload commits sources to assets/<slug>.<lang>.fb2', async ({
   page,
 }) => {
   test.setTimeout(180_000)
@@ -28,9 +28,12 @@ test('newspaper FB2 upload commits sources to assets/<slug>.fb2', async ({
     SLOW
   )
 
-  /* Fb2Upload renames any uploaded file to `<slug>.fb2` regardless
-   * of the source filename — committing that exact name is the
-   * regression contract (#225 broke this once already). */
+  /* Fb2Upload renames any uploaded file to `<slug>.<lang>.fb2`
+   * regardless of the source filename — committing that exact name
+   * is the regression contract (#225 broke this once already, and
+   * #231 made it per-lang so EN and IT can coexist). The default
+   * lang on `/content/newspaper/edit/...` is EN, so the expected
+   * path is `<slug>.en.fb2`. */
   await page
     .locator('[data-testid="fb2-dropzone"] + input[type="file"]')
     .setInputFiles({
@@ -45,7 +48,7 @@ test('newspaper FB2 upload commits sources to assets/<slug>.fb2', async ({
   const shaAfter = await waitForHeadAdvance(shaBefore)
   expect(shaAfter).not.toBe(shaBefore)
 
-  const path = `newspaper/${SLUG}/assets/${SLUG}.fb2`
+  const path = `newspaper/${SLUG}/assets/${SLUG}.en.fb2`
   const remote = await readFile(path)
   expect(remote, `${path} must exist on sandbox`).toBeTruthy()
   expect(remote).toContain('FictionBook')
