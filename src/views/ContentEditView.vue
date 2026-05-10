@@ -6,6 +6,7 @@ import CoverImage from '@/components/AssetManager/CoverImage.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import LanguageSelector from '@/components/LanguageSelector/LanguageSelector.vue'
+import { buildRenameDeps } from './ContentEditView/build-rename-deps'
 import ContentEditMain from './ContentEditView/ContentEditMain.vue'
 import ContentPreview from './ContentEditView/ContentPreview.vue'
 import EditBreadcrumb from './ContentEditView/EditBreadcrumb.vue'
@@ -24,8 +25,9 @@ const props = defineProps<{ readonly type: string; readonly slug: string }>()
 const previewing = ref(false)
 const p = useEditPage(props.type, props.slug)
 const { handleSave, saving, saved, saveError } = initEditPage(p)
-const enterPreview = () => { previewing.value = true }
-const exitPreview = () => { previewing.value = false }
+const exitPreview = (): void => {
+  previewing.value = false
+}
 const flow = useSaveFlow({
   contentType: () => p.contentType.value,
   frontmatter: () => p.editor.frontmatterData.value,
@@ -33,24 +35,21 @@ const flow = useSaveFlow({
   saveError,
   exitPreview,
 })
-
 const { updateBody, updateFm } = makeUpdaters(
   p.editor.bodyContent,
   p.editor.frontmatterData
 )
-const handleSwitchLang = makeSwitchLang({
-  langs: p.langs,
-  switchLanguage: p.editor.switchLanguage,
-  buildPath: p.buildPath,
-})
-const handleRename = makeRename(props.type, props.slug)
-const title = computed(() => String(p.editor.frontmatterData.value.title ?? p.slug))
+const handleRename = makeRename(
+  props.type,
+  props.slug,
+  buildRenameDeps(p, props.slug)
+)
+const title = computed(() =>
+  String(p.editor.frontmatterData.value.title ?? p.slug)
+)
 const isRenameable = computed(
   () => p.contentType.value !== 'pages' && p.contentType.value !== 'common'
 )
-const setError = (msg: string): void => {
-  saveError.value = msg
-}
 </script>
 
 <template>
@@ -66,7 +65,13 @@ const setError = (msg: string): void => {
       v-if="!previewing"
       :model-value="p.editor.currentLang.value"
       :available-languages="p.langs.value"
-      @update:model-value="handleSwitchLang"
+      @update:model-value="
+        makeSwitchLang({
+          langs: p.langs,
+          switchLanguage: p.editor.switchLanguage,
+          buildPath: p.buildPath,
+        })
+      "
     />
     <CoverImage
       v-if="!previewing && p.hasCover.value && !p.editor.loadingFile.value"
@@ -86,11 +91,11 @@ const setError = (msg: string): void => {
       :lang="p.editor.currentLang.value"
       @update:body-content="updateBody"
       @update:frontmatter="updateFm"
-      @preview="enterPreview"
+      @preview="previewing = true"
       @paste:image="p.ah.onPasteImage"
       @upload-asset="p.ah.onUploadAsset"
       @set-cover="p.ah.onSetCover"
-      @error="setError"
+      @error="(m: string) => (saveError = m)"
     />
     <ContentPreview
       v-else
