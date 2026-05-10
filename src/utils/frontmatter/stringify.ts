@@ -32,6 +32,13 @@ const normaliseDates = (
  * `lineWidth: 0` disables auto-wrapping so prose paragraphs in
  * description / pageDescription stay on one line — easier diffs.
  *
+ * `blockQuote: false` disables block scalar (`|+`/`>`) output —
+ * fast-check (`frontmatter.fuzz.test`) caught that block scalars
+ * silently drop a leading space when a value is shaped like `" \n"`,
+ * which broke the serialize→parse round-trip. Flow-style strings
+ * round-trip losslessly while plain unquoted values still print
+ * cleanly for normal text.
+ *
  * @param frontmatter - Frontmatter object
  * @param content - Markdown content
  * @returns Formatted markdown with frontmatter
@@ -40,7 +47,10 @@ export const stringifyFrontmatter = (
   frontmatter: Record<string, unknown>,
   content: string
 ): string => {
-  const yaml = yamlStringify(normaliseDates(frontmatter), { lineWidth: 0 })
+  const yaml = yamlStringify(normaliseDates(frontmatter), {
+    lineWidth: 0,
+    blockQuote: false,
+  })
   /*
    * `yaml.stringify` already terminates with `\n`. Strip it so we
    * don't get a blank line before the closing `---` fence.

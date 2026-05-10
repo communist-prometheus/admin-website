@@ -83,6 +83,16 @@ Content here`)
         'real-world-from-manchester',
         "Capital has not changed its predatory nature: it has simply scaled the infernal conditions of the 19th-century Manchester factory to the dimensions of the entire planet. Faced with the inexorable fall of the rate of profit in the '70s, capitalism launched the mechanisms of global revenge: it relocated physical production to the countries of the 'new' capitalism.",
       ],
+      /*
+       * The fuzz contract found this counterexample: a value
+       * shaped " \n" (leading space then newline) was emitted as a
+       * YAML block scalar (`|+`) which silently dropped the
+       * leading space on parse. `blockQuote: false` keeps strings
+       * in flow style so they round-trip losslessly.
+       */
+      ['leading-space-then-newline', ' \n'],
+      ['tabs-then-newline', '\t\t'],
+      ['only-whitespace-and-newlines', '   \n   '],
     ]
     for (const [name, value] of cases) {
       it(`round-trips ${name}`, () => {
