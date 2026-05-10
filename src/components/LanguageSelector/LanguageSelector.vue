@@ -15,13 +15,29 @@ const emit = defineEmits<{
 const settings = useSettingsStore()
 onMounted(() => settings.ensureLoaded())
 
-const langButtonClass = (code: Language) => ({
-  active: props.modelValue === code,
-  exists: props.availableLanguages?.has(code) ?? false,
-  dimmed:
-    props.availableLanguages !== undefined &&
-    !props.availableLanguages.has(code),
-})
+const langButtonClass = (code: Language) => {
+  const isActive = props.modelValue === code
+  const exists = props.availableLanguages?.has(code) ?? false
+  /* `dimmed` purely indicates "no file yet for this lang". Once
+   * the user clicks a dimmed tab, `isActive` overrides — otherwise
+   * .active.dimmed combine to ~50% opacity heading-coloured text,
+   * which on mobile reads as "click did nothing". The user kept
+   * tapping Italian and seeing no visible change (2026-05-10
+   * report). Active always wins on visibility. */
+  return {
+    active: isActive,
+    exists,
+    dimmed: !isActive && props.availableLanguages !== undefined && !exists,
+  }
+}
+
+const isMissingTranslation = (): boolean =>
+  props.availableLanguages !== undefined &&
+  !props.availableLanguages.has(props.modelValue)
+
+const activeLabel = (): string =>
+  settings.languages.find(l => l.code === props.modelValue)?.label ??
+  props.modelValue
 </script>
 
 <template>
@@ -37,6 +53,14 @@ const langButtonClass = (code: Language) => ({
     >
       {{ entry.label }}
     </button>
+    <p
+      v-if="isMissingTranslation()"
+      class="missing-hint"
+      data-testid="missing-translation-hint"
+    >
+      No {{ activeLabel() }} version yet — fill in the metadata and Save
+      to create one.
+    </p>
   </fieldset>
 </template>
 
@@ -84,5 +108,14 @@ const langButtonClass = (code: Language) => ({
   &.dimmed {
     opacity: 50%;
   }
+}
+
+.missing-hint {
+  flex-basis: 100%;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem 0.5rem;
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+  color: var(--color-text-secondary);
+  font-style: italic;
 }
 </style>
