@@ -6,6 +6,10 @@ type Page = ReturnType<typeof useEditPage>
 
 /**
  * Wire up lifecycle hooks for the edit page.
+ * `assets.coverPath` follows `editor.frontmatterData.image` so that
+ * switching language re-points the cover preview at the active lang's
+ * image (per-lang covers, see `langScopedByType`). Without this watch,
+ * `coverPath` only got seeded once on initial load and stayed pinned.
  * @param page - Edit page state
  * @param initAll - Initialization function
  */
@@ -19,4 +23,10 @@ export const setupLifecycle = (page: Page, initAll: () => Promise<void>) => {
   watch(page.isAuth, auth => {
     if (auth) initAll()
   })
+  watch(
+    () => editor.frontmatterData.value.image,
+    img => {
+      assets.coverPath.value = typeof img === 'string' ? img : undefined
+    }
+  )
 }
