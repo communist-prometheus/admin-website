@@ -9,7 +9,11 @@ import {
 } from './pending-deploy'
 import type { DeployBuild } from './workflow-types'
 
-const realBuild = (message: string, sha: string): DeployBuild => ({
+const realBuild = (
+  message: string,
+  sha: string,
+  createdAt = '2026-04-16T00:00:00Z'
+): DeployBuild => ({
   run: {
     id: 1,
     name: 'Deploy',
@@ -17,8 +21,8 @@ const realBuild = (message: string, sha: string): DeployBuild => ({
     conclusion: undefined,
     head_branch: 'master',
     head_sha: sha,
-    created_at: '2026-04-16T00:00:00Z',
-    updated_at: '2026-04-16T00:00:00Z',
+    created_at: createdAt,
+    updated_at: createdAt,
     head_commit: {
       message,
       author: { name: 'undeadliner', email: 'u@example.com' },
@@ -74,14 +78,24 @@ describe('pendingToDeployBuild', () => {
 describe('isPendingMatched', () => {
   it('returns true when a real run has the same commit message', () => {
     setPendingDeploy('same message')
-    const real = [realBuild('same message', 'deadbeef')]
-    expect(isPendingMatched(requirePending(), real)).toBe(true)
+    const pending = requirePending()
+    const real = [
+      realBuild('same message', 'deadbeef', new Date().toISOString()),
+    ]
+    expect(isPendingMatched(pending, real)).toBe(true)
   })
 
   it('matches when real commit has content: prefix', () => {
     setPendingDeploy('updated Hero in pages')
-    const real = [realBuild('content: updated Hero in pages', 'deadbeef')]
-    expect(isPendingMatched(requirePending(), real)).toBe(true)
+    const pending = requirePending()
+    const real = [
+      realBuild(
+        'content: updated Hero in pages',
+        'deadbeef',
+        new Date().toISOString()
+      ),
+    ]
+    expect(isPendingMatched(pending, real)).toBe(true)
   })
 
   it('returns false when no real run matches', () => {
@@ -94,5 +108,64 @@ describe('isPendingMatched', () => {
     setPendingDeploy('pending msg')
     const built = pendingToDeployBuild(requirePending())
     expect(isPendingMatched(requirePending(), [built])).toBe(false)
+  })
+
+  /*
+   * Regression: the newspaper edit view always emits the commit
+   * message `updated <title> in newspaper`. Re-editing the same
+   * issue (e.g. uploading a PDF for another language) produces the
+   * SAME message every time. The old run that completed a few
+   * minutes ago carried that exact message. Without a timestamp
+   * floor the optimistic pending entry was matched by the OLD run
+   * the instant the home list rendered — the new "queued" card
+   * vanished and nothing appeared again until GitHub's API caught
+   * up (10 manual refreshes for the user).
+   */
+  it('does NOT match a real run that already existed before the pending was created', () => {
+    const before = '2026-04-16T10:00:00Z'
+    const justNow = '2026-04-16T10:30:00Z'
+    setPendingDeploy('updated Magazine N 1 in newspaper')
+    const pending = requirePending()
+    const overrideCreatedAt = { ...pending, createdAt: justNow }
+    const oldRun = realBuild(
+      'updated Magazine N 1 in newspaper',
+      'deadbeef',
+      before
+    )
+    expect(isPendingMatched(overrideCreatedAt, [oldRun])).toBe(false)
+  })
+
+  it('matches a real run that started AFTER the pending was created', () => {
+    const justNow = '2026-04-16T10:30:00Z'
+    const afterPending = '2026-04-16T10:30:08Z'
+    setPendingDeploy('updated Magazine N 1 in newspaper')
+    const pending = requirePending()
+    const overrideCreatedAt = { ...pending, createdAt: justNow }
+    const newRun = realBuild(
+      'updated Magazine N 1 in newspaper',
+      'cafef00d',
+      afterPending
+    )
+    expect(isPendingMatched(overrideCreatedAt, [newRun])).toBe(true)
+  })
+
+  /*
+   * GitHub stamps `workflow_runs[].created_at` server-side; the
+   * pending's `createdAt` is client-side `new Date()`. Clock skew
+   * of a few seconds is normal — a fresh run can be stamped
+   * slightly before the pending. The match must absorb that.
+   */
+  it('matches a fresh run stamped within the clock-skew slack window', () => {
+    const justNow = '2026-04-16T10:30:00Z'
+    const slightlyEarlier = '2026-04-16T10:29:55Z'
+    setPendingDeploy('updated Magazine N 1 in newspaper')
+    const pending = requirePending()
+    const overrideCreatedAt = { ...pending, createdAt: justNow }
+    const skewedRun = realBuild(
+      'updated Magazine N 1 in newspaper',
+      'cafef00d',
+      slightlyEarlier
+    )
+    expect(isPendingMatched(overrideCreatedAt, [skewedRun])).toBe(true)
   })
 })
