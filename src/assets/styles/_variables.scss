@@ -51,7 +51,24 @@
   --z-modal: 1000;
   --z-debug: 9999;
 
+  /*
+   * Width occupied by the bottom-right MobileMenu FAB
+   * (`MobileMenuFab.vue`: 56px + 16px edge margin). 0 on desktop —
+   * the FAB hides at ≥768px viewport. Mobile bumps it so any
+   * sticky / right-anchored interactive control reserves a gutter
+   * that the floating nav button can sit in without obscuring
+   * content. Use as `padding-inline-end: var(--fab-safe-inline-end)`
+   * on bottom-pinned bars and tight rows like AddArticleRow.
+   */
+  --fab-safe-inline-end: 0px;
+
   color-scheme: dark;
+}
+
+@media (width < 768px) {
+  :root {
+    --fab-safe-inline-end: calc(56px + 16px + 0.5rem);
+  }
 }
 
 /*

@@ -46,12 +46,23 @@ const onClick = (): void => {
 
 <style scoped>
 .add-row {
+  /*
+   * On mobile the MobileMenu FAB (fixed, bottom-right, ~56px) would
+   * otherwise sit on top of the Add button when the picker happens
+   * to align with the viewport bottom — observed regression on
+   * /content/newspaper/edit at 375px. `--fab-safe-inline-end`
+   * resolves to 0 on desktop (FAB hidden) and the FAB gutter on
+   * narrow screens.
+   */
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-inline-end: var(--fab-safe-inline-end);
 }
 
 .select {
-  flex: 1;
+  flex: 1 1 12rem;
+  min-width: 0;
   padding: 0.375rem 0.5rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -61,6 +72,7 @@ const onClick = (): void => {
 }
 
 .add-btn {
+  flex: 0 0 auto;
   padding: 0.375rem 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
