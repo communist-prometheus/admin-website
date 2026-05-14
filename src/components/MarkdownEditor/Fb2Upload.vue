@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
+import { sanitizeFb2 } from '@/features/newspaper/sanitize-fb2'
 import { createDragHandlers } from './pdf-upload-handlers'
+import { readFb2Text } from './read-fb2-text'
 import { matchesSource, sourceName } from './source-asset-naming'
 
 const props = defineProps<{
@@ -26,15 +28,18 @@ const triggerUpload = () => {
   inputRef.value?.click()
 }
 
-const handleFile = (file: File): void => {
+const handleFile = async (file: File): Promise<void> => {
   if (!file.name.toLowerCase().endsWith('.fb2')) {
     emit('error', 'Only .fb2 files are accepted here')
     return
   }
-  const renamed = new File([file], sourceName(props.slug, props.lang, 'fb2'), {
-    type: file.type || 'application/x-fictionbook+xml',
-  })
-  emit('upload-fb2', renamed)
+  const cleaned = sanitizeFb2(await readFb2Text(file))
+  emit(
+    'upload-fb2',
+    new File([cleaned], sourceName(props.slug, props.lang, 'fb2'), {
+      type: 'application/x-fictionbook+xml',
+    })
+  )
 }
 
 const handleChange = (event: Event): void => {
