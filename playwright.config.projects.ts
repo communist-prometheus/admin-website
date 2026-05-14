@@ -3,12 +3,18 @@ import { devices } from '@playwright/test'
 import {
   LIGHTHOUSE_TEST_PATTERN,
   MOBILE_TEST_PATTERN,
+  THROTTLED_TEST_PATTERN,
 } from './playwright.config.constants'
 import { lighthouseProjects } from './playwright.config.lighthouse'
+import { throttledCritical } from './playwright.config.throttled'
 
 const allBrowsers = process.env.BROWSERS === 'all'
 
-const desktopIgnore = [LIGHTHOUSE_TEST_PATTERN, MOBILE_TEST_PATTERN]
+const desktopIgnore = [
+  LIGHTHOUSE_TEST_PATTERN,
+  MOBILE_TEST_PATTERN,
+  THROTTLED_TEST_PATTERN,
+]
 
 /**
  * Build a desktop browser project config.
@@ -51,5 +57,6 @@ export const projects = [
   ...browserProjects,
   mobileGeneral,
   mobileSpecific,
+  throttledCritical,
   ...lighthouseProjects,
 ]
