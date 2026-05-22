@@ -1,6 +1,6 @@
 import { expect, test } from '@prometheus/e2e-toolkit'
-import { waitForContentReady } from '../helpers/content-ready'
 import { openPreview, saveAndConfirm } from '../content/preview-save'
+import { waitForContentReady } from '../helpers/content-ready'
 import { applyThrottling } from './throttle'
 
 /**
@@ -67,8 +67,10 @@ test.describe('Critical paths under Slow 3G + 4× CPU', () => {
     await firstCard.click()
     await page.waitForURL(/\/edit\//, { timeout: 30_000 })
     await waitForContentReady(page)
-    await expect(page.locator('[data-testid="markdown-editor"]')).toBeVisible({
-      timeout: 30_000,
-    })
+    await expect(page.locator('[data-testid="markdown-editor"]')).toBeVisible(
+      {
+        timeout: 30_000,
+      }
+    )
   })
 })
