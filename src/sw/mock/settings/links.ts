@@ -1,0 +1,38 @@
+/** Mock links document mirroring content `settings/links.json`. */
+export const linksJson = JSON.stringify({
+  groups: ['organizations', 'resources', 'friendly'],
+  entries: [
+    {
+      url: 'https://www.leftcom.org',
+      name: 'Internationalist Communist Tendency',
+      category: 'organizations',
+      siteLang: 'en',
+      inRing: true,
+      descriptions: {
+        en: 'Internationalist communist organisation.',
+        ru: 'Интернационалистская коммунистическая организация.',
+      },
+    },
+    {
+      url: 'https://www.marxists.org',
+      name: 'Marxists Internet Archive',
+      category: 'resources',
+      siteLang: 'en',
+      inRing: false,
+      descriptions: {
+        en: 'Archive of Marxist writers and documents.',
+        ru: 'Архив произведений марксистских авторов.',
+      },
+    },
+    {
+      url: 'https://www.anarchy.bg',
+      name: 'Anarchy.bg',
+      category: 'friendly',
+      siteLang: 'bg',
+      inRing: false,
+      descriptions: {
+        en: 'Friendly anarchist resource.',
+      },
+    },
+  ],
+})
