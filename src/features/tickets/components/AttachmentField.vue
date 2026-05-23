@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { ACCEPT_ATTR } from '../api/attachment-accept'
 import type { TicketAttachment } from '../templates/attachment-types'
 import AttachmentList from './AttachmentList.vue'
 import { filesFromDrop, filesFromPaste } from './attachment-pipeline'
@@ -59,7 +60,7 @@ const setDragActive = (next: boolean): void => {
       ref="fileInput"
       type="file"
       multiple
-      accept="image/*"
+      :accept="ACCEPT_ATTR"
       class="hidden-input"
       data-testid="ticket-attachment-input"
       @change="onPickerChange"

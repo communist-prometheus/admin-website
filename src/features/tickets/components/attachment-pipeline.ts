@@ -1,5 +1,6 @@
 import { uploadAttachment } from '../api/upload-attachment'
 import type { TicketAttachment } from '../templates/attachment-types'
+import { partition } from './attachment-partition'
 
 const fromList = (list: ArrayLike<File> | undefined): readonly File[] =>
   list === undefined ? [] : Array.from(list as ArrayLike<File>)
@@ -54,7 +55,10 @@ const reportFailures = (
 }
 
 /**
- * Upload a batch of files in parallel, surfacing per-file errors.
+ * Upload a batch of files in parallel after filtering out the ones
+ * that fail size or type validation. Rejection reasons and per-file
+ * upload errors are both surfaced via `onError` so the user sees
+ * exactly why something didn't land.
  *
  * @param deps - Token + files + error callback
  * @returns Successfully uploaded attachments
@@ -62,9 +66,11 @@ const reportFailures = (
 export const uploadBatch = async (
   deps: UploadDeps
 ): Promise<readonly TicketAttachment[]> => {
+  const { accepted, rejected } = partition(deps.files)
+  for (const msg of rejected) deps.onError(msg)
   const results = await Promise.allSettled(
-    deps.files.map(file => uploadAttachment({ token: deps.token, file }))
+    accepted.map(file => uploadAttachment({ token: deps.token, file }))
   )
-  reportFailures(results, deps.files, deps.onError)
+  reportFailures(results, accepted, deps.onError)
   return results.flatMap(r => (r.status === 'fulfilled' ? [r.value] : []))
 }

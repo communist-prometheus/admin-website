@@ -29,6 +29,7 @@ const onError = (msg: string): void => {
     <h2>Tickets</h2>
     <button
       type="button" class="btn-new"
+      data-testid="new-ticket-toggle"
       @click="emit('toggle-create')"
     >
       {{ showCreate ? 'Cancel' : '+ New Ticket' }}
