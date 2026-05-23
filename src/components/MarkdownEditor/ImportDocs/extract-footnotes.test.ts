@@ -80,4 +80,24 @@ describe('extractFootnotes', () => {
     expect(r.html).toBe('<p>seeXXFOOTNOTEREFXX9XX</p>')
     expect(r.footnotes).toEqual([])
   })
+
+  it('extracts footnotes from a trailing <ol> even when <hr> is missing', () => {
+    /* mammoth omits the <hr> separator for some .docx variants
+     * (e.g. files generated without the reserved separator
+     * footnote entries). The extractor must still recognise the
+     * trailing block. */
+    const r = extractFootnotes(
+      '<p>see<sup><a href="#footnote-1">[1]</a></sup></p>' +
+        '<ol><li id="footnote-1">body<a href="#footnote-ref-1">↑</a></li></ol>'
+    )
+    expect(r.html).toBe('<p>seeXXFOOTNOTEREFXX1XX</p>')
+    expect(r.footnotes).toEqual([{ id: 1, html: 'body' }])
+  })
+
+  it('leaves a trailing ordinary <ol> (non-footnote) in the body', () => {
+    /* The trailing block looks like a list but its <li>s do not
+     * carry footnote ids, so it must not be stripped. */
+    const html = '<p>intro</p><ol><li>first</li><li>second</li></ol>'
+    expect(extractFootnotes(html).html).toBe(html)
+  })
 })
