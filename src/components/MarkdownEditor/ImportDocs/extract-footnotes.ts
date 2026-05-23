@@ -21,7 +21,17 @@ const FOOTNOTE_ITEM =
 const BACKLINK =
   /<a\s+href="#(?:footnote|endnote)-ref-\d+"[^>]*>[\s\S]*?<\/a>/g
 
-const TRAILING_OL = /<hr[^>]*>\s*<ol>[\s\S]*?<\/ol>\s*$/i
+/*
+ * Trailing footnote / endnote block. We accept an optional `<hr>`
+ * separator because mammoth omits it for some docx variants (e.g.
+ * documents whose `word/footnotes.xml` is missing the reserved
+ * separator entries). Whether the trailing `<ol>` is actually the
+ * footnote list — and not just an article-final numbered list — is
+ * verified after the match by `parseItems`, which only counts items
+ * whose `id="(footnote|endnote)-N"` survives. If no items parse,
+ * the caller leaves the `<ol>` alone in the body.
+ */
+const TRAILING_OL = /(?:<hr[^>]*>\s*)?<ol>[\s\S]*?<\/ol>\s*$/i
 
 /*
  * Placeholder injected before markdown conversion. The previous
@@ -79,9 +89,16 @@ export const extractFootnotes = (html: string): FootnoteExtract => {
     onNone: () => [] as readonly Footnote[],
     onSome: parseItems,
   })
+  /*
+   * Only strip the trailing `<ol>` from the body when at least one
+   * `<li id="(footnote|endnote)-N">` was recognised inside it.
+   * Otherwise the trailing list is just an ordinary article list
+   * and must stay in the body.
+   */
   const clean = Option.match(trailing, {
     onNone: () => withMarks,
-    onSome: t => withMarks.replace(t, ''),
+    onSome: t =>
+      footnotes.length > 0 ? withMarks.replace(t, '') : withMarks,
   })
   return {
     html: clean,
