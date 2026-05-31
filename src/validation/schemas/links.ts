@@ -9,7 +9,6 @@ export const LinkEntrySchema = Schema.Struct({
   url: Schema.String,
   name: Schema.String,
   category: Schema.String,
-  siteLang: Schema.String,
   inRing: Schema.Boolean,
   descriptions: Schema.Record({ key: Schema.String, value: Schema.String }),
 })

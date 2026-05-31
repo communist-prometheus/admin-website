@@ -1,7 +1,7 @@
 import type { LinkEntry } from '@/stores/links'
 
 /** Editable string fields of a link entry. */
-export type LinkField = 'url' | 'name' | 'category' | 'siteLang'
+export type LinkField = 'url' | 'name' | 'category'
 
 /**
  * A blank entry for the "add" action.
@@ -11,7 +11,6 @@ export const emptyEntry = (): LinkEntry => ({
   url: '',
   name: '',
   category: 'organizations',
-  siteLang: 'en',
   inRing: true,
   descriptions: {},
 })
