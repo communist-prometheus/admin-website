@@ -42,11 +42,6 @@ const onField = (index: number, field: LinkField, e: Event): void => {
       :value="entry.category" :groups="groups"
       @change="emit('field', index, 'category', $event)"
     />
-    <input
-      type="text" class="f-text f-lang" :value="entry.siteLang"
-      placeholder="lang" data-testid="link-sitelang"
-      @input="onField(index, 'siteLang', $event)"
-    />
     <LinkRingToggle
       :checked="entry.inRing"
       @change="emit('ring', index, $event)"
@@ -68,7 +63,7 @@ const onField = (index: number, field: LinkField, e: Event): void => {
 .link-row {
   list-style: none;
   display: grid;
-  grid-template-columns: 2fr 2fr auto auto auto auto;
+  grid-template-columns: 2fr 2fr auto auto auto;
   gap: 0.4rem;
   align-items: center;
   padding: 0.75rem 0;
@@ -83,10 +78,6 @@ const onField = (index: number, field: LinkField, e: Event): void => {
   background: var(--color-background);
   color: var(--color-text);
   font-size: 0.8125rem;
-}
-
-.f-lang {
-  width: 3.5rem;
 }
 
 .f-remove {

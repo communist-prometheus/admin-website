@@ -6,7 +6,6 @@ export const linksJson = JSON.stringify({
       url: 'https://www.leftcom.org',
       name: 'Internationalist Communist Tendency',
       category: 'organizations',
-      siteLang: 'en',
       inRing: true,
       descriptions: {
         en: 'Internationalist communist organisation.',
@@ -17,7 +16,6 @@ export const linksJson = JSON.stringify({
       url: 'https://www.marxists.org',
       name: 'Marxists Internet Archive',
       category: 'resources',
-      siteLang: 'en',
       inRing: false,
       descriptions: {
         en: 'Archive of Marxist writers and documents.',
@@ -28,7 +26,6 @@ export const linksJson = JSON.stringify({
       url: 'https://www.anarchy.bg',
       name: 'Anarchy.bg',
       category: 'friendly',
-      siteLang: 'bg',
       inRing: false,
       descriptions: {
         en: 'Friendly anarchist resource.',
