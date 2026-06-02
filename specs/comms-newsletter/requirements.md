@@ -169,13 +169,24 @@ All e2e tests run against a wrangler-dev instance of `comms-worker` bound to an 
 - **Localisation.** The unsubscribe confirmation page renders in `en/ru/it/es/uk/bl/pl` matching the rest of the site, falling back to English on `Accept-Language` miss.
 - **Accessibility.** Admin `/comms` follows the existing keyboard-nav + ARIA conventions used by the LinksEditor (see PR #245); confirmation page passes axe core rules.
 
-## 7. Open questions (resolve in design.md)
+## 7. Decisions log
 
-1. **Resend webhook integration.** Resend delivers bounce / complaint webhooks. Do we wire them in v1 (mark subscriber as `status='bounced'` automatically) or defer?
-2. **Subdomain final name.** `lists.comprom.org` is the proposal; `news.comprom.org` is an alternative. Decision needs DNS owner sign-off.
-3. **CF Access team domain.** What is the existing Zero Trust team domain we'd reuse? If none, we provision one as part of this spec.
-4. **Email locale per subscriber.** When `langs=['ru','en']` is the digest body chrome in `ru` or `en`? Current proposal: chrome in the subscriber's FIRST `langs[]` entry; article titles in their own language.
+All §7 open questions resolved in chat after phase-1 review:
+
+| Decision | Choice | Implication |
+|---|---|---|
+| Resend webhook | **In v1.** | Adds `POST /webhooks/resend` endpoint; bounce / complaint events flip `subscriber.status` to `bounced` / `complained` and append a `send_log` row. New EARS criteria R3.10–R3.12 below. |
+| Subdomain | **`lists.comprom.org`** | DNS CNAME → worker; CF Access policy bound to this hostname only. |
+| CF Access team domain | **Provision as part of this work.** | A new Zero Trust team (e.g. `prometheus.cloudflareaccess.com`) is created; provisioning steps belong in `design.md` §infra. |
+| Multi-lang digest locale | **First `langs[]` entry for chrome; article titles in their own language.** | Already encoded in R3.8; this confirms it. |
+
+#### Added EARS criteria
+
+- **R3.10** WHEN Resend POSTs a webhook event with `type='email.bounced'` or `'email.delivery_delayed'` (hard category) THE SYSTEM SHALL verify the payload's `svix-id` / `svix-signature` headers against `RESEND_WEBHOOK_SECRET`, set the matching subscriber's `status='bounced'`, and append a `send_log (status='bounced', resend_id)`.
+- **R3.11** WHEN Resend POSTs `type='email.complained'` THE SYSTEM SHALL set `status='complained'` and SHALL skip that subscriber in §3.3 going forward.
+- **R3.12** IF webhook signature verification fails THEN THE SYSTEM SHALL respond 401 and log `severity=warn` without mutating state.
+- **R4.7** WHERE a subscriber is `status ∈ {bounced, complained}` THE SYSTEM SHALL skip them in §3.3 (identical handling to `unsubscribed`).
 
 ---
 
-**Review checkpoint.** Read §1–§5, push back on anything that doesn't match how you want it to behave, and call out which open questions in §7 we need to land before design starts. After this is signed off I'll write `design.md` (architecture, data model, sequence diagrams, infra wiring) and pause again.
+**Review checkpoint cleared 2026-06-02.** Phase 2 (`design.md`) follows.
