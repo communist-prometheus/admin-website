@@ -413,9 +413,15 @@ A `develop` env follows the same pattern bound to `dev-lists.comprom.org` (mirro
 
 ### 9.3 CF Access provisioning (one-time)
 
-1. **Create Zero Trust team** `prometheus` (free tier — under 50 users). Login methods: GitHub OAuth + email OTP.
+0. **GitHub team seed.** Create team `communist-prometheus/admins` and add the current org-admins (`Pyper6`, `undeadliner`). All future admin add/remove happens here, not in CF Access.
+   ```bash
+   gh api orgs/communist-prometheus/teams -X POST -f name=admins -f description='CF Access policy target for sensitive admin surfaces' -f privacy=closed
+   gh api orgs/communist-prometheus/teams/admins/memberships/Pyper6 -X PUT -f role=member
+   gh api orgs/communist-prometheus/teams/admins/memberships/undeadliner -X PUT -f role=member
+   ```
+1. **Create Zero Trust team** `comprom` (free tier — under 50 users). Login methods: GitHub OAuth.
 2. **Create Application** "comms-admin": hostname `lists.comprom.org`, path prefix `/api/*`.
-3. **Access policy** "editors": include rule = login-method `GitHub` AND github_login `∈ {undeadliner, igor_ganov, ...}`.
+3. **Access policy** "editors": include rule = login-method `GitHub` **AND** github_teams matches `communist-prometheus/admins`. This way the allowlist auto-tracks the GitHub team.
 4. **Bypass policy** "public surface": include rule = path-match `/unsubscribe*` OR `/webhooks/resend`. (Access bypass on these so they reach the worker unauthenticated, but worker layer enforces token + signature.)
 5. Take note of the Application **Audience tag** → set as `CF_ACCESS_AUD` secret.
 6. Cookie domain `comprom.org` so admin-website's existing browser session is reused.
@@ -490,12 +496,29 @@ These flow into Workers Logs by default; the Phase B `log-collector` is **not** 
 - No HTML email theming dark mode for now (text + readable HTML, no clever CSS).
 - No multiple admins UI (CF Access policy uses a static GitHub-login allowlist).
 
+## 15. Decisions log (phase-2 review)
+
+| Decision | Choice | Reasoning |
+|---|---|---|
+| Email provider | **Resend** | Already proven inside the same author's `pyaeats-app` (`apps/api/src/features/auth/otp-store.ts:105–149` and `features/orders/notify.ts`). Same `POST https://api.resend.com/emails` + `Bearer` auth shape we proposed — zero new infra learning. |
+| Sender fallback | **`PyaEats <onboarding@resend.dev>` → `Communist Prometheus <newsletter@comprom.org>`** | Mirrors pyaeats' `sender(env)`: use the verified subdomain if `EMAIL_DOMAIN` is set, fall back to Resend's sandbox sender otherwise (account-bound, OK for CI/dev). |
+| Resend tier | **Start on free tier (100 emails/day).** | We bound by `MAX_SUBSCRIBERS_PER_TICK=100` (R6.4) already. The dispatch log emits `tick.done` with daily totals; we promote to Pro tier ($20/mo) when 7-day-rolling > 80 sends/day. No upfront cost. |
+| CF Access team name | **`comprom`** | → URL `comprom.cloudflareaccess.com`. |
+| Admin allowlist source | **GitHub team `communist-prometheus/admins`** (NEW) | The org has no teams today (`gh api orgs/communist-prometheus/teams` returns `[]`); we provision an `admins` team and seed it with the current org owners (`Pyper6`, `undeadliner` — pulled from `gh api orgs/communist-prometheus/members?role=admin`). Adding a new admin in future = `gh api orgs/communist-prometheus/teams/admins/memberships/<login> -X PUT`; CF Access policy resolves the change on next login. |
+
+### Provisioning side-effects of these decisions
+
+Added to §9.3 (CF Access provisioning):
+
+> 0. **Pre-step.** Create GitHub team `communist-prometheus/admins` and add the current `role=admin` members (`Pyper6`, `undeadliner`).
+> 3. (was step 3) Access policy "editors": include rule = login-method `GitHub` **AND** github_teams matches `communist-prometheus/admins`. — replacing the static-login allowlist.
+
+Added to §13 (threat model):
+
+| New threat | Mitigation |
+|---|---|
+| Compromise of any org admin → access to the newsletter list | CF Access requires a fresh GitHub OAuth login (no long-lived session); audit log in CF Zero Trust records who-logged-in-when. Token revocation in GitHub propagates within 24 h via JWKS refresh. |
+
 ---
 
-**Review checkpoint.** Read §1–§13, push back on anything that diverges from how you want the system to behave, and resolve the three call-out decisions below. After this signs off I'll write `tasks.md` (ordered punch-list with one-task-per-test mapping) and pause again.
-
-### Decisions waiting on you
-
-1. **Free Resend tier limit (100/day) — OK?** If we expect >100 subscribers in the first months we should upgrade to the Pro tier upfront (~$20/mo).
-2. **CF Access team name** — `prometheus` proposed. Alternative: `comprom`.
-3. **GitHub-login allowlist for CF Access** — confirm the initial list: `undeadliner` only, or others too?
+**Review checkpoint cleared 2026-06-02.** All phase-2 decisions locked. Phase 3 (`tasks.md`) follows — an ordered punch-list with one task → one or more tests → one or more EARS criteria.
