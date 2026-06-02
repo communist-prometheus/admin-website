@@ -1,0 +1,33 @@
+{
+  "name": "comms-worker",
+  "compatibility_date": "2026-06-01",
+  "main": "src/index.ts",
+  // Routed to a custom domain so the admin SPA hits a stable URL and
+  // CF Access policies attach to the hostname.
+  "routes": [{ "pattern": "lists.comprom.org/*", "custom_domain": true }],
+  // Heartbeat fires hourly UTC; the worker decides per-tick whether
+  // the user-saved schedule says "fire now" via cron-parser (spec §5).
+  "triggers": { "crons": ["0 * * * *"] },
+  // Bindings declared but optional at deploy time so Stage 0 ships
+  // before the D1 binding lands in Stage 1+.
+  // Stage 1+:
+  // - DB                       — D1 database binding (subscribers, settings, send_log)
+  // Secrets (wrangler secret put):
+  // - RESEND_API_KEY           — Resend transactional API auth
+  // - RESEND_WEBHOOK_SECRET    — Svix-style webhook signature verification
+  // - UNSUBSCRIBE_SECRET       — HMAC secret for unsubscribe tokens
+  // - CF_ACCESS_AUD            — CF Access Application Audience tag
+  // - CF_ACCESS_TEAM           — CF Access team slug (= "comprom")
+  "vars": {
+    "VERSION": "0.1.0",
+    "ADMIN_HOSTNAME": "admin.comprom.org"
+  },
+  "env": {
+    "develop": {
+      "name": "comms-worker-develop",
+      "routes": [
+        { "pattern": "dev-lists.comprom.org", "custom_domain": true }
+      ]
+    }
+  }
+}

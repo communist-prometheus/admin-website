@@ -106,7 +106,8 @@
         "eslint.config.js",
         "src/router/index.ts",
         "worker.ts",
-        "services/log-collector/src/index.ts"
+        "services/log-collector/src/index.ts",
+        "services/comms-worker/src/index.ts"
       ],
       "linter": {
         "rules": {
