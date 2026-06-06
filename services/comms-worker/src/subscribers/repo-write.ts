@@ -4,6 +4,7 @@ import { langsToJson } from './serialize'
 import type { Lang, Subscriber, SubscriberStatus } from './types'
 
 const SQL_UPDATE_LANGS = 'UPDATE subscribers SET langs = ? WHERE id = ?'
+const SQL_MARK_SENT = 'UPDATE subscribers SET last_sent_at = ? WHERE id = ?'
 const SQL_DELETE = 'DELETE FROM subscribers WHERE id = ?'
 const SQL_UPDATE_STATUS_INACTIVE =
   'UPDATE subscribers SET status = ?, unsubscribed_at = ? WHERE id = ?'
@@ -18,6 +19,15 @@ export const updateLangs = async (
 ): Promise<Subscriber | undefined> => {
   await db.prepare(SQL_UPDATE_LANGS).bind(langsToJson(langs), id).run()
   return findById(db, id)
+}
+
+/** Stamp `last_sent_at` after a successful dispatch send. */
+export const markSent = async (
+  db: D1Database,
+  id: number,
+  sentAtIso: string
+): Promise<void> => {
+  await db.prepare(SQL_MARK_SENT).bind(sentAtIso, id).run()
 }
 
 /** Hard-delete one row by id, returning `true` iff something was deleted. */
