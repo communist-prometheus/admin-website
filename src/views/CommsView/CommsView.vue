@@ -2,18 +2,22 @@
 import { onMounted } from 'vue'
 import type { Lang } from '@/stores/comms'
 import { useCommsStore } from '@/stores/comms'
+import { useRunsStore } from '@/stores/runs'
 import type { Schedule } from '@/stores/schedule'
 import { useScheduleStore } from '@/stores/schedule'
 import AddSubscriberForm from './AddSubscriberForm.vue'
+import RunHistory from './RunHistory.vue'
 import ScheduleEditor from './ScheduleEditor.vue'
 import SubscribersTable from './SubscribersTable.vue'
 
 const store = useCommsStore()
 const schedule = useScheduleStore()
+const runs = useRunsStore()
 
 onMounted(() => {
   void store.ensureLoaded()
   void schedule.ensureLoaded()
+  void runs.ensureLoaded()
 })
 
 const onAdd = (email: string, langs: readonly Lang[]): void => {
@@ -55,6 +59,11 @@ const onScheduleSave = (next: Schedule): void => {
     <p v-if="store.loading && store.subscribers.length === 0" data-testid="comms-loading">
       Loading…
     </p>
+    <RunHistory
+      :runs="runs.runs"
+      :loading="runs.loading"
+      :error="runs.error"
+    />
   </section>
 </template>
 
