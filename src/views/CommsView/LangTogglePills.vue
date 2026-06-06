@@ -23,7 +23,7 @@ const onClick = (lang: Lang): void => {
       :key="lang"
       type="button"
       class="pill"
-      :class="{ 'pill--on': langs.includes(lang) }"
+      :class="{ 'pill-on': langs.includes(lang) }"
       :disabled="disabled"
       :data-testid="`lang-toggle-${lang}`"
       :aria-pressed="langs.includes(lang)"
@@ -54,13 +54,13 @@ const onClick = (lang: Lang): void => {
   text-transform: uppercase;
 }
 
-.pill--on {
+.pill-on {
   color: var(--color-accent);
   border-color: var(--color-accent);
 }
 
 .pill:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 50%;
 }
 </style>

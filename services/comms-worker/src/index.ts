@@ -6,6 +6,8 @@ import {
   type RequireAccessEnv,
   requireAccess,
 } from './middleware/require-access'
+import { mountScheduleRoutes } from './schedule/routes'
+import { createSettingsRepo } from './settings/repo'
 import { createRepo } from './subscribers/repo'
 import { mountSubscriberRoutes } from './subscribers/routes'
 
@@ -20,6 +22,7 @@ type Vars = { readonly access: AccessClaims }
 type WorkerCtx = { Bindings: Bindings; Variables: Vars }
 
 const nowIso = (): string => new Date().toISOString()
+const nowDate = (): Date => new Date()
 
 const app = new Hono<WorkerCtx>()
 
@@ -27,6 +30,11 @@ registerHealthRoute(app)
 app.use('/api/*', requireAccess())
 mountSubscriberRoutes(app, c =>
   createRepo({ db: (c.env as Bindings).DB, now: nowIso })
+)
+mountScheduleRoutes(
+  app,
+  c => createSettingsRepo({ db: (c.env as Bindings).DB }),
+  nowDate
 )
 
 /** Cloudflare Worker entry — delegates everything to Hono. */

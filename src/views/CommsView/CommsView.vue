@@ -2,13 +2,18 @@
 import { onMounted } from 'vue'
 import type { Lang } from '@/stores/comms'
 import { useCommsStore } from '@/stores/comms'
+import type { Schedule } from '@/stores/schedule'
+import { useScheduleStore } from '@/stores/schedule'
 import AddSubscriberForm from './AddSubscriberForm.vue'
+import ScheduleEditor from './ScheduleEditor.vue'
 import SubscribersTable from './SubscribersTable.vue'
 
 const store = useCommsStore()
+const schedule = useScheduleStore()
 
 onMounted(() => {
   void store.ensureLoaded()
+  void schedule.ensureLoaded()
 })
 
 const onAdd = (email: string, langs: readonly Lang[]): void => {
@@ -22,17 +27,25 @@ const onLangs = (id: number, langs: readonly Lang[]): void => {
 const onRemove = (id: number): void => {
   void store.remove(id)
 }
+
+const onScheduleSave = (next: Schedule): void => {
+  void schedule.save(next)
+}
 </script>
 
 <template>
   <section class="comms" data-testid="comms-view">
-    <header class="head">
-      <h1>Newsletter</h1>
-      <p class="lead">
-        Editor list — subscribers receive the weekly digest of new
-        articles on the languages they pick.
-      </p>
-    </header>
+    <h1 class="title">Newsletter</h1>
+    <p class="lead">
+      Editor list — subscribers receive the weekly digest of new
+      articles on the languages they pick.
+    </p>
+    <ScheduleEditor
+      :schedule="schedule.schedule"
+      :saving="schedule.saving"
+      :error="schedule.error"
+      @save="onScheduleSave"
+    />
     <AddSubscriberForm :saving="store.saving" @add="onAdd" />
     <SubscribersTable
       :subscribers="store.subscribers"
@@ -51,8 +64,8 @@ const onRemove = (id: number): void => {
   padding: 1.25rem;
 }
 
-.head {
-  margin-bottom: 1rem;
+.title {
+  margin: 0 0 0.25rem;
 }
 
 .lead {
