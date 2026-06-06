@@ -115,15 +115,16 @@ cd services/comms-worker
 bunx wrangler dev --local --persist-to=.wrangler/state
 ```
 
-Create `services/comms-worker/.dev.vars` (gitignored) with:
+Copy the template:
 
+```bash
+cp .dev.vars.example .dev.vars
 ```
-RESEND_API_KEY=test
-RESEND_WEBHOOK_SECRET=test
-UNSUBSCRIBE_SECRET=local-dev-secret-32-bytes-padding
-CF_ACCESS_AUD=local
-CF_ACCESS_TEAM=local
-```
+
+`.dev.vars` is gitignored (see root `.gitignore` `**/.dev.vars`).
+The template carries safe placeholder values; setting
+`BYPASS_SCHEDULE=1` exposes `POST /api/dispatch?force=1` for the
+E2E happy-path flow. Leave it UNSET in production.
 
 When `RESEND_API_KEY=test`, the Resend client short-circuits to a
 stub so dev never hits the real API (spec design §10).

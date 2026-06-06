@@ -68,6 +68,12 @@
       }
     },
     {
+      "files": ["services/comms-worker/src/log/structured.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
       "files": ["vite/**/*.ts", "src/api/**/*.ts"],
       "rules": {
         "no-console": "off"

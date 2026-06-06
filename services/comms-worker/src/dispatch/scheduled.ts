@@ -1,4 +1,5 @@
 import { matchesTick } from '../cron/matcher'
+import { logEvent } from '../log/structured'
 import { createSettingsRepo } from '../settings/repo'
 import { buildRuntimeDeps } from './build-deps'
 import { runDispatch } from './run'
@@ -36,8 +37,17 @@ export const handleScheduled = async (
 ): Promise<DispatchSummary | undefined> => {
   const tickAt = new Date(event.scheduledTime)
   const sched = await createSettingsRepo({ db: env.DB }).getSchedule(tickAt)
-  if (sched === undefined) return undefined
-  if (!matchesTick(sched, tickAt)) return undefined
+  if (sched === undefined) {
+    logEvent('tick.match', { matched: false, reason: 'no-schedule' })
+    return undefined
+  }
+  const matched = matchesTick(sched, tickAt)
+  logEvent('tick.match', {
+    matched,
+    schedule: sched.cron,
+    timezone: sched.timezone,
+  })
+  if (!matched) return undefined
   const run = opts.dispatcher ?? defaultDispatcher
   return run(env, tickAt)
 }

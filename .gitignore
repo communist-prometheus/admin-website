@@ -49,6 +49,10 @@ e2e/.auth/
 .env
 .env.local
 
+# Wrangler local secrets
+.dev.vars
+**/.dev.vars
+
 # Built SW for dev mode
 public/sw.js
 

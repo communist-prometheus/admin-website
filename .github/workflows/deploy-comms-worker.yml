@@ -1,0 +1,50 @@
+name: Deploy comms-worker to Cloudflare Workers
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'services/comms-worker/**'
+      - 'specs/comms-newsletter/**'
+      - '.github/workflows/deploy-comms-worker.yml'
+
+concurrency:
+  group: deploy-comms-worker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cloning git repository
+        uses: actions/checkout@v4
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install root dependencies (provides hono, wrangler, cron-parser)
+        run: bun install --frozen-lockfile
+
+      - name: Run comms-worker unit + integration tests
+        run: bun run test:unit -- run services/comms-worker/
+
+      - name: Audit EARS coverage
+        run: bun scripts/comms-spec-coverage.ts
+
+      - name: Apply D1 migrations to prod
+        run: |
+          cd services/comms-worker
+          for f in migrations/*.sql; do
+            npx wrangler d1 execute comms-prod --remote --file "$f"
+          done
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.VITE_CF_API_TOKEN }}
+
+      - name: Deploy to Cloudflare Workers
+        run: |
+          cd services/comms-worker
+          npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.VITE_CF_API_TOKEN }}
