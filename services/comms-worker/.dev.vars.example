@@ -1,0 +1,22 @@
+# Local-only secrets. Copy to `.dev.vars` and fill in. NEVER commit.
+# `wrangler dev` loads this file automatically.
+
+# Resend API key (or `test` to skip the real network — uses fake responses).
+RESEND_API_KEY=test
+
+# Svix-style webhook signing secret from Resend dashboard (whsec_...).
+RESEND_WEBHOOK_SECRET=whsec_dGVzdHNlY3JldGtleS0xMjM0NTY3ODkw
+
+# 32-byte random secret used to sign unsubscribe tokens.
+# Rotate to invalidate every existing unsubscribe link.
+UNSUBSCRIBE_SECRET=local-dev-secret-do-not-use-in-prod
+
+# CF Access Application audience tag — copy from Zero Trust UI.
+CF_ACCESS_AUD=local-dev-aud
+
+# CF Access team slug — controls JWKS URL (https://<team>.cloudflareaccess.com).
+CF_ACCESS_TEAM=local-dev-team
+
+# Set to `1` to expose `POST /api/dispatch?force=1` for e2e.
+# Leave UNSET in production.
+BYPASS_SCHEDULE=1

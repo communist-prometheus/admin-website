@@ -1,4 +1,5 @@
 import type { Context } from 'hono'
+import { logEvent } from '../log/structured'
 import { createSendLogRepo } from '../send-log/repo'
 import { createRepo } from '../subscribers/repo'
 import { applyResendEvent, type ResendEvent } from './handler'
@@ -36,7 +37,10 @@ export const buildWebhookHandler =
       secret: env.RESEND_WEBHOOK_SECRET,
       nowMs: now(),
     })
-    if (!valid) return c.body(null, 401)
+    if (!valid) {
+      logEvent('webhook.rejected', { reason: 'bad-signature' })
+      return c.body(null, 401)
+    }
     const event = parseEvent(body)
     if (event === undefined) return c.body(null, 200)
     await applyResendEvent(
@@ -44,5 +48,6 @@ export const buildWebhookHandler =
       createSendLogRepo({ db: env.DB }),
       event
     )
+    logEvent('webhook.applied', { type: event.type })
     return c.body(null, 200)
   }

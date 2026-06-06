@@ -9,7 +9,7 @@ beforeEach(() => {
 })
 
 describe('SettingsRepo.getSchedule', () => {
-  it('returns the seeded default schedule with nextRunAt', async () => {
+  it('returns the seeded default schedule with nextRunAt (R2.3)', async () => {
     const r = await repo.getSchedule(new Date('2026-06-01T00:00:00.000Z'))
     expect(r?.cron).toBe('0 12 * * 6')
     expect(r?.timezone).toBe('Europe/Moscow')

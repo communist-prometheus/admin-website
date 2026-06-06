@@ -13,8 +13,13 @@ export type RequireAccessVariables = {
   readonly access: AccessClaims
 }
 
+/** Verifier signature accepted by both production and test wirings. */
+export type AccessVerifier = (
+  token: string
+) => Promise<AccessClaims | undefined>
+
 type Options = {
-  readonly verifier?: (token: string) => Promise<AccessClaims | undefined>
+  readonly verifier?: AccessVerifier
 }
 
 const ACCESS_HEADER = 'Cf-Access-Jwt-Assertion'

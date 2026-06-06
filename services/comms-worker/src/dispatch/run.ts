@@ -1,5 +1,7 @@
+import { logEvent } from '../log/structured'
 import type { DispatchContext } from './context'
 import { type DispatchOutcome, dispatchOne } from './dispatch-one'
+import type { ArticlesByLang } from './fetch-articles'
 import { fetchAllLangs } from './fetch-articles'
 import type { DispatchSummary, RunDispatchDeps } from './types'
 
@@ -19,6 +21,20 @@ const summary = (
   durationMs,
 })
 
+const buildCtx = (
+  d: RunDispatchDeps,
+  byLang: ArticlesByLang
+): DispatchContext => ({
+  subscriberRepo: d.subscriberRepo,
+  sendLogRepo: d.sendLogRepo,
+  resend: d.resend,
+  secret: d.secret,
+  fromAddress: d.fromAddress,
+  publicBaseUrl: d.publicBaseUrl,
+  tickAt: d.tickAt,
+  byLang,
+})
+
 /**
  * Execute one dispatch tick: load active subscribers, fetch RSS per
  * unique lang once, dispatch each subscriber, sweep old send_log rows.
@@ -30,22 +46,15 @@ export const runDispatch = async (
   d: RunDispatchDeps
 ): Promise<DispatchSummary> => {
   const start = Date.now()
+  logEvent('tick.start', { tickAt: d.tickAt.toISOString() })
   const subs = await d.subscriberRepo.listActive()
-  const byLang = await fetchAllLangs(subs, d.rss)
-  const ctx: DispatchContext = {
-    subscriberRepo: d.subscriberRepo,
-    sendLogRepo: d.sendLogRepo,
-    resend: d.resend,
-    secret: d.secret,
-    fromAddress: d.fromAddress,
-    publicBaseUrl: d.publicBaseUrl,
-    tickAt: d.tickAt,
-    byLang,
-  }
+  const ctx = buildCtx(d, await fetchAllLangs(subs, d.rss))
   const outcomes: DispatchOutcome[] = []
   for (const sub of subs) outcomes.push(await dispatchOne(ctx, sub))
   await d.sendLogRepo.purgeOlderThan(
     cutoffIso(d.tickAt, d.retentionDays ?? DEFAULT_RETENTION_DAYS)
   )
-  return summary(outcomes, Date.now() - start)
+  const result = summary(outcomes, Date.now() - start)
+  logEvent('tick.done', { ...result })
+  return result
 }

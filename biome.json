@@ -127,7 +127,10 @@
       }
     },
     {
-      "includes": ["scripts/*.ts"],
+      "includes": [
+        "scripts/*.ts",
+        "services/comms-worker/src/log/structured.ts"
+      ],
       "linter": {
         "rules": {
           "suspicious": {
