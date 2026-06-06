@@ -83,7 +83,7 @@ const submit = async (): Promise<void> => {
 }
 
 .submit:disabled {
-  opacity: 0.5;
+  opacity: 50%;
   cursor: not-allowed;
 }
 

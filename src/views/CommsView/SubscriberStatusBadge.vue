@@ -16,7 +16,7 @@ const label = (): string =>
 <template>
   <span
     class="status"
-    :class="`status--${status}`"
+    :class="`status-${status}`"
     :data-testid="`subscriber-status-${status}`"
   >
     {{ label() }}
@@ -36,13 +36,13 @@ const label = (): string =>
   text-transform: uppercase;
 }
 
-.status--active {
+.status-active {
   color: var(--color-accent);
   border-color: var(--color-accent);
 }
 
-.status--bounced,
-.status--complained {
+.status-bounced,
+.status-complained {
   color: var(--color-danger, #c0392b);
   border-color: var(--color-danger, #c0392b);
 }
