@@ -6,6 +6,7 @@ import { handleScheduled } from './dispatch/scheduled'
 import { registerHealthRoute } from './health'
 import { requireAccess } from './middleware/require-access'
 import { mountScheduleRoutes } from './schedule/routes'
+import { mountRunsRoute } from './send-log/route'
 import { createSettingsRepo } from './settings/repo'
 import { createRepo } from './subscribers/repo'
 import { mountSubscriberRoutes } from './subscribers/routes'
@@ -30,6 +31,7 @@ mountScheduleRoutes(
   nowDate
 )
 mountForceDispatchRoute(app)
+mountRunsRoute(app)
 mountUnsubscribeRoutes(app)
 mountWebhookRoutes(app)
 
