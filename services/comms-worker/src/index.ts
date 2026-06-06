@@ -1,32 +1,18 @@
-import type { D1Database, ScheduledEvent } from '@cloudflare/workers-types'
+import type { ScheduledEvent } from '@cloudflare/workers-types'
 import { Hono } from 'hono'
-import type { AccessClaims } from './auth/cf-access'
+import type { Bindings, WorkerCtx } from './bindings'
 import { mountForceDispatchRoute } from './dispatch/force-route'
-import type { DispatchEnv } from './dispatch/runtime-env'
 import { handleScheduled } from './dispatch/scheduled'
 import { registerHealthRoute } from './health'
-import {
-  type RequireAccessEnv,
-  requireAccess,
-} from './middleware/require-access'
+import { requireAccess } from './middleware/require-access'
 import { mountScheduleRoutes } from './schedule/routes'
 import { createSettingsRepo } from './settings/repo'
 import { createRepo } from './subscribers/repo'
 import { mountSubscriberRoutes } from './subscribers/routes'
 import { mountUnsubscribeRoutes } from './unsubscribe/routes'
-import type { UnsubscribeEnv } from './unsubscribe/runtime-env'
+import { mountWebhookRoutes } from './webhooks/routes'
 
-/** Combined worker bindings across all registered routes. */
-export type Bindings = RequireAccessEnv &
-  DispatchEnv &
-  UnsubscribeEnv & {
-    readonly VERSION: string
-    readonly ADMIN_HOSTNAME: string
-    readonly DB: D1Database
-  }
-
-type Vars = { readonly access: AccessClaims }
-type WorkerCtx = { Bindings: Bindings; Variables: Vars }
+export type { Bindings } from './bindings'
 
 const nowIso = (): string => new Date().toISOString()
 const nowDate = (): Date => new Date()
@@ -45,6 +31,7 @@ mountScheduleRoutes(
 )
 mountForceDispatchRoute(app)
 mountUnsubscribeRoutes(app)
+mountWebhookRoutes(app)
 
 /** Cloudflare Worker entry — Hono for HTTP, handleScheduled for crons. */
 export default {

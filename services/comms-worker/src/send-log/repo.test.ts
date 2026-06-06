@@ -91,6 +91,27 @@ describe('SendLogRepo.append + listRecent', () => {
   })
 })
 
+describe('SendLogRepo.findByResendId', () => {
+  it('returns the row carrying a known resend id', async () => {
+    await seedSubscribers([1, 2])
+    await repo.append({
+      subscriberId: 1,
+      tickAt: '2026-06-06T09:00:00.000Z',
+      articleCount: 1,
+      status: 'sent',
+      resendId: 're_known',
+      error: undefined,
+    })
+    const found = await repo.findByResendId('re_known')
+    expect(found?.subscriberId).toBe(1)
+    expect(found?.status).toBe('sent')
+  })
+
+  it('returns undefined when the resend id is unknown', async () => {
+    expect(await repo.findByResendId('re_ghost')).toBeUndefined()
+  })
+})
+
 describe('SendLogRepo.purgeOlderThan', () => {
   it('deletes only rows whose tick_at is older than the cutoff', async () => {
     await seedSubscribers([1, 2])

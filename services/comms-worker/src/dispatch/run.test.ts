@@ -168,6 +168,32 @@ describe('runDispatch — Resend failure', () => {
   })
 })
 
+describe('runDispatch — skips bounced / complained (R4.6, R4.7)', () => {
+  it('does not send to subscribers whose status is bounced', async () => {
+    const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await subs.setStatus(s.id, 'bounced')
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
+    })
+    const resend = buildResend(() => ({ ok: true, id: 'r' }))
+    const summary = await runDispatch(baseDeps(rss.fn, resend.client))
+    expect(summary).toMatchObject({ sent: 0, failed: 0, skipped: 0 })
+    expect(resend.sends).toHaveLength(0)
+  })
+
+  it('does not send to subscribers whose status is complained', async () => {
+    const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await subs.setStatus(s.id, 'complained')
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
+    })
+    const resend = buildResend(() => ({ ok: true, id: 'r' }))
+    const summary = await runDispatch(baseDeps(rss.fn, resend.client))
+    expect(summary).toMatchObject({ sent: 0, failed: 0, skipped: 0 })
+    expect(resend.sends).toHaveLength(0)
+  })
+})
+
 describe('runDispatch — retention sweep', () => {
   it('purges send_log rows older than the retention window after the dispatch', async () => {
     const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
