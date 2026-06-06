@@ -13,10 +13,13 @@ import { mountScheduleRoutes } from './schedule/routes'
 import { createSettingsRepo } from './settings/repo'
 import { createRepo } from './subscribers/repo'
 import { mountSubscriberRoutes } from './subscribers/routes'
+import { mountUnsubscribeRoutes } from './unsubscribe/routes'
+import type { UnsubscribeEnv } from './unsubscribe/runtime-env'
 
 /** Combined worker bindings across all registered routes. */
 export type Bindings = RequireAccessEnv &
-  DispatchEnv & {
+  DispatchEnv &
+  UnsubscribeEnv & {
     readonly VERSION: string
     readonly ADMIN_HOSTNAME: string
     readonly DB: D1Database
@@ -41,6 +44,7 @@ mountScheduleRoutes(
   nowDate
 )
 mountForceDispatchRoute(app)
+mountUnsubscribeRoutes(app)
 
 /** Cloudflare Worker entry — Hono for HTTP, handleScheduled for crons. */
 export default {
