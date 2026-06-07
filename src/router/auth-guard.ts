@@ -22,20 +22,22 @@ export const loadRedirect = (): string | undefined => {
   return path
 }
 
-const isOwner = (): boolean => {
+const isConfirmedNonOwner = (): boolean => {
   try {
-    return useAuthStore().ssoRoles.includes('owner')
+    const roles = useAuthStore().ssoRoles
+    return roles.length > 0 && !roles.includes('owner')
   } catch {
     return false
   }
 }
 
 /**
- * Install navigation guard that protects auth routes.
- * Redirects unauthenticated visitors to / with the intended path
- * saved for post-login restore. Routes flagged `requiresOwner` are
- * additionally gated on the SSO `owner` role — non-owners get a
- * silent redirect to / instead of an in-page 401.
+ * Install navigation guard that protects auth routes. Redirects
+ * unauthenticated visitors to `/` with the intended path saved.
+ * Routes flagged `requiresOwner` are blocked only when the SSO state
+ * has *confirmed* the visitor is not an owner; an empty / unknown
+ * state allows the visit through (the page will surface a clearer
+ * error than the navigation guard can).
  * @param router - Vue Router instance
  */
 export const installAuthGuard = (router: Router): void => {
@@ -45,6 +47,8 @@ export const installAuthGuard = (router: Router): void => {
       saveRedirect(to.fullPath)
       return { name: 'home' }
     }
-    return to.meta.requiresOwner && !isOwner() ? { name: 'home' } : true
+    return to.meta.requiresOwner && isConfirmedNonOwner()
+      ? { name: 'home' }
+      : true
   })
 }
