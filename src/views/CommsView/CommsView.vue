@@ -44,64 +44,70 @@ const onScheduleSave = (next: Schedule): void => {
 </script>
 
 <template>
-  <section class="comms" data-testid="comms-view" aria-labelledby="comms-title">
-    <header class="head">
-      <h1 id="comms-title" class="title">Newsletter</h1>
-      <p class="lead">
-        Editor list — subscribers receive the weekly digest of new
-        articles on the languages they pick.
-      </p>
-    </header>
-    <CommsSection
-      title="Schedule"
-      lead="Crontab + IANA timezone; saved values trigger the dispatch loop."
+  <AppLayout>
+    <section
+      class="comms"
+      data-testid="comms-view"
+      aria-labelledby="comms-title"
     >
-      <ScheduleEditor
-        :schedule="schedule.schedule"
-        :saving="schedule.saving"
-        :error="schedule.error"
-        @save="onScheduleSave"
-      />
-    </CommsSection>
-    <CommsSection
-      title="Subscribers"
-      lead="Each row receives the digest in the languages it has selected."
-    >
-      <AddSubscriberForm :saving="store.saving" @add="onAdd" />
-      <SubscribersTable
-        :subscribers="store.subscribers"
-        @langs="onLangs"
-        @remove="onRemove"
-      />
-      <p
-        v-if="store.loading && store.subscribers.length === 0"
-        class="loading"
-        role="status"
-        data-testid="comms-loading"
+      <header class="head">
+        <h1 id="comms-title" class="title">Newsletter</h1>
+        <p class="lead">
+          Editor list — subscribers receive the weekly digest of new
+          articles on the languages they pick.
+        </p>
+      </header>
+      <CommsSection
+        title="Schedule"
+        lead="Crontab + IANA timezone; saved values trigger the dispatch loop."
       >
-        Loading…
-      </p>
-    </CommsSection>
-    <CommsSection
-      title="Run history"
-      lead="Last twenty dispatch attempts. Click a failed row to read its error."
-    >
-      <RunHistory
-        v-if="showRuns"
-        :runs="runs.runs"
-        :loading="runs.loading"
-        :error="runs.error"
-      />
-      <p
-        v-else
-        class="loading"
-        role="status"
-        data-testid="run-history-skeleton"
+        <ScheduleEditor
+          :schedule="schedule.schedule"
+          :saving="schedule.saving"
+          :error="schedule.error"
+          @save="onScheduleSave"
+        />
+      </CommsSection>
+      <CommsSection
+        title="Subscribers"
+        lead="Each row receives the digest in the languages it has selected."
       >
-        Loading run history…
-      </p>
-    </CommsSection>
-  </section>
+        <AddSubscriberForm :saving="store.saving" @add="onAdd" />
+        <SubscribersTable
+          :subscribers="store.subscribers"
+          @langs="onLangs"
+          @remove="onRemove"
+        />
+        <p
+          v-if="store.loading && store.subscribers.length === 0"
+          class="loading"
+          role="status"
+          data-testid="comms-loading"
+        >
+          Loading…
+        </p>
+      </CommsSection>
+      <CommsSection
+        title="Run history"
+        lead="Last twenty dispatch attempts. Click a failed row to read its error."
+      >
+        <RunHistory
+          v-if="showRuns"
+          :runs="runs.runs"
+          :loading="runs.loading"
+          :error="runs.error"
+        />
+        <p
+          v-else
+          class="loading"
+          role="status"
+          data-testid="run-history-skeleton"
+        >
+          Loading run history…
+        </p>
+      </CommsSection>
+    </section>
+  </AppLayout>
 </template>
 
 <style scoped>
