@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useRoleStore } from '@/stores/role'
 import { getNavForRole } from './nav-by-role'
 
 const roleStore = useRoleStore()
-const navItems = computed(() => getNavForRole(roleStore.role))
+const auth = useAuthStore()
+const isOwner = computed(() => auth.ssoRoles.includes('owner'))
+const navItems = computed(() => getNavForRole(roleStore.role, isOwner.value))
 </script>
 
 <template>

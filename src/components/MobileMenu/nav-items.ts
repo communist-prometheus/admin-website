@@ -6,6 +6,7 @@ export interface NavItem {
   readonly label: string
   readonly requiresAuth: boolean
   readonly minRole?: Role
+  readonly ownerOnly?: boolean
 }
 
 /** Shared navigation items used by mobile menu. */
@@ -33,11 +34,9 @@ export const NAV_ITEMS: readonly NavItem[] = [
     requiresAuth: true,
     minRole: 'admin',
   },
-  // prettier-ignore
   { path: '/content/newspaper', label: 'Newspaper', requiresAuth: true },
   { path: '/tickets', label: 'Tickets', requiresAuth: true },
-  // prettier-ignore
-  { path: '/comms', label: 'Comms', requiresAuth: true, minRole: 'admin' },
+  { path: '/comms', label: 'Comms', requiresAuth: true, ownerOnly: true },
   // prettier-ignore
   {
     path: '/settings',

@@ -42,6 +42,20 @@ const emit = defineEmits<{
   table-layout: fixed;
 }
 
+@media (width < 640px) {
+  .subs-table,
+  .subs-table thead,
+  .subs-table tbody {
+    display: block;
+  }
+
+  /* Hide the column header row on mobile — each card row carries
+     its own labels via SubscriberRow's own mobile mode. */
+  .subs-table thead {
+    display: none;
+  }
+}
+
 .subs-table th {
   padding: var(--spacing-xs);
   text-align: left;

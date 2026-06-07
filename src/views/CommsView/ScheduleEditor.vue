@@ -180,4 +180,12 @@ const submit = (): void => emit('save', { ...draft.value })
   color: var(--color-danger);
   font-size: 0.8125rem;
 }
+
+@media (width < 640px) {
+  .btn.save {
+    justify-self: stretch;
+    text-align: center;
+    justify-content: center;
+  }
+}
 </style>

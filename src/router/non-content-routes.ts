@@ -23,7 +23,7 @@ export const nonContentRoutes: RouteRecordRaw[] = [
   {
     path: '/comms',
     name: 'comms',
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, requiresOwner: true },
     component: () => import('../views/CommsView/CommsView.vue'),
   },
   {
