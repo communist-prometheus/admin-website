@@ -6,13 +6,20 @@ import type { User } from '@/types/user'
 import { createLogout, createSetUser } from './auth-actions'
 import { createCheckAuth } from './auth-check'
 import { syncTokenToSW } from './auth-sync-sw'
+import {
+  clearSsoRolesStorage,
+  loadSsoRoles,
+  saveSsoRoles,
+} from './sso-roles-storage'
 
 const buildSsoActions = (ssoRoles: Ref<readonly string[]>) => ({
   setSsoRoles: (roles: readonly string[]): void => {
     ssoRoles.value = roles
+    saveSsoRoles(roles)
   },
   clearSsoRoles: (): void => {
     ssoRoles.value = []
+    clearSsoRolesStorage()
   },
 })
 
@@ -25,7 +32,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(!!loadToken())
   const error = ref<string | null>(null)
-  const ssoRoles = ref<readonly string[]>([])
+  const ssoRoles = ref<readonly string[]>(loadSsoRoles())
 
   watch(user, syncTokenToSW, { immediate: true })
 

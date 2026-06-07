@@ -3,6 +3,7 @@ import { saveProfile } from '@/composables/useAuth/profile-cache'
 import { clearToken } from '@/composables/useAuth/token-storage'
 import { recordAction } from '@/features/action-history/recorder'
 import type { User } from '@/types/user'
+import { clearSsoRolesStorage } from './sso-roles-storage'
 
 /**
  * Create user setter that persists profile to cache.
@@ -37,6 +38,7 @@ export const createLogout =
   (user: Ref<User | null>, loading: Ref<boolean>): (() => void) =>
   () => {
     clearToken()
+    clearSsoRolesStorage()
     user.value = null
     loading.value = false
     void recordAction({ kind: 'auth', action: 'logout' })
