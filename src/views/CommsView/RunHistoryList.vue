@@ -56,4 +56,16 @@ defineProps<{ readonly runs: readonly RunLog[] }>()
   width: 5rem;
   text-align: right;
 }
+
+@media (width < 640px) {
+  .rows,
+  .rows thead,
+  .rows tbody {
+    display: block;
+  }
+
+  .rows thead {
+    display: none;
+  }
+}
 </style>

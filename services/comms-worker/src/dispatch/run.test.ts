@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { ResendClient, SendInput, SendResult } from '../resend/types'
 import type { Article } from '../rss/types'
 import { createSendLogRepo, type SendLogRepo } from '../send-log/repo'
+import { createSettingsRepo, type SettingsRepo } from '../settings/repo'
 import { createRepo, type SubscriberRepo } from '../subscribers/repo'
 import { makeTestD1 } from '../subscribers/test-d1'
 import type { Lang } from '../subscribers/types'
@@ -52,11 +53,13 @@ const buildResend = (
 
 let subs: SubscriberRepo
 let log: SendLogRepo
+let settings: SettingsRepo
 
 beforeEach(() => {
   const db = makeTestD1()
   subs = createRepo({ db, now: () => '2026-05-01T00:00:00.000Z' })
   log = createSendLogRepo({ db })
+  settings = createSettingsRepo({ db })
 })
 
 const baseDeps = (
@@ -65,6 +68,7 @@ const baseDeps = (
 ) => ({
   subscriberRepo: subs,
   sendLogRepo: log,
+  settingsRepo: settings,
   rss,
   resend,
   secret: SECRET,
@@ -85,9 +89,9 @@ describe('runDispatch — empty list', () => {
 })
 
 describe('runDispatch — empty delta', () => {
-  it('skips subscribers when nothing new exists for their langs', async () => {
-    const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
-    await subs.markSent(s.id, '2026-06-07T00:00:00.000Z')
+  it('skips subscribers when nothing new exists past the global cutoff', async () => {
+    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await settings.setCutoffAt('2026-06-07T00:00:00.000Z')
     const rss = buildRss({
       ru: [article({ guid: 'a', pubDate: '2026-06-01T00:00:00.000Z' })],
     })
@@ -95,13 +99,13 @@ describe('runDispatch — empty delta', () => {
     const summary = await runDispatch(baseDeps(rss.fn, resend.client))
     expect(summary).toMatchObject({ sent: 0, failed: 0, skipped: 1 })
     expect(resend.sends).toHaveLength(0)
-    const after = await subs.findById(s.id)
-    expect(after?.lastSentAt).toBe('2026-06-07T00:00:00.000Z')
+    // cutoff is NOT advanced on a tick that sent nothing.
+    expect(await settings.getCutoffAt()).toBe('2026-06-07T00:00:00.000Z')
   })
 })
 
 describe('runDispatch — happy path', () => {
-  it('sends one digest, advances last_sent_at, records a sent row', async () => {
+  it('sends one digest, advances the global cutoff, records a sent row', async () => {
     const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
     const rss = buildRss({
       ru: [
@@ -119,8 +123,8 @@ describe('runDispatch — happy path', () => {
     expect(sent?.to).toBe('a@b.c')
     expect(sent?.idempotencyKey).toBe(`${s.id}:${TICK.toISOString()}`)
     expect(sent?.headers?.['List-Unsubscribe']).toMatch(/^<https:.+>$/)
-    const after = await subs.findById(s.id)
-    expect(after?.lastSentAt).toBe(TICK.toISOString())
+    // cutoff is advanced to tickAt after the successful send.
+    expect(await settings.getCutoffAt()).toBe(TICK.toISOString())
     const logs = await log.listRecent(10)
     expect(logs).toHaveLength(1)
     expect(logs[0]).toMatchObject({
@@ -149,16 +153,15 @@ describe('runDispatch — RSS caching across subscribers', () => {
 })
 
 describe('runDispatch — Resend failure', () => {
-  it('records a failed row and leaves last_sent_at untouched on Resend 5xx', async () => {
-    const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+  it('records a failed row and leaves the global cutoff untouched on Resend 5xx', async () => {
+    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
     const rss = buildRss({
       ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
     })
     const resend = buildResend(() => ({ ok: false, error: 'resend 503' }))
     const summary = await runDispatch(baseDeps(rss.fn, resend.client))
     expect(summary).toMatchObject({ sent: 0, failed: 1, skipped: 0 })
-    const after = await subs.findById(s.id)
-    expect(after?.lastSentAt).toBeUndefined()
+    expect(await settings.getCutoffAt()).toBeUndefined()
     const logs = await log.listRecent(10)
     expect(logs[0]).toMatchObject({
       status: 'failed',

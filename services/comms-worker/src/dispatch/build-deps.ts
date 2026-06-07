@@ -1,6 +1,7 @@
 import { createResendClient } from '../resend/client'
 import { createRssFetcher } from '../rss/fetch'
 import { createSendLogRepo } from '../send-log/repo'
+import { createSettingsRepo } from '../settings/repo'
 import { createRepo } from '../subscribers/repo'
 import {
   DEFAULT_FROM,
@@ -16,7 +17,7 @@ const nowIso = (): string => new Date().toISOString()
  * worker's bindings + secrets. Pure factory — no side effects until
  * the orchestrator calls into them.
  * @param env Worker bindings + secrets.
- * @param tickAt Tick moment used as `last_sent_at` + `tick_at` stamp.
+ * @param tickAt Tick moment used as the `tick_at` stamp on send_log rows.
  * @returns Inputs for {@link runDispatch}.
  */
 export const buildRuntimeDeps = (
@@ -25,6 +26,7 @@ export const buildRuntimeDeps = (
 ): RunDispatchDeps => ({
   subscriberRepo: createRepo({ db: env.DB, now: nowIso }),
   sendLogRepo: createSendLogRepo({ db: env.DB }),
+  settingsRepo: createSettingsRepo({ db: env.DB }),
   rss: createRssFetcher(),
   resend: createResendClient({ apiKey: env.RESEND_API_KEY }),
   secret: env.UNSUBSCRIBE_SECRET,

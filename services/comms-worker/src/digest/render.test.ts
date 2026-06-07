@@ -110,15 +110,50 @@ describe('renderDigest — headers + body invariants', () => {
     expect(d.html).toContain('&lt;script&gt;')
   })
 
-  it('shows a lang badge next to each article title in the HTML', () => {
+  it('renders one section header per language when multilingual', () => {
     const d = renderDigest({
       subscriber: SUB,
       articles: ARTICLES,
       unsubscribeUrl: UNSUB,
       tickAt: TICK,
     })
-    expect(d.html).toContain('[ru]')
-    expect(d.html).toContain('[en]')
+    expect(d.html).toContain('>RU<')
+    expect(d.html).toContain('>EN<')
+    expect(d.text).toContain('[RU]')
+    expect(d.text).toContain('[EN]')
+  })
+
+  it('omits the section header for a single-language subscriber', () => {
+    const d = renderDigest({
+      subscriber: { ...SUB, langs: ['en'] },
+      articles: ARTICLES.filter(a => a.lang === 'en'),
+      unsubscribeUrl: UNSUB,
+      tickAt: TICK,
+    })
+    expect(d.html).not.toContain('>EN<')
+    expect(d.text).not.toContain('[EN]')
+  })
+
+  it('does NOT include a "Read more" link per article', () => {
+    const d = renderDigest({
+      subscriber: SUB,
+      articles: ARTICLES,
+      unsubscribeUrl: UNSUB,
+      tickAt: TICK,
+    })
+    expect(d.html.toLowerCase()).not.toContain('read more')
+    expect(d.html).not.toContain('Читать')
+  })
+
+  it('embeds a prefers-color-scheme:dark block for system theme support', () => {
+    const d = renderDigest({
+      subscriber: SUB,
+      articles: ARTICLES,
+      unsubscribeUrl: UNSUB,
+      tickAt: TICK,
+    })
+    expect(d.html).toContain('prefers-color-scheme: dark')
+    expect(d.html).toContain('background:#1a1a1a')
   })
 })
 

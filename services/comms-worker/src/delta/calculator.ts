@@ -28,21 +28,25 @@ const collectFor = (
 }
 
 /**
- * Compute the per-subscriber digest delta: every article whose lang is
- * in `sub.langs[]` AND whose `pubDate` is strictly newer than
- * `sub.lastSentAt`. Results are merged across languages and sorted
- * newest-first (R3.8).
+ * Compute the per-subscriber digest delta: every article whose lang
+ * is in `sub.langs[]` AND whose `pubDate` is strictly newer than the
+ * shared `cutoffMs` watermark. Results are merged across the
+ * subscriber's languages and sorted newest-first.
+ *
+ * The cutoff is global (stored in `settings.cutoff_at`) and is
+ * advanced after every successful dispatch tick, so all subscribers
+ * see the same "what is new" boundary.
  * @param sub The recipient.
  * @param byLang RSS items grouped by language code.
+ * @param cutoffMs Global cutoff in ms (undefined = no cutoff yet).
  * @returns Sorted, deduplicable article list.
  */
 export const computeDelta = (
   sub: Subscriber,
-  byLang: ArticlesByLang
+  byLang: ArticlesByLang,
+  cutoffMs: number | undefined
 ): ReadonlyArray<Article> => {
-  const thresholdMs =
-    sub.lastSentAt === undefined ? undefined : Date.parse(sub.lastSentAt)
-  const collected = collectFor(sub, byLang, thresholdMs)
+  const collected = collectFor(sub, byLang, cutoffMs)
   return [...collected].sort(
     (a, b) => Date.parse(b.pubDate) - Date.parse(a.pubDate)
   )
