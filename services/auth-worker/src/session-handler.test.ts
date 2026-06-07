@@ -6,7 +6,6 @@ import { SESSION_COOKIE } from './cookie'
 const ENV: Bindings = {
   VERSION: '0.1.0',
   GITHUB_ORG: 'communist-prometheus',
-  GITHUB_ADMIN_TEAM: 'admins',
   ALLOWED_ORIGIN: 'https://admin.comprom.org',
   COOKIE_DOMAIN: '.comprom.org',
   JWT_SECRET: 'test-secret',
@@ -15,7 +14,7 @@ const ENV: Bindings = {
 type StubResponse = { ok: boolean; body?: unknown }
 type Stub = {
   readonly login?: StubResponse
-  readonly team?: StubResponse
+  readonly membership?: StubResponse
 }
 
 const buildResponse = (
@@ -32,7 +31,7 @@ const routeStub = (stub: Stub, url: string): Response => {
     return buildResponse(stub.login, 200, 401)
   }
   return url.startsWith('https://api.github.com/orgs/')
-    ? buildResponse(stub.team, 200, 404)
+    ? buildResponse(stub.membership, 200, 404)
     : new Response('unexpected', { status: 500 })
 }
 
@@ -62,10 +61,10 @@ const post = (token?: string): Request => {
 }
 
 describe('POST /auth/session', () => {
-  it('mints a cookie + body for an active admin team member', async () => {
+  it('mints a cookie + body for an org owner', async () => {
     stubFetch({
       login: { ok: true, body: { login: 'undeadliner' } },
-      team: { ok: true, body: { state: 'active' } },
+      membership: { ok: true, body: { state: 'active', role: 'admin' } },
     })
     const res = await createApp().fetch(post('ghp_OK'), ENV)
     expect(res.status).toBe(200)
@@ -76,11 +75,11 @@ describe('POST /auth/session', () => {
     expect(setCookie).toContain('Secure')
     const body = (await res.json()) as {
       login: string
-      teams: string[]
+      roles: string[]
       expires: number
     }
     expect(body.login).toBe('undeadliner')
-    expect(body.teams).toEqual(['admins'])
+    expect(body.roles).toEqual(['owner'])
     expect(body.expires).toBeGreaterThan(0)
   })
 
@@ -97,19 +96,28 @@ describe('POST /auth/session', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns 403 when the login is not an admin team member', async () => {
+  it('returns 403 when the login is not in the org at all', async () => {
     stubFetch({
       login: { ok: true, body: { login: 'outsider' } },
-      team: { ok: false },
+      membership: { ok: false },
     })
     const res = await createApp().fetch(post('ghp_OK'), ENV)
     expect(res.status).toBe(403)
   })
 
-  it('returns 403 for a pending (not yet accepted) team invitation', async () => {
+  it('returns 403 when the login is a regular member (not owner)', async () => {
+    stubFetch({
+      login: { ok: true, body: { login: 'plain-member' } },
+      membership: { ok: true, body: { state: 'active', role: 'member' } },
+    })
+    const res = await createApp().fetch(post('ghp_OK'), ENV)
+    expect(res.status).toBe(403)
+  })
+
+  it('returns 403 when the membership is pending (invitation not accepted)', async () => {
     stubFetch({
       login: { ok: true, body: { login: 'pendinguser' } },
-      team: { ok: true, body: { state: 'pending' } },
+      membership: { ok: true, body: { state: 'pending', role: 'admin' } },
     })
     const res = await createApp().fetch(post('ghp_OK'), ENV)
     expect(res.status).toBe(403)
@@ -118,7 +126,7 @@ describe('POST /auth/session', () => {
   it('echoes the allowed origin in CORS headers', async () => {
     stubFetch({
       login: { ok: true, body: { login: 'undeadliner' } },
-      team: { ok: true, body: { state: 'active' } },
+      membership: { ok: true, body: { state: 'active', role: 'admin' } },
     })
     const res = await createApp().fetch(post('ghp_OK'), ENV)
     expect(res.headers.get('access-control-allow-origin')).toBe(

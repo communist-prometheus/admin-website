@@ -3,7 +3,7 @@ import { getAuthBase } from '@/config/auth-session'
 /** Shape of the auth-worker `/auth/session` response. */
 export type SessionPayload = {
   readonly login: string
-  readonly teams: ReadonlyArray<string>
+  readonly roles: ReadonlyArray<string>
   readonly expires: number
 }
 
@@ -16,7 +16,7 @@ const isStringArray = (x: unknown): x is ReadonlyArray<string> =>
 const isSessionPayload = (value: unknown): value is SessionPayload =>
   isObject(value) &&
   typeof value['login'] === 'string' &&
-  isStringArray(value['teams']) &&
+  isStringArray(value['roles']) &&
   typeof value['expires'] === 'number'
 
 /**

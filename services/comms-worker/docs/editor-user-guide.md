@@ -14,18 +14,17 @@ newsletter admin surface at `admin.comprom.org/comms`.
 
 ## 1. Access requirements
 
-Before the first login the org admin must have added your GitHub
-login to the `communist-prometheus/admins` team:
+Before the first login an existing org owner must have promoted
+your GitHub login to **Owner** in `communist-prometheus` (Settings
+→ Members → role: Owner). Owners are the only role that the auth
+worker accepts; regular members get a 403 from `lists.comprom.org`
+even after PKCE.
 
-```bash
-gh api orgs/communist-prometheus/teams/admins/memberships/<login> -X PUT
-```
-
-Once that's done, opening `admin.comprom.org/comms` triggers the
-standard PKCE GitHub OAuth flow. After the token is in localStorage
-the SPA also mints a `comprom_session` cookie scoped to
-`.comprom.org` via `auth.comprom.org/auth/session`; that cookie is
-then shared with `lists.comprom.org` automatically. See
+Once you are an owner, opening `admin.comprom.org/comms` triggers
+the standard PKCE GitHub OAuth flow. After the token lands in
+localStorage the SPA also mints a `comprom_session` cookie scoped
+to `.comprom.org` via `auth.comprom.org/auth/session`; that cookie
+is then shared with `lists.comprom.org` automatically. See
 [`docs/architecture/sso.md`](../../../docs/architecture/sso.md) for
 the full flow.
 

@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { describe, expect, it } from 'vitest'
 import { SESSION_COOKIE } from '../auth/session-cookie'
-import type { SessionClaims } from '../auth/session-types'
+import { ROLE_OWNER, type SessionClaims } from '../auth/session-types'
 import {
   type RequireSessionEnv,
   type RequireSessionVariables,
@@ -10,7 +10,6 @@ import {
 
 const ENV: RequireSessionEnv = {
   JWT_SECRET: 'unused-in-tests',
-  REQUIRED_TEAM: 'admins',
 }
 
 const buildApp = (
@@ -30,7 +29,7 @@ const buildApp = (
 const validClaims: SessionClaims = {
   sub: 'undeadliner',
   login: 'undeadliner',
-  teams: ['admins'],
+  roles: [ROLE_OWNER],
   iat: 1_780_000_000,
   exp: 1_780_086_400,
   aud: 'comprom-sso',
@@ -62,16 +61,16 @@ describe('requireSession middleware', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns 403 when the verified claims lack the required team', async () => {
+  it('returns 403 when the verified claims lack the owner role', async () => {
     const app = buildApp(async () => ({
       ...validClaims,
-      teams: ['editors'],
+      roles: ['editor'],
     }))
     const res = await app.fetch(req(`${SESSION_COOKIE}=OK`), ENV)
     expect(res.status).toBe(403)
   })
 
-  it('allows the request when the team is present and exposes claims on c.var', async () => {
+  it('allows the request when owner is present and exposes claims on c.var', async () => {
     const app = buildApp(async () => validClaims)
     const res = await app.fetch(req(`${SESSION_COOKIE}=OK`), ENV)
     expect(res.status).toBe(200)

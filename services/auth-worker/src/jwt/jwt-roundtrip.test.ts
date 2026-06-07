@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { signSessionJwt } from './sign'
-import { JWT_AUDIENCE, JWT_ISSUER } from './types'
+import { JWT_AUDIENCE, JWT_ISSUER, ROLE_OWNER } from './types'
 import { verifySessionJwt } from './verify'
 
 const SECRET = 'test-secret-do-not-reuse'
@@ -11,14 +11,14 @@ describe('jwt roundtrip', () => {
   it('signs + verifies a valid token', async () => {
     const tok = await signSessionJwt({
       login: 'undeadliner',
-      teams: ['admins'],
+      roles: [ROLE_OWNER],
       secret: SECRET,
       now,
     })
     const claims = await verifySessionJwt(tok, { secret: SECRET, now })
     expect(claims?.login).toBe('undeadliner')
     expect(claims?.sub).toBe('undeadliner')
-    expect(claims?.teams).toEqual(['admins'])
+    expect(claims?.roles).toEqual([ROLE_OWNER])
     expect(claims?.aud).toBe(JWT_AUDIENCE)
     expect(claims?.iss).toBe(JWT_ISSUER)
   })
@@ -26,7 +26,7 @@ describe('jwt roundtrip', () => {
   it('rejects a tampered body', async () => {
     const tok = await signSessionJwt({
       login: 'a',
-      teams: ['admins'],
+      roles: [ROLE_OWNER],
       secret: SECRET,
       now,
     })
@@ -39,7 +39,7 @@ describe('jwt roundtrip', () => {
   it('rejects a token signed with a different secret', async () => {
     const tok = await signSessionJwt({
       login: 'a',
-      teams: ['admins'],
+      roles: [ROLE_OWNER],
       secret: 'wrong',
       now,
     })
@@ -50,7 +50,7 @@ describe('jwt roundtrip', () => {
   it('rejects an expired token', async () => {
     const tok = await signSessionJwt({
       login: 'a',
-      teams: ['admins'],
+      roles: [ROLE_OWNER],
       secret: SECRET,
       now,
       ttlSeconds: 10,
@@ -76,14 +76,14 @@ describe('jwt roundtrip', () => {
     expect(claims).toBeUndefined()
   })
 
-  it('preserves multi-team membership in the claims', async () => {
+  it('preserves multi-role membership in the claims', async () => {
     const tok = await signSessionJwt({
       login: 'a',
-      teams: ['admins', 'editors'],
+      roles: [ROLE_OWNER, 'editor'],
       secret: SECRET,
       now,
     })
     const claims = await verifySessionJwt(tok, { secret: SECRET, now })
-    expect(claims?.teams).toEqual(['admins', 'editors'])
+    expect(claims?.roles).toEqual([ROLE_OWNER, 'editor'])
   })
 })

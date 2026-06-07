@@ -35,23 +35,20 @@ saved `settings.schedule` and decides per-tick whether to dispatch
 
 ## One-time provisioning
 
-### GitHub team — source of truth for "who is an admin"
+### GitHub org owners — source of truth for "who can edit comms"
 
-The `auth-worker` SSO check requires active membership in this team;
-adding / removing admins in future is a single `gh` call.
+The `auth-worker` SSO check accepts only **org owners** of
+`communist-prometheus` (GitHub UI label; in the API it's
+`role: "admin"` on the org membership endpoint). Adding or removing
+a person is a GitHub-org-page operation — no worker config touch.
 
 ```bash
-# Create the team (private/closed visibility) — already done.
-gh api orgs/communist-prometheus/teams \
-  -X POST -f name=admins \
-  -f description='Admin surface allowlist' \
-  -f privacy=closed
+# Verify the current owners list.
+gh api 'orgs/communist-prometheus/members?role=admin' --jq '.[].login'
 
-# Seed.
-gh api orgs/communist-prometheus/teams/admins/memberships/undeadliner -X PUT
-
-# Verify.
-gh api orgs/communist-prometheus/teams/admins/members --jq '.[].login'
+# Promote someone (requires existing-owner perms on the org).
+gh api 'orgs/communist-prometheus/memberships/<login>' -X PUT \
+  -f role=admin
 ```
 
 ### SSO (`auth.comprom.org`)

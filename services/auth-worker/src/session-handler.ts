@@ -1,6 +1,6 @@
 import type { Context, Hono } from 'hono'
 import type { WorkerCtx } from './bindings'
-import { fetchUserLogin, isActiveTeamMember } from './gh-user'
+import { fetchUserLogin, isOrgOwner } from './gh-user'
 import { mintSessionResponse } from './session-mint'
 
 const BEARER = 'Bearer '
@@ -8,7 +8,7 @@ const BEARER = 'Bearer '
 const readBearerToken = (header: string | undefined): string | undefined =>
   header?.startsWith(BEARER) ? header.slice(BEARER.length) : undefined
 
-const checkAdmin = async (
+const checkOwner = async (
   c: Context<WorkerCtx>,
   ghToken: string
 ): Promise<Response | { login: string }> => {
@@ -16,30 +16,27 @@ const checkAdmin = async (
   if (login === undefined) {
     return c.json({ error: 'github token rejected' }, 401)
   }
-  const active = await isActiveTeamMember({
+  const owner = await isOrgOwner({
     org: c.env.GITHUB_ORG,
-    team: c.env.GITHUB_ADMIN_TEAM,
     login,
     token: ghToken,
   })
-  return active
-    ? { login }
-    : c.json({ error: 'not a member of admin team' }, 403)
+  return owner ? { login } : c.json({ error: 'not an org owner' }, 403)
 }
 
 /**
  * `POST /auth/session` — exchanges a GitHub OAuth token for a
- * parent-domain SSO cookie. Failure modes are mapped to 401 (bad
- * bearer / GH refused) and 403 (login not in the admin team).
+ * parent-domain SSO cookie. Failure modes map to 401 (missing /
+ * rejected GH token) and 403 (login is not an active org owner).
  * @param c Hono context with worker bindings.
- * @returns JSON `{login,teams,expires}` + `Set-Cookie` on success.
+ * @returns JSON `{login,roles,expires}` + `Set-Cookie` on success.
  */
 const handleSession = async (c: Context<WorkerCtx>): Promise<Response> => {
   const ghToken = readBearerToken(c.req.header('authorization'))
   if (ghToken === undefined) {
     return c.json({ error: 'authorization header required' }, 401)
   }
-  const checked = await checkAdmin(c, ghToken)
+  const checked = await checkOwner(c, ghToken)
   return 'login' in checked ? mintSessionResponse(c, checked.login) : checked
 }
 

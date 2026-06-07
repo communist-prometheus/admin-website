@@ -8,7 +8,6 @@ import type { SessionClaims } from './jwt/types'
 export type Bindings = {
   readonly VERSION: string
   readonly GITHUB_ORG: string
-  readonly GITHUB_ADMIN_TEAM: string
   readonly ALLOWED_ORIGIN: string
   readonly COOKIE_DOMAIN: string
   readonly JWT_SECRET: string

@@ -13,7 +13,7 @@ const HEADER: JwtHeader = { alg: 'HS256', typ: 'JWT' }
 /** Inputs the signer needs from the caller — everything else is computed. */
 export type SignSessionInput = {
   readonly login: string
-  readonly teams: readonly string[]
+  readonly roles: readonly string[]
   readonly secret: string
   readonly now?: () => number
   readonly ttlSeconds?: number
@@ -26,7 +26,7 @@ const buildPayload = (input: SignSessionInput): SessionClaims => {
   return {
     sub: input.login,
     login: input.login,
-    teams: input.teams,
+    roles: input.roles,
     iat: nowSec,
     exp: nowSec + ttl,
     aud: JWT_AUDIENCE,
@@ -37,7 +37,7 @@ const buildPayload = (input: SignSessionInput): SessionClaims => {
 /**
  * Sign an SSO session JWT (HS256). `iat`/`exp` come from the
  * injected clock; `aud`/`iss` are pinned by the protocol.
- * @param input Login, teams, secret, optional clock + ttl.
+ * @param input Login, roles, secret, optional clock + ttl.
  * @returns Signed JWT in compact serialisation form.
  */
 export const signSessionJwt = async (

@@ -13,11 +13,14 @@ export const JWT_AUDIENCE = 'comprom-sso'
 /** Issuer claim. Pinned, never per-deploy. */
 export const JWT_ISSUER = 'auth.comprom.org'
 
+/** Owner-tier role; the only tier today. */
+export const ROLE_OWNER = 'owner'
+
 /** Decoded SSO session claims. */
 export type SessionClaims = {
   readonly sub: string
   readonly login: string
-  readonly teams: readonly string[]
+  readonly roles: readonly string[]
   readonly iat: number
   readonly exp: number
   readonly aud: string

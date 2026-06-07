@@ -9,14 +9,14 @@ import type { DispatchEnv } from './runtime-env'
 const claims: SessionClaims = {
   sub: 'undeadliner',
   login: 'undeadliner',
-  teams: ['admins'],
+  roles: ['owner'],
   iat: 1,
   exp: 9_999_999_999,
   aud: 'comprom-sso',
   iss: 'auth.comprom.org',
 }
 
-type SessionEnv = { JWT_SECRET: string; REQUIRED_TEAM: string }
+type SessionEnv = { JWT_SECRET: string }
 
 let env: DispatchEnv
 let dispatcher: ReturnType<typeof vi.fn>
@@ -46,7 +46,6 @@ beforeEach(() => {
     RESEND_API_KEY: 'rk_test',
     UNSUBSCRIBE_SECRET: 'shhh',
     JWT_SECRET: 'unused-in-tests',
-    REQUIRED_TEAM: 'admins',
   } as DispatchEnv & SessionEnv
 })
 

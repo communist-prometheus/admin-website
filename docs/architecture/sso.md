@@ -94,13 +94,20 @@ reads it. Issuance is centralised; verification is per-worker.
 {
   "sub":   "undeadliner",                   // github login
   "login": "undeadliner",                   // alias of sub for handler ergonomics
-  "teams": ["admins"],                      // memberships in communist-prometheus org
+  "roles": ["owner"],                       // authorisation tier
   "iat":   1780827572,                      // seconds
   "exp":   1780913972,                      // iat + 24h
   "aud":   "comprom-sso",                   // pinned audience string
   "iss":   "auth.comprom.org"               // pinned issuer
 }
 ```
+
+`roles` is the only authorisation claim consumers gate on. Today
+the only tier issued is `"owner"` — the auth-worker only mints a
+session when the GitHub user is an **org owner** of
+`communist-prometheus` (in GH API terms: `role: "admin"` on the
+org membership endpoint). Future tiers (`editor`, `viewer`) extend
+the same array without breaking the shape.
 
 - **alg:** HS256
 - **secret:** `JWT_SECRET` env var, the SAME on `auth-worker`,
@@ -128,23 +135,25 @@ The SPA still gets the JWT body in the JSON response so it can read
 `{ login, teams, expires }` and render UI. The signed token itself
 lives only in the cookie.
 
-## 6. GitHub team check
+## 6. GitHub org-owner check
 
-Source of truth = GitHub org `communist-prometheus` team `admins`.
+Source of truth = GitHub org `communist-prometheus`, "owner" role.
 
-- create team (one-time): `gh api orgs/communist-prometheus/teams -X POST -f name=admins -f description='Admin surface allowlist' -f privacy=closed`
-- seed: `gh api orgs/communist-prometheus/teams/admins/memberships/{login} -X PUT`
 - check (auth-worker, per request):
-  `GET /orgs/communist-prometheus/teams/admins/memberships/{login}` →
-  body `state` must be `"active"` (not `"pending"`). Non-200 ⇒ not a
-  member.
+  `GET /orgs/communist-prometheus/memberships/{login}` →
+  - `state` must be `"active"` (not `"pending"`)
+  - `role` must be `"admin"` (GitHub's wire term for what the UI
+    calls an **Owner**)
+  - non-200 ⇒ not a member
 
-The team check is the only GitHub call we make per session; cache the
-verified login → team list pair in a worker-isolate Map for 5 min so
-repeated SPA-issued `/auth/session` calls don't hammer GH.
+The owner check is the only GitHub call we make per session;
+worker-isolate caching is optional but a Map keyed on the GH token
+hash for 5 min would amortise repeated SPA-issued `/auth/session`
+calls without introducing staleness windows that matter.
 
-The org name is locked into the auth-worker as a `vars.GITHUB_ORG`
-binding — single source.
+The org name is pinned in the auth-worker as `vars.GITHUB_ORG`
+— single source. Adding/removing org owners happens entirely in
+the GitHub org Members page; the worker has nothing to provision.
 
 ## 7. CORS
 
