@@ -26,6 +26,7 @@ export const config: Config = {
     'src/views/CommsView/ScheduleEditor.vue',
     'src/views/CommsView/CommsView.vue',
     'src/views/CommsView/CommsSection.vue',
+    'src/views/CommsView/ForceDispatchPanel.vue',
   ],
 } as const
 

@@ -7,7 +7,6 @@ export type DispatchEnv = {
   readonly UNSUBSCRIBE_SECRET: string
   readonly FROM_ADDRESS?: string
   readonly PUBLIC_BASE_URL?: string
-  readonly BYPASS_SCHEDULE?: string
 }
 
 /** Default sender displayed in the From header. */

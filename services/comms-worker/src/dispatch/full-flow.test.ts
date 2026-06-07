@@ -67,7 +67,6 @@ const env = (): Bindings =>
     RESEND_API_KEY: 'rk_test',
     UNSUBSCRIBE_SECRET: 'shhh-1234567890abcdef',
     RESEND_WEBHOOK_SECRET: SVIX_SECRET,
-    BYPASS_SCHEDULE: '1',
     VERSION: '0.0.0-test',
     ADMIN_HOSTNAME: 'admin.test',
   }) as Bindings
