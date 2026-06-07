@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   // Routed to a custom domain so the admin SPA hits a stable URL and
   // CF Access policies attach to the hostname.
-  "routes": [{ "pattern": "lists.comprom.org/*", "custom_domain": true }],
+  "routes": [{ "pattern": "lists.comprom.org", "custom_domain": true }],
   // Heartbeat fires hourly UTC; the worker decides per-tick whether
   // the user-saved schedule says "fire now" via cron-parser (spec §5).
   "triggers": { "crons": ["0 * * * *"] },
@@ -22,6 +22,13 @@
     "VERSION": "0.1.0",
     "ADMIN_HOSTNAME": "admin.comprom.org"
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "comms-prod",
+      "database_id": "f8f17df0-5b92-4a9c-babb-96b826d2aab9"
+    }
+  ],
   "env": {
     "develop": {
       "name": "comms-worker-develop",
