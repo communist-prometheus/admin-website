@@ -15,22 +15,23 @@ export type ForceDispatcher = (
 const defaultDispatcher: ForceDispatcher = (env, tickAt) =>
   runDispatch(buildRuntimeDeps(env, tickAt))
 
-const isGated = (c: Context): boolean =>
-  (c.env as DispatchEnv).BYPASS_SCHEDULE === '1' &&
-  c.req.query('force') === '1'
+const isOptedIn = (c: Context): boolean => c.req.query('force') === '1'
 
 const buildHandler =
   (dispatcher: ForceDispatcher) =>
   async (c: Context): Promise<Response> => {
-    if (!isGated(c)) return c.json({ error: 'not_found' }, 404)
+    if (!isOptedIn(c)) return c.json({ error: 'not_found' }, 404)
     const summary = await dispatcher(c.env as DispatchEnv, new Date())
     return c.json(summary, 202)
   }
 
 /**
- * Mount `POST /api/dispatch` — a session-gated manual tick
- * trigger guarded by `BYPASS_SCHEDULE=1` + `?force=1`. Exists in
- * prod (where `BYPASS_SCHEDULE` is unset) but always 404s there.
+ * Mount `POST /api/dispatch?force=1` — owner-only manual tick
+ * trigger. The route is gated by the session middleware
+ * (owner-only) and by the `?force=1` query string so an accidental
+ * GET or omitted query returns 404 instead of firing. Always
+ * leaves `settings.schedule` untouched; the saved cron continues
+ * to fire on its own cadence after a manual tick.
  * @param app Hono app, already wrapped with `requireSession`.
  * @param opts Optional dispatcher seam for unit tests.
  * @returns The same app for chaining.

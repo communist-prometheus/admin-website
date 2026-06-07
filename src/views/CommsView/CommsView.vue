@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import type { Lang } from '@/stores/comms'
 import { useCommsStore } from '@/stores/comms'
 import { useRunsStore } from '@/stores/runs'
@@ -7,6 +7,7 @@ import type { Schedule } from '@/stores/schedule'
 import { useScheduleStore } from '@/stores/schedule'
 import AddSubscriberForm from './AddSubscriberForm.vue'
 import CommsSection from './CommsSection.vue'
+import ForceDispatchPanel from './ForceDispatchPanel.vue'
 import RunHistory from './RunHistory.vue'
 import ScheduleEditor from './ScheduleEditor.vue'
 import SubscribersTable from './SubscribersTable.vue'
@@ -14,6 +15,10 @@ import SubscribersTable from './SubscribersTable.vue'
 const store = useCommsStore()
 const schedule = useScheduleStore()
 const runs = useRunsStore()
+
+const activeCount = computed(
+  () => store.subscribers.filter(s => s.status === 'active').length
+)
 
 const showRuns = ref(false)
 
@@ -40,6 +45,10 @@ const onRemove = (id: number): void => {
 
 const onScheduleSave = (next: Schedule): void => {
   void schedule.save(next)
+}
+
+const onDispatched = (): void => {
+  void runs.load()
 }
 </script>
 
@@ -86,6 +95,15 @@ const onScheduleSave = (next: Schedule): void => {
         >
           Loading…
         </p>
+      </CommsSection>
+      <CommsSection
+        title="Test dispatch"
+        lead="Owner-only — fires the dispatch loop immediately for testing. Does not modify the saved schedule."
+      >
+        <ForceDispatchPanel
+          :active-count="activeCount"
+          @dispatched="onDispatched"
+        />
       </CommsSection>
       <CommsSection
         title="Run history"

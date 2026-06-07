@@ -60,30 +60,27 @@ describe('POST /api/dispatch — auth gating', () => {
   })
 })
 
-describe('POST /api/dispatch — BYPASS_SCHEDULE gating', () => {
-  it('returns 404 when BYPASS_SCHEDULE is unset (default prod posture)', async () => {
+describe('POST /api/dispatch — ?force=1 opt-in', () => {
+  it('returns 404 when ?force is missing', async () => {
+    const res = await build().fetch(reqWithAccess('/api/dispatch'), env)
+    expect(res.status).toBe(404)
+    expect(dispatcher).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 when ?force is something other than 1', async () => {
     const res = await build().fetch(
-      reqWithAccess('/api/dispatch?force=1'),
+      reqWithAccess('/api/dispatch?force=0'),
       env
     )
     expect(res.status).toBe(404)
     expect(dispatcher).not.toHaveBeenCalled()
   })
 
-  it('returns 404 when BYPASS_SCHEDULE is set but ?force is missing', async () => {
-    const res = await build().fetch(reqWithAccess('/api/dispatch'), {
-      ...env,
-      BYPASS_SCHEDULE: '1',
-    })
-    expect(res.status).toBe(404)
-    expect(dispatcher).not.toHaveBeenCalled()
-  })
-
   it('runs dispatch with current wall-clock and returns 202 on force=1', async () => {
-    const res = await build().fetch(reqWithAccess('/api/dispatch?force=1'), {
-      ...env,
-      BYPASS_SCHEDULE: '1',
-    })
+    const res = await build().fetch(
+      reqWithAccess('/api/dispatch?force=1'),
+      env
+    )
     expect(res.status).toBe(202)
     expect(dispatcher).toHaveBeenCalledOnce()
     const body = (await res.json()) as { sent: number; failed: number }
