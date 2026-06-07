@@ -14,18 +14,20 @@ newsletter admin surface at `admin.comprom.org/comms`.
 
 ## 1. Access requirements
 
-Before the first login the org admin must have:
+Before the first login the org admin must have added your GitHub
+login to the `communist-prometheus/admins` team:
 
-1. Added your GitHub login to the `communist-prometheus/admins` team
-   (`gh api orgs/communist-prometheus/teams/admins/memberships/<login>
-   -X PUT -f role=member`).
-2. Provisioned the CF Access policy that maps the team to the
-   `lists.comprom.org/api/*` application (one-time, see
-   `services/comms-worker/README.md`).
+```bash
+gh api orgs/communist-prometheus/teams/admins/memberships/<login> -X PUT
+```
 
-Once both are done, opening `admin.comprom.org/comms` triggers a
-GitHub OAuth flow the first time per browser session; the Access
-cookie is then shared with `lists.comprom.org` automatically.
+Once that's done, opening `admin.comprom.org/comms` triggers the
+standard PKCE GitHub OAuth flow. After the token is in localStorage
+the SPA also mints a `comprom_session` cookie scoped to
+`.comprom.org` via `auth.comprom.org/auth/session`; that cookie is
+then shared with `lists.comprom.org` automatically. See
+[`docs/architecture/sso.md`](../../../docs/architecture/sso.md) for
+the full flow.
 
 ---
 
@@ -142,7 +144,7 @@ For local testing (after `wrangler dev`):
 
 ```bash
 curl -X POST "http://127.0.0.1:8787/api/dispatch?force=1" \
-     -H "Cf-Access-Jwt-Assertion: <local-stub-jwt>"
+     -H "Cookie: comprom_session=<local-stub-jwt>"
 ```
 
 The response is `202 {sent, failed, skipped, durationMs}`.
