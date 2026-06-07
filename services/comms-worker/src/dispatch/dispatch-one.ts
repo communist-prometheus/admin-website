@@ -18,7 +18,7 @@ export const dispatchOne = async (
   ctx: DispatchContext,
   sub: Subscriber
 ): Promise<DispatchOutcome> => {
-  const delta = computeDelta(sub, ctx.byLang)
+  const delta = computeDelta(sub, ctx.byLang, ctx.cutoffMs)
   if (delta.length === 0) return 'skipped'
   const result = await ctx.resend.send(await buildSendInput(ctx, sub, delta))
   if (result.ok) {

@@ -2,11 +2,13 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import type { Lang } from '@/stores/comms'
 import { useCommsStore } from '@/stores/comms'
+import { useCutoffStore } from '@/stores/cutoff'
 import { useRunsStore } from '@/stores/runs'
 import type { Schedule } from '@/stores/schedule'
 import { useScheduleStore } from '@/stores/schedule'
 import AddSubscriberForm from './AddSubscriberForm.vue'
 import CommsSection from './CommsSection.vue'
+import CutoffEditor from './CutoffEditor.vue'
 import ForceDispatchPanel from './ForceDispatchPanel.vue'
 import RunHistory from './RunHistory.vue'
 import ScheduleEditor from './ScheduleEditor.vue'
@@ -14,6 +16,7 @@ import SubscribersTable from './SubscribersTable.vue'
 
 const store = useCommsStore()
 const schedule = useScheduleStore()
+const cutoff = useCutoffStore()
 const runs = useRunsStore()
 
 const activeCount = computed(
@@ -25,6 +28,7 @@ const showRuns = ref(false)
 onMounted(() => {
   void store.ensureLoaded()
   void schedule.ensureLoaded()
+  void cutoff.ensureLoaded()
   void nextTick(() => {
     showRuns.value = true
     void runs.ensureLoaded()
@@ -49,6 +53,11 @@ const onScheduleSave = (next: Schedule): void => {
 
 const onDispatched = (): void => {
   void runs.load()
+  void cutoff.load()
+}
+
+const onCutoffSave = (next: string | null): void => {
+  void cutoff.save(next)
 }
 </script>
 
@@ -75,6 +84,17 @@ const onDispatched = (): void => {
           :saving="schedule.saving"
           :error="schedule.error"
           @save="onScheduleSave"
+        />
+      </CommsSection>
+      <CommsSection
+        title="Cutoff watermark"
+        lead="Single shared 'last run at' moment. Articles published after it are 'new' for every subscriber. Auto-advances on every successful tick; can be moved manually."
+      >
+        <CutoffEditor
+          :at="cutoff.at"
+          :saving="cutoff.saving"
+          :error="cutoff.error"
+          @save="onCutoffSave"
         />
       </CommsSection>
       <CommsSection

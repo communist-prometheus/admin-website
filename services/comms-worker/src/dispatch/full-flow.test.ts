@@ -129,8 +129,9 @@ describe('full-flow happy path (T7.4)', () => {
       headers: Record<string, string>
     }
     expect(captured.to).toEqual(['e2e-bot@example.test'])
-    expect(captured.html).toContain('[ru]')
-    expect(captured.html).toContain('[en]')
+    // Articles are grouped per language with uppercased section headers.
+    expect(captured.html).toContain('>RU<')
+    expect(captured.html).toContain('>EN<')
 
     const listUnsub = captured.headers['List-Unsubscribe'] ?? ''
     const unsubUrl = listUnsub.replace(/^<|>$/g, '')

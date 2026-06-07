@@ -13,4 +13,5 @@ export type DispatchContext = {
   readonly publicBaseUrl: string
   readonly tickAt: Date
   readonly byLang: ArticlesByLang
+  readonly cutoffMs: number | undefined
 }

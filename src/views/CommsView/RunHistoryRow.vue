@@ -162,4 +162,59 @@ const ICON: Readonly<Record<RunLog['status'], string>> = {
   font-size: 0.75rem;
   font-family: var(--font-mono);
 }
+
+@media (width < 640px) {
+  .error-row {
+    display: block;
+  }
+
+  .error-row td {
+    padding: var(--spacing-xs);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'email status'
+      'tick count';
+    gap: 0.25rem var(--spacing-xs);
+    padding: var(--spacing-sm) 0;
+  }
+
+  .row td {
+    padding: 0;
+  }
+
+  .row .email {
+    grid-area: email;
+    white-space: normal;
+    word-break: break-all;
+    font-size: 0.9375rem;
+  }
+
+  .row td:nth-of-type(3) {
+    grid-area: status;
+    text-align: right;
+  }
+
+  .row .tick {
+    grid-area: tick;
+    font-size: 0.75rem;
+  }
+
+  .row .count {
+    grid-area: count;
+    font-size: 0.75rem;
+  }
+
+  .row .count::before {
+    content: 'Articles: ';
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.65rem;
+    margin-right: 0.25rem;
+  }
+}
 </style>

@@ -1,47 +1,50 @@
-import type { Article } from '../rss/types'
-import { htmlEscape } from './escape'
+import { renderFooter, renderHead, renderHeader } from './html-chrome'
+import { renderGroups } from './html-groups'
+import { CARD_STYLE, type LangGroups } from './html-shared'
 import type { DigestChrome } from './i18n-types'
 
-const renderItem = (
-  article: Article,
-  stampedUrl: string,
-  chrome: DigestChrome
-): string => {
-  const title = htmlEscape(article.title)
-  const date = article.pubDate.slice(0, 10)
-  return [
-    '<li style="margin-bottom:1rem">',
-    `<a href="${stampedUrl}" style="font-weight:700;text-decoration:none">${title}</a>`,
-    ` <span style="opacity:0.7">[${article.lang}]</span>`,
-    ` <span style="opacity:0.6;font-size:0.85em"> · ${date}</span>`,
-    ' <br />',
-    `<a href="${stampedUrl}" style="font-size:0.875em">${chrome.readLabel} →</a>`,
-    '</li>',
+export type { LangGroups, StampedArticle } from './html-shared'
+
+const renderBody = (
+  chrome: DigestChrome,
+  groups: LangGroups,
+  unsubscribeUrl: string
+): string =>
+  [
+    '<table role="presentation" cellspacing="0" cellpadding="0" border="0" ',
+    'align="center" width="100%" class="container" ',
+    'style="max-width:640px;margin:0 auto;background:#fff;color:#222">',
+    renderHeader(chrome),
+    `<tr><td class="card" style="padding:8px 28px 24px;${CARD_STYLE}">`,
+    renderGroups(groups),
+    '</td></tr>',
+    renderFooter(chrome, unsubscribeUrl),
+    '</table>',
   ].join('')
-}
 
 /**
- * Render the digest HTML body: intro line, ordered article list with
- * lang badges + UTM-stamped links, footer with unsubscribe URL.
+ * Render the digest HTML body. Groups articles by language in the
+ * recipient's preferred order; renders per-language headers only when
+ * the recipient subscribes to more than one language. Each item is a
+ * single tappable headline + date — no redundant "Read more" link.
+ * Light + dark theme via inline defaults and a
+ * `@media (prefers-color-scheme: dark)` override block.
  * @param chrome Localised strings for the recipient.
- * @param items Pre-stamped article + URL pairs.
+ * @param groups Articles grouped by language, recipient-order.
  * @param unsubscribeUrl Per-recipient unsubscribe URL.
  * @returns Complete HTML string.
  */
 export const renderHtml = (
   chrome: DigestChrome,
-  items: ReadonlyArray<readonly [Article, string]>,
+  groups: LangGroups,
   unsubscribeUrl: string
 ): string =>
   [
     '<!DOCTYPE html>',
-    '<html><body style="font-family:system-ui,Segoe UI,sans-serif;max-width:36rem;margin:1rem auto;color:#222">',
-    `<p>${htmlEscape(chrome.intro)}</p>`,
-    '<ol style="padding-left:1.25rem">',
-    items.map(([a, u]) => renderItem(a, u, chrome)).join(''),
-    '</ol>',
-    '<hr style="border:none;border-top:1px solid #ccc;margin:2rem 0 1rem" />',
-    `<p style="font-size:0.8125em;opacity:0.7">${htmlEscape(chrome.unsubscribeNote)}<br />`,
-    `<a href="${unsubscribeUrl}">${htmlEscape(chrome.unsubscribeLabel)}</a></p>`,
+    '<html>',
+    renderHead(),
+    '<body style="margin:0;padding:24px 12px;background:#f6f6f6;color:#222;',
+    'font-family:system-ui,Segoe UI,Roboto,sans-serif;line-height:1.4">',
+    renderBody(chrome, groups, unsubscribeUrl),
     '</body></html>',
   ].join('')
