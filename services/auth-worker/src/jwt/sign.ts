@@ -19,19 +19,11 @@ export type SignSessionInput = {
   readonly ttlSeconds?: number
 }
 
-/**
- * Sign an SSO session JWT (HS256). `iat`/`exp` are filled from the
- * injected clock; `aud`/`iss` are pinned from the protocol constants.
- * @param input Signer input — login, teams, secret, optional clock + ttl.
- * @returns Signed JWT in compact serialisation form.
- */
-export const signSessionJwt = async (
-  input: SignSessionInput
-): Promise<string> => {
+const buildPayload = (input: SignSessionInput): SessionClaims => {
   const clock = input.now ?? (() => Date.now())
   const ttl = input.ttlSeconds ?? JWT_TTL_SECONDS
   const nowSec = Math.floor(clock() / 1000)
-  const payload: SessionClaims = {
+  return {
     sub: input.login,
     login: input.login,
     teams: input.teams,
@@ -40,6 +32,18 @@ export const signSessionJwt = async (
     aud: JWT_AUDIENCE,
     iss: JWT_ISSUER,
   }
+}
+
+/**
+ * Sign an SSO session JWT (HS256). `iat`/`exp` come from the
+ * injected clock; `aud`/`iss` are pinned by the protocol.
+ * @param input Login, teams, secret, optional clock + ttl.
+ * @returns Signed JWT in compact serialisation form.
+ */
+export const signSessionJwt = async (
+  input: SignSessionInput
+): Promise<string> => {
+  const payload = buildPayload(input)
   const head = base64urlEncode(JSON.stringify(HEADER))
   const body = base64urlEncode(JSON.stringify(payload))
   const data = `${head}.${body}`

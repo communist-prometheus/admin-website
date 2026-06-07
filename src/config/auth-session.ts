@@ -1,8 +1,6 @@
 const envBase = (): string => {
   const v = import.meta.env.VITE_AUTH_BASE
-  return typeof v === 'string' && v.length > 0
-    ? v.replace(/\/$/, '')
-    : ''
+  return typeof v === 'string' && v.length > 0 ? v.replace(/\/$/, '') : ''
 }
 
 const defaultBase = (): string =>

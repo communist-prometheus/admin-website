@@ -14,8 +14,7 @@ const ALLOW_METHODS = 'GET, POST, PUT, DELETE, OPTIONS'
  * @returns Hono middleware handler.
  */
 export const cors =
-  (): MiddlewareHandler<{ Bindings: CorsEnv }> =>
-  async (c, next) => {
+  (): MiddlewareHandler<{ Bindings: CorsEnv }> => async (c, next) => {
     const origin = c.req.header('origin')
     const allow = origin === c.env.ALLOWED_ORIGIN ? origin : undefined
     const setHeaders = (res: Response): Response => {

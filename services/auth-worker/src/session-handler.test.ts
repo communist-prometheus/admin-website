@@ -1,14 +1,7 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from './app'
-import { SESSION_COOKIE } from './cookie'
 import type { Bindings } from './bindings'
+import { SESSION_COOKIE } from './cookie'
 
 const ENV: Bindings = {
   VERSION: '0.1.0',
@@ -19,30 +12,34 @@ const ENV: Bindings = {
   JWT_SECRET: 'test-secret',
 }
 
+type StubResponse = { ok: boolean; body?: unknown }
 type Stub = {
-  readonly login?: { ok: boolean; body?: unknown }
-  readonly team?: { ok: boolean; body?: unknown }
+  readonly login?: StubResponse
+  readonly team?: StubResponse
+}
+
+const buildResponse = (
+  s: StubResponse | undefined,
+  okStatus: number,
+  failStatus: number
+): Response => {
+  const body = s?.body === undefined ? null : JSON.stringify(s.body)
+  return new Response(body, { status: s?.ok ? okStatus : failStatus })
+}
+
+const routeStub = (stub: Stub, url: string): Response => {
+  if (url === 'https://api.github.com/user') {
+    return buildResponse(stub.login, 200, 401)
+  }
+  return url.startsWith('https://api.github.com/orgs/')
+    ? buildResponse(stub.team, 200, 404)
+    : new Response('unexpected', { status: 500 })
 }
 
 const stubFetch = (stub: Stub) => {
-  vi.stubGlobal('fetch', async (input: RequestInfo) => {
-    const url = typeof input === 'string' ? input : input.url
-    if (url === 'https://api.github.com/user') {
-      const s = stub.login
-      return new Response(
-        s?.body === undefined ? null : JSON.stringify(s.body),
-        { status: s?.ok ? 200 : 401 }
-      )
-    }
-    if (url.startsWith('https://api.github.com/orgs/')) {
-      const s = stub.team
-      return new Response(
-        s?.body === undefined ? null : JSON.stringify(s.body),
-        { status: s?.ok ? 200 : 404 }
-      )
-    }
-    return new Response('unexpected', { status: 500 })
-  })
+  vi.stubGlobal('fetch', async (input: RequestInfo) =>
+    routeStub(stub, typeof input === 'string' ? input : input.url)
+  )
 }
 
 beforeEach(() => {
@@ -127,9 +124,7 @@ describe('POST /auth/session', () => {
     expect(res.headers.get('access-control-allow-origin')).toBe(
       'https://admin.comprom.org'
     )
-    expect(res.headers.get('access-control-allow-credentials')).toBe(
-      'true'
-    )
+    expect(res.headers.get('access-control-allow-credentials')).toBe('true')
   })
 })
 
@@ -141,9 +136,7 @@ describe('OPTIONS preflight', () => {
     })
     const res = await createApp().fetch(req, ENV)
     expect(res.status).toBe(204)
-    expect(res.headers.get('access-control-allow-credentials')).toBe(
-      'true'
-    )
+    expect(res.headers.get('access-control-allow-credentials')).toBe('true')
   })
 
   it('does not emit CORS headers for an unknown origin', async () => {

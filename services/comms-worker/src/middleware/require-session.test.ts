@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { SESSION_COOKIE } from '../auth/session-cookie'
 import type { SessionClaims } from '../auth/session-types'
 import {
-  requireSession,
   type RequireSessionEnv,
   type RequireSessionVariables,
+  requireSession,
 } from './require-session'
 
 const ENV: RequireSessionEnv = {
@@ -13,7 +13,9 @@ const ENV: RequireSessionEnv = {
   REQUIRED_TEAM: 'admins',
 }
 
-const buildApp = (verifier: (t: string) => Promise<SessionClaims | undefined>) => {
+const buildApp = (
+  verifier: (t: string) => Promise<SessionClaims | undefined>
+) => {
   const app = new Hono<{
     Bindings: RequireSessionEnv
     Variables: RequireSessionVariables
@@ -84,10 +86,7 @@ describe('requireSession middleware', () => {
       seen = t
       return validClaims
     })
-    await app.fetch(
-      req(`foo=bar; ${SESSION_COOKIE}=THE_TOKEN; baz=qux`),
-      ENV
-    )
+    await app.fetch(req(`foo=bar; ${SESSION_COOKIE}=THE_TOKEN; baz=qux`), ENV)
     expect(seen).toBe('THE_TOKEN')
   })
 })

@@ -58,5 +58,7 @@ export const readSessionCookie = (
   if (header === undefined || header === '') return undefined
   const entries = header.split(';').map(p => p.trim())
   const match = entries.find(p => p.startsWith(`${SESSION_COOKIE}=`))
-  return match === undefined ? undefined : match.slice(SESSION_COOKIE.length + 1)
+  return match === undefined
+    ? undefined
+    : match.slice(SESSION_COOKIE.length + 1)
 }

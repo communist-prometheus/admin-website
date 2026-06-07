@@ -13,7 +13,8 @@
       "!!.wrangler",
       "!!public/vendor",
       "!!e2e-toolkit",
-      "!!.claude"
+      "!!.claude",
+      "!!.tmp"
     ],
     "ignoreUnknown": false
   },
@@ -108,7 +109,8 @@
         "src/router/index.ts",
         "worker.ts",
         "services/log-collector/src/index.ts",
-        "services/comms-worker/src/index.ts"
+        "services/comms-worker/src/index.ts",
+        "services/auth-worker/src/index.ts"
       ],
       "linter": {
         "rules": {
