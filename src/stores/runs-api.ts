@@ -1,7 +1,7 @@
 import { decodeResponse } from '@/validation/decode-response'
 import type { RunLogList } from '@/validation/schemas/run-log'
 import { RunLogListSchema } from '@/validation/schemas/run-log'
-import { commsUrl } from './comms-http'
+import { commsFetch } from './comms-http'
 
 /**
  * GET /api/runs — return the most-recent send_log rows joined with
@@ -11,6 +11,6 @@ import { commsUrl } from './comms-http'
  */
 export const apiListRuns = async (limit?: number): Promise<RunLogList> => {
   const path = limit === undefined ? '/api/runs' : `/api/runs?limit=${limit}`
-  const res = await fetch(commsUrl(path), { credentials: 'include' })
+  const res = await commsFetch(path)
   return decodeResponse(RunLogListSchema)(res)
 }

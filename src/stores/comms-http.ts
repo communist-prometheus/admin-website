@@ -1,3 +1,5 @@
+import { mintSession } from '@/composables/useAuth/mint-session'
+import { loadToken } from '@/composables/useAuth/token-storage'
 import { getCommsBase } from '@/config/comms'
 
 /**
@@ -14,6 +16,49 @@ export const commsUrl = (path: string): string => `${getCommsBase()}${path}`
 export const jsonHeaders = (): HeadersInit => ({
   'Content-Type': 'application/json',
 })
+
+const send = (url: string, init: RequestInit): Promise<Response> =>
+  fetch(url, { ...init, credentials: 'include' })
+
+const retryWithMint = async (
+  url: string,
+  init: RequestInit,
+  token: string,
+  first: Response
+): Promise<Response> => {
+  const minted = await mintSession(token)
+  return minted === undefined ? first : await send(url, init)
+}
+
+const maybeRetry = async (
+  url: string,
+  init: RequestInit,
+  first: Response
+): Promise<Response> => {
+  const token = loadToken()
+  return token === undefined
+    ? first
+    : await retryWithMint(url, init, token, first)
+}
+
+/**
+ * Fetch helper for `comms-worker` calls. Sends credentials with
+ * every request and, on a single 401, re-mints the SSO session
+ * (cookie may be missing or 24h-expired) and retries once. Any
+ * other status — including a second 401 — is returned to the
+ * caller as-is.
+ * @param path Path on `lists.comprom.org` (beginning with `/`).
+ * @param init Standard fetch init; `credentials` is forced to include.
+ * @returns Final response, possibly after a single retry.
+ */
+export const commsFetch = async (
+  path: string,
+  init: RequestInit = {}
+): Promise<Response> => {
+  const url = commsUrl(path)
+  const first = await send(url, init)
+  return first.status === 401 ? await maybeRetry(url, init, first) : first
+}
 
 /**
  * Pass-through that throws when the response status is non-2xx.
