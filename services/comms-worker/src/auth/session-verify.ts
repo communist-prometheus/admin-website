@@ -1,42 +1,14 @@
 import { base64urlDecode } from './base64url'
-import { importHs256Key } from './hmac-key'
-import {
-  JWT_AUDIENCE,
-  JWT_ISSUER,
-  type SessionClaims,
-} from './session-types'
+import { isSessionClaims } from './claims-guard'
+import { JWT_AUDIENCE, JWT_ISSUER, type SessionClaims } from './session-types'
+import { checkSignature } from './signature'
 
-const isObject = (x: unknown): x is Record<string, unknown> =>
-  x !== null && typeof x === 'object'
-
-const isStringArray = (x: unknown): x is readonly string[] =>
-  Array.isArray(x) && x.every(item => typeof item === 'string')
-
-const isSessionClaims = (value: unknown): value is SessionClaims => {
-  if (!isObject(value)) return false
-  return (
-    typeof value['sub'] === 'string' &&
-    typeof value['login'] === 'string' &&
-    isStringArray(value['teams']) &&
-    typeof value['iat'] === 'number' &&
-    typeof value['exp'] === 'number' &&
-    typeof value['aud'] === 'string' &&
-    typeof value['iss'] === 'string'
-  )
-}
-
-const checkSignature = async (
-  data: string,
-  signature: string,
-  secret: string
-): Promise<boolean> => {
-  const key = await importHs256Key(secret)
-  return globalThis.crypto.subtle.verify(
-    'HMAC',
-    key,
-    base64urlDecode(signature),
-    new TextEncoder().encode(data)
-  )
+const decodeBody = (body: string | undefined): unknown => {
+  try {
+    return JSON.parse(new TextDecoder().decode(base64urlDecode(body ?? '')))
+  } catch {
+    return undefined
+  }
 }
 
 /** Optional clock injection for tests. */
@@ -66,13 +38,7 @@ export const verifySessionJwt = async (
     () => false
   )
   if (!validSig) return undefined
-  const decoded = ((): unknown => {
-    try {
-      return JSON.parse(new TextDecoder().decode(base64urlDecode(body ?? '')))
-    } catch {
-      return undefined
-    }
-  })()
+  const decoded = decodeBody(body)
   if (!isSessionClaims(decoded)) return undefined
   const nowSec = Math.floor((opts.now ?? (() => Date.now()))() / 1000)
   return decoded.aud === JWT_AUDIENCE &&

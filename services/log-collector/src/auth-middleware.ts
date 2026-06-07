@@ -16,9 +16,7 @@ const PUBLIC_PATHS = new Set<string>(['/health', '/auth/exchange'])
 
 const tokenFrom = (header: string | undefined): string | undefined => {
   const prefix = 'Bearer '
-  return header !== undefined && header.startsWith(prefix)
-    ? header.slice(prefix.length)
-    : undefined
+  return header?.startsWith(prefix) ? header.slice(prefix.length) : undefined
 }
 
 /**

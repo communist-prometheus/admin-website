@@ -56,6 +56,9 @@ e2e/.auth/
 # Built SW for dev mode
 public/sw.js
 
+# Session-local helpers (CF API tokens, ad-hoc provisioning scripts).
+.tmp/
+
 # Auto-generated type definitions
 src/components.d.ts
 .wrangler

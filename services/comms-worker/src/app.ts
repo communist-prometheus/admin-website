@@ -34,10 +34,7 @@ export const createApp = (opts: CreateAppOptions = {}): Hono<WorkerCtx> => {
   const app = new Hono<WorkerCtx>()
   app.use('*', cors())
   registerHealthRoute(app)
-  app.use(
-    '/api/*',
-    requireSession({ verifier: opts.sessionVerifier })
-  )
+  app.use('/api/*', requireSession({ verifier: opts.sessionVerifier }))
   mountSubscriberRoutes(app, c =>
     createRepo({ db: (c.env as Bindings).DB, now: nowIso })
   )

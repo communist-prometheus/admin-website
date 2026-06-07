@@ -56,12 +56,18 @@ describe('jwt roundtrip', () => {
       ttlSeconds: 10,
     })
     const future = () => NOW_MS + 60_000
-    const claims = await verifySessionJwt(tok, { secret: SECRET, now: future })
+    const claims = await verifySessionJwt(tok, {
+      secret: SECRET,
+      now: future,
+    })
     expect(claims).toBeUndefined()
   })
 
   it('rejects a structurally malformed token', async () => {
-    const claims = await verifySessionJwt('not.a.jwt', { secret: SECRET, now })
+    const claims = await verifySessionJwt('not.a.jwt', {
+      secret: SECRET,
+      now,
+    })
     expect(claims).toBeUndefined()
   })
 

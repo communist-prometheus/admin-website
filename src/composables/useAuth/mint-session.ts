@@ -40,7 +40,12 @@ export const mintSession = async (
     credentials: 'include',
     headers: { Authorization: `Bearer ${ghToken}` },
   })
-  if (!res.ok) return undefined
+  return res.ok ? readPayload(res) : undefined
+}
+
+const readPayload = async (
+  res: Response
+): Promise<SessionPayload | undefined> => {
   const body: unknown = await res.json().catch(() => undefined)
   return isSessionPayload(body) ? body : undefined
 }

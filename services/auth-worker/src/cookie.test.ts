@@ -61,8 +61,8 @@ describe('readSessionCookie', () => {
   })
 
   it('extracts the session value when it is alongside other cookies', () => {
-    expect(
-      readSessionCookie('foo=bar; comprom_session=XYZ; other=zzz')
-    ).toBe('XYZ')
+    expect(readSessionCookie('foo=bar; comprom_session=XYZ; other=zzz')).toBe(
+      'XYZ'
+    )
   })
 })
