@@ -18,7 +18,7 @@ export const isSessionClaims = (value: unknown): value is SessionClaims => {
   return (
     typeof value['sub'] === 'string' &&
     typeof value['login'] === 'string' &&
-    isStringArray(value['teams']) &&
+    isStringArray(value['roles']) &&
     typeof value['iat'] === 'number' &&
     typeof value['exp'] === 'number' &&
     typeof value['aud'] === 'string' &&

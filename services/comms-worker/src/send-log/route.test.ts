@@ -11,14 +11,14 @@ import { mountRunsRoute } from './route'
 const claims: SessionClaims = {
   sub: 'undeadliner',
   login: 'undeadliner',
-  teams: ['admins'],
+  roles: ['owner'],
   iat: 1,
   exp: 9_999_999_999,
   aud: 'comprom-sso',
   iss: 'auth.comprom.org',
 }
 
-const env = { JWT_SECRET: 'unused-in-tests', REQUIRED_TEAM: 'admins' }
+const env = { JWT_SECRET: 'unused-in-tests' }
 
 let db: D1Database
 let subs: SubscriberRepo

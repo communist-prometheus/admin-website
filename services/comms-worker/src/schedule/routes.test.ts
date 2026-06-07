@@ -9,14 +9,14 @@ import { mountScheduleRoutes } from './routes'
 const claims: SessionClaims = {
   sub: 'undeadliner',
   login: 'undeadliner',
-  teams: ['admins'],
+  roles: ['owner'],
   iat: 1,
   exp: 9_999_999_999,
   aud: 'comprom-sso',
   iss: 'auth.comprom.org',
 }
 
-const env = { JWT_SECRET: 'unused-in-tests', REQUIRED_TEAM: 'admins' }
+const env = { JWT_SECRET: 'unused-in-tests' }
 const FROZEN = new Date('2026-06-01T00:00:00.000Z')
 
 const build = () => {

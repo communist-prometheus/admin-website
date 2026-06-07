@@ -9,7 +9,7 @@ import { signWebhookHeader } from '../webhooks/svix'
 const CLAIMS: SessionClaims = {
   sub: 'undeadliner',
   login: 'undeadliner',
-  teams: ['admins'],
+  roles: ['owner'],
   iat: 1,
   exp: 9_999_999_999,
   aud: 'comprom-sso',
@@ -63,7 +63,6 @@ const env = (): Bindings =>
   ({
     DB: db,
     JWT_SECRET: 'unused-in-tests',
-    REQUIRED_TEAM: 'admins',
     ALLOWED_ORIGIN: 'https://admin.test',
     RESEND_API_KEY: 'rk_test',
     UNSUBSCRIBE_SECRET: 'shhh-1234567890abcdef',

@@ -7,17 +7,20 @@ export const JWT_ISSUER = 'auth.comprom.org'
 /** Default token lifetime in seconds (24 hours). */
 export const JWT_TTL_SECONDS = 86_400
 
+/** Single tier today; the claim is plural so future tiers slot in. */
+export const ROLE_OWNER = 'owner'
+
 /**
  * Decoded SSO JWT payload. `sub` and `login` are intentional
  * duplicates: `sub` is the RFC 7519 standard slot, `login` is what
- * downstream handlers care about. `teams` is the source-of-truth
+ * downstream handlers care about. `roles` is the source-of-truth
  * authorisation claim — every consumer should gate on it, not on
  * `login`.
  */
 export type SessionClaims = {
   readonly sub: string
   readonly login: string
-  readonly teams: readonly string[]
+  readonly roles: readonly string[]
   readonly iat: number
   readonly exp: number
   readonly aud: string

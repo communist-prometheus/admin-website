@@ -9,9 +9,8 @@
   // Secrets (wrangler secret put):
   // - JWT_SECRET — HS256 secret shared with every *.comprom.org worker
   "vars": {
-    "VERSION": "0.1.0",
+    "VERSION": "0.2.0",
     "GITHUB_ORG": "communist-prometheus",
-    "GITHUB_ADMIN_TEAM": "admins",
     "ALLOWED_ORIGIN": "https://admin.comprom.org",
     "COOKIE_DOMAIN": ".comprom.org"
   },

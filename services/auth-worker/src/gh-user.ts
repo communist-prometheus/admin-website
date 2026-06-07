@@ -27,27 +27,29 @@ export const fetchUserLogin = async (
   return typeof login === 'string' ? login : undefined
 }
 
-export type TeamCheckInput = {
+export type OrgRoleCheckInput = {
   readonly org: string
-  readonly team: string
   readonly login: string
   readonly token: string
 }
 
 /**
- * Check whether `login` is an **active** member of the given org
- * team. GitHub returns 200 + `state: "active"` for full members,
- * 200 + `state: "pending"` for pending invitations (which we treat
- * as not-yet-a-member), and 404 for everyone else.
- * @param input Team coordinates + the OAuth token to authenticate the call.
- * @returns True only when state is `"active"`.
+ * Check whether `login` is an org **owner** (GitHub calls this
+ * `role: "admin"` on the membership endpoint). GitHub returns
+ * 200 + `state: "active"` + `role: "admin"` for owners,
+ * `role: "member"` for regular members, `state: "pending"` for
+ * unaccepted invitations, and 404 for non-members.
+ * @param input Org coordinates + the OAuth token to authenticate.
+ * @returns True only when state is `"active"` AND role is `"admin"`.
  */
-export const isActiveTeamMember = async (
-  input: TeamCheckInput
+export const isOrgOwner = async (
+  input: OrgRoleCheckInput
 ): Promise<boolean> => {
-  const url = `https://api.github.com/orgs/${input.org}/teams/${input.team}/memberships/${input.login}`
+  const url = `https://api.github.com/orgs/${input.org}/memberships/${input.login}`
   const res = await fetch(url, { headers: GH_HEADERS(input.token) })
   if (!res.ok) return false
   const body: unknown = await res.json().catch(() => undefined)
-  return isObject(body) && body['state'] === 'active'
+  return (
+    isObject(body) && body['state'] === 'active' && body['role'] === 'admin'
+  )
 }

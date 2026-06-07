@@ -18,10 +18,9 @@
   // - RESEND_WEBHOOK_SECRET    — Svix-style webhook signature verification
   // - UNSUBSCRIBE_SECRET       — HMAC secret for unsubscribe tokens
   "vars": {
-    "VERSION": "0.1.0",
+    "VERSION": "0.2.0",
     "ADMIN_HOSTNAME": "admin.comprom.org",
-    "ALLOWED_ORIGIN": "https://admin.comprom.org",
-    "REQUIRED_TEAM": "admins"
+    "ALLOWED_ORIGIN": "https://admin.comprom.org"
   },
   "d1_databases": [
     {
