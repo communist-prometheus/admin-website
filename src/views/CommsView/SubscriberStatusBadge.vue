@@ -1,16 +1,25 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Subscriber } from '@/stores/comms'
 
 const props = defineProps<{ readonly status: Subscriber['status'] }>()
 
-const label = (): string =>
-  props.status === 'active'
-    ? 'active'
-    : props.status === 'unsubscribed'
-      ? 'unsubscribed'
-      : props.status === 'bounced'
-        ? 'bounced'
-        : 'complained'
+const ICON: Readonly<Record<Subscriber['status'], string>> = {
+  active: '●',
+  unsubscribed: '○',
+  bounced: '⚠',
+  complained: '⚠',
+}
+
+const LABEL: Readonly<Record<Subscriber['status'], string>> = {
+  active: 'Active subscriber',
+  unsubscribed: 'Unsubscribed by recipient',
+  bounced: 'Address bounces — skipped',
+  complained: 'Marked as spam — skipped',
+}
+
+const icon = computed(() => ICON[props.status])
+const label = computed(() => LABEL[props.status])
 </script>
 
 <template>
@@ -18,32 +27,43 @@ const label = (): string =>
     class="status"
     :class="`status-${status}`"
     :data-testid="`subscriber-status-${status}`"
+    :aria-label="label"
   >
-    {{ label() }}
+    <span class="icon" aria-hidden="true">{{ icon }}</span>
+    <span class="text">{{ status }}</span>
   </span>
 </template>
 
 <style scoped>
 .status {
-  display: inline-block;
-  font-size: 0.6875rem;
-  letter-spacing: 0.05em;
-  font-weight: 700;
-  padding: 0.1rem 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
+  border: 1px solid currentcolor;
   text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+
+.icon {
+  font-size: 0.65rem;
+  line-height: 1;
 }
 
 .status-active {
   color: var(--color-accent);
-  border-color: var(--color-accent);
+}
+
+.status-unsubscribed {
+  color: var(--color-muted);
 }
 
 .status-bounced,
 .status-complained {
-  color: var(--color-danger, #c0392b);
-  border-color: var(--color-danger, #c0392b);
+  color: var(--color-danger);
 }
 </style>

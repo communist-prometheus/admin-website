@@ -1,102 +1,165 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { RunLog } from '@/stores/runs'
-import {
-  isFailedRun,
-  shortTickAt,
-  statusBadgeClass,
-} from './run-history-ops'
+import { isFailedRun, shortTickAt, statusBadgeClass } from './run-history-ops'
 
 const props = defineProps<{ readonly run: RunLog }>()
 
 const expanded = ref(false)
 
-const onToggle = (): void => {
-  if (isFailedRun(props.run.status)) expanded.value = !expanded.value
+const expandable = computed(
+  () => isFailedRun(props.run.status) && props.run.error !== undefined
+)
+const errorId = computed(() => `run-error-${props.run.id}`)
+
+const onActivate = (): void => {
+  if (expandable.value) expanded.value = !expanded.value
+}
+
+const onKey = (e: KeyboardEvent): void => {
+  if (!expandable.value) return
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    expanded.value = !expanded.value
+  }
+}
+
+const ICON: Readonly<Record<RunLog['status'], string>> = {
+  sent: '✓',
+  failed: '✕',
+  bounced: '✕',
+  complained: '✕',
+  skipped: '·',
 }
 </script>
 
 <template>
-  <li
+  <tr
     class="row"
-    :class="{ 'row-failed': isFailedRun(props.run.status) }"
+    :class="{ 'row-failed': isFailedRun(run.status), 'is-expanded': expanded }"
     :data-testid="
-      isFailedRun(props.run.status) ? 'send-log-failed' : 'send-log-row'
+      isFailedRun(run.status) ? 'send-log-failed' : 'send-log-row'
     "
-    @click="onToggle"
+    :role="expandable ? 'button' : undefined"
+    :tabindex="expandable ? 0 : undefined"
+    :aria-expanded="expandable ? expanded : undefined"
+    :aria-controls="expandable ? errorId : undefined"
+    @click="onActivate"
+    @keydown="onKey"
   >
-    <span class="tick">{{ shortTickAt(props.run.tickAt) }}</span>
-    <span class="email">{{ props.run.email ?? '—' }}</span>
-    <span class="badge" :class="statusBadgeClass(props.run.status)">
-      {{ props.run.status }}
-    </span>
-    <span class="count">{{ props.run.articleCount }}</span>
-    <span
-      v-if="expanded && props.run.error"
-      class="error"
-      data-testid="send-log-error"
-    >{{ props.run.error }}</span>
-  </li>
+    <td class="tick">{{ shortTickAt(run.tickAt) }}</td>
+    <td class="email">{{ run.email ?? '—' }}</td>
+    <td>
+      <span
+        class="badge"
+        :class="statusBadgeClass(run.status)"
+        :aria-label="`Run status: ${run.status}`"
+      >
+        <span class="badge-icon" aria-hidden="true">{{ ICON[run.status] }}</span>
+        <span>{{ run.status }}</span>
+      </span>
+    </td>
+    <td class="count">{{ run.articleCount }}</td>
+  </tr>
+  <tr
+    v-if="expanded && run.error"
+    :id="errorId"
+    class="error-row"
+    data-testid="send-log-error"
+  >
+    <td colspan="4">{{ run.error }}</td>
+  </tr>
 </template>
 
 <style scoped>
 .row {
-  display: grid;
-  grid-template-columns: 8.5rem 1fr 5rem 3rem;
-  gap: 0.6rem;
-  padding: 0.35rem 0;
-  border-bottom: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
   font-size: 0.8125rem;
-  cursor: default;
+  color: var(--color-text-primary);
+}
+
+.row td {
+  padding: var(--spacing-xs);
+  vertical-align: middle;
+}
+
+.row:hover {
+  background: var(--color-surface-hover);
 }
 
 .row-failed {
   cursor: pointer;
-  background: rgb(192 57 43 / 8%);
+  background: var(--color-danger-subtle);
+}
+
+.row-failed:hover {
+  background: var(--color-danger-subtle);
+}
+
+.row[tabindex='0']:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
 }
 
 .tick {
+  font-family: var(--font-mono);
   color: var(--color-text-secondary);
-  font-family: var(--font-mono, monospace);
 }
 
 .email {
+  font-family: var(--font-mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.count {
+  text-align: right;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+}
+
 .badge {
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid currentcolor;
   text-transform: uppercase;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  font-size: 0.6875rem;
-  padding: 0.1rem 0.35rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+  letter-spacing: 0.06em;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.badge-icon {
+  font-size: 0.65rem;
+  line-height: 1;
 }
 
 .badge-sent {
-  color: var(--color-accent);
-  border-color: var(--color-accent);
+  color: var(--color-success);
 }
 
 .badge-failed,
 .badge-bounced,
 .badge-complained {
-  color: var(--color-danger, #c0392b);
-  border-color: var(--color-danger, #c0392b);
+  color: var(--color-danger);
 }
 
-.count {
-  text-align: right;
-  color: var(--color-text-secondary);
+.badge-skipped {
+  color: var(--color-warning);
 }
 
-.error {
-  grid-column: 1 / -1;
-  color: var(--color-danger, #c0392b);
+.error-row {
+  background: var(--color-danger-subtle);
+}
+
+.error-row td {
+  padding: var(--spacing-xs) var(--spacing-md);
+  color: var(--color-danger);
   font-size: 0.75rem;
+  font-family: var(--font-mono);
 }
 </style>

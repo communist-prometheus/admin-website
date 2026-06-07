@@ -2,11 +2,20 @@
   --color-background: hsl(0, 0%, 10%);
   --color-surface: hsl(0, 0%, 13%);
   --color-surface-elevated: hsl(0, 0%, 16%);
+  --color-surface-hover: hsl(0, 0%, 18%);
   --color-accent: #ee6f57;
   --color-accent-hover: #f18771;
   --color-text-primary: hsl(0, 0%, 95%);
   --color-text-secondary: hsl(0, 0%, 65%);
   --color-border: hsl(0, 0%, 25%);
+
+  /* Status palette — used by comms run-history + status badges. */
+  --color-success: hsl(150, 55%, 55%);
+  --color-danger: hsl(0, 65%, 60%);
+  --color-warning: hsl(38, 90%, 60%);
+  --color-muted: hsl(0, 0%, 50%);
+  --color-danger-subtle: hsl(0, 65%, 60%, 0.08);
+  --color-focus-ring: hsl(28, 85%, 65%);
 
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
@@ -85,11 +94,19 @@
   --color-background: hsl(0, 0%, 100%);
   --color-surface: hsl(0, 0%, 98%);
   --color-surface-elevated: hsl(0, 0%, 100%);
+  --color-surface-hover: hsl(0, 0%, 96%);
   --color-text-primary: hsl(0, 0%, 13%);
   --color-text-secondary: hsl(0, 0%, 40%);
   --color-border: hsl(0, 0%, 90%);
   --color-accent: #c25434;
   --color-accent-hover: #a84428;
+
+  --color-success: hsl(150, 60%, 35%);
+  --color-danger: hsl(0, 70%, 45%);
+  --color-warning: hsl(38, 80%, 45%);
+  --color-muted: hsl(0, 0%, 60%);
+  --color-danger-subtle: hsl(0, 70%, 45%, 0.08);
+  --color-focus-ring: hsl(28, 85%, 55%);
 
   color-scheme: light;
 }

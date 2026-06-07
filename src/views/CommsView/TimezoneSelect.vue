@@ -16,28 +16,56 @@ const onChange = (e: Event): void => {
 </script>
 
 <template>
-  <select
-    :value="props.modelValue"
-    class="tz"
-    data-testid="schedule-timezone"
-    aria-label="Timezone"
-    :disabled="props.disabled"
-    @change="onChange"
-  >
-    <option v-for="tz in COMMON_TIMEZONES" :key="tz" :value="tz">
-      {{ tz }}
-    </option>
-  </select>
+  <label class="field">
+    <span class="field-label">Timezone</span>
+    <select
+      :value="props.modelValue"
+      class="field-select tz"
+      data-testid="schedule-timezone"
+      :disabled="props.disabled"
+      @change="onChange"
+    >
+      <option v-for="tz in COMMON_TIMEZONES" :key="tz" :value="tz">
+        {{ tz }}
+      </option>
+    </select>
+  </label>
 </template>
 
 <style scoped>
-.tz {
-  padding: 0.4rem 0.55rem;
+.field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.field-label {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.field-select {
+  appearance: none;
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  background: var(--color-background);
-  color: var(--color-text);
-  font-size: 0.875rem;
-  font-family: var(--font-mono, monospace);
+  font: 400 0.95rem/1.4 var(--font-sans);
+  transition: border-color var(--transition-fast);
+}
+
+.field-select:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-color: var(--color-focus-ring);
+}
+
+.field-select:hover:not(:disabled) {
+  border-color: var(--color-text-secondary);
+}
+
+.tz {
+  font-family: var(--font-mono);
 }
 </style>

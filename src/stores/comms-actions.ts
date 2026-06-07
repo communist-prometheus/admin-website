@@ -24,7 +24,7 @@ export const createLoad = (r: CommsRefs) => async (): Promise<void> => {
   r.loading.value = true
   try {
     const res = await apiListSubscribers()
-    r.subscribers.value = res.subscribers
+    r.subscribers.value = Object.freeze([...res.subscribers])
     r.loaded.value = true
   } finally {
     r.loading.value = false

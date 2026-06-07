@@ -124,6 +124,7 @@ export default [
       '**/*.spec.ts',
       'scripts/**/*.ts',
       'e2e/helpers/**/*.ts',
+      'e2e/comms-walkthrough/**/*.ts',
       'e2e-realmode/helpers/**/*.ts',
       'e2e-realmode/global-setup.ts',
     ],

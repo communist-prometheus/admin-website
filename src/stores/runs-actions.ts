@@ -23,7 +23,7 @@ export const createLoadRuns =
     r.error.value = undefined
     try {
       const res = await apiListRuns(limit)
-      r.runs.value = [...res.runs]
+      r.runs.value = Object.freeze([...res.runs])
       r.loaded.value = true
     } catch (e) {
       r.error.value = e instanceof Error ? e.message : 'Failed to load runs'
