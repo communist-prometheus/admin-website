@@ -10,44 +10,41 @@ defineProps<{
 </script>
 
 <template>
-  <section class="history" data-testid="run-history">
-    <h2 class="title">Run history</h2>
+  <div class="history" data-testid="run-history">
     <p
       v-if="error"
       class="error"
+      role="alert"
       data-testid="run-history-error"
     >{{ error }}</p>
     <p
       v-else-if="loading && runs.length === 0"
+      class="status"
+      role="status"
       data-testid="run-history-loading"
     >Loading…</p>
     <p
       v-else-if="!loading && runs.length === 0"
-      class="empty"
+      class="status"
+      role="status"
       data-testid="run-history-empty"
     >No newsletter runs have been recorded yet.</p>
     <RunHistoryList v-else :runs="runs" />
-  </section>
+  </div>
 </template>
 
 <style scoped>
 .history {
-  padding: 1rem 0 0;
-  border-top: 1px solid var(--color-border);
-}
-
-.title {
-  margin: 0 0 0.6rem;
-  font-size: 1rem;
-  font-weight: 700;
+  min-height: 8rem;
 }
 
 .error {
-  color: var(--color-danger, #c0392b);
+  color: var(--color-danger);
   font-size: 0.8125rem;
+  margin: 0;
 }
 
-.empty {
+.status {
   color: var(--color-text-secondary);
   font-size: 0.8125rem;
   margin: 0;

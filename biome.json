@@ -101,6 +101,7 @@
         "playwright.config.ts",
         "playwright.config.prod.ts",
         "playwright.config.realmode.ts",
+        "playwright.config.walkthrough.ts",
         "e2e/auth/setup.ts",
         "e2e-realmode/global-setup.ts",
         "eslint.config.js",

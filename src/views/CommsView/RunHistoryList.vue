@@ -6,20 +6,54 @@ defineProps<{ readonly runs: readonly RunLog[] }>()
 </script>
 
 <template>
-  <ol class="rows" data-testid="run-history-list">
-    <RunHistoryRow
-      v-for="run in runs"
-      :key="run.id"
-      :run="run"
-      data-testid="run-history-row"
-    />
-  </ol>
+  <table class="rows" data-testid="run-history-list">
+    <thead>
+      <tr>
+        <th scope="col" class="th-tick">Tick (UTC)</th>
+        <th scope="col" class="th-email">Email</th>
+        <th scope="col" class="th-status">Status</th>
+        <th scope="col" class="th-count">Articles</th>
+      </tr>
+    </thead>
+    <tbody>
+      <RunHistoryRow v-for="run in runs" :key="run.id" :run="run" />
+    </tbody>
+  </table>
 </template>
 
 <style scoped>
 .rows {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.rows th {
+  padding: var(--spacing-xs);
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.th-tick {
+  width: 11rem;
+  font-family: var(--font-mono);
+}
+
+.th-email {
+  width: auto;
+}
+
+.th-status {
+  width: 8rem;
+}
+
+.th-count {
+  width: 5rem;
+  text-align: right;
 }
 </style>

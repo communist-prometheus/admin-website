@@ -16,5 +16,8 @@ export const CONFIRMATION: Readonly<Record<Lang, ConfirmationChrome>> = {
   bl: CONF_BL,
 }
 
-/** Shared mailto target used by every confirmation page. */
-export const RE_SUBSCRIBE_MAILTO = 'mailto:public@comprom.org'
+/** Shared mailto target used by every confirmation page. Carries a
+ * subject line so the recipient's mail client opens with context. */
+export const RE_SUBSCRIBE_MAILTO =
+  'mailto:public@comprom.org' +
+  '?subject=Re-subscribe%20to%20the%20Communist%20Prometheus%20newsletter'

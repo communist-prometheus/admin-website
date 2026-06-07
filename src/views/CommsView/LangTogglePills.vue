@@ -17,7 +17,12 @@ const onClick = (lang: Lang): void => {
 </script>
 
 <template>
-  <span class="lang-toggle" data-testid="lang-toggle">
+  <span
+    class="lang-toggle"
+    data-testid="lang-toggle"
+    role="group"
+    aria-label="Subscriber languages"
+  >
     <button
       v-for="lang in ALL_LANGS"
       :key="lang"
@@ -38,29 +43,45 @@ const onClick = (lang: Lang): void => {
 .lang-toggle {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: var(--spacing-xs);
 }
 
 .pill {
-  font-size: 0.6875rem;
-  letter-spacing: 0.05em;
-  font-weight: 700;
-  padding: 0.1rem 0.4rem;
+  min-width: 2.5rem;
+  min-height: 2rem;
+  padding: 0.35rem 0.6rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: transparent;
   color: var(--color-text-secondary);
-  cursor: pointer;
+  font: 700 0.8125rem/1 var(--font-sans);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.pill-on {
-  color: var(--color-accent);
-  border-color: var(--color-accent);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .pill:disabled {
   cursor: not-allowed;
   opacity: 50%;
+}
+
+.pill:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.pill:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-secondary);
+}
+
+.pill-on {
+  background: var(--color-accent);
+  color: var(--color-background);
+  border-color: var(--color-accent);
 }
 </style>

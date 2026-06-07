@@ -17,6 +17,15 @@ export const config: Config = {
     'src/views/SettingsView/InviteDialog.vue',
     'src/views/SettingsView/MemberRow.vue',
     'src/views/SettingsView/MembersSection.vue',
+    'src/views/CommsView/SubscribersTable.vue',
+    'src/views/CommsView/SubscriberRow.vue',
+    'src/views/CommsView/RunHistoryList.vue',
+    'src/views/CommsView/RunHistoryRow.vue',
+    'src/views/CommsView/AddSubscriberForm.vue',
+    'src/views/CommsView/TimezoneSelect.vue',
+    'src/views/CommsView/ScheduleEditor.vue',
+    'src/views/CommsView/CommsView.vue',
+    'src/views/CommsView/CommsSection.vue',
   ],
 } as const
 
