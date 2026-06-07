@@ -4,16 +4,14 @@ import type {
   ScheduleWithNext,
 } from '@/validation/schemas/schedule'
 import { ScheduleWithNextSchema } from '@/validation/schemas/schedule'
-import { commsUrl, jsonHeaders } from './comms-http'
+import { commsFetch, jsonHeaders } from './comms-http'
 
 /**
  * GET /api/schedule — return the saved schedule with computed `nextRunAt`.
  * @returns Parsed schedule payload.
  */
 export const apiGetSchedule = async (): Promise<ScheduleWithNext> => {
-  const res = await fetch(commsUrl('/api/schedule'), {
-    credentials: 'include',
-  })
+  const res = await commsFetch('/api/schedule')
   return decodeResponse(ScheduleWithNextSchema)(res)
 }
 
@@ -26,9 +24,8 @@ export const apiGetSchedule = async (): Promise<ScheduleWithNext> => {
 export const apiPutSchedule = async (
   schedule: Schedule
 ): Promise<ScheduleWithNext> => {
-  const res = await fetch(commsUrl('/api/schedule'), {
+  const res = await commsFetch('/api/schedule', {
     method: 'PUT',
-    credentials: 'include',
     headers: jsonHeaders(),
     body: JSON.stringify(schedule),
   })

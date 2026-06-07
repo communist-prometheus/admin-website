@@ -8,16 +8,14 @@ import {
   SubscriberSchema,
   SubscribersListSchema,
 } from '@/validation/schemas/subscriber'
-import { commsUrl, ensureOk, jsonHeaders } from './comms-http'
+import { commsFetch, ensureOk, jsonHeaders } from './comms-http'
 
 /**
  * GET /api/subscribers — list every subscriber row, regardless of status.
  * @returns Parsed list payload.
  */
 export const apiListSubscribers = async (): Promise<SubscribersList> => {
-  const res = await fetch(commsUrl('/api/subscribers'), {
-    credentials: 'include',
-  })
+  const res = await commsFetch('/api/subscribers')
   return decodeResponse(SubscribersListSchema)(res)
 }
 
@@ -31,9 +29,8 @@ export const apiAddSubscriber = async (
   email: string,
   langs: ReadonlyArray<Lang>
 ): Promise<Subscriber> => {
-  const res = await fetch(commsUrl('/api/subscribers'), {
+  const res = await commsFetch('/api/subscribers', {
     method: 'POST',
-    credentials: 'include',
     headers: jsonHeaders(),
     body: JSON.stringify({ email, langs }),
   })
@@ -50,9 +47,8 @@ export const apiUpdateLangs = async (
   id: number,
   langs: ReadonlyArray<Lang>
 ): Promise<Subscriber> => {
-  const res = await fetch(commsUrl(`/api/subscribers/${id}`), {
+  const res = await commsFetch(`/api/subscribers/${id}`, {
     method: 'PATCH',
-    credentials: 'include',
     headers: jsonHeaders(),
     body: JSON.stringify({ langs }),
   })
@@ -66,10 +62,7 @@ export const apiUpdateLangs = async (
  */
 export const apiRemoveSubscriber = async (id: number): Promise<void> => {
   ensureOk(
-    await fetch(commsUrl(`/api/subscribers/${id}`), {
-      method: 'DELETE',
-      credentials: 'include',
-    }),
+    await commsFetch(`/api/subscribers/${id}`, { method: 'DELETE' }),
     'Delete'
   )
 }
