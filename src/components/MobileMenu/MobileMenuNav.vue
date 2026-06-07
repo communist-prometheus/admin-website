@@ -12,9 +12,8 @@ const emit = defineEmits<{
 
 const auth = useAuthStore()
 const roleStore = useRoleStore()
-const isOwner = computed(() => auth.ssoRoles.includes('owner'))
 const items = computed(() =>
-  visibleItems(!!auth.user, roleStore.role, isOwner.value)
+  visibleItems(!!auth.user, roleStore.role, auth.ssoRoles)
 )
 </script>
 

@@ -1,46 +1,30 @@
 import { getAuthBase } from '@/config/auth-session'
 import { useAuthStore } from '@/stores/auth'
+import { readPayload, type SessionPayload } from './session-payload'
 
-/** Shape of the auth-worker `/auth/session` response. */
-export type SessionPayload = {
-  readonly login: string
-  readonly roles: ReadonlyArray<string>
-  readonly expires: number
-}
+export type { SessionPayload } from './session-payload'
 
-const isObject = (x: unknown): x is Record<string, unknown> =>
-  x !== null && typeof x === 'object'
-
-const isStringArray = (x: unknown): x is ReadonlyArray<string> =>
-  Array.isArray(x) && x.every(item => typeof item === 'string')
-
-const isSessionPayload = (value: unknown): value is SessionPayload =>
-  isObject(value) &&
-  typeof value['login'] === 'string' &&
-  isStringArray(value['roles']) &&
-  typeof value['expires'] === 'number'
-
-const readPayload = async (
-  res: Response
-): Promise<SessionPayload | undefined> => {
-  const body: unknown = await res.json().catch(() => undefined)
-  return isSessionPayload(body) ? body : undefined
-}
-
-const writeRolesToStore = (payload: SessionPayload | undefined): void => {
+const safeSetSsoRoles = (roles: readonly string[]): void => {
   try {
-    useAuthStore().setSsoRoles(payload?.roles ?? [])
+    useAuthStore().setSsoRoles(roles)
   } catch {
-    // Pinia not ready (early-boot edge); store will sync on next call.
+    // Pinia not ready (early-boot edge); store will sync next call.
   }
 }
+
+// Only write on a confirmed-success response. A failed mint (network
+// hiccup, 5xx, 4xx from auth-worker, expired gh_token) must NOT
+// clobber the previously-persisted roles — that was hiding the Comms
+// entry from real owners. Successful responses always carry roles.
+const writeRolesToStore = (payload: SessionPayload | undefined): void =>
+  payload === undefined ? undefined : safeSetSsoRoles(payload.roles)
 
 /**
  * Trade a fresh GitHub OAuth token for an SSO session cookie scoped
  * to `.comprom.org`. The cookie itself is HttpOnly and not visible
- * here; the returned payload is the same data, suitable for
- * driving RBAC UI without touching the cookie. Also pushes `roles`
- * into the auth store so nav / route guards can react.
+ * here; the returned payload is the same data, suitable for driving
+ * RBAC UI without touching the cookie. On success, also pushes
+ * `roles` into the auth store so nav / route guards can react.
  *
  * Returns undefined when the auth-worker rejects the token (401/403)
  * or the response shape is unexpected. Never throws on auth-worker

@@ -7,8 +7,7 @@ import { getNavForRole } from './nav-by-role'
 
 const roleStore = useRoleStore()
 const auth = useAuthStore()
-const isOwner = computed(() => auth.ssoRoles.includes('owner'))
-const navItems = computed(() => getNavForRole(roleStore.role, isOwner.value))
+const navItems = computed(() => getNavForRole(roleStore.role, auth.ssoRoles))
 </script>
 
 <template>

@@ -27,17 +27,21 @@ const ORDER: Record<Role, number> = {
 const passesRole = (entry: NavEntry, role: Role | undefined): boolean =>
   !entry.minRole || (!!role && ORDER[role] >= ORDER[entry.minRole])
 
-const passesOwner = (entry: NavEntry, isOwner: boolean): boolean =>
-  !entry.ownerOnly || isOwner
+// Owner-only entries pass when the visitor is a known owner OR the
+// owner check is still unknown (empty `roles` = mint hasn't returned
+// yet, or returned a transient error). Only a positive non-owner
+// result hides the entry.
+const passesOwner = (entry: NavEntry, ssoRoles: readonly string[]): boolean =>
+  !entry.ownerOnly || ssoRoles.length === 0 || ssoRoles.includes('owner')
 
 /**
- * Filter nav items by app-role + SSO owner flag.
+ * Filter nav items by app-role + SSO owner state.
  * @param role - Current user role (undefined = show all role-gated entries)
- * @param isOwner - Whether the current SSO session carries the owner claim
+ * @param ssoRoles - Current SSO roles array from the auth store
  * @returns Visible nav items
  */
 export const getNavForRole = (
   role: Role | undefined,
-  isOwner: boolean
+  ssoRoles: readonly string[]
 ): readonly NavEntry[] =>
-  ALL_NAV.filter(n => passesRole(n, role) && passesOwner(n, isOwner))
+  ALL_NAV.filter(n => passesRole(n, role) && passesOwner(n, ssoRoles))
