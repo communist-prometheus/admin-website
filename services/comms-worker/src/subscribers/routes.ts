@@ -7,7 +7,7 @@ type Resolve = (c: Context) => SubscriberRepo
 
 /**
  * Mount the subscriber CRUD endpoints on the given Hono app.
- * @param app Hono app, already wrapped with `requireAccess` for /api/*.
+ * @param app Hono app, already wrapped with `requireSession` for /api/*.
  * @param resolve Builds the repo for the current request from its context.
  * @returns The same app for chaining.
  */

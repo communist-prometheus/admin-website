@@ -7,7 +7,7 @@ type Resolve = (c: Context) => SettingsRepo
 
 /**
  * Mount the schedule endpoints on the given Hono app.
- * @param app Hono app, already wrapped with `requireAccess` for /api/*.
+ * @param app Hono app, already wrapped with `requireSession` for /api/*.
  * @param resolve Builds the settings repo for the current request.
  * @param now Clock used to compute the `nextRunAt` field on the response.
  * @returns The same app for chaining.

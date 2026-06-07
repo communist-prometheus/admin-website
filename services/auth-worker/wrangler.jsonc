@@ -1,0 +1,24 @@
+{
+  "name": "auth-worker",
+  "compatibility_date": "2026-06-01",
+  "main": "src/index.ts",
+  // Custom domain so the cookie's Domain=.comprom.org actually reaches
+  // the SPA on admin.comprom.org and the resource workers on
+  // lists.comprom.org, etc. (See docs/architecture/sso.md §5/§7.)
+  "routes": [{ "pattern": "auth.comprom.org", "custom_domain": true }],
+  // Secrets (wrangler secret put):
+  // - JWT_SECRET — HS256 secret shared with every *.comprom.org worker
+  "vars": {
+    "VERSION": "0.1.0",
+    "GITHUB_ORG": "communist-prometheus",
+    "GITHUB_ADMIN_TEAM": "admins",
+    "ALLOWED_ORIGIN": "https://admin.comprom.org",
+    "COOKIE_DOMAIN": ".comprom.org"
+  },
+  "env": {
+    "develop": {
+      "name": "auth-worker-develop",
+      "routes": [{ "pattern": "dev-auth.comprom.org", "custom_domain": true }]
+    }
+  }
+}

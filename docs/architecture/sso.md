@@ -1,12 +1,14 @@
 # SSO across `*.comprom.org` — design + migration plan
 
-> **Status:** approved, not yet implemented.
+> **Status:** SHIPPED (2026-06-07).
 > **Branch:** `feat/sso-parent-domain-cookie`.
 > **Replaces:** the per-service CF Access setup standing in front of
-> `comms-worker` (apps `comms-admin`, `comms-public`, `comms-webhooks`).
+> `comms-worker` (apps `comms-admin`, `comms-public`,
+> `comms-webhooks` — all deleted in the same commit).
 
-A fresh Claude Code session should be able to pick this up cold from
-this single file. Conversation context is not needed.
+This doc started as a plan for a fresh session. The plan was
+implemented in one go and the file now documents the live
+architecture.
 
 ---
 

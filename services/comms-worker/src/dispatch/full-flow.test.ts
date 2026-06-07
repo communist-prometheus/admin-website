@@ -1,18 +1,19 @@
 import type { D1Database } from '@cloudflare/workers-types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '../app'
-import type { AccessClaims } from '../auth/cf-access'
+import type { SessionClaims } from '../auth/session-types'
 import type { Bindings } from '../bindings'
 import { makeTestD1 } from '../subscribers/test-d1'
 import { signWebhookHeader } from '../webhooks/svix'
 
-const CLAIMS: AccessClaims = {
-  aud: 'a',
-  iss: 'https://comprom.cloudflareaccess.com',
-  email: 'admin@comprom.org',
-  sub: 'github|undeadliner',
-  exp: 9_999_999_999,
+const CLAIMS: SessionClaims = {
+  sub: 'undeadliner',
+  login: 'undeadliner',
+  teams: ['admins'],
   iat: 1,
+  exp: 9_999_999_999,
+  aud: 'comprom-sso',
+  iss: 'auth.comprom.org',
 }
 
 const RSS_BODY = (lang: string) => `<?xml version="1.0"?>
@@ -61,8 +62,9 @@ const stubFetch: typeof fetch = async (input, init) => {
 const env = (): Bindings =>
   ({
     DB: db,
-    CF_ACCESS_AUD: 'a',
-    CF_ACCESS_TEAM: 'comprom',
+    JWT_SECRET: 'unused-in-tests',
+    REQUIRED_TEAM: 'admins',
+    ALLOWED_ORIGIN: 'https://admin.test',
     RESEND_API_KEY: 'rk_test',
     UNSUBSCRIBE_SECRET: 'shhh-1234567890abcdef',
     RESEND_WEBHOOK_SECRET: SVIX_SECRET,
@@ -72,7 +74,7 @@ const env = (): Bindings =>
   }) as Bindings
 
 const accessHeaders = {
-  'Cf-Access-Jwt-Assertion': 'tok',
+  Cookie: 'comprom_session=tok',
   'Content-Type': 'application/json',
 }
 
@@ -90,7 +92,7 @@ const publicFetch = (path: string, init: RequestInit = {}) =>
 
 beforeEach(() => {
   db = makeTestD1()
-  app = createApp({ accessVerifier: async () => CLAIMS })
+  app = createApp({ sessionVerifier: async () => CLAIMS })
   resendCalls = []
   resendIdCounter = 0
   vi.stubGlobal('fetch', stubFetch)

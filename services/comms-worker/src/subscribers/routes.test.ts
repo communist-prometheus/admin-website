@@ -1,22 +1,23 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { AccessClaims } from '../auth/cf-access'
-import { requireAccess } from '../middleware/require-access'
+import type { SessionClaims } from '../auth/session-types'
+import { requireSession } from '../middleware/require-session'
 import { createRepo } from './repo'
 import { mountSubscriberRoutes } from './routes'
 import { makeTestD1 } from './test-d1'
 import type { Subscriber } from './types'
 
-const claims: AccessClaims = {
-  aud: 'a',
-  iss: 'https://comprom.cloudflareaccess.com',
-  email: 'admin@comprom.org',
-  sub: 'github|undeadliner',
-  exp: 9_999_999_999,
+const claims: SessionClaims = {
+  sub: 'undeadliner',
+  login: 'undeadliner',
+  teams: ['admins'],
   iat: 1,
+  exp: 9_999_999_999,
+  aud: 'comprom-sso',
+  iss: 'auth.comprom.org',
 }
 
-const env = { CF_ACCESS_AUD: 'a', CF_ACCESS_TEAM: 'comprom' }
+const env = { JWT_SECRET: 'unused-in-tests', REQUIRED_TEAM: 'admins' }
 
 const build = () => {
   const repo = createRepo({
@@ -25,9 +26,9 @@ const build = () => {
   })
   const app = new Hono<{
     Bindings: typeof env
-    Variables: { readonly access: AccessClaims }
+    Variables: { readonly session: SessionClaims }
   }>()
-  app.use('/api/*', requireAccess({ verifier: async () => claims }))
+  app.use('/api/*', requireSession({ verifier: async () => claims }))
   mountSubscriberRoutes(app, () => repo)
   return { app, repo }
 }
@@ -37,7 +38,7 @@ const reqJson = (path: string, init: RequestInit = {}) =>
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      'Cf-Access-Jwt-Assertion': 'tok',
+      Cookie: 'comprom_session=tok',
       ...init.headers,
     },
   })
@@ -52,7 +53,7 @@ beforeEach(() => {
 })
 
 describe('POST /api/subscribers', () => {
-  it('rejects when the access header is missing', async () => {
+  it('rejects when the session cookie is missing', async () => {
     const res = await app.fetch(
       new Request('http://x/api/subscribers', { method: 'POST' }),
       env

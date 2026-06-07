@@ -1,4 +1,5 @@
 import { fetchGitHubUser } from '@/composables/useAuth/fetch-github-user'
+import { mintSession } from '@/composables/useAuth/mint-session'
 import { saveToken } from '@/composables/useAuth/token-storage'
 import type { User } from '@/types/user'
 import { decodeOrUndefined } from '@/validation/decode'
@@ -39,6 +40,9 @@ const handleToken = async (
 ): Promise<void> => {
   try {
     saveToken(token)
+    // Mint the parent-domain SSO cookie alongside the GH token.
+    // Fire-and-forget — see AuthCallbackView.vue for the rationale.
+    void mintSession(token)
     const user = await fetchGitHubUser(token)
     onSuccess(user)
   } catch {
