@@ -87,4 +87,40 @@ const emit = defineEmits<{
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
 }
+
+@media (width < 640px) {
+  .subscriber-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'email actions'
+      'langs langs'
+      'status status';
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) 0;
+  }
+
+  .subscriber-row td {
+    padding: 0;
+  }
+
+  .subscriber-row .email {
+    grid-area: email;
+    font-size: 0.9375rem;
+    word-break: break-all;
+  }
+
+  .subscriber-row .actions {
+    grid-area: actions;
+    align-self: start;
+  }
+
+  .subscriber-row td:nth-child(2) {
+    grid-area: langs;
+  }
+
+  .subscriber-row td:nth-child(3) {
+    grid-area: status;
+  }
+}
 </style>

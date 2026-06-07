@@ -1,10 +1,20 @@
 import { defineStore } from 'pinia'
+import type { Ref } from 'vue'
 import { ref, watch } from 'vue'
 import { loadToken } from '@/composables/useAuth/token-storage'
 import type { User } from '@/types/user'
 import { createLogout, createSetUser } from './auth-actions'
 import { createCheckAuth } from './auth-check'
 import { syncTokenToSW } from './auth-sync-sw'
+
+const buildSsoActions = (ssoRoles: Ref<readonly string[]>) => ({
+  setSsoRoles: (roles: readonly string[]): void => {
+    ssoRoles.value = roles
+  },
+  clearSsoRoles: (): void => {
+    ssoRoles.value = []
+  },
+})
 
 /**
  * Pinia store for authentication state management.
@@ -15,19 +25,23 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(!!loadToken())
   const error = ref<string | null>(null)
+  const ssoRoles = ref<readonly string[]>([])
 
   watch(user, syncTokenToSW, { immediate: true })
 
   const logout = createLogout(user, loading)
   const checkAuth = createCheckAuth(user, loading, logout)
   const setUser = createSetUser(user)
+  const ssoActions = buildSsoActions(ssoRoles)
 
   return {
     user,
     loading,
     error,
+    ssoRoles,
     checkAuth,
     setUser,
     logout,
+    ...ssoActions,
   }
 })

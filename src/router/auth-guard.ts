@@ -1,5 +1,6 @@
 import type { Router } from 'vue-router'
 import { loadToken } from '@/composables/useAuth/token-storage'
+import { useAuthStore } from '@/stores/auth'
 
 const REDIRECT_KEY = 'auth_redirect'
 
@@ -21,16 +22,29 @@ export const loadRedirect = (): string | undefined => {
   return path
 }
 
+const isOwner = (): boolean => {
+  try {
+    return useAuthStore().ssoRoles.includes('owner')
+  } catch {
+    return false
+  }
+}
+
 /**
  * Install navigation guard that protects auth routes.
- * Redirects to / with saved intended path.
+ * Redirects unauthenticated visitors to / with the intended path
+ * saved for post-login restore. Routes flagged `requiresOwner` are
+ * additionally gated on the SSO `owner` role — non-owners get a
+ * silent redirect to / instead of an in-page 401.
  * @param router - Vue Router instance
  */
 export const installAuthGuard = (router: Router): void => {
   router.beforeEach(to => {
     if (!to.meta.requiresAuth) return true
-    if (loadToken()) return true
-    saveRedirect(to.fullPath)
-    return { name: 'home' }
+    if (!loadToken()) {
+      saveRedirect(to.fullPath)
+      return { name: 'home' }
+    }
+    return to.meta.requiresOwner && !isOwner() ? { name: 'home' } : true
   })
 }

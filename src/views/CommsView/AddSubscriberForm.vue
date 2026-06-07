@@ -92,6 +92,17 @@ const submit = async (): Promise<void> => {
   align-items: end;
 }
 
+@media (width < 640px) {
+  .add-form {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .add-form .submit {
+    justify-content: center;
+  }
+}
+
 .field {
   display: grid;
   gap: 0.25rem;
