@@ -1,30 +1,31 @@
 import type { D1Database } from '@cloudflare/workers-types'
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { AccessClaims } from '../auth/cf-access'
-import { requireAccess } from '../middleware/require-access'
+import type { SessionClaims } from '../auth/session-types'
+import { requireSession } from '../middleware/require-session'
 import { createRepo, type SubscriberRepo } from '../subscribers/repo'
 import { makeTestD1 } from '../subscribers/test-d1'
 import { createSendLogRepo, type SendLogRepo } from './repo'
 import { mountRunsRoute } from './route'
 
-const claims: AccessClaims = {
-  aud: 'a',
-  iss: 'https://comprom.cloudflareaccess.com',
-  email: 'admin@comprom.org',
-  sub: 'github|undeadliner',
-  exp: 9_999_999_999,
+const claims: SessionClaims = {
+  sub: 'undeadliner',
+  login: 'undeadliner',
+  teams: ['admins'],
   iat: 1,
+  exp: 9_999_999_999,
+  aud: 'comprom-sso',
+  iss: 'auth.comprom.org',
 }
 
-const env = { CF_ACCESS_AUD: 'a', CF_ACCESS_TEAM: 'comprom' }
+const env = { JWT_SECRET: 'unused-in-tests', REQUIRED_TEAM: 'admins' }
 
 let db: D1Database
 let subs: SubscriberRepo
 let log: SendLogRepo
 let app: Hono<{
   Bindings: typeof env & { DB: D1Database }
-  Variables: { readonly access: AccessClaims }
+  Variables: { readonly session: SessionClaims }
 }>
 
 const buildEnv = () => ({ ...env, DB: db })
@@ -54,19 +55,19 @@ beforeEach(() => {
   log = createSendLogRepo({ db })
   app = new Hono<{
     Bindings: typeof env & { DB: D1Database }
-    Variables: { readonly access: AccessClaims }
+    Variables: { readonly session: SessionClaims }
   }>()
-  app.use('/api/*', requireAccess({ verifier: async () => claims }))
+  app.use('/api/*', requireSession({ verifier: async () => claims }))
   mountRunsRoute(app)
 })
 
 const reqWithAccess = (path: string) =>
   new Request(`http://x${path}`, {
-    headers: { 'Cf-Access-Jwt-Assertion': 'tok' },
+    headers: { Cookie: 'comprom_session=tok' },
   })
 
 describe('GET /api/runs', () => {
-  it('rejects without the CF Access header', async () => {
+  it('rejects without the session cookie', async () => {
     const res = await app.fetch(new Request('http://x/api/runs'), buildEnv())
     expect(res.status).toBe(401)
   })

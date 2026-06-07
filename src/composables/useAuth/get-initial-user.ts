@@ -1,6 +1,7 @@
 import { Effect, Option, pipe } from 'effect'
 import type { User } from '@/types/user'
 import { fetchGitHubUser } from './fetch-github-user'
+import { mintSession } from './mint-session'
 import { getMockUser } from './mock-user'
 import { saveProfile } from './profile-cache'
 import { loadToken, saveToken } from './token-storage'
@@ -24,13 +25,18 @@ const isMockAuth = () => import.meta.env.VITE_MOCK_AUTH === 'true'
 const fetchAndCache = (token: string) =>
   Effect.tryPromise(() => fetchGitHubUser(token)).pipe(
     Effect.tap(u =>
-      Effect.sync(() =>
+      Effect.sync(() => {
         saveProfile({
           username: u.username,
           name: u.name,
           avatar: u.avatar,
         })
-      )
+        // Returning visitor with a persisted gh_token: refresh the
+        // *.comprom.org SSO cookie in case it was never minted or
+        // has since expired. Fire-and-forget — failure here just
+        // delays the next cookie-gated worker call by one 401-retry.
+        void mintSession(token)
+      })
     )
   )
 

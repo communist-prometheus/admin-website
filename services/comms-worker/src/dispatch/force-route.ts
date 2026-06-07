@@ -28,10 +28,10 @@ const buildHandler =
   }
 
 /**
- * Mount `POST /api/dispatch` — a CF Access-protected manual tick
- * trigger gated by `BYPASS_SCHEDULE=1` + `?force=1`. Existing in
- * prod (where `BYPASS_SCHEDULE` is unset) but always 404s.
- * @param app Hono app, already wrapped with `requireAccess`.
+ * Mount `POST /api/dispatch` — a session-gated manual tick
+ * trigger guarded by `BYPASS_SCHEDULE=1` + `?force=1`. Exists in
+ * prod (where `BYPASS_SCHEDULE` is unset) but always 404s there.
+ * @param app Hono app, already wrapped with `requireSession`.
  * @param opts Optional dispatcher seam for unit tests.
  * @returns The same app for chaining.
  */

@@ -1,29 +1,32 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AccessClaims } from '../auth/cf-access'
-import { requireAccess } from '../middleware/require-access'
+import type { SessionClaims } from '../auth/session-types'
+import { requireSession } from '../middleware/require-session'
 import { makeTestD1 } from '../subscribers/test-d1'
 import { mountForceDispatchRoute } from './force-route'
 import type { DispatchEnv } from './runtime-env'
 
-const claims: AccessClaims = {
-  aud: 'a',
-  iss: 'https://comprom.cloudflareaccess.com',
-  email: 'admin@comprom.org',
-  sub: 'github|undeadliner',
-  exp: 9_999_999_999,
+const claims: SessionClaims = {
+  sub: 'undeadliner',
+  login: 'undeadliner',
+  teams: ['admins'],
   iat: 1,
+  exp: 9_999_999_999,
+  aud: 'comprom-sso',
+  iss: 'auth.comprom.org',
 }
+
+type SessionEnv = { JWT_SECRET: string; REQUIRED_TEAM: string }
 
 let env: DispatchEnv
 let dispatcher: ReturnType<typeof vi.fn>
 
 const build = () => {
   const app = new Hono<{
-    Bindings: DispatchEnv & { CF_ACCESS_AUD: string; CF_ACCESS_TEAM: string }
-    Variables: { readonly access: AccessClaims }
+    Bindings: DispatchEnv & SessionEnv
+    Variables: { readonly session: SessionClaims }
   }>()
-  app.use('/api/*', requireAccess({ verifier: async () => claims }))
+  app.use('/api/*', requireSession({ verifier: async () => claims }))
   mountForceDispatchRoute(app, { dispatcher })
   return app
 }
@@ -31,7 +34,7 @@ const build = () => {
 const reqWithAccess = (path: string) =>
   new Request(`http://x${path}`, {
     method: 'POST',
-    headers: { 'Cf-Access-Jwt-Assertion': 'tok' },
+    headers: { Cookie: 'comprom_session=tok' },
   })
 
 beforeEach(() => {
@@ -42,13 +45,13 @@ beforeEach(() => {
     DB: makeTestD1(),
     RESEND_API_KEY: 'rk_test',
     UNSUBSCRIBE_SECRET: 'shhh',
-    CF_ACCESS_AUD: 'a',
-    CF_ACCESS_TEAM: 'comprom',
-  } as DispatchEnv & { CF_ACCESS_AUD: string; CF_ACCESS_TEAM: string }
+    JWT_SECRET: 'unused-in-tests',
+    REQUIRED_TEAM: 'admins',
+  } as DispatchEnv & SessionEnv
 })
 
 describe('POST /api/dispatch — auth gating', () => {
-  it('returns 401 without the CF Access header', async () => {
+  it('returns 401 without the session cookie', async () => {
     const res = await build().fetch(
       new Request('http://x/api/dispatch?force=1', { method: 'POST' }),
       env

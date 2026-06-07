@@ -25,7 +25,7 @@ void runs.ensureLoaded()        // GET /api/runs
 The `void` makes them fire-and-forget — so they run concurrently in
 JS but the network still serialises them through the browser's
 HTTP/2 connection (with `credentials: 'include'` they all need
-the same CF Access cookie roundtrip).
+the same `comprom_session` cookie roundtrip).
 
 **Fix:** they already fire in parallel by virtue of being three
 separate microtasks. Confirm the worker bursts back 3 responses

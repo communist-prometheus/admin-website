@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { exchangeCodeForToken } from '@/composables/useAuth/exchange-token'
 import { fetchGitHubUser } from '@/composables/useAuth/fetch-github-user'
+import { mintSession } from '@/composables/useAuth/mint-session'
 import { loadAndClearVerifier } from '@/composables/useAuth/pkce-storage'
 import { saveToken } from '@/composables/useAuth/token-storage'
 import { loadRedirect } from '@/router/auth-guard'
@@ -46,6 +47,13 @@ onMounted(async () => {
 
     const token = await exchangeCodeForToken(code, verifier)
     saveToken(token)
+    // Mint the parent-domain SSO cookie so subsequent calls to
+    // *.comprom.org workers (lists.*, future ones) carry auth via
+    // the cookie automatically. Fire-and-forget — if the user is
+    // not yet on the `admins` team, the SPA still loads (token-only
+    // GitHub calls keep working) but cookie-gated workers will 401
+    // until membership is granted.
+    void mintSession(token)
 
     if (globalThis.opener) {
       notifyOpener(token)

@@ -23,9 +23,9 @@ const handle = async (c: Context): Promise<Response> => {
 /**
  * Mount `GET /api/runs?limit=N` — returns the `N` most-recent
  * send_log rows joined with the subscriber email (R5.1). The route
- * sits behind the `/api/*` `requireAccess` middleware mounted in
- * `index.ts`, so callers must present a valid CF Access JWT.
- * @param app Hono app, already wrapped with `requireAccess` for /api/*.
+ * sits behind the `/api/*` `requireSession` middleware mounted in
+ * `app.ts`, so callers must present a valid SSO session cookie.
+ * @param app Hono app, already wrapped with `requireSession` for /api/*.
  * @returns The same app for chaining.
  */
 export const mountRunsRoute = (app: App): App => {

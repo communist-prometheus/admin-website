@@ -54,7 +54,7 @@ const handlePost = async (c: Context): Promise<Response> => {
  * Mount the public unsubscribe surface: GET renders an HTML
  * confirmation in the visitor's preferred language, POST honours
  * the RFC-8058 one-click contract with a 200 empty body.
- * @param app Hono app instance (no CF Access middleware on this prefix).
+ * @param app Hono app instance (no session middleware on this prefix).
  * @returns The same app for chaining.
  */
 export const mountUnsubscribeRoutes = (app: App): App => {

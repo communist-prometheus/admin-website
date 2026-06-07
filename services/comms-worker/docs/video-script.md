@@ -142,7 +142,7 @@ possible).
 2. Run:
    ```bash
    curl -X POST "http://127.0.0.1:8787/api/dispatch?force=1" \
-        -H "Cf-Access-Jwt-Assertion: stub-jwt"
+        -H "Cookie: comprom_session=stub-jwt"
    ```
 3. Show the JSON response (`{"sent": 1, "failed": 0, ...}`).
 4. Switch back to the browser; scroll to **Run history**.
@@ -211,8 +211,9 @@ final slide with the user-guide URL.
 ## Recording tips
 
 - Hide bookmarks bar and notifications before each take.
-- Use a separate Chrome profile with `gh_token` cookie pre-set so
-  CF Access doesn't prompt mid-demo.
+- Use a separate Chrome profile with `gh_token` cookie pre-set and
+  the `comprom_session` cookie already minted so the SSO flow
+  doesn't prompt mid-demo.
 - Capture with the system clock visible — viewers like seeing the
   worker's structured logs roll in real-time.
 - If a take goes wrong, restart from the nearest scene boundary —

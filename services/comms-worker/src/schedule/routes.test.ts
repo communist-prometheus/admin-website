@@ -1,30 +1,31 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { AccessClaims } from '../auth/cf-access'
-import { requireAccess } from '../middleware/require-access'
+import type { SessionClaims } from '../auth/session-types'
+import { requireSession } from '../middleware/require-session'
 import { createSettingsRepo } from '../settings/repo'
 import { makeTestD1 } from '../subscribers/test-d1'
 import { mountScheduleRoutes } from './routes'
 
-const claims: AccessClaims = {
-  aud: 'a',
-  iss: 'https://comprom.cloudflareaccess.com',
-  email: 'admin@comprom.org',
-  sub: 'github|undeadliner',
-  exp: 9_999_999_999,
+const claims: SessionClaims = {
+  sub: 'undeadliner',
+  login: 'undeadliner',
+  teams: ['admins'],
   iat: 1,
+  exp: 9_999_999_999,
+  aud: 'comprom-sso',
+  iss: 'auth.comprom.org',
 }
 
-const env = { CF_ACCESS_AUD: 'a', CF_ACCESS_TEAM: 'comprom' }
+const env = { JWT_SECRET: 'unused-in-tests', REQUIRED_TEAM: 'admins' }
 const FROZEN = new Date('2026-06-01T00:00:00.000Z')
 
 const build = () => {
   const repo = createSettingsRepo({ db: makeTestD1() })
   const app = new Hono<{
     Bindings: typeof env
-    Variables: { readonly access: AccessClaims }
+    Variables: { readonly session: SessionClaims }
   }>()
-  app.use('/api/*', requireAccess({ verifier: async () => claims }))
+  app.use('/api/*', requireSession({ verifier: async () => claims }))
   mountScheduleRoutes(
     app,
     () => repo,
@@ -38,7 +39,7 @@ const reqJson = (path: string, init: RequestInit = {}) =>
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      'Cf-Access-Jwt-Assertion': 'tok',
+      Cookie: 'comprom_session=tok',
       ...init.headers,
     },
   })
@@ -50,7 +51,7 @@ beforeEach(() => {
 })
 
 describe('GET /api/schedule', () => {
-  it('rejects when the access header is missing', async () => {
+  it('rejects when the session cookie is missing', async () => {
     const res = await app.fetch(new Request('http://x/api/schedule'), env)
     expect(res.status).toBe(401)
   })
@@ -70,7 +71,7 @@ describe('GET /api/schedule', () => {
 })
 
 describe('PUT /api/schedule', () => {
-  it('rejects when the access header is missing', async () => {
+  it('rejects when the session cookie is missing', async () => {
     const res = await app.fetch(
       new Request('http://x/api/schedule', { method: 'PUT' }),
       env

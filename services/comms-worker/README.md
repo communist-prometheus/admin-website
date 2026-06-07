@@ -9,20 +9,25 @@ Ticket: [tickets#23](https://github.com/communist-prometheus/tickets/issues/23).
 
 ## Endpoints
 
-| Method | Path                  | Auth        | Purpose |
-|--------|-----------------------|-------------|---------|
-| GET    | `/health`             | none        | Liveness probe (Stage 0) |
-| GET    | `/api/subscribers`    | CF Access   | List (Stage 1) |
-| POST   | `/api/subscribers`    | CF Access   | Add (Stage 1) |
-| PATCH  | `/api/subscribers/:id`| CF Access   | Edit langs (Stage 1) |
-| DELETE | `/api/subscribers/:id`| CF Access   | Remove (Stage 1) |
-| GET    | `/api/schedule`       | CF Access   | Read cron pattern (Stage 2) |
-| PUT    | `/api/schedule`       | CF Access   | Save cron pattern (Stage 2) |
-| GET    | `/api/runs`           | CF Access   | Recent send_log rows (Stage 6) |
-| POST   | `/api/dispatch?force=1` | CF Access | Trigger a tick (dev/e2e only) |
-| GET    | `/unsubscribe?t=…`    | token       | Confirmation page (Stage 4) |
-| POST   | `/unsubscribe?t=…`    | token       | RFC 8058 one-click (Stage 4) |
-| POST   | `/webhooks/resend`    | svix sig    | Bounce / complaint events (Stage 5) |
+| Method | Path                  | Auth            | Purpose |
+|--------|-----------------------|-----------------|---------|
+| GET    | `/health`             | none            | Liveness probe (Stage 0) |
+| GET    | `/api/subscribers`    | SSO cookie      | List (Stage 1) |
+| POST   | `/api/subscribers`    | SSO cookie      | Add (Stage 1) |
+| PATCH  | `/api/subscribers/:id`| SSO cookie      | Edit langs (Stage 1) |
+| DELETE | `/api/subscribers/:id`| SSO cookie      | Remove (Stage 1) |
+| GET    | `/api/schedule`       | SSO cookie      | Read cron pattern (Stage 2) |
+| PUT    | `/api/schedule`       | SSO cookie      | Save cron pattern (Stage 2) |
+| GET    | `/api/runs`           | SSO cookie      | Recent send_log rows (Stage 6) |
+| POST   | `/api/dispatch?force=1` | SSO cookie    | Trigger a tick (dev/e2e only) |
+| GET    | `/unsubscribe?t=…`    | token           | Confirmation page (Stage 4) |
+| POST   | `/unsubscribe?t=…`    | token           | RFC 8058 one-click (Stage 4) |
+| POST   | `/webhooks/resend`    | svix sig        | Bounce / complaint events (Stage 5) |
+
+`SSO cookie` = `comprom_session` HttpOnly cookie issued by `auth.comprom.org`,
+verified via the same `JWT_SECRET` shared between the two workers. See
+[`docs/architecture/sso.md`](../../docs/architecture/sso.md) for the full
+flow and rationale (this replaces the original CF Access setup).
 
 Scheduled trigger: `0 * * * *` (UTC heartbeat). The worker reads the
 saved `settings.schedule` and decides per-tick whether to dispatch
@@ -30,47 +35,34 @@ saved `settings.schedule` and decides per-tick whether to dispatch
 
 ## One-time provisioning
 
-### GitHub team for CF Access
+### GitHub team — source of truth for "who is an admin"
 
-CF Access matches against a GitHub team — adding / removing admins in
-future is a single `gh` call, not a CF policy edit.
+The `auth-worker` SSO check requires active membership in this team;
+adding / removing admins in future is a single `gh` call.
 
 ```bash
-# Create the team (private/closed visibility).
+# Create the team (private/closed visibility) — already done.
 gh api orgs/communist-prometheus/teams \
   -X POST -f name=admins \
-  -f description='CF Access policy target for sensitive admin surfaces' \
+  -f description='Admin surface allowlist' \
   -f privacy=closed
 
-# Seed with current org owners (gh api orgs/communist-prometheus/members?role=admin).
-gh api orgs/communist-prometheus/teams/admins/memberships/Pyper6 \
-  -X PUT -f role=member
-gh api orgs/communist-prometheus/teams/admins/memberships/undeadliner \
-  -X PUT -f role=member
+# Seed.
+gh api orgs/communist-prometheus/teams/admins/memberships/undeadliner -X PUT
 
 # Verify.
 gh api orgs/communist-prometheus/teams/admins/members --jq '.[].login'
 ```
 
-### CF Access application
+### SSO (`auth.comprom.org`)
 
-1. Cloudflare Zero Trust → Settings → create team `comprom` (→ `comprom.cloudflareaccess.com`).
-2. Authentication → connect GitHub OAuth app, scope `read:org`.
-3. Access → Applications → Add a self-hosted application:
-   - Name: `comms-admin`
-   - Hostname: `lists.comprom.org`
-   - Path: `/api/*`
-4. Policy "editors":
-   - Action: Allow
-   - Include: Login method = GitHub **AND** GitHub team
-     `communist-prometheus/admins`
-5. Bypass policy "public surface":
-   - Action: Bypass
-   - Include: URL contains `/unsubscribe` OR `/webhooks/`
-6. Capture the application **Audience tag** → set as the
-   `CF_ACCESS_AUD` worker secret.
-7. Cookie domain: `comprom.org` (parent so admin.comprom.org's
-   existing browser session is reused).
+See [`docs/architecture/sso.md`](../../docs/architecture/sso.md). The
+short version: `auth-worker` mints an HttpOnly cookie scoped to
+`.comprom.org`; this worker reads it via `requireSession` middleware
+on `/api/*`. Both workers share the same `JWT_SECRET`.
+
+There is no Zero Trust / CF Access setup any more — the apps were
+deleted in the SSO migration commit.
 
 ### Resend account
 
@@ -102,11 +94,10 @@ Set via `bunx wrangler secret put <name>` from this directory:
 
 | Secret                  | Purpose |
 |-------------------------|---------|
+| `JWT_SECRET`            | HS256 SSO secret — MUST match auth-worker |
 | `RESEND_API_KEY`        | Resend transactional API auth |
 | `RESEND_WEBHOOK_SECRET` | Verify svix signatures on inbound Resend events |
 | `UNSUBSCRIBE_SECRET`    | HMAC secret for unsubscribe tokens (32 random bytes) |
-| `CF_ACCESS_AUD`         | CF Access Application Audience tag |
-| `CF_ACCESS_TEAM`        | CF Access team slug = `comprom` |
 
 ## Local dev
 
