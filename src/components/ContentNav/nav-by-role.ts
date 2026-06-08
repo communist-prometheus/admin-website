@@ -38,8 +38,14 @@ const ORDER: Record<Role, number> = {
   admin: 2,
 }
 
+// Role-gated entries pass when the entry has no minRole, OR when the
+// resolved role meets the bar, OR when the role is still unknown
+// (mock auth, role-fetch in flight, or transient SW error). Hiding
+// chrome before the role probe completes flickers the nav and breaks
+// any caller that depends on the link existing — mirror the
+// permissive default already in `usePermissions.canCreate`.
 const passesRole = (entry: NavEntry, role: Role | undefined): boolean =>
-  !entry.minRole || (!!role && ORDER[role] >= ORDER[entry.minRole])
+  !entry.minRole || !role || ORDER[role] >= ORDER[entry.minRole]
 
 // Owner-only entries pass when the visitor is a known owner OR the
 // owner check is still unknown (empty `roles` = mint hasn't returned

@@ -8,8 +8,12 @@ const ORDER: Record<Role, number> = {
   admin: 2,
 }
 
+// Role-gated items pass when the item has no minRole, OR when the
+// resolved role meets the bar, OR when the role is still unknown
+// (mock auth, role-fetch in flight, or transient SW error). Mirror
+// the permissive default in `nav-by-role.ts` + `usePermissions`.
 const passesRole = (item: NavItem, role: Role | undefined): boolean =>
-  !item.minRole || (!!role && ORDER[role] >= ORDER[item.minRole])
+  !item.minRole || !role || ORDER[role] >= ORDER[item.minRole]
 
 // Owner-only entries pass when the visitor is a known owner OR the
 // owner check is still unknown (empty `roles` = mint hasn't returned
