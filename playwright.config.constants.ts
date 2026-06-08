@@ -12,3 +12,11 @@ export const MOBILE_TEST_PATTERN = '**/mobile/**'
  * leaks into a fast-mode run.
  */
 export const THROTTLED_TEST_PATTERN = '**/throttled/**'
+
+/**
+ * The comms walkthrough recording is a long-running scripted scene
+ * (5 min budget, 350 ms slowMo) intended for `playwright.config.walkthrough.ts`,
+ * not the regular CI suite. Excluding it from the default config keeps
+ * it out of the 30 s default timeout sweep.
+ */
+export const WALKTHROUGH_TEST_PATTERN = '**/comms-walkthrough/**'

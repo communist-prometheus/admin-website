@@ -8,7 +8,7 @@ const auth = useAuthStore()
 </script>
 
 <template>
-  <nav class="app-nav">
+  <nav class="app-nav" data-testid="app-nav">
     <RouterLink
       to="/"
       :class="{ active: route.path === '/' }"

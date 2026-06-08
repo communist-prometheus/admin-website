@@ -56,7 +56,10 @@ test.describe('Content Section Switching', () => {
       .locator('[data-testid="content-item"]')
       .count()
 
-    await click(page, page.locator('a[href="/content/positions"]'))
+    await click(
+      page,
+      page.getByTestId('app-nav').locator('a[href="/content/positions"]')
+    )
     await waitForCondition(page, async () =>
       page.url().includes('/content/positions')
     )
@@ -71,7 +74,10 @@ test.describe('Content Section Switching', () => {
     await visit(page, '/content/positions')
     await waitForContentReady(page)
 
-    await click(page, page.locator('a[href="/content/pages"]'))
+    await click(
+      page,
+      page.getByTestId('app-nav').locator('a[href="/content/pages"]')
+    )
     await waitForCondition(page, async () =>
       page.url().includes('/content/pages')
     )

@@ -43,7 +43,16 @@ test.describe('GitHub Content - List', () => {
   })
 
   test('should navigate between content types', async ({ page }) => {
-    await click(page, page.locator('a[href="/content/pages"]'))
+    /*
+     * Scope to the desktop content-nav: with the role-gating fix
+     * landing in PR #271, role-gated links now also render in the
+     * mobile-menu surface, so a bare `a[href]` selector matches
+     * twice and trips strict mode.
+     */
+    await click(
+      page,
+      page.getByTestId('app-nav').locator('a[href="/content/pages"]')
+    )
     await waitForCondition(page, async () =>
       page.url().includes('/content/pages')
     )

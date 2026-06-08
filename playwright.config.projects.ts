@@ -4,6 +4,7 @@ import {
   LIGHTHOUSE_TEST_PATTERN,
   MOBILE_TEST_PATTERN,
   THROTTLED_TEST_PATTERN,
+  WALKTHROUGH_TEST_PATTERN,
 } from './playwright.config.constants'
 import { lighthouseProjects } from './playwright.config.lighthouse'
 import { throttledCritical } from './playwright.config.throttled'
@@ -14,6 +15,7 @@ const desktopIgnore = [
   LIGHTHOUSE_TEST_PATTERN,
   MOBILE_TEST_PATTERN,
   THROTTLED_TEST_PATTERN,
+  WALKTHROUGH_TEST_PATTERN,
 ]
 
 /**
