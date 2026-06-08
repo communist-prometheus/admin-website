@@ -2,7 +2,10 @@ import type { Role } from '@/types/role'
 
 interface NavEntry {
   readonly path: string
+  /** Hardcoded label (used when no `labelKey` is present). */
   readonly label: string
+  /** Dotted i18n key — when present, resolved via `t()` at render. */
+  readonly labelKey?: string
   readonly minRole?: Role
   readonly ownerOnly?: boolean
 }
@@ -14,7 +17,12 @@ const ALL_NAV: readonly NavEntry[] = [
   { path: '/content/common', label: 'Common', minRole: 'admin' },
   { path: '/content/newspaper', label: 'Newspaper' },
   { path: '/tickets', label: 'Tickets' },
-  { path: '/comms', label: 'Рассылка', ownerOnly: true },
+  {
+    path: '/comms',
+    label: 'Newsletter',
+    labelKey: 'nav.comms',
+    ownerOnly: true,
+  },
   { path: '/settings', label: 'Settings', minRole: 'admin' },
 ]
 

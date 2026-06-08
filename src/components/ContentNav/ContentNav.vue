@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { t } from '@/i18n/t'
 import { useAuthStore } from '@/stores/auth'
 import { useRoleStore } from '@/stores/role'
 import { getNavForRole } from './nav-by-role'
@@ -8,6 +9,8 @@ import { getNavForRole } from './nav-by-role'
 const roleStore = useRoleStore()
 const auth = useAuthStore()
 const navItems = computed(() => getNavForRole(roleStore.role, auth.ssoRoles))
+const labelFor = (item: { label: string; labelKey?: string }): string =>
+  item.labelKey === undefined ? item.label : t(item.labelKey)
 </script>
 
 <template>
@@ -18,7 +21,7 @@ const navItems = computed(() => getNavForRole(roleStore.role, auth.ssoRoles))
       :to="item.path"
       class="nav-link"
     >
-      {{ item.label }}
+      {{ labelFor(item) }}
     </RouterLink>
   </nav>
 </template>
