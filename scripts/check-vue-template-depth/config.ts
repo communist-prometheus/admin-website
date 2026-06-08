@@ -28,6 +28,7 @@ export const config: Config = {
     'src/views/CommsView/CommsSection.vue',
     'src/views/CommsView/ForceDispatchPanel.vue',
     'src/views/CommsView/CutoffEditor.vue',
+    'src/views/FeaturesView/FeaturesView.vue',
   ],
 } as const
 

@@ -1,4 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
+import { ownerRoutes } from './owner-routes'
 
 /** Routes outside the content management section. */
 export const nonContentRoutes: RouteRecordRaw[] = [
@@ -20,12 +21,7 @@ export const nonContentRoutes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
     component: () => import('../views/SettingsView/SettingsView.vue'),
   },
-  {
-    path: '/comms',
-    name: 'comms',
-    meta: { requiresAuth: true, requiresOwner: true },
-    component: () => import('../views/CommsView/CommsView.vue'),
-  },
+  ...ownerRoutes,
   {
     path: '/conflicts',
     name: 'conflicts',

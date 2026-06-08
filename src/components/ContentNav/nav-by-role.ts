@@ -23,6 +23,12 @@ const ALL_NAV: readonly NavEntry[] = [
     labelKey: 'nav.comms',
     ownerOnly: true,
   },
+  {
+    path: '/features',
+    label: 'Features',
+    labelKey: 'nav.features',
+    ownerOnly: true,
+  },
   { path: '/settings', label: 'Settings', minRole: 'admin' },
 ]
 
