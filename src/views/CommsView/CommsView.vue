@@ -69,15 +69,15 @@ const onCutoffSave = (next: string | null): void => {
       aria-labelledby="comms-title"
     >
       <header class="head">
-        <h1 id="comms-title" class="title">Newsletter</h1>
+        <h1 id="comms-title" class="title">Рассылка</h1>
         <p class="lead">
-          Editor list — subscribers receive the weekly digest of new
-          articles on the languages they pick.
+          Подписчики получают дайджест новых статей на выбранных ими
+          языках. Расписание и отсечка — общие для всех.
         </p>
       </header>
       <CommsSection
-        title="Schedule"
-        lead="Crontab + IANA timezone; saved values trigger the dispatch loop."
+        title="Расписание"
+        lead="Cron-выражение + IANA-таймзона. Сохранённое значение запускает диспетчер."
       >
         <ScheduleEditor
           :schedule="schedule.schedule"
@@ -87,8 +87,8 @@ const onCutoffSave = (next: string | null): void => {
         />
       </CommsSection>
       <CommsSection
-        title="Cutoff watermark"
-        lead="Single shared 'last run at' moment. Articles published after it are 'new' for every subscriber. Auto-advances on every successful tick; can be moved manually."
+        title="Отсечка времени"
+        lead="Единый «момент последнего запуска» для всех подписчиков. Статьи, опубликованные после неё, считаются новыми. Автодвигается после каждой успешной отправки, можно сдвинуть вручную."
       >
         <CutoffEditor
           :at="cutoff.at"
@@ -98,8 +98,8 @@ const onCutoffSave = (next: string | null): void => {
         />
       </CommsSection>
       <CommsSection
-        title="Subscribers"
-        lead="Each row receives the digest in the languages it has selected."
+        title="Подписчики"
+        lead="Каждая строка получает дайджест на выбранных ей языках."
       >
         <AddSubscriberForm :saving="store.saving" @add="onAdd" />
         <SubscribersTable
@@ -117,8 +117,8 @@ const onCutoffSave = (next: string | null): void => {
         </p>
       </CommsSection>
       <CommsSection
-        title="Test dispatch"
-        lead="Owner-only — fires the dispatch loop immediately for testing. Does not modify the saved schedule."
+        title="Тестовая отправка"
+        lead="Только для владельцев — запускает диспетчер немедленно для проверки. Сохранённое расписание не сдвигается."
       >
         <ForceDispatchPanel
           :active-count="activeCount"
@@ -126,8 +126,8 @@ const onCutoffSave = (next: string | null): void => {
         />
       </CommsSection>
       <CommsSection
-        title="Run history"
-        lead="Last twenty dispatch attempts. Click a failed row to read its error."
+        title="История отправок"
+        lead="Последние двадцать попыток. Нажми на строку с ошибкой, чтобы развернуть текст ошибки."
       >
         <RunHistory
           v-if="showRuns"

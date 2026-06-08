@@ -187,13 +187,17 @@ test('comms walkthrough recording', async ({ page }) => {
 
   await page.addInitScript(() => {
     localStorage.setItem('gh_token', 'mock-token')
+    localStorage.setItem('sso_roles', JSON.stringify(['owner']))
     document.documentElement.setAttribute('data-theme', 'dark')
   })
   await page.goto('/')
+  await page.waitForLoadState('networkidle')
   await page.goto('/comms')
   await page.waitForSelector('[data-testid="comms-view"]')
   await page.waitForSelector('[data-testid="schedule-editor"]')
   await page.waitForSelector('[data-testid="add-subscriber-form"]')
+  await page.waitForLoadState('networkidle')
+  await sleep(800)
 
   await installOverlay(page)
 
@@ -313,6 +317,46 @@ test('comms walkthrough recording', async ({ page }) => {
       '2026-06-08'
     )
     await sleep(1_800)
+    await clear()
+  })
+
+  await test.step('Scene 5b — cutoff watermark', async () => {
+    await titleCard(page, {
+      eyebrow: 'Сцена 5б',
+      title: 'Отсечка времени',
+      sub: 'Единая для всех. Двигается на каждом успешном тике, можно сдвинуть руками.',
+    })
+    await page.getByTestId('cutoff-editor').scrollIntoViewIfNeeded()
+    const clear = await highlightSelector(
+      page,
+      '[data-testid="cutoff-editor"]'
+    )
+    const input = page.getByTestId('cutoff-input')
+    await input.fill('2026-06-05T12:00')
+    await sleep(1_000)
+    await page.getByTestId('cutoff-save').click()
+    await sleep(1_400)
+    await clear()
+  })
+
+  await test.step('Scene 5c — test dispatch button', async () => {
+    await titleCard(page, {
+      eyebrow: 'Сцена 5в',
+      title: 'Кнопка тестовой отправки',
+      sub: 'Отправляет дайджест прямо сейчас, расписание не двигает',
+    })
+    await page.getByTestId('force-dispatch-panel').scrollIntoViewIfNeeded()
+    const clear = await highlightSelector(
+      page,
+      '[data-testid="force-dispatch-panel"]'
+    )
+    await page.getByTestId('force-dispatch-start').click()
+    await sleep(1_400)
+    await page.getByTestId('force-dispatch-confirm').click()
+    await page.waitForSelector('[data-testid="force-dispatch-result"]', {
+      timeout: 5_000,
+    })
+    await sleep(2_200)
     await clear()
   })
 

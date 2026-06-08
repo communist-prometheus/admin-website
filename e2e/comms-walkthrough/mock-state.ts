@@ -78,6 +78,7 @@ const seedRuns: RunRow[] = [
 export type MockState = {
   subscribers: Subscriber[]
   schedule: { cron: string; timezone: string; nextRunAt: string }
+  cutoffAt: string | null
   runs: RunRow[]
   nextId: number
   nextRunId: number
@@ -98,6 +99,7 @@ export const createMockState = (): MockState => ({
     timezone: 'Europe/Moscow',
     nextRunAt: '2026-06-06T09:00:00.000Z',
   },
+  cutoffAt: null,
   runs: seedRuns.map(r => ({ ...r })),
   nextId: 4,
   nextRunId: 14,
@@ -150,6 +152,11 @@ export const mockHandlers = (s: MockState) => ({
       nextRunAt: computeNextRun(body.cron),
     }
     return json(s.schedule)
+  },
+  getCutoff: () => json({ at: s.cutoffAt }),
+  putCutoff: (body: { at: string | null }) => {
+    s.cutoffAt = body.at
+    return json({ at: s.cutoffAt })
   },
   /** Simulate a force-dispatch by appending a fresh "sent" row. */
   forceDispatch: () => {

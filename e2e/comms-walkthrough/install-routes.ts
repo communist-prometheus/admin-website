@@ -9,35 +9,70 @@ const SUB_BY_ID = /\/api\/subscribers\/(\d+)$/
 type Handlers = ReturnType<typeof mockHandlers>
 type FulfillBody = Parameters<Route['fulfill']>[0]
 type Reply = FulfillBody | undefined
+type Req = ReturnType<Route['request']>
+
+const subscribersRoute = (
+  url: string,
+  method: string,
+  h: Handlers,
+  req: Req
+): Reply => {
+  if (!url.endsWith('/api/subscribers')) return undefined
+  if (method === 'GET') return h.listSubs()
+  if (method === 'POST') return h.postSubscriber(req.postDataJSON())
+  return undefined
+}
+
+const scheduleRoute = (
+  url: string,
+  method: string,
+  h: Handlers,
+  req: Req
+): Reply => {
+  if (!url.endsWith('/api/schedule')) return undefined
+  if (method === 'GET') return h.getSchedule()
+  if (method === 'PUT') return h.putSchedule(req.postDataJSON())
+  return undefined
+}
+
+const cutoffRoute = (
+  url: string,
+  method: string,
+  h: Handlers,
+  req: Req
+): Reply => {
+  if (!url.endsWith('/api/cutoff')) return undefined
+  if (method === 'GET') return h.getCutoff()
+  if (method === 'PUT') return h.putCutoff(req.postDataJSON())
+  return undefined
+}
+
+const dispatchRoute = (url: string, method: string, h: Handlers): Reply => {
+  if (url.endsWith('/api/dispatch?force=1') && method === 'POST')
+    return h.forceDispatch()
+  return undefined
+}
+
+const runsRoute = (url: string, method: string, h: Handlers): Reply =>
+  url.includes('/api/runs') && method === 'GET' ? h.listRuns() : undefined
 
 const collectionRoute = (
   url: string,
   method: string,
   h: Handlers,
-  req: Route['request'] extends () => infer R ? R : never
-): Reply => {
-  if (url.endsWith('/api/subscribers') && method === 'GET')
-    return h.listSubs()
-  if (url.endsWith('/api/subscribers') && method === 'POST') {
-    return h.postSubscriber(req.postDataJSON())
-  }
-  if (url.endsWith('/api/schedule') && method === 'GET')
-    return h.getSchedule()
-  if (url.endsWith('/api/schedule') && method === 'PUT') {
-    return h.putSchedule(req.postDataJSON())
-  }
-  if (url.includes('/api/runs') && method === 'GET') return h.listRuns()
-  if (url.endsWith('/api/dispatch?force=1') && method === 'POST') {
-    return h.forceDispatch()
-  }
-  return undefined
-}
+  req: Req
+): Reply =>
+  subscribersRoute(url, method, h, req) ??
+  scheduleRoute(url, method, h, req) ??
+  cutoffRoute(url, method, h, req) ??
+  runsRoute(url, method, h) ??
+  dispatchRoute(url, method, h)
 
 const itemRoute = (
   url: string,
   method: string,
   h: Handlers,
-  req: ReturnType<Route['request']>
+  req: Req
 ): Reply => {
   const m = SUB_BY_ID.exec(url)
   if (m === null) return undefined
