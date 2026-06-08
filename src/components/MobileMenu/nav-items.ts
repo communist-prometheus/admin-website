@@ -36,7 +36,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   { path: '/content/newspaper', label: 'Newspaper', requiresAuth: true },
   { path: '/tickets', label: 'Tickets', requiresAuth: true },
-  { path: '/comms', label: 'Comms', requiresAuth: true, ownerOnly: true },
+  { path: '/comms', label: 'Рассылка', requiresAuth: true, ownerOnly: true },
   // prettier-ignore
   {
     path: '/settings',
