@@ -3,7 +3,10 @@ import type { Role } from '@/types/role'
 /** Navigation item definition for mobile menu. */
 export interface NavItem {
   readonly path: string
+  /** Hardcoded label (used when no `labelKey` is present). */
   readonly label: string
+  /** Dotted i18n key — when present, resolved via `t()` at render. */
+  readonly labelKey?: string
   readonly requiresAuth: boolean
   readonly minRole?: Role
   readonly ownerOnly?: boolean
@@ -36,7 +39,14 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   { path: '/content/newspaper', label: 'Newspaper', requiresAuth: true },
   { path: '/tickets', label: 'Tickets', requiresAuth: true },
-  { path: '/comms', label: 'Рассылка', requiresAuth: true, ownerOnly: true },
+  // prettier-ignore
+  {
+    path: '/comms',
+    label: 'Newsletter',
+    labelKey: 'nav.comms',
+    requiresAuth: true,
+    ownerOnly: true,
+  },
   // prettier-ignore
   {
     path: '/settings',

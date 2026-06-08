@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
-import type { Lang } from '@/stores/comms'
+import { t } from '@/i18n/t'
 import { useCommsStore } from '@/stores/comms'
 import { useCutoffStore } from '@/stores/cutoff'
 import { useRunsStore } from '@/stores/runs'
-import type { Schedule } from '@/stores/schedule'
 import { useScheduleStore } from '@/stores/schedule'
 import AddSubscriberForm from './AddSubscriberForm.vue'
 import CommsSection from './CommsSection.vue'
 import CutoffEditor from './CutoffEditor.vue'
 import ForceDispatchPanel from './ForceDispatchPanel.vue'
+import { buildHandlers } from './handlers'
 import RunHistory from './RunHistory.vue'
 import ScheduleEditor from './ScheduleEditor.vue'
 import SubscribersTable from './SubscribersTable.vue'
@@ -22,8 +22,8 @@ const runs = useRunsStore()
 const activeCount = computed(
   () => store.subscribers.filter(s => s.status === 'active').length
 )
-
 const showRuns = ref(false)
+const h = buildHandlers({ comms: store, schedule, cutoff, runs })
 
 onMounted(() => {
   void store.ensureLoaded()
@@ -34,31 +34,6 @@ onMounted(() => {
     void runs.ensureLoaded()
   })
 })
-
-const onAdd = (email: string, langs: readonly Lang[]): void => {
-  void store.add(email, langs)
-}
-
-const onLangs = (id: number, langs: readonly Lang[]): void => {
-  void store.updateLangs(id, langs)
-}
-
-const onRemove = (id: number): void => {
-  void store.remove(id)
-}
-
-const onScheduleSave = (next: Schedule): void => {
-  void schedule.save(next)
-}
-
-const onDispatched = (): void => {
-  void runs.load()
-  void cutoff.load()
-}
-
-const onCutoffSave = (next: string | null): void => {
-  void cutoff.save(next)
-}
 </script>
 
 <template>
@@ -69,43 +44,40 @@ const onCutoffSave = (next: string | null): void => {
       aria-labelledby="comms-title"
     >
       <header class="head">
-        <h1 id="comms-title" class="title">Рассылка</h1>
-        <p class="lead">
-          Подписчики получают дайджест новых статей на выбранных ими
-          языках. Расписание и отсечка — общие для всех.
-        </p>
+        <h1 id="comms-title" class="title">{{ t('comms.title') }}</h1>
+        <p class="lead">{{ t('comms.lead') }}</p>
       </header>
       <CommsSection
-        title="Расписание"
-        lead="Cron-выражение + IANA-таймзона. Сохранённое значение запускает диспетчер."
+        :title="t('comms.schedule.title')"
+        :lead="t('comms.schedule.lead')"
       >
         <ScheduleEditor
           :schedule="schedule.schedule"
           :saving="schedule.saving"
           :error="schedule.error"
-          @save="onScheduleSave"
+          @save="h.onScheduleSave"
         />
       </CommsSection>
       <CommsSection
-        title="Отсечка времени"
-        lead="Единый «момент последнего запуска» для всех подписчиков. Статьи, опубликованные после неё, считаются новыми. Автодвигается после каждой успешной отправки, можно сдвинуть вручную."
+        :title="t('comms.cutoff.title')"
+        :lead="t('comms.cutoff.lead')"
       >
         <CutoffEditor
           :at="cutoff.at"
           :saving="cutoff.saving"
           :error="cutoff.error"
-          @save="onCutoffSave"
+          @save="h.onCutoffSave"
         />
       </CommsSection>
       <CommsSection
-        title="Подписчики"
-        lead="Каждая строка получает дайджест на выбранных ей языках."
+        :title="t('comms.subscribers.title')"
+        :lead="t('comms.subscribers.lead')"
       >
-        <AddSubscriberForm :saving="store.saving" @add="onAdd" />
+        <AddSubscriberForm :saving="store.saving" @add="h.onAdd" />
         <SubscribersTable
           :subscribers="store.subscribers"
-          @langs="onLangs"
-          @remove="onRemove"
+          @langs="h.onLangs"
+          @remove="h.onRemove"
         />
         <p
           v-if="store.loading && store.subscribers.length === 0"
@@ -117,17 +89,17 @@ const onCutoffSave = (next: string | null): void => {
         </p>
       </CommsSection>
       <CommsSection
-        title="Тестовая отправка"
-        lead="Только для владельцев — запускает диспетчер немедленно для проверки. Сохранённое расписание не сдвигается."
+        :title="t('comms.testDispatch.title')"
+        :lead="t('comms.testDispatch.lead')"
       >
         <ForceDispatchPanel
           :active-count="activeCount"
-          @dispatched="onDispatched"
+          @dispatched="h.onDispatched"
         />
       </CommsSection>
       <CommsSection
-        title="История отправок"
-        lead="Последние двадцать попыток. Нажми на строку с ошибкой, чтобы развернуть текст ошибки."
+        :title="t('comms.runHistory.title')"
+        :lead="t('comms.runHistory.lead')"
       >
         <RunHistory
           v-if="showRuns"
