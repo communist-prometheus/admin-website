@@ -21,6 +21,7 @@ export default defineConfig({
     viewport: { width: 1920, height: 1080 },
     deviceScaleFactor: 1,
     colorScheme: 'dark',
+    locale: 'ru-RU',
     video: {
       mode: 'on',
       size: { width: 1920, height: 1080 },
