@@ -22,6 +22,11 @@ export const deleteCookie = (name: string): void => {
   const host = globalThis.location?.hostname ?? ''
   const parent = host.split('.').slice(-2).join('.')
   const variants =
-    parent && parent !== host ? [stale, `${stale}; domain=.${parent}`] : [stale]
-  for (const v of variants) document.cookie = v
+    parent && parent !== host
+      ? [stale, `${stale}; domain=.${parent}`]
+      : [stale]
+  for (const v of variants) {
+    // biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API is async and absent in Firefox/jsdom; this synchronous one-shot expiry is intentional.
+    document.cookie = v
+  }
 }
