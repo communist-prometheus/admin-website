@@ -54,7 +54,7 @@
     "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2",
     "vue": "beta",
-    "vue-router": "^5.0.2"
+    "vue-router": "^5.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.2",
