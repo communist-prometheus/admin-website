@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { loadToken } from './token-storage'
 
 const setCookie = (value: string): void => {
+  // biome-ignore lint/suspicious/noDocumentCookie: jsdom has no Cookie Store API; tests drive the legacy cookie path on purpose.
   document.cookie = `gh_token=${value}; path=/`
 }
 
@@ -11,6 +12,7 @@ describe('loadToken cookie migration', () => {
   })
 
   afterEach(() => {
+    // biome-ignore lint/suspicious/noDocumentCookie: see setCookie above.
     document.cookie = 'gh_token=; max-age=0; path=/'
     localStorage.clear()
   })

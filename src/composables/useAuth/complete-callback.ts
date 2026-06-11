@@ -34,8 +34,7 @@ export const completeCallback = async (
   stateRaw: QueryValue
 ): Promise<string> => {
   const code = extractString(codeRaw) ?? fail('Missing code or verifier')
-  const verifier =
-    loadAndClearVerifier() ?? fail('Missing code or verifier')
+  const verifier = loadAndClearVerifier() ?? fail('Missing code or verifier')
   requireStateMatch(extractString(stateRaw), loadAndClearState())
   const token = await exchangeCodeForToken(code, verifier)
   saveToken(token)
