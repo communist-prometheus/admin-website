@@ -3,6 +3,10 @@ import type { ConfirmationChrome } from './i18n-types'
 /** Russian confirmation chrome (ru). */
 export const CONF_RU: ConfirmationChrome = {
   title: 'Отписка — Коммунистический Прометей',
+  confirmHeading: 'Подтвердите отписку',
+  confirmBody:
+    'Нажмите кнопку ниже, чтобы перестать получать рассылку на этот адрес.',
+  confirmButton: 'Отписаться',
   unsubscribedHeading: 'Вы отписаны',
   unsubscribedBody:
     'Вы больше не будете получать рассылку Коммунистического Прометея на этот адрес.',
@@ -15,6 +19,10 @@ export const CONF_RU: ConfirmationChrome = {
 /** Ukrainian confirmation chrome (uk). */
 export const CONF_UK: ConfirmationChrome = {
   title: 'Скасовано — Комуністичний Прометей',
+  confirmHeading: 'Підтвердьте відписку',
+  confirmBody:
+    'Натисніть кнопку нижче, щоб припинити отримувати розсилку на цю адресу.',
+  confirmButton: 'Відписатися',
   unsubscribedHeading: 'Ви відписалися',
   unsubscribedBody:
     'Ви більше не отримуватимете розсилку Комуністичного Прометея на цю адресу.',
@@ -27,6 +35,10 @@ export const CONF_UK: ConfirmationChrome = {
 /** Belarusian confirmation chrome (bl). */
 export const CONF_BL: ConfirmationChrome = {
   title: 'Адпіска — Камуністычны Праметэй',
+  confirmHeading: 'Пацвердзіце адпіску',
+  confirmBody:
+    'Націсніце кнопку ніжэй, каб перастаць атрымліваць рассылку на гэты адрас.',
+  confirmButton: 'Адпісацца',
   unsubscribedHeading: 'Вы адпісаныя',
   unsubscribedBody:
     'Вы больш не атрымаеце рассылку Камуністычнага Праметэя на гэты адрас.',

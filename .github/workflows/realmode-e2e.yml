@@ -13,33 +13,48 @@ concurrency:
   group: realmode-e2e
   cancel-in-progress: false
 
+# Least-privilege GITHUB_TOKEN - deploys use dedicated secrets,
+# nothing here needs repo write access via the ambient token.
+permissions:
+  contents: read
+
 jobs:
   realmode:
     runs-on: ubuntu-latest
+    # Deny the sandbox PAT to fork PRs: GitHub already withholds
+    # secrets from fork-PR runs, but this guard keeps the job from
+    # running attacker-edited test code next to the secret even if
+    # repo settings ever loosen.
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     env:
-      GITHUB_E2E_KEY: ${{ secrets.GH_E2E_PAT }}
       SANDBOX_OWNER: communist-prometheus
       SANDBOX_REPO: admin-e2e-sandbox
       SANDBOX_BRANCH: main
       SANDBOX_BASELINE_TAG: baseline
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           submodules: true
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
 
       - name: Reset sandbox to baseline
+        env:
+          GITHUB_E2E_KEY: ${{ secrets.GH_E2E_PAT }}
         run: bun run sandbox:reset
 
       - name: Run real-mode suite
+        env:
+          GITHUB_E2E_KEY: ${{ secrets.GH_E2E_PAT }}
         run: bun run test:e2e:realmode
 
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-realmode-report
           path: |

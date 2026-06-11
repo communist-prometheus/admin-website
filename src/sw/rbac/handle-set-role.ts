@@ -2,6 +2,7 @@ import { Match, Option } from 'effect'
 import { errorResponse, jsonResponse } from '../handlers/shared/json-response'
 import { workerState } from '../state/state'
 import { applyRole, type SetRoleBody } from './org-role-ops'
+import { requireAdmin } from './require-admin'
 
 const validate = (body: Partial<SetRoleBody>): Option.Option<SetRoleBody> =>
   body.login && body.role
@@ -43,10 +44,11 @@ export const handleSetRole = async (request: Request): Promise<Response> =>
     Match.orElse(async c =>
       __MOCK_MODE__ || c.mock
         ? jsonResponse({ success: true })
-        : handleBody(
+        : (requireAdmin() ??
+          handleBody(
             c.owner,
             c.token,
             (await request.json()) as Partial<SetRoleBody>
-          )
+          ))
     )
   )

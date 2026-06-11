@@ -9,6 +9,11 @@
   },
   // The OAuth token exchange handler reads the GitHub App client
   // secret. Set with: wrangler secret put GITHUB_CLIENT_SECRET
+  // GITHUB_CLIENT_ID is public (it ships in the SPA bundle) — pinned
+  // here so the token handler only exchanges codes for OUR app.
+  "vars": {
+    "GITHUB_CLIENT_ID": "Ov23libphIePjZydDlke"
+  },
   "env": {
     // Develop environment — deploys from the `develop` branch into a
     // separate CF Worker (admin-website-develop) bound to
@@ -19,7 +24,10 @@
       "name": "admin-website-develop",
       "routes": [
         { "pattern": "dev-admin.comprom.org", "custom_domain": true }
-      ]
+      ],
+      "vars": {
+        "GITHUB_CLIENT_ID": "Ov23liXRu1WNCvOCce7s"
+      }
     }
   }
 }

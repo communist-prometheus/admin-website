@@ -4,9 +4,13 @@ import { tokenHandler } from './token-handler'
 
 /**
  * Env bindings available on CF Workers and in Vite dev.
+ * GITHUB_CLIENT_ID is a public value pinned per environment in
+ * wrangler.jsonc — the token handler rejects exchanges for any
+ * other client. Optional so local dev without vars keeps working.
  */
 export interface Env {
   readonly GITHUB_CLIENT_SECRET: string
+  readonly GITHUB_CLIENT_ID?: string
 }
 
 /**

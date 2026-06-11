@@ -2,6 +2,7 @@ import { Match } from 'effect'
 import { errorResponse, jsonResponse } from '../handlers/shared/json-response'
 import { workerState } from '../state/state'
 import { API, ghHeaders } from './github-api'
+import { requireAdmin } from './require-admin'
 
 const remote = async (
   owner: string,
@@ -32,6 +33,6 @@ export const handleRevokeInvite = async (id: string): Promise<Response> =>
     Match.orElse(async cfg =>
       __MOCK_MODE__ || cfg.mock
         ? jsonResponse({ success: true })
-        : remote(cfg.owner, cfg.token, id)
+        : (requireAdmin() ?? remote(cfg.owner, cfg.token, id))
     )
   )

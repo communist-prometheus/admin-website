@@ -8,6 +8,9 @@
   // - ANALYTICS_DATASET — Workers Analytics Engine dataset for spans
   // - D1 — D1 database for trace metadata index
   "vars": {
-    "VERSION": "0.1.0"
+    "VERSION": "0.1.0",
+    // Org whose ACTIVE members may mint a collector JWT via
+    // /auth/exchange — see exchange-handler.ts.
+    "GITHUB_ORG": "communist-prometheus"
   }
 }

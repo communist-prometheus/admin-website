@@ -1,59 +1,52 @@
 import type { Context, Hono } from 'hono'
 import { logEvent } from '../log/structured'
-import { createRepo } from '../subscribers/repo'
 import { pickLang } from './accept-language'
-import { renderExpiredPage, renderUnsubscribedPage } from './confirmation'
-import { verifyAndFlip } from './handler'
+import {
+  renderConfirmPage,
+  renderExpiredPage,
+  renderUnsubscribedPage,
+} from './confirmation'
+import { verifyAndFlip, verifyLookup } from './handler'
+import { html, repoOf } from './route-helpers'
 import type { UnsubscribeEnv } from './runtime-env'
 
 export type { UnsubscribeEnv } from './runtime-env'
 
 type App = Hono<{ Bindings: UnsubscribeEnv }>
 
-const HTML_HEADERS = {
-  'Content-Type': 'text/html; charset=utf-8',
-}
-
-const runVerify = (c: Context) => {
-  const env = c.env as UnsubscribeEnv
-  const repo = createRepo({
-    db: env.DB,
-    now: () => new Date().toISOString(),
-  })
-  return verifyAndFlip(repo, env.UNSUBSCRIBE_SECRET, c.req.query('t'))
-}
-
-const logOutcome = (method: 'GET' | 'POST', kind: string): void => {
-  const evt =
-    kind === 'invalid' ? 'unsubscribe.rejected' : 'unsubscribe.applied'
-  logEvent(evt, { method, kind })
-}
-
+/*
+ * GET is side-effect free: it only verifies the token and renders
+ * either the confirm form (valid), the already-done page, or the
+ * expired page. Mail-client prefetchers and AV link scanners follow
+ * GETs — flipping state here silently unsubscribed recipients.
+ */
 const handleGet = async (c: Context): Promise<Response> => {
   const lang = pickLang(c.req.header('Accept-Language'))
-  const outcome = await runVerify(c)
-  logOutcome('GET', outcome.kind)
-  return outcome.kind === 'invalid'
-    ? new Response(renderExpiredPage(lang), {
-        status: 404,
-        headers: HTML_HEADERS,
-      })
-    : new Response(renderUnsubscribedPage(lang), {
-        status: 200,
-        headers: HTML_HEADERS,
-      })
+  const { repo, secret } = repoOf(c)
+  const token = c.req.query('t')
+  const outcome = await verifyLookup(repo, secret, token)
+  logEvent('unsubscribe.viewed', { method: 'GET', kind: outcome.kind })
+  if (outcome.kind === 'invalid') return html(renderExpiredPage(lang), 404)
+  return outcome.kind === 'already'
+    ? html(renderUnsubscribedPage(lang), 200)
+    : html(renderConfirmPage(lang, token ?? ''), 200)
 }
 
 const handlePost = async (c: Context): Promise<Response> => {
-  const outcome = await runVerify(c)
-  logOutcome('POST', outcome.kind)
+  const { repo, secret } = repoOf(c)
+  const outcome = await verifyAndFlip(repo, secret, c.req.query('t'))
+  const evt =
+    outcome.kind === 'invalid'
+      ? 'unsubscribe.rejected'
+      : 'unsubscribe.applied'
+  logEvent(evt, { method: 'POST', kind: outcome.kind })
   return outcome.kind === 'invalid' ? c.body(null, 404) : c.body(null, 200)
 }
 
 /**
- * Mount the public unsubscribe surface: GET renders an HTML
- * confirmation in the visitor's preferred language, POST honours
- * the RFC-8058 one-click contract with a 200 empty body.
+ * Mount the public unsubscribe surface: GET verifies and renders a
+ * confirm form (no mutation), POST performs the flip — both the
+ * RFC-8058 one-click contract and the form submit land here.
  * @param app Hono app instance (no session middleware on this prefix).
  * @returns The same app for chaining.
  */

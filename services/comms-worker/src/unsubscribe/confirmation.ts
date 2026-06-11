@@ -1,40 +1,43 @@
 import { htmlEscape } from '../digest/escape'
 import type { Lang } from '../subscribers/types'
-import { CONFIRMATION_STYLE } from './confirmation-style'
-import {
-  CONFIRMATION,
-  type ConfirmationChrome,
-  RE_SUBSCRIBE_MAILTO,
-} from './i18n'
+import { CONFIRMATION, RE_SUBSCRIBE_MAILTO } from './i18n'
+import { renderPage } from './render-page'
 
-const renderPage = (
-  lang: Lang,
-  c: ConfirmationChrome,
-  heading: string,
-  body: string
-): string =>
-  [
-    '<!DOCTYPE html>',
-    `<html lang="${lang}"><head>`,
-    '<meta charset="utf-8" />',
-    '<meta name="viewport" content="width=device-width,initial-scale=1" />',
-    `<title>${htmlEscape(c.title)}</title>`,
-    CONFIRMATION_STYLE,
-    '</head><body><main><article class="card">',
-    `<h1>${htmlEscape(heading)}</h1>`,
-    `<p>${htmlEscape(body)}</p>`,
-    `<a class="cta" href="${RE_SUBSCRIBE_MAILTO}">${htmlEscape(c.reSubscribeLabel)}</a>`,
-    '</article></main></body></html>',
-  ].join('')
+const reSubscribeCta = (label: string): string =>
+  `<a class="cta" href="${RE_SUBSCRIBE_MAILTO}">${htmlEscape(label)}</a>`
 
 /**
- * Render the success confirmation page shown after a token validates.
+ * Render the confirm page for a valid GET. The flip itself happens
+ * only when the visitor submits this POST form — a GET must stay
+ * side-effect free so link prefetchers cannot unsubscribe people.
+ * @param lang Lang code chosen from Accept-Language.
+ * @param token Verified raw token, re-embedded as the form target.
+ * @returns Full HTML document body.
+ */
+export const renderConfirmPage = (lang: Lang, token: string): string => {
+  const c = CONFIRMATION[lang]
+  const action = `/unsubscribe?t=${encodeURIComponent(token)}`
+  const form =
+    `<form method="post" action="${htmlEscape(action)}">` +
+    `<button class="cta" type="submit">${htmlEscape(c.confirmButton)}</button>` +
+    '</form>'
+  return renderPage(lang, c, c.confirmHeading, c.confirmBody, form)
+}
+
+/**
+ * Render the success confirmation page shown after the flip.
  * @param lang Lang code chosen from Accept-Language by the route handler.
  * @returns Full HTML document body.
  */
 export const renderUnsubscribedPage = (lang: Lang): string => {
   const c = CONFIRMATION[lang]
-  return renderPage(lang, c, c.unsubscribedHeading, c.unsubscribedBody)
+  return renderPage(
+    lang,
+    c,
+    c.unsubscribedHeading,
+    c.unsubscribedBody,
+    reSubscribeCta(c.reSubscribeLabel)
+  )
 }
 
 /**
@@ -44,5 +47,11 @@ export const renderUnsubscribedPage = (lang: Lang): string => {
  */
 export const renderExpiredPage = (lang: Lang): string => {
   const c = CONFIRMATION[lang]
-  return renderPage(lang, c, c.expiredHeading, c.expiredBody)
+  return renderPage(
+    lang,
+    c,
+    c.expiredHeading,
+    c.expiredBody,
+    reSubscribeCta(c.reSubscribeLabel)
+  )
 }
