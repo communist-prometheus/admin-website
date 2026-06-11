@@ -129,14 +129,11 @@
 
 ## Phase 7: CORS Proxy Deployment
 
-**Goal**: Self-hosted CORS proxy for production.
-
-- [ ] Create Cloudflare Worker proxy (`infrastructure/cors-proxy/`)
-- [ ] Proxy adds CORS headers, passes auth through
-- [ ] Configure `VITE_CORS_PROXY` in production env
-- [ ] Test clone + push through production proxy
-- [ ] Monitor proxy latency and error rates
-- [ ] Document proxy deployment process
+**Goal**: Self-hosted CORS proxy for production. **Done** — the proxy is
+served in-app at `/api/cors/*` by the same Worker that serves the SPA
+(see `src/api/cors-proxy.ts` and `src/api/app.ts`). DEV falls back to
+`cors.isomorphic-git.org`; PROD uses same-origin so no `VITE_CORS_PROXY`
+override is needed.
 
 ## Cross-Cutting Concerns
 

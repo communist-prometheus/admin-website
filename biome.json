@@ -9,7 +9,6 @@
     "includes": [
       "**",
       "!!**/dist",
-      "!!cors-proxy",
       "!!.wrangler",
       "!!public/vendor",
       "!!e2e-toolkit",
