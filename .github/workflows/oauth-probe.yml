@@ -26,6 +26,11 @@ on:
 # out of sync with the GitHub App's registered callback URLs, the deploy
 # is noisy (but not blocking — this is an observability workflow).
 
+# Least-privilege GITHUB_TOKEN - deploys use dedicated secrets,
+# nothing here needs repo write access via the ambient token.
+permissions:
+  contents: read
+
 jobs:
   probe:
     runs-on: ubuntu-latest

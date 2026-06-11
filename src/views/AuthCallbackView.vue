@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { exchangeCodeForToken } from '@/composables/useAuth/exchange-token'
+import { completeCallback } from '@/composables/useAuth/complete-callback'
 import { fetchGitHubUser } from '@/composables/useAuth/fetch-github-user'
-import { mintSession } from '@/composables/useAuth/mint-session'
-import { loadAndClearVerifier } from '@/composables/useAuth/pkce-storage'
-import { saveToken } from '@/composables/useAuth/token-storage'
+import { TRUSTED_ORIGINS } from '@/composables/useOAuthPopup/trusted-origins'
 import { loadRedirect } from '@/router/auth-guard'
 import { useAuthStore } from '@/stores/auth'
-import { extractString } from '@/validation/extract-string'
 
 const router = useRouter()
 const route = useRoute()
@@ -18,54 +15,33 @@ const status = ref('Completing authentication…')
 /**
  * Post token to opener window and close popup.
  *
- * Uses `'*'` as targetOrigin so the token delivers across origins — the
- * popup may run at a different origin (e.g. workers.dev) than the opener
- * (e.g. admin.comprom.org) when VITE_OAUTH_REDIRECT_URI is set to a
- * centralized callback URL. The opener validates the sender origin via
- * the TRUSTED_ORIGINS allowlist in useOAuthPopup/handlers.ts, so the
- * wildcard target is safe — only admin hostnames we control can produce
- * a message that the opener will accept.
+ * Never posts with `'*'` — a wildcard would hand the token to ANY
+ * window that opened this callback URL, including an attacker's
+ * page. Instead the message is posted once per trusted origin (plus
+ * our own, for the same-origin popup case): postMessage silently
+ * drops deliveries whose targetOrigin does not match the opener, so
+ * exactly one copy arrives and only if the opener is one of ours.
  * @param token - GitHub access token
  */
 const notifyOpener = (token: string) => {
-  globalThis.opener?.postMessage(
-    { type: 'github-oauth-success', token },
-    '*'
-  )
+  const msg = { type: 'github-oauth-success', token }
+  const targets = new Set([...TRUSTED_ORIGINS, globalThis.location.origin])
+  for (const target of targets) globalThis.opener?.postMessage(msg, target)
   globalThis.close()
 }
 
 onMounted(async () => {
   try {
-    const code = extractString(route.query.code)
-    const verifier = loadAndClearVerifier()
-
-    if (!code || !verifier) {
-      status.value = 'Missing code or verifier'
-      return
-    }
-
-    const token = await exchangeCodeForToken(code, verifier)
-    saveToken(token)
-    // Mint the parent-domain SSO cookie so subsequent calls to
-    // *.comprom.org workers (lists.*, future ones) carry auth via
-    // the cookie automatically. Fire-and-forget — if the user is
-    // not yet on the `admins` team, the SPA still loads (token-only
-    // GitHub calls keep working) but cookie-gated workers will 401
-    // until membership is granted.
-    void mintSession(token)
-
+    const token = await completeCallback(route.query.code, route.query.state)
     if (globalThis.opener) {
       notifyOpener(token)
       return
     }
-
     const user = await fetchGitHubUser(token)
     authStore.setUser(user)
     router.push(loadRedirect() ?? '/')
   } catch (e) {
-    status.value =
-      e instanceof Error ? e.message : 'Auth failed'
+    status.value = e instanceof Error ? e.message : 'Auth failed'
   }
 })
 </script>

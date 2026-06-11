@@ -37,13 +37,35 @@ describe('redactEntry', () => {
     expect(JSON.stringify(out)).not.toMatch(/content/i)
   })
 
-  it('passes navigation entries through unchanged', () => {
+  it('keeps plain navigation paths intact', () => {
     const entry: Omit<NavigationEntry, 'id' | 'ts'> = {
       kind: 'navigation',
       from: '/a',
       to: '/b',
     }
     expect(redactEntry(entry)).toEqual(entry)
+  })
+
+  it('strips query strings from navigation routes', () => {
+    const entry: Omit<NavigationEntry, 'id' | 'ts'> = {
+      kind: 'navigation',
+      from: '/auth/callback?code=gho_secret&state=abc',
+      to: '/editor#token=leak',
+    }
+    const out = redactEntry(entry) as Omit<NavigationEntry, 'id' | 'ts'>
+    expect(out.from).toBe('/auth/callback')
+    expect(out.to).toBe('/editor')
+  })
+
+  it('strips query strings from network-error urls', () => {
+    const entry: RecordableEntry = {
+      kind: 'network-error',
+      url: 'https://lists.comprom.org/unsubscribe?t=42.signature',
+      status: 500,
+      reason: 'boom',
+    }
+    const out = redactEntry(entry) as { url: string }
+    expect(out.url).toBe('https://lists.comprom.org/unsubscribe')
   })
 })
 

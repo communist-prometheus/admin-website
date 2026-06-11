@@ -1,4 +1,4 @@
-import { readCookie } from './cookie-token'
+import { deleteCookie, readCookie } from './cookie-token'
 import { clearProfile } from './profile-cache'
 
 const TOKEN_KEY = 'gh_token'
@@ -13,7 +13,9 @@ export const saveToken = (token: string): void => {
 
 /**
  * Load GitHub token from localStorage or cookie fallback.
- * When found in cookie, persists to localStorage.
+ * When found in cookie, persists to localStorage and expires the
+ * cookie — the JS-readable copy must not linger as a second
+ * exfiltration target after the one-time migration.
  * @returns Token string or undefined
  */
 export const loadToken = (): string | undefined => {
@@ -21,7 +23,10 @@ export const loadToken = (): string | undefined => {
   if (stored) return stored
 
   const fromCookie = readCookie(TOKEN_KEY)
-  if (fromCookie) saveToken(fromCookie)
+  if (fromCookie) {
+    saveToken(fromCookie)
+    deleteCookie(TOKEN_KEY)
+  }
   return fromCookie
 }
 

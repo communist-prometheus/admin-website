@@ -8,6 +8,11 @@ on:
 # to be a manual triage tool — run it when something is off in production
 # and look at the run logs.
 
+# Least-privilege GITHUB_TOKEN - deploys use dedicated secrets,
+# nothing here needs repo write access via the ambient token.
+permissions:
+  contents: read
+
 jobs:
   probe:
     runs-on: ubuntu-latest

@@ -3,6 +3,7 @@ import { Marked } from 'marked'
 import markedFootnote from 'marked-footnote'
 import { computed } from 'vue'
 import { createAssetExtension } from './create-asset-renderer'
+import { sanitizeHtml } from './sanitize-html'
 
 const props = defineProps<{
   readonly content: string
@@ -23,7 +24,8 @@ const html = computed(() => {
   if (props.assetUrlMap && props.assetUrlMap.size > 0) {
     m.use(createAssetExtension(props.assetUrlMap))
   }
-  return m.parse(props.content, { async: false })
+  // Sanitize before v-html — see sanitize-html.ts for the threat.
+  return sanitizeHtml(m.parse(props.content, { async: false }))
 })
 </script>
 

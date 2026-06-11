@@ -1,14 +1,12 @@
-import { MAX_TEXT_LENGTH } from './config'
+import { stripQuery, truncate } from './redact-helpers'
 import type {
   ActionEntry,
+  NavigationEntry,
   NetworkErrorEntry,
   RecordableEntry,
   SaveEntry,
   SwErrorEntry,
 } from './types'
-
-const truncate = (s: string, max = MAX_TEXT_LENGTH): string =>
-  s.length <= max ? s : `${s.slice(0, max)}…`
 
 const redactSave = (e: Omit<SaveEntry, 'id' | 'ts'>): typeof e => ({
   ...e,
@@ -23,7 +21,14 @@ const redactSw = (e: Omit<SwErrorEntry, 'id' | 'ts'>): typeof e => ({
 
 const redactNet = (e: Omit<NetworkErrorEntry, 'id' | 'ts'>): typeof e => ({
   ...e,
+  url: stripQuery(e.url),
   reason: truncate(e.reason),
+})
+
+const redactNav = (e: Omit<NavigationEntry, 'id' | 'ts'>): typeof e => ({
+  ...e,
+  from: stripQuery(e.from),
+  to: stripQuery(e.to),
 })
 
 /**
@@ -43,7 +48,7 @@ export const redactEntry = (entry: RecordableEntry): RecordableEntry => {
     'sw-error': () => redactSw(entry as Omit<SwErrorEntry, 'id' | 'ts'>),
     'network-error': () =>
       redactNet(entry as Omit<NetworkErrorEntry, 'id' | 'ts'>),
-    navigation: () => entry,
+    navigation: () => redactNav(entry as Omit<NavigationEntry, 'id' | 'ts'>),
     stage: () => entry,
     auth: () => entry,
   } as const

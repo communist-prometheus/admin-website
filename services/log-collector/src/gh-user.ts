@@ -58,3 +58,5 @@ export const fetchUserLogin = async (token: string): Promise<string> => {
     ? login
     : Promise.reject(new Error('Could not read GitHub user login'))
 }
+
+export { isOrgMember } from './gh-org'

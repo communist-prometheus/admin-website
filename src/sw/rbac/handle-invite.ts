@@ -3,6 +3,7 @@ import { errorResponse, jsonResponse } from '../handlers/shared/json-response'
 import { workerState } from '../state/state'
 import type { InviteBody } from './invite-build'
 import { runInviteFromBody } from './invite-post'
+import { requireAdmin } from './require-admin'
 
 const MOCK_OK = { id: 1, role: 'direct_member', email: 'mock@example.com' }
 
@@ -21,11 +22,12 @@ export const handleInvite = async (request: Request): Promise<Response> =>
     Match.orElse(async cfg =>
       __MOCK_MODE__ || cfg.mock
         ? jsonResponse(MOCK_OK)
-        : runInviteFromBody(
+        : (requireAdmin() ??
+          runInviteFromBody(
             cfg.owner,
             cfg.token,
             (await request.json()) as Partial<InviteBody>
-          )
+          ))
     )
   )
 

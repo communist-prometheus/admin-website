@@ -68,7 +68,7 @@ describe('GET /unsubscribe', () => {
     expect(await res.text()).toContain('expired')
   })
 
-  it('flips status to unsubscribed + stamps unsubscribed_at on a valid GET', async () => {
+  it('does NOT mutate on a valid GET — renders the confirm form instead', async () => {
     const id = await seedActive('a@b.c')
     const token = await signUnsubscribeToken(id, SECRET)
     const res = await app.fetch(
@@ -76,13 +76,15 @@ describe('GET /unsubscribe', () => {
       bindEnv()
     )
     expect(res.status).toBe(200)
-    expect(await res.text()).toContain('unsubscribed')
+    const body = await res.text()
+    expect(body).toContain('<form method="post"')
+    expect(body).toContain('type="submit"')
     const after = await subs.findById(id)
-    expect(after?.status).toBe('unsubscribed')
-    expect(after?.unsubscribedAt).toBeDefined()
+    expect(after?.status).toBe('active')
+    expect(after?.unsubscribedAt).toBeUndefined()
   })
 
-  it('is idempotent for an already-unsubscribed row (200, no state churn)', async () => {
+  it('shows the already-done page for an unsubscribed row (200, no churn)', async () => {
     const id = await seedActive('a@b.c')
     await subs.setStatus(id, 'unsubscribed')
     const before = (await subs.findById(id))?.unsubscribedAt
@@ -92,12 +94,13 @@ describe('GET /unsubscribe', () => {
       bindEnv()
     )
     expect(res.status).toBe(200)
+    expect(await res.text()).not.toContain('<form')
     const after = await subs.findById(id)
     expect(after?.status).toBe('unsubscribed')
     expect(after?.unsubscribedAt).toBe(before)
   })
 
-  it('honours Accept-Language for the rendered confirmation', async () => {
+  it('honours Accept-Language for the rendered confirm page', async () => {
     const id = await seedActive('a@b.c')
     const token = await signUnsubscribeToken(id, SECRET)
     const res = await app.fetch(
@@ -108,7 +111,20 @@ describe('GET /unsubscribe', () => {
     )
     const body = await res.text()
     expect(body).toMatch(/<html lang="ru">/)
-    expect(body).toContain('Вы отписаны')
+    expect(body).toContain('Подтвердите отписку')
+  })
+
+  it('form submit (POST) after the GET performs the flip', async () => {
+    const id = await seedActive('a@b.c')
+    const token = await signUnsubscribeToken(id, SECRET)
+    await app.fetch(new Request(`http://x/unsubscribe?t=${token}`), bindEnv())
+    const res = await app.fetch(
+      new Request(`http://x/unsubscribe?t=${token}`, { method: 'POST' }),
+      bindEnv()
+    )
+    expect(res.status).toBe(200)
+    const after = await subs.findById(id)
+    expect(after?.status).toBe('unsubscribed')
   })
 })
 
