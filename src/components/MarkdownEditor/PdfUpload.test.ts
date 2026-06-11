@@ -17,8 +17,10 @@ const fakeCover = (): File =>
     type: 'image/png',
   })
 
+type Wrapper = ReturnType<typeof mount>
+
 const driveFileInput = async (
-  wrapper: ReturnType<typeof mount>,
+  wrapper: Wrapper,
   file: File
 ): Promise<void> => {
   const input = wrapper.get('input[type="file"]').element as HTMLInputElement
@@ -27,17 +29,18 @@ const driveFileInput = async (
     configurable: true,
   })
   await wrapper.get('input[type="file"]').trigger('change')
-  /*
-   * handleFile awaits the dynamic import of extract-pdf-cover. Drive
-   * the microtask queue several times so the async chain resolves
-   * before the test inspects emitted events.
-   */
-  await nextTick()
-  await nextTick()
-  await nextTick()
-  await new Promise(r => setTimeout(r, 10))
-  await nextTick()
 }
+
+/*
+ * The upload chain awaits a dynamic import of extract-pdf-cover —
+ * on a cold CI runner that takes arbitrarily long, so the tests
+ * wait event-driven on the TERMINAL emit of each scenario instead
+ * of pumping the microtask queue a fixed number of times.
+ */
+const waitForEmit = (wrapper: Wrapper, event: string): Promise<void> =>
+  vi.waitFor(() => {
+    expect(wrapper.emitted(event)).toBeDefined()
+  })
 
 afterEach(() => vi.resetModules())
 
@@ -54,6 +57,7 @@ describe('PdfUpload — happy path', () => {
     }))
     const w = mount(PdfUpload, { props: { slug: 'sample', lang: 'en' } })
     await driveFileInput(w, fakePdf())
+    await waitForEmit(w, 'set-cover')
 
     const pdfFile = w.emitted('upload-pdf')?.[0]?.[0] as File | undefined
     expect(pdfFile).toBeInstanceOf(File)
@@ -77,9 +81,12 @@ describe('PdfUpload — happy path', () => {
       },
     })
     await driveFileInput(w, fakePdf())
+    // upload-cover is terminal here: the set-cover decision happens
+    // synchronously in the same fan-out, so once upload-cover landed
+    // the absence of set-cover is final.
+    await waitForEmit(w, 'upload-cover')
 
     expect(w.emitted('upload-pdf')).toBeDefined()
-    expect(w.emitted('upload-cover')).toBeDefined()
     expect(w.emitted('set-cover')).toBeUndefined()
   })
 })
@@ -100,6 +107,7 @@ describe('PdfUpload — error path', () => {
     }))
     const w = mount(PdfUpload, { props: { slug: 'sample', lang: 'en' } })
     await driveFileInput(w, fakePdf())
+    await waitForEmit(w, 'error')
 
     expect(w.emitted('upload-pdf')).toBeDefined()
     expect(w.emitted('upload-cover')).toBeUndefined()
@@ -116,6 +124,10 @@ describe('PdfUpload — error path', () => {
     const w = mount(PdfUpload, { props: { slug: 'sample', lang: 'en' } })
     const fakeImage = new File(['x'], 'photo.png', { type: 'image/png' })
     await driveFileInput(w, fakeImage)
+    // Non-PDF short-circuits synchronously; a microtask flush is all
+    // the chain needs before asserting silence.
+    await nextTick()
+    await nextTick()
 
     expect(w.emitted('upload-pdf')).toBeUndefined()
     expect(w.emitted('upload-cover')).toBeUndefined()
