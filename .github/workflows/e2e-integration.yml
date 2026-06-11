@@ -22,7 +22,7 @@ jobs:
       MOCK_OAUTH: 'false'
       VITE_MOCK_AUTH: 'false'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
 

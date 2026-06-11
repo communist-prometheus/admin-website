@@ -31,7 +31,7 @@ jobs:
       VITE_GITHUB_CLIENT_ID_DEVELOP: ${{ vars.VITE_GITHUB_CLIENT_ID_DEVELOP }}
     steps:
       - name: Cloning git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # e2e-toolkit lives in a separate repo and is wired in as a
           # submodule. Without this, e2e tsconfig path mapping points
@@ -57,12 +57,13 @@ jobs:
 
       # Wrangler 4 (used by `bunx wrangler dev` below) requires Node 22+.
       # setup-bun ships bundled Node, but `bunx wrangler` resolves against
-      # whatever node is on $PATH. Pin Node 22 so the wrangler CLI doesn't
-      # refuse to start with "requires at least Node.js v22".
-      - name: Installing Node 22
-        uses: actions/setup-node@v4
+      # whatever node is on $PATH. Pin Node 24 (current LTS, matches the
+      # runner's action runtime) so the wrangler CLI doesn't refuse to
+      # start with "requires at least Node.js v22".
+      - name: Installing Node 24
+        uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Installing tools and dependencies
         uses: oven-sh/setup-bun@v2
@@ -144,7 +145,7 @@ jobs:
             e2e-prod/prod-bundle-smoke.pw.ts --reporter=line
 
       - name: Deploying to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
