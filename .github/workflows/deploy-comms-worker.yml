@@ -38,12 +38,14 @@ jobs:
       - name: Audit EARS coverage
         run: bun scripts/comms-spec-coverage.ts
 
+      # `migrations apply` tracks state in the d1_migrations table and
+      # only runs pending files — the previous `d1 execute` loop re-ran
+      # every migration on every deploy and died on "table already
+      # exists" (and would have duplicated seed rows had it not).
       - name: Apply D1 migrations to prod
         run: |
           cd services/comms-worker
-          for f in migrations/*.sql; do
-            npx wrangler d1 execute comms-prod --remote --file "$f"
-          done
+          npx wrangler d1 migrations apply comms-prod --remote
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
