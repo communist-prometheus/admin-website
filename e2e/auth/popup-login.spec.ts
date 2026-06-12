@@ -6,6 +6,7 @@ import {
   visit,
 } from '@prometheus/e2e-toolkit'
 import { waitForContentReady } from '../helpers/content-ready'
+import { waitForSWControl } from '../helpers/visit-settled'
 
 test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -23,6 +24,11 @@ test.describe('Login Flow', () => {
       page.getByRole('button', { name: /test user/i })
     )
 
+    // The first authenticated load registers the SW; activation
+    // claims the client and aborts an in-flight goto
+    // (net::ERR_ABORTED). Gate on the lifecycle before navigating —
+    // event-driven, no sleep.
+    await waitForSWControl(page)
     await visit(page, '/content/blog')
     await waitForContentReady(page)
 
