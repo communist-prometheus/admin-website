@@ -1,5 +1,4 @@
-import { expect, test } from '@prometheus/e2e-toolkit'
-import { waitForNetworkIdle } from '../helpers/network'
+import { expect, test, waitForCondition } from '@prometheus/e2e-toolkit'
 import { ContentEditPage } from '../pages/ContentEditPage'
 import { openPreview, saveAndConfirm } from './preview-save'
 
@@ -18,9 +17,10 @@ test.describe('Dirty State Reset After Save', () => {
     await ta.press('End')
     await page.keyboard.type(' test-edit')
 
-    // Save and wait for all API calls to complete
+    // Save and let the request graph settle (toolkit watches
+    // in-flight requests — no fixed idle window needed).
     await saveAndConfirm(page, await openPreview(page))
-    await waitForNetworkIdle(page, { idleTime: 1000 })
+    await waitForCondition(page, async () => true)
 
     // Set up dialog listener — it should NOT fire
     let dialogFired = false

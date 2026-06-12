@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import process from 'node:process'
 import { expect, test } from '@prometheus/e2e-toolkit'
@@ -19,15 +18,18 @@ import { expect, test } from '@prometheus/e2e-toolkit'
  * concrete signal — not a silent no-op like the production symptom.
  */
 
-const PDF_FIXTURE = resolve(
-  'C:/Projects/Prometheus/public-website/src/content/blog/demo-test-artiche/assets/pdf-sample_0 (1).pdf'
-)
+/*
+ * In-repo fixture: the previous absolute path into a sibling repo
+ * existed only on one dev machine, so `test.skip(!existsSync(...))`
+ * silently skipped this test in CI — the coverage looked green
+ * while the assertion below had long gone stale.
+ */
+const PDF_FIXTURE = resolve('e2e/fixtures/pdf-sample.pdf')
 
 test.describe('Newspaper — PDF cover auto-extraction', () => {
   test('uploading a PDF auto-extracts the first page as cover', async ({
     page,
   }) => {
-    test.skip(!existsSync(PDF_FIXTURE), `PDF fixture missing: ${PDF_FIXTURE}`)
     test.setTimeout(60_000)
 
     page.on('pageerror', e => {
@@ -77,10 +79,12 @@ test.describe('Newspaper — PDF cover auto-extraction', () => {
     expect(src).toBeTruthy()
     expect(src).toMatch(/^blob:/)
 
-    // The asset panel should list cover.png alongside the uploaded PDF.
+    // The asset panel should list the per-lang cover (cover.<lang>.png)
+    // alongside the uploaded PDF. AssetThumbnail carries the file
+    // name in data-name (the img alt is empty, name is aria-label).
     const assetPanel = page.locator('[data-testid="asset-panel"]')
-    await expect(assetPanel.locator('text=cover.png')).toBeVisible({
-      timeout: 5_000,
-    })
+    await expect(
+      assetPanel.locator('li[data-name^="cover."][data-name$=".png"]')
+    ).toBeVisible({ timeout: 5_000 })
   })
 })

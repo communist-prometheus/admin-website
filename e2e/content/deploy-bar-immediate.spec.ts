@@ -106,12 +106,16 @@ test.describe('Deploy bar — optimistic + survives stale runs', () => {
     /* Optimistic appearance. */
     await expect(page.locator('.deploy-bar')).toBeVisible({ timeout: 1500 })
     /*
-     * Hold for 5 s — well past the first polling tick on a normal
-     * `POLL_INTERVAL_MS` cadence (~3 s). Pre-fix the bar
-     * disappeared inside this window; post-fix the timestamp floor
-     * keeps the pending alive until the *new* run lands.
+     * Survive the polling tick that delivers the stale run —
+     * event-driven: wait for the actual workflow_runs requests the
+     * poller fires (the routed stub above answers them), not a
+     * fixed 5 s sleep. Two ticks guarantee the merge that
+     * previously ate the pending entry has happened.
      */
-    await page.waitForTimeout(5000)
+    const tick = () =>
+      page.waitForRequest(/api\.github\.com\/.*\/workflows\//)
+    await tick()
+    await tick()
     await expect(page.locator('.deploy-bar')).toBeVisible()
   })
 })

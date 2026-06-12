@@ -82,6 +82,17 @@ jobs:
       - name: Building application (validate + type-check + lint + build)
         run: bun run build
 
+      # Cache keyed on the @playwright/test version — a browser
+      # download only happens when the dependency actually moves.
+      - name: Resolve Playwright version
+        run: |
+          echo "PLAYWRIGHT_VERSION=$(bun -e "console.log(require('@playwright/test/package.json').version)")" >> "$GITHUB_ENV"
+      - name: Cache Playwright browsers
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ env.PLAYWRIGHT_VERSION }}
+
       # timeout-minutes: a hung apt/download here previously held the
       # run for 1h+ — fail fast instead so the queue stays honest.
       - name: Installing Playwright browsers
