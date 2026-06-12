@@ -19,8 +19,13 @@ const userStorySections = (t: UserStoryTemplate): readonly string[] => [
   section(SECTION_LABELS.description, t.description),
 ]
 
+/*
+ * Plain links for every kind, images included: the tickets repo is
+ * private, so GitHub's camo proxy cannot inline raw content anyway —
+ * a working member-only blob link beats a permanently broken embed.
+ */
 const attachmentLine = (a: TicketAttachment): string =>
-  a.kind === 'image' ? `![${a.name}](${a.url})` : `[${a.name}](${a.url})`
+  `[${a.name}](${a.url})`
 
 const attachmentsBlock = (
   attachments: readonly TicketAttachment[]

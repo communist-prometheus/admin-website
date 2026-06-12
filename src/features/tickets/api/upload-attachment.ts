@@ -3,16 +3,12 @@ import type { TicketAttachment } from '../templates/attachment-types'
 import { CONTENTS_API_THRESHOLD_BYTES } from './attachment-limits'
 import {
   buildAttachmentPath,
+  buildAttachmentUrl,
   detectKind,
   randomAttachmentId,
-  TICKETS_BRANCH,
-  TICKETS_REPO_NAME,
-  TICKETS_REPO_OWNER,
 } from './attachment-paths'
 import { putBlob } from './put-blob'
 import { putContent } from './put-content'
-
-const RAW = `https://raw.githubusercontent.com/${TICKETS_REPO_OWNER}/${TICKETS_REPO_NAME}/${TICKETS_BRANCH}`
 
 interface UploadDeps {
   readonly token: string
@@ -23,8 +19,8 @@ interface UploadDeps {
  * Upload one ticket attachment to the tickets repo.
  *
  * The file lands at `attachments/<id>/<sanitised-name>` on the tickets
- * repo's default branch and is referenced from the issue body via the
- * raw.githubusercontent.com URL — no extra hop, no third-party host.
+ * repo's default branch and is referenced from the issue body via its
+ * github.com blob URL — member-only access, no third-party host.
  *
  * @param deps - Token + File pair
  * @returns Resolved attachment with stable URL
@@ -48,7 +44,7 @@ export const uploadAttachment = async (
   return {
     id,
     name: deps.file.name,
-    url: `${RAW}/${path}`,
+    url: buildAttachmentUrl(path),
     kind: detectKind(deps.file.type),
     sizeBytes: deps.file.size,
   }
