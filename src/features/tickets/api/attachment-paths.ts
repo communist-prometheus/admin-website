@@ -38,3 +38,14 @@ export const buildAttachmentPath = (fileName: string, id: string): string =>
  */
 export const detectKind = (mime: string): AttachmentKind =>
   mime.startsWith('image/') ? 'image' : 'file'
+
+/**
+ * Build the browser URL for an uploaded attachment. Uses the github.com
+ * blob page, not raw.githubusercontent.com: the tickets repo is private,
+ * raw URLs are anonymous-only and GitHub's camo proxy cannot embed them —
+ * the blob page authenticates the viewing org member instead.
+ * @param path - Repo-relative attachment path from {@link buildAttachmentPath}
+ * @returns URL of the attachment's blob page on github.com
+ */
+export const buildAttachmentUrl = (path: string): string =>
+  `https://github.com/${TICKETS_REPO_OWNER}/${TICKETS_REPO_NAME}/blob/${TICKETS_BRANCH}/${path}`

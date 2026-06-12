@@ -1,14 +1,10 @@
 import type { TicketAttachment } from '../templates/attachment-types'
 import {
   buildAttachmentPath,
+  buildAttachmentUrl,
   randomAttachmentId,
-  TICKETS_BRANCH,
-  TICKETS_REPO_NAME,
-  TICKETS_REPO_OWNER,
 } from './attachment-paths'
 import { putContent } from './put-content'
-
-const RAW = `https://raw.githubusercontent.com/${TICKETS_REPO_OWNER}/${TICKETS_REPO_NAME}/${TICKETS_BRANCH}`
 
 const toBase64 = (text: string): string =>
   globalThis.btoa(unescape(encodeURIComponent(text)))
@@ -41,7 +37,7 @@ export const uploadTextAttachment = async (
   return {
     id,
     name: deps.fileName,
-    url: `${RAW}/${path}`,
+    url: buildAttachmentUrl(path),
     kind: 'file',
     sizeBytes: deps.text.length,
   }

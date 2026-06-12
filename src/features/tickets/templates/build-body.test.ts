@@ -44,10 +44,11 @@ describe('buildBody', () => {
     expect(md).toContain('## So that')
   })
 
-  it('renders image attachment with a markdown image link', () => {
+  it('renders image attachment as a plain link (private repo, no embeds)', () => {
     const md = buildBody(bug, [image])
     expect(md).toContain('## Attachments')
-    expect(md).toContain('![screenshot.png](https://raw/x/screenshot.png)')
+    expect(md).toContain('[screenshot.png](https://raw/x/screenshot.png)')
+    expect(md).not.toContain('![screenshot.png]')
   })
 
   it('round-trips through parseBody preserving section text', () => {
