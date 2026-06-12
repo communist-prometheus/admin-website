@@ -18,6 +18,23 @@ import { expectVisible, visit } from '@prometheus/e2e-toolkit'
  */
 
 /**
+ * Wait until the SW lifecycle has settled for the current document.
+ * Use after any action that (re)registers the SW — e.g. the first
+ * authenticated load — and BEFORE the next navigation: activation
+ * claims clients and aborts an in-flight goto (net::ERR_ABORTED).
+ * WebKit in Playwright never exposes `controller`, so an active
+ * registration counts as the same lifecycle gate there.
+ * @param page Playwright page.
+ */
+export const waitForSWControl = async (page: Page): Promise<void> => {
+  await page.waitForFunction(async () => {
+    const sw = navigator.serviceWorker
+    const reg = sw ? await sw.getRegistration() : undefined
+    return !sw || sw.controller !== null || Boolean(reg?.active)
+  })
+}
+
+/**
  * Navigate to `url`, wait for the SW to control the page, then
  * assert `stableTestId` is visible. The stable test-id is required —
  * it is the post-activate DOM anchor that proves the
@@ -36,13 +53,7 @@ export const visitSettled = async (
   stableTestId: string
 ): Promise<void> => {
   await visit(page, url)
-  // WebKit in Playwright never exposes `controller` — an active
-  // registration is the same lifecycle gate there.
-  await page.waitForFunction(async () => {
-    const sw = navigator.serviceWorker
-    const reg = sw ? await sw.getRegistration() : undefined
-    return !sw || sw.controller !== null || Boolean(reg?.active)
-  })
+  await waitForSWControl(page)
   // First-visit budget: a cold SW boot (register + activate + mock
   // clone) under 4-worker CPU contention legitimately exceeds the
   // toolkit's 10 s default ceiling on CI. Still event-driven — the
