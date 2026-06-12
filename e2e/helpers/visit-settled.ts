@@ -43,5 +43,11 @@ export const visitSettled = async (
     const reg = sw ? await sw.getRegistration() : undefined
     return !sw || sw.controller !== null || Boolean(reg?.active)
   })
-  await expectVisible(page, page.locator(`[data-testid="${stableTestId}"]`))
+  // First-visit budget: a cold SW boot (register + activate + mock
+  // clone) under 4-worker CPU contention legitimately exceeds the
+  // toolkit's 10 s default ceiling on CI. Still event-driven — the
+  // wait resolves the instant the anchor renders.
+  await expectVisible(page, page.locator(`[data-testid="${stableTestId}"]`), {
+    maxMs: 30_000,
+  })
 }
