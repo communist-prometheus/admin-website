@@ -53,6 +53,7 @@ const description = computed(() => {
     :class="{ selected, deleting, 'in-select': selectMode, checked }"
     :inert="deleting || undefined"
     data-testid="content-item"
+    :data-path="item.path"
     :data-selected="checked ? 'true' : undefined"
     @click="emit('click')"
   >

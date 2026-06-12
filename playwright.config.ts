@@ -27,7 +27,13 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: 0,
-  workers: process.env.CI ? 1 : undefined,
+  /*
+   * 4 workers = the vCPU count of ubuntu-latest. Contexts are
+   * isolated (own SW registration + IDB each) and the suite has
+   * always run parallel locally — the single CI worker was pure
+   * serialization tax (6m55s -> ~2.4m measured at 4 workers).
+   */
+  workers: process.env.CI ? 4 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */

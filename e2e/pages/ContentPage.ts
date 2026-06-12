@@ -1,26 +1,65 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
+import { click, visit, waitForCondition } from '@prometheus/e2e-toolkit'
 import { waitForContentReady } from '../helpers/content-ready'
-import { waitForNetworkIdle } from '../helpers/network'
 
+type ContentType = 'blog' | 'pages' | 'positions'
+
+/*
+ * Toolkit-backed page object: visit/click already settle on the
+ * request graph (50 ms quiet window), so the previous fixed
+ * waitForTimeout(100/500) sleeps and 300–1000 ms idle windows are
+ * gone — they were pure wall-clock tax on every spec using this
+ * page object.
+ *
+ * Section data arrives over the SW MessageChannel, which the
+ * request graph cannot see — after a section change the list keeps
+ * the PREVIOUS section's items until the SW answers. The honest,
+ * event-shaped readiness signal is therefore the items themselves:
+ * each carries data-path, and the list belongs to a section once
+ * its first item's path lives under that section's directory.
+ */
 export class ContentPage {
   constructor(private readonly page: Page) {}
 
-  async navigate(contentType: 'blog' | 'pages' | 'positions'): Promise<void> {
-    await this.page.goto(`/content/${contentType}`, {
-      waitUntil: 'domcontentloaded',
+  private async waitForSection(contentType: ContentType): Promise<void> {
+    const first = this.page.locator('[data-testid="content-item"]').first()
+    const empty = this.page.getByText(/no content items found/i)
+    await waitForCondition(this.page, async () => {
+      const path = await first.getAttribute('data-path').catch(() => null)
+      const matches = path !== null && path.startsWith(`${contentType}/`)
+      return matches || (await empty.isVisible().catch(() => false))
     })
+  }
+
+  async navigate(contentType: ContentType): Promise<void> {
+    await visit(this.page, `/content/${contentType}`)
     await waitForContentReady(this.page)
     await this.page.waitForSelector('[data-testid="content-list"]', {
       state: 'visible',
       timeout: 20000,
     })
-    await waitForNetworkIdle(this.page, { idleTime: 1000 })
+    await this.waitForSection(contentType)
+  }
+
+  /**
+   * In-app section switch via the nav link. Waits until the list
+   * actually shows the target section's items — not just the URL.
+   * @param contentType - Target content section
+   */
+  async switchSection(contentType: ContentType): Promise<void> {
+    // The nav renders the link twice (desktop bar + mobile menu) —
+    // target the first; only the desktop one is interactable here.
+    await click(
+      this.page,
+      this.page.locator(`a[href="/content/${contentType}"]`).first()
+    )
+    await this.page.waitForURL(`/content/${contentType}`)
+    await this.waitForSection(contentType)
   }
 
   async clickCreateButton(): Promise<void> {
-    await this.page.getByRole('button', { name: /new/i }).click()
-    await waitForNetworkIdle(this.page, { idleTime: 300 })
+    await click(this.page, this.page.getByRole('button', { name: /new/i }))
   }
 
   async expectToBeVisible(): Promise<void> {
@@ -48,10 +87,7 @@ export class ContentPage {
     const item = this.page
       .locator('[data-testid="content-item"]')
       .filter({ hasText: title })
-    await item.waitFor({ state: 'visible' })
-    await item.click()
-    await this.page.waitForTimeout(100)
-    await waitForNetworkIdle(this.page, { idleTime: 500 })
+    await click(this.page, item)
   }
 
   async expectEmptyState(): Promise<void> {
@@ -68,9 +104,6 @@ export class ContentPage {
     const button = this.page.getByRole('button', {
       name: langNames[lang] ?? lang,
     })
-    await button.waitFor({ state: 'visible', timeout: 10000 })
-    await button.click()
-    await this.page.waitForTimeout(500)
-    await waitForNetworkIdle(this.page, { idleTime: 1000 })
+    await click(this.page, button)
   }
 }

@@ -13,8 +13,10 @@ test.describe('Content Switch Verification', () => {
       .locator('[data-testid="content-item"]')
       .allTextContents()
 
-    await page.click('a[href="/content/positions"]')
-    await page.waitForURL('/content/positions')
+    // switchSection waits until the items BELONG to the target
+    // section (data-path) — URL + visible list is not enough, the
+    // SW MessageChannel fill is invisible to the request graph.
+    await cp.switchSection('positions')
     await cp.expectToBeVisible()
 
     const posTitles = await page
@@ -36,8 +38,7 @@ test.describe('Content Switch Verification', () => {
       .locator('[data-testid="content-item"]')
       .allTextContents()
 
-    await page.click('a[href="/content/pages"]')
-    await page.waitForURL('/content/pages')
+    await cp.switchSection('pages')
     await cp.expectToBeVisible()
 
     const pageTitles = await page
@@ -85,17 +86,11 @@ test.describe('Content Switch Verification', () => {
       .locator('[data-testid="content-item"]')
       .allTextContents()
 
-    await page.click('a[href="/content/positions"]')
-    await page.waitForURL('/content/positions')
+    await cp.switchSection('positions')
     await cp.expectToBeVisible()
 
-    await page.click('a[href="/content/blog"]')
-    await page.waitForURL('/content/blog')
+    await cp.switchSection('blog')
     await cp.expectToBeVisible()
-    await page
-      .locator('[data-testid="content-item"]')
-      .first()
-      .waitFor({ state: 'visible', timeout: 15000 })
 
     const blogSecond = await page
       .locator('[data-testid="content-item"]')

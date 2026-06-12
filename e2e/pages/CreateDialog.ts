@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { waitForNetworkIdle } from '../helpers/network'
+import { click } from '@prometheus/e2e-toolkit'
 
 interface CreateFormData {
   readonly slug: string
@@ -65,13 +65,11 @@ export class CreateDialog {
   }
 
   async clickSubmit(): Promise<void> {
-    await this.page.getByRole('button', { name: /create/i }).click()
-    await waitForNetworkIdle(this.page)
+    await click(this.page, this.page.getByRole('button', { name: /create/i }))
   }
 
   async clickCancel(): Promise<void> {
-    await this.page.getByRole('button', { name: /cancel/i }).click()
-    await waitForNetworkIdle(this.page, { idleTime: 300 })
+    await click(this.page, this.page.getByRole('button', { name: /cancel/i }))
   }
 
   async expectFieldToBeVisible(fieldId: string): Promise<void> {
