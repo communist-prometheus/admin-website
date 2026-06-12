@@ -99,9 +99,14 @@ jobs:
         run: bunx playwright install --with-deps chromium
         timeout-minutes: 8
 
+      # E2E_MAX_WAIT_MS: the toolkit's wait ceiling is a safety net;
+      # on 4 shared vCPUs cold SW boots legitimately exceed the 10s
+      # local default. Healthy waits still resolve in milliseconds.
       - name: Running E2E tests
         run: bunx playwright test --project=chromium --reporter=line
         timeout-minutes: 20
+        env:
+          E2E_MAX_WAIT_MS: '30000'
 
       # Playwright's webServer runs `bun run build:e2e` which overwrites
       # dist/ with a VITE_MOCK_AUTH=true bundle AND leaves a
