@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import type { DownloadableAsset } from '@/composables/useAssets/download-asset'
+import {
+  assetToDownloadable,
+  type DownloadableAsset,
+} from '@/composables/useAssets/download-asset'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import AssetThumbnail from './AssetThumbnail.vue'
 
@@ -11,30 +14,24 @@ const emit = defineEmits<{
   'set-cover': [name: string]
   'delete-asset': [path: string]
   'download-asset': [asset: DownloadableAsset]
+  'view-asset': [index: number]
 }>()
 
-// A committed asset is fetched fresh through the SW; a pending one is
-// only in memory, so hand its blob URL straight to the downloader.
-const toDownloadable = (asset: AssetDisplay): DownloadableAsset => ({
-  path: asset.path,
-  name: asset.name,
-  blobUrl: asset.status === 'committed' ? undefined : asset.thumbnailUrl,
-})
-
 const onDownload = (asset: AssetDisplay): void => {
-  emit('download-asset', toDownloadable(asset))
+  emit('download-asset', assetToDownloadable(asset))
 }
 </script>
 
 <template>
   <ul class="asset-grid">
     <AssetThumbnail
-      v-for="asset in assets"
+      v-for="(asset, i) in assets"
       :key="asset.path"
       v-bind="asset"
       @set-cover="$emit('set-cover', asset.name)"
       @delete="$emit('delete-asset', asset.path)"
       @download="onDownload(asset)"
+      @view="$emit('view-asset', i)"
     />
   </ul>
 </template>

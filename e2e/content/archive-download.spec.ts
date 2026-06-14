@@ -15,10 +15,10 @@ test.describe('Archive — download', () => {
 
     const thumbs = am.getAssetThumbnails()
     await expect(thumbs.first()).toBeVisible({ timeout: 15000 })
-    expect(await thumbs.count()).toBe(2)
+    expect(await thumbs.count()).toBe(3)
 
     // Every file — image and non-image alike — offers a download.
-    expect(await am.getDownloadAssetBtns().count()).toBe(2)
+    expect(await am.getDownloadAssetBtns().count()).toBe(3)
   })
 
   test('download control names each file accessibly', async ({ page }) => {

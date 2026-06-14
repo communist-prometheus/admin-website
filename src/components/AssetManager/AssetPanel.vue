@@ -14,6 +14,7 @@ defineEmits<{
   'delete-asset': [path: string]
   'upload-asset': [file: File]
   'download-asset': [asset: DownloadableAsset]
+  'view-asset': [index: number]
 }>()
 </script>
 
@@ -26,6 +27,7 @@ defineEmits<{
       @set-cover="$emit('set-cover', $event)"
       @delete-asset="$emit('delete-asset', $event)"
       @download-asset="$emit('download-asset', $event)"
+      @view-asset="$emit('view-asset', $event)"
     />
     <p v-else class="empty">No assets yet</p>
   </section>

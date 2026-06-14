@@ -76,6 +76,15 @@ export class AssetManagerPage {
     return this.page.locator('[data-testid="asset-download-btn"]')
   }
 
+  getViewAssetBtns(): Locator {
+    return this.page.locator('[data-testid="asset-view-btn"]')
+  }
+
+  /** The view button inside a specific thumbnail by file name */
+  getViewBtnFor(name: string): Locator {
+    return this.getThumbByName(name).locator('[data-testid="asset-view-btn"]')
+  }
+
   /** Wait for cover image section to be visible */
   async expectCoverVisible(): Promise<void> {
     await expect(this.getCoverImage()).toBeVisible({
