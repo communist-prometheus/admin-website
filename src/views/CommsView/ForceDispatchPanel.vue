@@ -1,37 +1,42 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import type { Subscriber } from '@/stores/comms'
 import {
   apiForceDispatch,
   type ForceDispatchResult,
 } from '@/stores/dispatch-api'
+import { isAllSelected, toggleAll, toggleId } from './dispatch-selection'
 
-const props = defineProps<{
-  readonly activeCount: number
-}>()
-
-const emit = defineEmits<{
-  dispatched: []
-}>()
+const props = defineProps<{ readonly subscribers: readonly Subscriber[] }>()
+const emit = defineEmits<{ dispatched: [] }>()
 
 type Phase = 'idle' | 'confirm' | 'sending' | 'done' | 'error'
 
 const phase = ref<Phase>('idle')
 const result = ref<ForceDispatchResult | undefined>(undefined)
 const error = ref<string | undefined>(undefined)
+const selected = ref<number[]>([])
 
+const ids = (): number[] => props.subscribers.map(s => s.id)
+const allSelected = computed(() => isAllSelected(selected.value, ids()))
+
+const onToggle = (id: number): void => {
+  selected.value = toggleId(selected.value, id)
+}
+const onToggleAll = (): void => {
+  selected.value = toggleAll(selected.value, ids())
+}
 const ask = (): void => {
   phase.value = 'confirm'
 }
-
 const cancel = (): void => {
   phase.value = 'idle'
 }
-
 const confirm = async (): Promise<void> => {
   phase.value = 'sending'
   error.value = undefined
   try {
-    result.value = await apiForceDispatch()
+    result.value = await apiForceDispatch(selected.value)
     phase.value = 'done'
     emit('dispatched')
   } catch (e) {
@@ -44,6 +49,7 @@ const reset = (): void => {
   phase.value = 'idle'
   result.value = undefined
   error.value = undefined
+  selected.value = []
 }
 </script>
 
@@ -54,21 +60,56 @@ const reset = (): void => {
     aria-labelledby="force-dispatch-title"
   >
     <p id="force-dispatch-title" class="lead">
-      Trigger an immediate send to every active subscriber. The
-      saved schedule is <strong>not</strong> changed — the next
-      cron tick still fires at its regular time.
+      Pick who receives an immediate test send. Targeted sends do
+      <strong>not</strong> change the saved schedule or advance the
+      global cutoff — the next cron tick still fires normally for
+      everyone.
     </p>
 
-    <button
-      v-if="phase === 'idle'"
-      type="button"
-      class="btn btn-trigger"
-      data-testid="force-dispatch-start"
-      :disabled="activeCount === 0"
-      @click="ask"
-    >
-      Send test dispatch now
-    </button>
+    <div v-if="phase === 'idle'" class="idle">
+      <p
+        v-if="subscribers.length === 0"
+        class="empty"
+        data-testid="force-dispatch-empty"
+      >
+        No active subscribers to send to.
+      </p>
+      <fieldset v-else class="picker" data-testid="force-dispatch-picker">
+        <legend class="sr-only">Test recipients</legend>
+        <label class="recipient select-all">
+          <input
+            type="checkbox"
+            data-testid="force-dispatch-select-all"
+            :checked="allSelected"
+            @change="onToggleAll"
+          />
+          <span>Select all ({{ subscribers.length }})</span>
+        </label>
+        <label
+          v-for="s in subscribers"
+          :key="s.id"
+          class="recipient"
+        >
+          <input
+            type="checkbox"
+            :data-testid="`force-dispatch-pick-${s.id}`"
+            :checked="selected.includes(s.id)"
+            @change="onToggle(s.id)"
+          />
+          <span class="email">{{ s.email }}</span>
+        </label>
+      </fieldset>
+
+      <button
+        type="button"
+        class="btn btn-trigger"
+        data-testid="force-dispatch-start"
+        :disabled="selected.length === 0"
+        @click="ask"
+      >
+        Send test to {{ selected.length }} selected
+      </button>
+    </div>
 
     <div
       v-else-if="phase === 'confirm'"
@@ -78,8 +119,8 @@ const reset = (): void => {
     >
       <p id="force-confirm-warning" class="warning">
         ⚠ This sends the current digest to
-        <strong>{{ activeCount }}</strong>
-        active subscriber<span v-if="activeCount !== 1">s</span>
+        <strong>{{ selected.length }}</strong>
+        selected recipient<span v-if="selected.length !== 1">s</span>
         right now and writes a row per recipient to the run log.
       </p>
       <div class="confirm-actions">
@@ -162,6 +203,66 @@ const reset = (): void => {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 0.875rem;
+}
+
+.idle {
+  display: grid;
+  gap: var(--spacing-sm);
+  justify-items: start;
+}
+
+.picker {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: var(--spacing-xs);
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.recipient {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.recipient input {
+  cursor: pointer;
+}
+
+.recipient.select-all {
+  font-weight: 600;
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.recipient .email {
+  font-family: var(--font-mono);
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .btn {

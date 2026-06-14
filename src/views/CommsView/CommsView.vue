@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { t } from '@/i18n/t'
-import { useCommsStore } from '@/stores/comms'
+import { type Subscriber, useCommsStore } from '@/stores/comms'
 import { useCutoffStore } from '@/stores/cutoff'
 import { useRunsStore } from '@/stores/runs'
 import { useScheduleStore } from '@/stores/schedule'
@@ -10,6 +10,7 @@ import CommsSection from './CommsSection.vue'
 import CutoffEditor from './CutoffEditor.vue'
 import ForceDispatchPanel from './ForceDispatchPanel.vue'
 import { buildHandlers } from './handlers'
+import RemoveSubscriberDialog from './RemoveSubscriberDialog.vue'
 import RunHistory from './RunHistory.vue'
 import ScheduleEditor from './ScheduleEditor.vue'
 import SubscribersTable from './SubscribersTable.vue'
@@ -19,11 +20,26 @@ const schedule = useScheduleStore()
 const cutoff = useCutoffStore()
 const runs = useRunsStore()
 
-const activeCount = computed(
-  () => store.subscribers.filter(s => s.status === 'active').length
+const activeSubscribers = computed(() =>
+  store.subscribers.filter(s => s.status === 'active')
 )
 const showRuns = ref(false)
+const pendingRemove = ref<Subscriber | undefined>(undefined)
 const h = buildHandlers({ comms: store, schedule, cutoff, runs })
+
+const requestRemove = (id: number): void => {
+  pendingRemove.value = store.subscribers.find(s => s.id === id)
+}
+
+const confirmRemove = (): void => {
+  const target = pendingRemove.value
+  pendingRemove.value = undefined
+  if (target) h.onRemove(target.id)
+}
+
+const cancelRemove = (): void => {
+  pendingRemove.value = undefined
+}
 
 onMounted(() => {
   void store.ensureLoaded()
@@ -77,7 +93,7 @@ onMounted(() => {
         <SubscribersTable
           :subscribers="store.subscribers"
           @langs="h.onLangs"
-          @remove="h.onRemove"
+          @remove="requestRemove"
         />
         <p
           v-if="store.loading && store.subscribers.length === 0"
@@ -93,7 +109,7 @@ onMounted(() => {
         :lead="t('comms.testDispatch.lead')"
       >
         <ForceDispatchPanel
-          :active-count="activeCount"
+          :subscribers="activeSubscribers"
           @dispatched="h.onDispatched"
         />
       </CommsSection>
@@ -116,6 +132,11 @@ onMounted(() => {
           Loading run history…
         </p>
       </CommsSection>
+      <RemoveSubscriberDialog
+        :email="pendingRemove?.email"
+        @confirm="confirmRemove"
+        @cancel="cancelRemove"
+      />
     </section>
   </AppLayout>
 </template>
