@@ -34,6 +34,23 @@
       "name": "comms-worker-develop",
       "routes": [
         { "pattern": "dev-lists.comprom.org", "custom_domain": true }
+      ],
+      // Named envs do NOT inherit top-level vars / bindings — repeat
+      // them here. CONTENT_BASE_URL points the digest at the develop
+      // public site so test mailings never read production content.
+      "vars": {
+        "VERSION": "0.2.0",
+        "ADMIN_HOSTNAME": "admin.comprom.org",
+        "ALLOWED_ORIGIN": "https://admin.comprom.org",
+        "CONTENT_BASE_URL": "https://dev.comprom.org",
+        "PUBLIC_BASE_URL": "https://dev-lists.comprom.org"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "comms-develop",
+          "database_id": "2f0dfe61-df6e-4eb1-acca-6b36fe66d7d6"
+        }
       ]
     }
   }
