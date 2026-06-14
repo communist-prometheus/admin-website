@@ -5,7 +5,9 @@ import AssetPanel from '@/components/AssetManager/AssetPanel.vue'
 import CoverImage from '@/components/AssetManager/CoverImage.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import FileViewer from '@/components/FileViewer/FileViewer.vue'
 import LanguageSelector from '@/components/LanguageSelector/LanguageSelector.vue'
+import { useFileViewer } from '@/composables/useFileViewer/useFileViewer'
 import ContentEditMain from './ContentEditView/ContentEditMain.vue'
 import ContentPreview from './ContentEditView/ContentPreview.vue'
 import EditBreadcrumb from './ContentEditView/EditBreadcrumb.vue'
@@ -38,6 +40,20 @@ const title = computed(() =>
 )
 const isRenameable = computed(
   () => p.contentType.value !== 'pages' && p.contentType.value !== 'common'
+)
+const {
+  open: viewerOpen,
+  index: viewerIndex,
+  files: viewerFiles,
+  openAt: openViewer,
+  close: closeViewer,
+  setIndex: setViewerIndex,
+  downloadAt: downloadViewerFile,
+} = useFileViewer(
+  () => (p.hasAssets.value ? p.assets.allAssets.value : []),
+  asset => {
+    void p.ah.onDownloadAsset(asset)
+  }
 )
 </script>
 
@@ -101,6 +117,15 @@ const isRenameable = computed(
       @delete-asset="p.ah.onDeleteAsset"
       @upload-asset="p.ah.onUploadAsset"
       @download-asset="p.ah.onDownloadAsset"
+      @view-asset="openViewer"
+    />
+    <FileViewer
+      v-if="viewerOpen"
+      :files="viewerFiles"
+      :index="viewerIndex"
+      @close="closeViewer"
+      @update:index="setViewerIndex"
+      @download="downloadViewerFile"
     />
     <PublishConfirmDialog
       :show="flow.showDialog.value"

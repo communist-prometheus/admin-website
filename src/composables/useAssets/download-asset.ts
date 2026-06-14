@@ -1,4 +1,5 @@
 import { resolveAssetUrl } from './resolve-asset-url'
+import type { AssetDisplay } from './types'
 
 /** Minimal asset reference sufficient to download a file. */
 export interface DownloadableAsset {
@@ -7,6 +8,21 @@ export interface DownloadableAsset {
   /** In-memory blob URL for a not-yet-committed (pending) asset. */
   readonly blobUrl?: string
 }
+
+/**
+ * Map a display asset to a downloadable reference: a committed asset is
+ * fetched fresh through the SW, a pending one is only in memory so its
+ * blob URL is handed straight to the downloader.
+ * @param asset - Display asset
+ * @returns Downloadable reference
+ */
+export const assetToDownloadable = (
+  asset: AssetDisplay
+): DownloadableAsset => ({
+  path: asset.path,
+  name: asset.name,
+  blobUrl: asset.status === 'committed' ? undefined : asset.thumbnailUrl,
+})
 
 /**
  * Resolve the URL to download an asset from: the in-memory blob URL for

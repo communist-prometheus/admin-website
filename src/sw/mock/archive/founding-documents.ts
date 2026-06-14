@@ -6,6 +6,12 @@ const POSTER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 280
     font-family="serif" font-size="18">Manifesto</text>
 </svg>`
 
+const FLAG_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 200">
+  <rect width="280" height="200" fill="#b91c1c"/>
+  <text x="140" y="110" text-anchor="middle" fill="#fde68a"
+    font-family="serif" font-size="20">Flag</text>
+</svg>`
+
 const README_TXT = `Founding documents of the collective.
 Scans and source files are kept here for the archive.`
 
@@ -25,6 +31,7 @@ lang: en
 
 The originals and working files of our founding texts.`,
   },
+  { path: `${BASE}/flag.svg`, content: FLAG_SVG },
   { path: `${BASE}/manifesto-poster.svg`, content: POSTER_SVG },
   { path: `${BASE}/notes.txt`, content: README_TXT },
 ]

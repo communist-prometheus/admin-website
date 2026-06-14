@@ -27,3 +27,6 @@ export const ASSET_DELETE_ID = 'asset-delete-btn'
 
 /** Download asset button */
 export const ASSET_DOWNLOAD_ID = 'asset-download-btn'
+
+/** Open asset in the file viewer button */
+export const ASSET_VIEW_ID = 'asset-view-btn'
