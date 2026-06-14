@@ -1,6 +1,7 @@
 import type { Lang } from '../subscribers/types'
-import type { LangGroups, StampedArticle } from './html'
+import type { LangGroups, StampedArticle, StampedNewspapers } from './html'
 import type { DigestChrome } from './i18n-types'
+import { composeBody } from './text-newspaper'
 
 const renderItem = ([article, url]: StampedArticle): string =>
   `· ${article.title}  (${article.pubDate.slice(0, 10)})\n  ${url}`
@@ -21,12 +22,14 @@ const renderGroup = (
  * unsubscribe URL at the bottom.
  * @param chrome Localised strings for the recipient.
  * @param groups Articles grouped by language, recipient-order.
+ * @param newspapers Stamped newspaper issues (top announcements + foot current).
  * @param unsubscribeUrl Per-recipient unsubscribe URL.
  * @returns Complete plain-text string.
  */
 export const renderText = (
   chrome: DigestChrome,
   groups: LangGroups,
+  newspapers: StampedNewspapers,
   unsubscribeUrl: string
 ): string => {
   const showHeaders = groups.length > 1
@@ -36,7 +39,7 @@ export const renderText = (
   return [
     chrome.intro,
     '',
-    sections,
+    composeBody(chrome, sections, newspapers),
     '',
     '---',
     chrome.unsubscribeNote,

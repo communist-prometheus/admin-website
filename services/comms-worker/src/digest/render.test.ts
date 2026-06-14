@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { NewspaperSelection } from '../newspaper/classify'
 import type { Article } from '../rss/types'
 import type { Subscriber } from '../subscribers/types'
 import { renderDigest } from './render'
@@ -154,6 +155,91 @@ describe('renderDigest — headers + body invariants', () => {
     })
     expect(d.html).toContain('prefers-color-scheme: dark')
     expect(d.html).toContain('background:#1a1a1a')
+  })
+})
+
+const NEW_ISSUE: Article = {
+  guid: 'np-new',
+  title: 'Prometheus Weekly #7',
+  link: 'https://comprom.org/en/newspaper/weekly-7',
+  lang: 'en',
+  pubDate: '2026-06-05T08:00:00.000Z',
+}
+
+const OLD_ISSUE: Article = {
+  guid: 'np-old',
+  title: 'Prometheus Weekly #6',
+  link: 'https://comprom.org/en/newspaper/weekly-6',
+  lang: 'en',
+  pubDate: '2026-05-20T08:00:00.000Z',
+}
+
+describe('renderDigest — newspaper', () => {
+  it('renders a new issue at the top with the "New issue" banner + link', () => {
+    const newspapers: NewspaperSelection = {
+      announcements: [NEW_ISSUE],
+      current: [],
+    }
+    const d = renderDigest({
+      subscriber: { ...SUB, langs: ['en'] },
+      articles: ARTICLES.filter(a => a.lang === 'en'),
+      newspapers,
+      unsubscribeUrl: UNSUB,
+      tickAt: TICK,
+    })
+    expect(d.html).toContain('New issue')
+    expect(d.html).toContain('Prometheus Weekly #7')
+    expect(d.html).toContain('en/newspaper/weekly-7?utm_source=newsletter')
+    expect(d.text).toContain('New issue: Prometheus Weekly #7')
+  })
+
+  it('renders the current issue at the foot with the "Current issue" label', () => {
+    const newspapers: NewspaperSelection = {
+      announcements: [],
+      current: [OLD_ISSUE],
+    }
+    const d = renderDigest({
+      subscriber: { ...SUB, langs: ['en'] },
+      articles: ARTICLES.filter(a => a.lang === 'en'),
+      newspapers,
+      unsubscribeUrl: UNSUB,
+      tickAt: TICK,
+    })
+    expect(d.html).toContain('Current issue')
+    expect(d.html).toContain('Prometheus Weekly #6')
+    expect(d.text).toContain('Current issue: Prometheus Weekly #6')
+  })
+
+  it('falls back to the new-issue subject when there are no new articles', () => {
+    const newspapers: NewspaperSelection = {
+      announcements: [NEW_ISSUE],
+      current: [],
+    }
+    const d = renderDigest({
+      subscriber: { ...SUB, langs: ['en'] },
+      articles: [],
+      newspapers,
+      unsubscribeUrl: UNSUB,
+      tickAt: TICK,
+    })
+    expect(d.subject).toBe(
+      'Communist Prometheus — new issue: Prometheus Weekly #7'
+    )
+  })
+
+  it('keeps the article-count subject when articles AND a new issue exist', () => {
+    const newspapers: NewspaperSelection = {
+      announcements: [NEW_ISSUE],
+      current: [],
+    }
+    const d = renderDigest({
+      subscriber: { ...SUB, langs: ['en'] },
+      articles: ARTICLES,
+      newspapers,
+      unsubscribeUrl: UNSUB,
+      tickAt: TICK,
+    })
+    expect(d.subject).toBe('Communist Prometheus — 2 new articles')
   })
 })
 

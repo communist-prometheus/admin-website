@@ -62,14 +62,18 @@ beforeEach(() => {
   settings = createSettingsRepo({ db })
 })
 
+const noIssue = async (): Promise<Article | undefined> => undefined
+
 const baseDeps = (
   rss: (l: Lang) => Promise<ReadonlyArray<Article>>,
-  resend: ResendClient
+  resend: ResendClient,
+  newspaper: (l: Lang) => Promise<Article | undefined> = noIssue
 ) => ({
   subscriberRepo: subs,
   sendLogRepo: log,
   settingsRepo: settings,
   rss,
+  newspaper,
   resend,
   secret: SECRET,
   fromAddress: FROM,
@@ -132,6 +136,48 @@ describe('runDispatch — happy path', () => {
       resendId: 're_42',
       articleCount: 3,
     })
+  })
+})
+
+describe('runDispatch — new newspaper issue with no new articles', () => {
+  it('sends when only a fresh issue exists past the cutoff', async () => {
+    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await settings.setCutoffAt('2026-06-04T00:00:00.000Z')
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-01T00:00:00.000Z' })],
+    })
+    const fresh = article({
+      guid: 'np',
+      lang: 'ru',
+      link: 'https://comprom.org/ru/newspaper/issue-9',
+      pubDate: '2026-06-05T00:00:00.000Z',
+    })
+    const resend = buildResend(() => ({ ok: true, id: 're_np' }))
+    const summary = await runDispatch(
+      baseDeps(rss.fn, resend.client, async () => fresh)
+    )
+    expect(summary).toMatchObject({ sent: 1, failed: 0, skipped: 0 })
+    expect(resend.sends).toHaveLength(1)
+    expect(resend.sends[0]?.html).toContain('ru/newspaper/issue-9')
+  })
+
+  it('skips when the only issue predates the cutoff and nothing is new', async () => {
+    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await settings.setCutoffAt('2026-06-04T00:00:00.000Z')
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-01T00:00:00.000Z' })],
+    })
+    const old = article({
+      guid: 'np-old',
+      lang: 'ru',
+      pubDate: '2026-06-02T00:00:00.000Z',
+    })
+    const resend = buildResend(() => ({ ok: true, id: 'r' }))
+    const summary = await runDispatch(
+      baseDeps(rss.fn, resend.client, async () => old)
+    )
+    expect(summary).toMatchObject({ sent: 0, failed: 0, skipped: 1 })
+    expect(resend.sends).toHaveLength(0)
   })
 })
 

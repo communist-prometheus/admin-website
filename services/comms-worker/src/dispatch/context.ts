@@ -1,3 +1,4 @@
+import type { IssuesByLang } from '../newspaper/fetch'
 import type { ResendClient } from '../resend/types'
 import type { SendLogRepo } from '../send-log/repo'
 import type { SubscriberRepo } from '../subscribers/repo'
@@ -13,5 +14,6 @@ export type DispatchContext = {
   readonly publicBaseUrl: string
   readonly tickAt: Date
   readonly byLang: ArticlesByLang
+  readonly newspapersByLang: IssuesByLang
   readonly cutoffMs: number | undefined
 }

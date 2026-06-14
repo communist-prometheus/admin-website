@@ -1,3 +1,4 @@
+import type { IssuesByLang } from '../newspaper/fetch'
 import type { DispatchContext } from './context'
 import type { DispatchOutcome } from './dispatch-one'
 import type { ArticlesByLang } from './fetch-articles'
@@ -38,12 +39,14 @@ export const summarise = (
  * and the resolved cutoff.
  * @param d Dispatch deps.
  * @param byLang Articles grouped by language for the tick.
+ * @param newspapersByLang Latest newspaper issue per language for the tick.
  * @param cutoffMs Resolved cutoff (undefined = no cutoff yet).
  * @returns DispatchContext.
  */
 export const buildCtx = (
   d: RunDispatchDeps,
   byLang: ArticlesByLang,
+  newspapersByLang: IssuesByLang,
   cutoffMs: number | undefined
 ): DispatchContext => ({
   subscriberRepo: d.subscriberRepo,
@@ -54,5 +57,6 @@ export const buildCtx = (
   publicBaseUrl: d.publicBaseUrl,
   tickAt: d.tickAt,
   byLang,
+  newspapersByLang,
   cutoffMs,
 })

@@ -1,15 +1,22 @@
+import type { NewspaperSelection } from '../newspaper/classify'
 import type { Article } from '../rss/types'
-import type { Lang, Subscriber } from '../subscribers/types'
-import type { LangGroups, StampedArticle } from './html'
+import type { Subscriber } from '../subscribers/types'
 import { renderHtml } from './html'
-import { CHROME } from './i18n'
+import {
+  chromeFor,
+  EMPTY_NEWSPAPERS,
+  groupByLang,
+  stampNewspapers,
+  subjectFor,
+} from './render-helpers'
 import { renderText } from './text'
-import { appendUtm, isoWeekString } from './utm'
+import { isoWeekString } from './utm'
 
 /** Inputs accepted by {@link renderDigest}. */
 export type DigestRenderInput = {
   readonly subscriber: Subscriber
   readonly articles: ReadonlyArray<Article>
+  readonly newspapers?: NewspaperSelection
   readonly unsubscribeUrl: string
   readonly tickAt: Date
 }
@@ -25,25 +32,6 @@ export type Digest = {
 
 const POST_HEADER = 'List-Unsubscribe=One-Click'
 
-const stampedFor = (a: Article, campaign: string): StampedArticle =>
-  [a, appendUtm(a.link, campaign)] as const
-
-const groupByLang = (
-  langs: ReadonlyArray<Lang>,
-  articles: ReadonlyArray<Article>,
-  campaign: string
-): LangGroups =>
-  langs
-    .map(lang => {
-      const items = articles
-        .filter(a => a.lang === lang)
-        .map(a => stampedFor(a, campaign))
-      return [lang, items] as const
-    })
-    .filter(([, items]) => items.length > 0)
-
-const chromeFor = (langs: ReadonlyArray<Lang>) => CHROME[langs[0] ?? 'en']
-
 /**
  * Build the per-subscriber digest payload — subject, HTML body, text
  * body, and the two RFC-8058 List-Unsubscribe header values. Articles
@@ -57,10 +45,16 @@ export const renderDigest = (input: DigestRenderInput): Digest => {
   const chrome = chromeFor(input.subscriber.langs)
   const campaign = isoWeekString(input.tickAt)
   const groups = groupByLang(input.subscriber.langs, input.articles, campaign)
+  const selection = input.newspapers ?? EMPTY_NEWSPAPERS
+  const papers = stampNewspapers(selection, campaign)
   return {
-    subject: chrome.subject(input.articles.length),
-    html: renderHtml(chrome, groups, input.unsubscribeUrl),
-    text: renderText(chrome, groups, input.unsubscribeUrl),
+    subject: subjectFor(
+      chrome,
+      input.articles.length,
+      selection.announcements
+    ),
+    html: renderHtml(chrome, groups, papers, input.unsubscribeUrl),
+    text: renderText(chrome, groups, papers, input.unsubscribeUrl),
     listUnsubscribe: `<${input.unsubscribeUrl}>`,
     listUnsubscribePost: POST_HEADER,
   }
