@@ -13,4 +13,9 @@ export const positionsFields: readonly FieldDefinition[] = [
   },
   { key: 'published', label: 'Published', type: 'checkbox' },
   { key: 'publishDate', label: 'Publish Date', type: 'date' },
+  {
+    key: 'archive',
+    label: 'Archive (optional)',
+    type: 'archive-ref',
+  },
 ]

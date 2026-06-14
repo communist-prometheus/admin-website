@@ -33,4 +33,9 @@ export const blogFields: readonly FieldDefinition[] = [
     label: 'Newspaper issue (optional)',
     type: 'issue',
   },
+  {
+    key: 'archive',
+    label: 'Archive (optional)',
+    type: 'archive-ref',
+  },
 ]
