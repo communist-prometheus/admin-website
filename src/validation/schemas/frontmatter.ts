@@ -1,5 +1,6 @@
 import { Either, Schema } from 'effect'
 import type { ContentType } from '@/types/content'
+import { ArchiveFrontmatterSchema } from './frontmatter-archive'
 import { BlogFrontmatterSchema } from './frontmatter-blog'
 import { NewspaperFrontmatterSchema } from './frontmatter-newspaper'
 import { PagesFrontmatterSchema } from './frontmatter-pages'
@@ -30,5 +31,6 @@ export const validateFrontmatter = (
   if (type === 'positions') return run(PositionsFrontmatterSchema, value)
   if (type === 'newspaper') return run(NewspaperFrontmatterSchema, value)
   if (type === 'pages') return run(PagesFrontmatterSchema, value)
+  if (type === 'archive') return run(ArchiveFrontmatterSchema, value)
   return Either.right(undefined)
 }

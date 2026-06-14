@@ -1,3 +1,4 @@
+import { archiveEntries } from './archive-entries'
 import { blogEntries } from './blog-entries'
 import { pageEntries } from './page-entries'
 import { positionEntries } from './position-entries'
@@ -30,10 +31,11 @@ export interface MockEntry {
   readonly content: string
 }
 
-/** All mock entries combined (blog + pages + positions + settings) */
+/** All mock entries combined (blog + pages + positions + archive + settings) */
 export const allMockEntries: readonly MockEntry[] = [
   ...blogEntries,
   ...pageEntries,
   ...positionEntries,
+  ...archiveEntries,
   ...settingsEntries,
 ]

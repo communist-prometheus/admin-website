@@ -8,6 +8,7 @@ const CONTENT_SECTIONS: readonly ContentType[] = [
   'pages',
   'common',
   'newspaper',
+  'archive',
 ]
 
 const contentView = () => import('../views/ContentView.vue')

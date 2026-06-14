@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DownloadableAsset } from '@/composables/useAssets/download-asset'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import AssetGrid from './AssetGrid.vue'
 import AssetPanelHeader from './AssetPanelHeader.vue'
@@ -12,6 +13,7 @@ defineEmits<{
   'set-cover': [name: string]
   'delete-asset': [path: string]
   'upload-asset': [file: File]
+  'download-asset': [asset: DownloadableAsset]
 }>()
 </script>
 
@@ -23,6 +25,7 @@ defineEmits<{
       :assets="assets"
       @set-cover="$emit('set-cover', $event)"
       @delete-asset="$emit('delete-asset', $event)"
+      @download-asset="$emit('download-asset', $event)"
     />
     <p v-else class="empty">No assets yet</p>
   </section>
