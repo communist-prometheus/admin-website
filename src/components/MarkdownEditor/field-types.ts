@@ -16,6 +16,7 @@ interface PrimitiveField extends BaseField {
     | 'checkbox'
     | 'articles'
     | 'issue'
+    | 'archive-ref'
 }
 
 interface SelectField extends BaseField {

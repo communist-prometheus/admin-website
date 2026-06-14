@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Language } from '@/types/language'
+import ArchivePicker from './ArchivePicker/ArchivePicker.vue'
 import ArticlesPicker from './ArticlesPicker/ArticlesPicker.vue'
 import FrontmatterSelect from './FrontmatterSelect.vue'
 import type { FieldDefinition } from './field-types'
@@ -30,6 +31,11 @@ const articlesValue = (): readonly string[] | undefined =>
     : undefined
 
 const issueValue = (): string | undefined =>
+  typeof props.value === 'string' && props.value !== ''
+    ? props.value
+    : undefined
+
+const archiveValue = (): string | undefined =>
   typeof props.value === 'string' && props.value !== ''
     ? props.value
     : undefined
@@ -82,6 +88,11 @@ const onSelect = (v: string): void => {
   <IssuePicker
     v-else-if="field.type === 'issue'"
     :value="issueValue()"
+    @update="emit('update', $event)"
+  />
+  <ArchivePicker
+    v-else-if="field.type === 'archive-ref'"
+    :value="archiveValue()"
     @update="emit('update', $event)"
   />
   <FrontmatterSelect
