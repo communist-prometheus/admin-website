@@ -100,6 +100,7 @@ const isRenameable = computed(
       @set-cover="p.ah.onSetCover"
       @delete-asset="p.ah.onDeleteAsset"
       @upload-asset="p.ah.onUploadAsset"
+      @download-asset="p.ah.onDownloadAsset"
     />
     <PublishConfirmDialog
       :show="flow.showDialog.value"

@@ -9,7 +9,12 @@ export class AssetManagerPage {
 
   /** Navigate to a blog post edit page and wait for editor */
   async navigateToBlog(slug: string): Promise<void> {
-    await this.page.goto(`/content/blog/edit/${slug}`, {
+    await this.navigateToEdit('blog', slug)
+  }
+
+  /** Navigate to any content item's edit page and wait for the editor */
+  async navigateToEdit(type: string, slug: string): Promise<void> {
+    await this.page.goto(`/content/${type}/edit/${slug}`, {
       waitUntil: 'domcontentloaded',
     })
     await expect(this.getEditorBody()).toBeVisible({
@@ -65,6 +70,10 @@ export class AssetManagerPage {
 
   getDeleteAssetBtns(): Locator {
     return this.page.locator('[data-testid="asset-delete-btn"]')
+  }
+
+  getDownloadAssetBtns(): Locator {
+    return this.page.locator('[data-testid="asset-download-btn"]')
   }
 
   /** Wait for cover image section to be visible */

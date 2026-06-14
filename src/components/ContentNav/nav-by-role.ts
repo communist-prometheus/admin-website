@@ -16,6 +16,7 @@ const ALL_NAV: readonly NavEntry[] = [
   { path: '/content/pages', label: 'Pages', minRole: 'admin' },
   { path: '/content/common', label: 'Common', minRole: 'admin' },
   { path: '/content/newspaper', label: 'Newspaper' },
+  { path: '/content/archive', label: 'Archive' },
   { path: '/tickets', label: 'Tickets' },
   {
     path: '/comms',

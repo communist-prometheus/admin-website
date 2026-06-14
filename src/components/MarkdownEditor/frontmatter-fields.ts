@@ -1,6 +1,7 @@
 import { Match, pipe } from 'effect'
 import type { ContentType } from '@/types/content'
 import {
+  archiveFields,
   basePageFields,
   blogFields,
   commonFieldsBySlug,
@@ -21,6 +22,7 @@ const fieldsByContentType: Readonly<
   pages: basePageFields,
   common: labelsFields,
   newspaper: newspaperFields,
+  archive: archiveFields,
 }
 
 const fieldsForType = (type: ContentType): readonly FieldDefinition[] =>

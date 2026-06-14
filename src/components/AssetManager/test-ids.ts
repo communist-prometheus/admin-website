@@ -24,3 +24,6 @@ export const ASSET_COVER_ID = 'asset-set-cover-btn'
 
 /** Delete asset button */
 export const ASSET_DELETE_ID = 'asset-delete-btn'
+
+/** Download asset button */
+export const ASSET_DOWNLOAD_ID = 'asset-download-btn'

@@ -1,3 +1,4 @@
+export { archiveFields } from './fields-archive'
 export { blogFields } from './fields-blog'
 export {
   commonFieldsBySlug,

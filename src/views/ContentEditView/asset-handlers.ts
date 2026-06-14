@@ -1,3 +1,7 @@
+import {
+  type DownloadableAsset,
+  downloadAsset,
+} from '@/composables/useAssets/download-asset'
 import type { useAssets } from '@/composables/useAssets/useAssets'
 import { createUploadHandlers } from './asset-upload-handlers'
 
@@ -34,5 +38,13 @@ export const createAssetHandlers = (assets: Assets) => ({
    */
   onSetCover: (name: string): void => {
     assets.setCover(name)
+  },
+
+  /**
+   * Handle download of an asset under its original filename.
+   * @param asset - Asset reference (pending or committed)
+   */
+  onDownloadAsset: async (asset: DownloadableAsset): Promise<void> => {
+    await downloadAsset(asset)
   },
 })

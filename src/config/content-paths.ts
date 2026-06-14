@@ -6,6 +6,7 @@ const NESTED_TYPES = new Set([
   'pages',
   'common',
   'newspaper',
+  'archive',
 ])
 
 /**

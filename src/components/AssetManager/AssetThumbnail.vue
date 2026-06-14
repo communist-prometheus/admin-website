@@ -14,6 +14,7 @@ const props = defineProps<{
 defineEmits<{
   'set-cover': []
   delete: []
+  download: []
 }>()
 
 const isImage = () => props.mimeType.startsWith('image/')
@@ -57,8 +58,10 @@ const isVisual = () => isImage() || isVideo()
     <AssetActions
       v-if="status !== 'pending-delete'"
       :show-cover="isVisual() && !isCover"
+      :name="name"
       @set-cover="$emit('set-cover')"
       @delete="$emit('delete')"
+      @download="$emit('download')"
     />
   </li>
 </template>
