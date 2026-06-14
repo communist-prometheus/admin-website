@@ -35,6 +35,7 @@ const blogSchema = (allowed: ReadonlySet<string>) =>
     image: imageStub(),
     lang: langEnum(allowed),
     newspaper: z.string().optional(),
+    archive: z.string().optional(),
   })
 
 const pagesSchema = (allowed: ReadonlySet<string>) =>
@@ -58,6 +59,7 @@ const positionsSchema = (allowed: ReadonlySet<string>) =>
     published: z.boolean().optional(),
     publishDate: z.union([z.string(), z.date()]).optional(),
     lang: langEnum(allowed),
+    archive: z.string().optional(),
   })
 
 const commonSchema = (allowed: ReadonlySet<string>) =>
@@ -70,6 +72,11 @@ const commonSchema = (allowed: ReadonlySet<string>) =>
     positions: z.string().optional(),
     manifest: z.string().optional(),
     newspaper: z.string().optional(),
+    archive: z.string().optional(),
+    archiveTitle: z.string().optional(),
+    viewArchive: z.string().optional(),
+    archiveFiles: z.string().optional(),
+    openViewer: z.string().optional(),
     links: z.string().optional(),
     menu: z.string().optional(),
     copyright: z.string().optional(),
@@ -93,6 +100,16 @@ const newspaperSchema = (allowed: ReadonlySet<string>) =>
     articles: z.array(z.string()).optional(),
   })
 
+const archiveSchema = (allowed: ReadonlySet<string>) =>
+  z.object({
+    title: z.string(),
+    description: z.string().optional(),
+    published: z.boolean().optional(),
+    publishDate: z.union([z.string(), z.date()]).optional(),
+    image: imageStub(),
+    lang: langEnum(allowed),
+  })
+
 /**
  * Per-content-type schema accessor. Lifts the per-call
  * `supportedLanguages` set into the otherwise-static schema so
@@ -106,4 +123,5 @@ export const astroSchemas = (allowed: ReadonlySet<string>) => ({
   positions: positionsSchema(allowed),
   common: commonSchema(allowed),
   newspaper: newspaperSchema(allowed),
+  archive: archiveSchema(allowed),
 })
