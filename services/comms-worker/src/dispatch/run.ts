@@ -1,4 +1,5 @@
 import { logEvent } from '../log/structured'
+import { fetchLatestIssues } from '../newspaper/fetch-issues'
 import { advanceCutoff, loadCutoffMs } from './cutoff-cycle'
 import { type DispatchOutcome, dispatchOne } from './dispatch-one'
 import { fetchAllLangs } from './fetch-articles'
@@ -25,7 +26,11 @@ export const runDispatch = async (
     d.subscriberRepo.listActive(),
     loadCutoffMs(d),
   ])
-  const ctx = buildCtx(d, await fetchAllLangs(subs, d.rss), cutoffMs)
+  const [byLang, newspapersByLang] = await Promise.all([
+    fetchAllLangs(subs, d.rss),
+    fetchLatestIssues(subs, d.newspaper),
+  ])
+  const ctx = buildCtx(d, byLang, newspapersByLang, cutoffMs)
   const outcomes: DispatchOutcome[] = []
   for (const sub of subs) outcomes.push(await dispatchOne(ctx, sub))
   await advanceCutoff(d, outcomes.includes('sent'))
