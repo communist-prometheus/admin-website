@@ -1,9 +1,8 @@
 import { logEvent } from '../log/structured'
-import { fetchLatestIssues } from '../newspaper/fetch-issues'
-import { advanceCutoff, loadCutoffMs } from './cutoff-cycle'
+import { advanceCutoff } from './cutoff-cycle'
 import { type DispatchOutcome, dispatchOne } from './dispatch-one'
-import { fetchAllLangs } from './fetch-articles'
-import { buildCtx, retentionCutoffIso, summarise } from './run-helpers'
+import { retentionCutoffIso, summarise } from './run-helpers'
+import { prepareDispatch } from './run-prepare'
 import type { DispatchSummary, RunDispatchDeps } from './types'
 
 const DEFAULT_RETENTION_DAYS = 90
@@ -22,18 +21,11 @@ export const runDispatch = async (
 ): Promise<DispatchSummary> => {
   const start = Date.now()
   logEvent('tick.start', { tickAt: d.tickAt.toISOString() })
-  const [subs, cutoffMs] = await Promise.all([
-    d.subscriberRepo.listActive(),
-    loadCutoffMs(d),
-  ])
-  const [byLang, newspapersByLang] = await Promise.all([
-    fetchAllLangs(subs, d.rss),
-    fetchLatestIssues(subs, d.newspaper),
-  ])
-  const ctx = buildCtx(d, byLang, newspapersByLang, cutoffMs)
+  const { ctx, subs } = await prepareDispatch(d)
   const outcomes: DispatchOutcome[] = []
   for (const sub of subs) outcomes.push(await dispatchOne(ctx, sub))
-  await advanceCutoff(d, outcomes.includes('sent'))
+  const advanced = d.targetIds === undefined && outcomes.includes('sent')
+  await advanceCutoff(d, advanced)
   await d.sendLogRepo.purgeOlderThan(
     retentionCutoffIso(d.tickAt, d.retentionDays ?? DEFAULT_RETENTION_DAYS)
   )

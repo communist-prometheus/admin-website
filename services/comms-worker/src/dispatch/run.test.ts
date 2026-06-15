@@ -181,6 +181,40 @@ describe('runDispatch — new newspaper issue with no new articles', () => {
   })
 })
 
+describe('runDispatch — targeted test send', () => {
+  it('dispatches only the targeted ids and leaves the cutoff untouched', async () => {
+    const a = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await subs.insert({ email: 'b@b.c', langs: ['ru'] })
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
+    })
+    const resend = buildResend(() => ({ ok: true, id: 're_t' }))
+    const summary = await runDispatch({
+      ...baseDeps(rss.fn, resend.client),
+      targetIds: [a.id],
+    })
+    expect(summary).toMatchObject({ sent: 1, failed: 0, skipped: 0 })
+    expect(resend.sends).toHaveLength(1)
+    expect(resend.sends[0]?.to).toBe('a@b.c')
+    // targeted sends must NOT advance the shared watermark.
+    expect(await settings.getCutoffAt()).toBeUndefined()
+  })
+
+  it('sends to nobody when the targeted set is empty', async () => {
+    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
+    })
+    const resend = buildResend(() => ({ ok: true, id: 'r' }))
+    const summary = await runDispatch({
+      ...baseDeps(rss.fn, resend.client),
+      targetIds: [],
+    })
+    expect(summary).toMatchObject({ sent: 0, failed: 0, skipped: 0 })
+    expect(resend.sends).toHaveLength(0)
+  })
+})
+
 describe('runDispatch — RSS caching across subscribers', () => {
   it('fetches each unique lang exactly once even with many subscribers', async () => {
     await subs.insert({ email: 'a@b.c', langs: ['ru'] })

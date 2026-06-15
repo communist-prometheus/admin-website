@@ -19,11 +19,13 @@ const nowIso = (): string => new Date().toISOString()
  * the orchestrator calls into them.
  * @param env Worker bindings + secrets.
  * @param tickAt Tick moment used as the `tick_at` stamp on send_log rows.
+ * @param targetIds Optional subscriber-id subset for a targeted test send.
  * @returns Inputs for {@link runDispatch}.
  */
 export const buildRuntimeDeps = (
   env: DispatchEnv,
-  tickAt: Date
+  tickAt: Date,
+  targetIds?: ReadonlyArray<number>
 ): RunDispatchDeps => ({
   subscriberRepo: createRepo({ db: env.DB, now: nowIso }),
   sendLogRepo: createSendLogRepo({ db: env.DB }),
@@ -35,4 +37,5 @@ export const buildRuntimeDeps = (
   fromAddress: env.FROM_ADDRESS ?? DEFAULT_FROM,
   publicBaseUrl: env.PUBLIC_BASE_URL ?? DEFAULT_PUBLIC_BASE,
   tickAt,
+  targetIds,
 })

@@ -86,4 +86,23 @@ describe('POST /api/dispatch — ?force=1 opt-in', () => {
     const body = (await res.json()) as { sent: number; failed: number }
     expect(body.sent).toBe(1)
   })
+
+  it('forwards the selected subscriber ids as the dispatcher target', async () => {
+    const req = new Request('http://x/api/dispatch?force=1', {
+      method: 'POST',
+      headers: {
+        Cookie: 'comprom_session=tok',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ subscriberIds: [2, 5] }),
+    })
+    const res = await build().fetch(req, env)
+    expect(res.status).toBe(202)
+    expect(dispatcher).toHaveBeenCalledWith(env, expect.any(Date), [2, 5])
+  })
+
+  it('passes undefined target when no body is supplied (everyone)', async () => {
+    await build().fetch(reqWithAccess('/api/dispatch?force=1'), env)
+    expect(dispatcher).toHaveBeenCalledWith(env, expect.any(Date), undefined)
+  })
 })

@@ -1,4 +1,4 @@
-import { commsFetch, ensureOk } from './comms-http'
+import { commsFetch, ensureOk, jsonHeaders } from './comms-http'
 
 /** Shape of the `/api/dispatch?force=1` worker response. */
 export type ForceDispatchResult = {
@@ -20,16 +20,32 @@ const isForceDispatchResult = (
   typeof value['skipped'] === 'number' &&
   typeof value['durationMs'] === 'number'
 
+const dispatchInit = (
+  subscriberIds: readonly number[] | undefined
+): RequestInit =>
+  subscriberIds === undefined
+    ? { method: 'POST' }
+    : {
+        method: 'POST',
+        headers: jsonHeaders(),
+        body: JSON.stringify({ subscriberIds }),
+      }
+
 /**
  * POST /api/dispatch?force=1 — owner-only manual tick. Sends the
- * current digest to every active subscriber immediately. The cron
- * schedule is NOT modified; the next scheduled tick fires on its
- * own cadence. Throws on non-2xx, and on a malformed response body.
+ * current digest immediately. When `subscriberIds` is given the send
+ * is targeted at exactly those recipients and the global cutoff is
+ * left untouched; omitting it dispatches every active subscriber. The
+ * cron schedule is never modified. Throws on non-2xx or a malformed
+ * response body.
+ * @param subscriberIds Recipient ids to target, or undefined for all.
  * @returns Summary `{sent, failed, skipped, durationMs}`.
  */
-export const apiForceDispatch = async (): Promise<ForceDispatchResult> => {
+export const apiForceDispatch = async (
+  subscriberIds?: readonly number[]
+): Promise<ForceDispatchResult> => {
   const res = ensureOk(
-    await commsFetch('/api/dispatch?force=1', { method: 'POST' }),
+    await commsFetch('/api/dispatch?force=1', dispatchInit(subscriberIds)),
     'Force dispatch'
   )
   const body: unknown = await res.json().catch(() => undefined)

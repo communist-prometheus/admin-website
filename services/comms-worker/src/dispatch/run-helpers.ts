@@ -1,10 +1,28 @@
 import type { IssuesByLang } from '../newspaper/fetch'
+import type { Subscriber } from '../subscribers/types'
 import type { DispatchContext } from './context'
 import type { DispatchOutcome } from './dispatch-one'
 import type { ArticlesByLang } from './fetch-articles'
 import type { DispatchSummary, RunDispatchDeps } from './types'
 
 const MS_PER_DAY = 86_400_000
+
+/**
+ * Narrow the active list to a targeted recipient set. Returns the
+ * full list unchanged when no target ids are supplied (the scheduled
+ * path); otherwise keeps only subscribers whose id is selected.
+ * @param active Active subscribers for the tick.
+ * @param targetIds Selected ids, or undefined for "everyone".
+ * @returns The subscribers to dispatch.
+ */
+export const selectRecipients = (
+  active: ReadonlyArray<Subscriber>,
+  targetIds: ReadonlyArray<number> | undefined
+): ReadonlyArray<Subscriber> => {
+  if (targetIds === undefined) return active
+  const wanted = new Set(targetIds)
+  return active.filter(s => wanted.has(s.id))
+}
 
 /**
  * Compute the retention cutoff ISO — `tickAt - retentionDays`. Used
