@@ -6,6 +6,15 @@ import {
 } from '@/composables/useAssets/download-asset'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 
+const toViewerFiles = (
+  assets: readonly AssetDisplay[]
+): readonly ViewerFile[] =>
+  assets.map(a => ({
+    name: a.name,
+    mimeType: a.mimeType,
+    url: a.thumbnailUrl,
+  }))
+
 /**
  * Drive the file viewer over a live list of display assets: open at an
  * index, page through, and download the current file. The viewer
@@ -22,13 +31,7 @@ export const useFileViewer = (
   const open = ref(false)
   const index = ref(0)
 
-  const files = computed<readonly ViewerFile[]>(() =>
-    assets().map(a => ({
-      name: a.name,
-      mimeType: a.mimeType,
-      url: a.thumbnailUrl,
-    }))
-  )
+  const files = computed<readonly ViewerFile[]>(() => toViewerFiles(assets()))
 
   const openAt = (at: number): void => {
     index.value = at
@@ -45,7 +48,7 @@ export const useFileViewer = (
 
   const downloadAt = (at: number): void => {
     const asset = assets()[at]
-    if (asset) download(assetToDownloadable(asset))
+    void (asset ? download(assetToDownloadable(asset)) : undefined)
   }
 
   return { open, index, files, openAt, close, setIndex, downloadAt }

@@ -2,9 +2,10 @@ import { expect, test } from '@prometheus/e2e-toolkit'
 import { AssetManagerPage } from '../pages/AssetManagerPage'
 
 const ARCHIVE_SLUG = 'founding-documents'
-const IMAGE_A = 'flag.svg' // first image (index 0)
-const IMAGE_B = 'manifesto-poster.svg' // second image (index 1)
-const DOC_FILE = 'notes.txt' // non-image (index 2)
+// Asset order in the fixture: two images (index 0, 1) then a non-image.
+const IMAGE_A = 'flag.svg'
+const IMAGE_B = 'manifesto-poster.svg'
+const DOC_FILE = 'notes.txt'
 
 const open = async (page: import('@playwright/test').Page, name: string) => {
   const am = new AssetManagerPage(page)
@@ -48,7 +49,8 @@ test.describe('Archive — viewer', () => {
   test('navigates with buttons and arrows, bounded at the ends', async ({
     page,
   }) => {
-    await open(page, IMAGE_A) // index 0
+    // Start at index 0.
+    await open(page, IMAGE_A)
     await expect(page.getByTestId('file-viewer-prev')).toBeDisabled()
     await expect(page.getByTestId('file-viewer-next')).toBeEnabled()
 
@@ -78,8 +80,9 @@ test.describe('Archive — viewer', () => {
   test('unsupported file downloads under its name from the viewer', async ({
     page,
   }) => {
-    await open(page, IMAGE_B) // index 1
-    await page.getByTestId('file-viewer-next').click() // -> notes.txt
+    // Start at index 1, then advance to the non-image notes.txt.
+    await open(page, IMAGE_B)
+    await page.getByTestId('file-viewer-next').click()
     await expect(page.getByTestId('file-viewer-unsupported')).toBeVisible()
 
     const started = page.waitForEvent('download')
@@ -89,7 +92,8 @@ test.describe('Archive — viewer', () => {
   })
 
   test('advances on a left-swipe', async ({ page }) => {
-    await open(page, IMAGE_A) // index 0
+    // Start at index 0.
+    await open(page, IMAGE_A)
     await expect(page.getByTestId('file-viewer-status')).toContainText(
       'File 1 of 3'
     )

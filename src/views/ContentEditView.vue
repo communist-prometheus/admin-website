@@ -7,7 +7,6 @@ import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import FileViewer from '@/components/FileViewer/FileViewer.vue'
 import LanguageSelector from '@/components/LanguageSelector/LanguageSelector.vue'
-import { useFileViewer } from '@/composables/useFileViewer/useFileViewer'
 import ContentEditMain from './ContentEditView/ContentEditMain.vue'
 import ContentPreview from './ContentEditView/ContentPreview.vue'
 import EditBreadcrumb from './ContentEditView/EditBreadcrumb.vue'
@@ -15,6 +14,7 @@ import { initEditPage } from './ContentEditView/init-edit-page'
 import PreviewFooter from './ContentEditView/PreviewFooter.vue'
 import PublishConfirmDialog from './ContentEditView/PublishConfirmDialog.vue'
 import { setupEditHandlers } from './ContentEditView/setup-handlers'
+import { setupViewer } from './ContentEditView/setup-viewer'
 import { useSaveFlow } from './ContentEditView/use-save-flow'
 import { useEditPage } from './ContentEditView/useEditPage'
 
@@ -49,12 +49,7 @@ const {
   close: closeViewer,
   setIndex: setViewerIndex,
   downloadAt: downloadViewerFile,
-} = useFileViewer(
-  () => (p.hasAssets.value ? p.assets.allAssets.value : []),
-  asset => {
-    void p.ah.onDownloadAsset(asset)
-  }
-)
+} = setupViewer(p)
 </script>
 
 <template>

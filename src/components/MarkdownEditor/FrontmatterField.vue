@@ -30,12 +30,7 @@ const articlesValue = (): readonly string[] | undefined =>
     ? props.value.filter((s): s is string => typeof s === 'string')
     : undefined
 
-const issueValue = (): string | undefined =>
-  typeof props.value === 'string' && props.value !== ''
-    ? props.value
-    : undefined
-
-const archiveValue = (): string | undefined =>
+const optionalStringValue = (): string | undefined =>
   typeof props.value === 'string' && props.value !== ''
     ? props.value
     : undefined
@@ -87,12 +82,12 @@ const onSelect = (v: string): void => {
   />
   <IssuePicker
     v-else-if="field.type === 'issue'"
-    :value="issueValue()"
+    :value="optionalStringValue()"
     @update="emit('update', $event)"
   />
   <ArchivePicker
     v-else-if="field.type === 'archive-ref'"
-    :value="archiveValue()"
+    :value="optionalStringValue()"
     @update="emit('update', $event)"
   />
   <FrontmatterSelect
