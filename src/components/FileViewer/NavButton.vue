@@ -55,10 +55,6 @@ const isPrev = props.direction === 'prev'
   inset-inline-end: clamp(0.5rem, 2vw, 1.5rem);
 }
 
-.nav-btn:hover:not(:disabled) {
-  background: rgb(0 0 0 / 55%);
-}
-
 .nav-btn:disabled {
   opacity: 35%;
   cursor: default;
@@ -67,5 +63,9 @@ const isPrev = props.direction === 'prev'
 .nav-btn:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 2px;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: rgb(0 0 0 / 55%);
 }
 </style>

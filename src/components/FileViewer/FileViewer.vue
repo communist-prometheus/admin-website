@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
-import { fireAndForward } from '@/utils/fire-and-forward'
+import { useTemplateRef } from 'vue'
 import FileViewerStage from './FileViewerStage.vue'
 import FileViewerToolbar from './FileViewerToolbar.vue'
+import { exitFullscreen } from './fullscreen'
 import NavButton from './NavButton.vue'
 import { VIEWER_ID, VIEWER_STATUS_ID } from './test-ids'
 import type { ViewerFile } from './types'
+import { useFullscreen } from './use-fullscreen'
+import { useViewerEvents } from './use-viewer-events'
+import { handleViewerKey, useViewerState } from './viewer-logic'
 import { moveIndex, swipeStep } from './viewer-nav'
 
 const SWIPE_THRESHOLD_PX = 50
@@ -22,18 +25,17 @@ const emit = defineEmits<{
 }>()
 
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
-const isFullscreen = ref(false)
+const {
+  isFullscreen,
+  sync: syncFullscreen,
+  toggle: toggleFullscreen,
+} = useFullscreen(dialog)
 
-const total = computed(() => props.files.length)
-const current = computed((): ViewerFile | undefined => props.files[props.index])
-const position = computed(() => `${props.index + 1} / ${total.value}`)
-const statusText = computed(() =>
-  current.value
-    ? `File ${props.index + 1} of ${total.value}: ${current.value.name}`
-    : ''
-)
-const atStart = computed(() => props.index <= 0)
-const atEnd = computed(() => props.index >= total.value - 1)
+const { total, current, position, statusText, atStart, atEnd } =
+  useViewerState(
+    () => props.files,
+    () => props.index
+  )
 
 const move = (step: number): void => {
   emit('update:index', moveIndex(props.index, step, total.value))
@@ -44,47 +46,17 @@ const onSwipe = (deltaX: number): void => {
   if (step !== 0) move(step)
 }
 
-const syncFullscreen = (): void => {
-  isFullscreen.value = document.fullscreenElement === dialog.value
-}
-
-const exitFullscreen = (): void => {
-  if (document.fullscreenElement) fireAndForward(document.exitFullscreen())
-}
-
-const toggleFullscreen = (): void => {
-  const el = dialog.value
-  if (isFullscreen.value || !el) exitFullscreen()
-  else fireAndForward(el.requestFullscreen())
-}
-
-const onKeydown = (e: KeyboardEvent): void => {
-  if (e.key === 'ArrowRight') move(1)
-  else if (e.key === 'ArrowLeft') move(-1)
-  else if (e.key === 'Escape') {
-    e.preventDefault()
-    if (isFullscreen.value) exitFullscreen()
-    else emit('close')
-  }
-}
+const onKeydown = (e: KeyboardEvent): void =>
+  handleViewerKey(e, move, () => emit('close'), isFullscreen.value)
 
 const onBackdrop = (e: MouseEvent): void => {
   if (e.target === dialog.value) emit('close')
 }
 
-onMounted(() => {
-  dialog.value?.showModal()
-  // Keydown on document, not the dialog: when a nav button disables at
-  // an end it loses focus, and a dialog-scoped listener would then miss
-  // the arrow keys. The viewer is the only thing up while mounted.
-  document.addEventListener('keydown', onKeydown)
-  document.addEventListener('fullscreenchange', syncFullscreen)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('keydown', onKeydown)
-  document.removeEventListener('fullscreenchange', syncFullscreen)
-  exitFullscreen()
+useViewerEvents(dialog, {
+  onKeydown,
+  onFullscreenChange: syncFullscreen,
+  onUnmount: exitFullscreen,
 })
 </script>
 
@@ -154,7 +126,7 @@ onBeforeUnmount(() => {
   margin: -1px;
   padding: 0;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
 }

@@ -38,8 +38,5 @@ export const moveIndex = (
  * @param threshold - Minimum absolute displacement to count, px
  * @returns +1 next, -1 previous, 0 none
  */
-export const swipeStep = (deltaX: number, threshold: number): number => {
-  if (deltaX <= -threshold) return 1
-  if (deltaX >= threshold) return -1
-  return 0
-}
+export const swipeStep = (deltaX: number, threshold: number): number =>
+  deltaX <= -threshold ? 1 : deltaX >= threshold ? -1 : 0
