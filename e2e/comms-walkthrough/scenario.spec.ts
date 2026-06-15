@@ -280,12 +280,14 @@ test('comms walkthrough recording', async ({ page }) => {
     await titleCard(page, {
       eyebrow: 'Сцена 4',
       title: 'Удалить подписчика',
-      sub: 'Кнопка ✕ — без подтверждения, без отмены',
+      sub: 'Кнопка ✕ открывает диалог подтверждения',
     })
     const row = page
       .getByTestId('subscriber-row')
       .filter({ hasText: 'demo-reader@example.test' })
     await row.getByTestId('subscriber-remove').click()
+    await sleep(1_200)
+    await page.getByTestId('remove-subscriber-confirm').click()
     await expect(
       page
         .getByTestId('subscriber-row')
@@ -343,13 +345,15 @@ test('comms walkthrough recording', async ({ page }) => {
     await titleCard(page, {
       eyebrow: 'Сцена 5в',
       title: 'Кнопка тестовой отправки',
-      sub: 'Отправляет дайджест прямо сейчас, расписание не двигает',
+      sub: 'Выбери получателей галочками, отправь прямо сейчас — расписание не двигается',
     })
     await page.getByTestId('force-dispatch-panel').scrollIntoViewIfNeeded()
     const clear = await highlightSelector(
       page,
       '[data-testid="force-dispatch-panel"]'
     )
+    await page.getByTestId('force-dispatch-select-all').click()
+    await sleep(1_000)
     await page.getByTestId('force-dispatch-start').click()
     await sleep(1_400)
     await page.getByTestId('force-dispatch-confirm').click()
