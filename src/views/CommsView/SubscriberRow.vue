@@ -51,10 +51,12 @@ const emit = defineEmits<{
   font-size: 0.875rem;
   vertical-align: middle;
   color: var(--color-text-primary);
+  min-width: 0;
 }
 
 .email {
   font-family: var(--font-mono);
+  overflow-wrap: anywhere;
 }
 
 .actions {

@@ -27,7 +27,7 @@ export class ContentPage {
     const empty = this.page.getByText(/no content items found/i)
     await waitForCondition(this.page, async () => {
       const path = await first.getAttribute('data-path').catch(() => null)
-      const matches = path !== null && path.startsWith(`${contentType}/`)
+      const matches = path?.startsWith(`${contentType}/`)
       return matches || (await empty.isVisible().catch(() => false))
     })
   }

@@ -22,11 +22,16 @@ defineProps<{
   display: grid;
   gap: var(--spacing-sm);
   min-height: 6rem;
+
+  /* Allow the section (and its grid descendants) to shrink below
+     content min-size so a wide child never forces page overflow. */
+  min-width: 0;
 }
 
 .head {
   display: grid;
   gap: 0.25rem;
+  min-width: 0;
 }
 
 .title {
@@ -49,5 +54,10 @@ defineProps<{
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.body > * {
+  min-width: 0;
 }
 </style>

@@ -51,8 +51,11 @@ jobs:
             echo "VITE_OAUTH_REDIRECT_URI=$OAUTH_REDIRECT_URI_DEVELOP" >> "$GITHUB_ENV"
             echo "VITE_GITHUB_CLIENT_ID=$VITE_GITHUB_CLIENT_ID_DEVELOP" >> "$GITHUB_ENV"
             # dev-admin talks to the develop comms worker so targeted
-            # test sends never reach production subscribers.
+            # test sends never reach production subscribers, and mints
+            # its SSO session against the develop auth worker (whose
+            # JWT_SECRET the develop resource workers share).
             echo "VITE_COMMS_BASE=https://dev-lists.comprom.org" >> "$GITHUB_ENV"
+            echo "VITE_AUTH_BASE=https://dev-auth.comprom.org" >> "$GITHUB_ENV"
             echo "GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
             echo "WRANGLER_COMMAND=deploy --env develop" >> "$GITHUB_ENV"
           else
@@ -60,6 +63,7 @@ jobs:
             echo "VITE_OAUTH_REDIRECT_URI=$OAUTH_REDIRECT_URI_MASTER" >> "$GITHUB_ENV"
             echo "VITE_GITHUB_CLIENT_ID=$VITE_GITHUB_CLIENT_ID_MASTER" >> "$GITHUB_ENV"
             echo "VITE_COMMS_BASE=https://lists.comprom.org" >> "$GITHUB_ENV"
+            echo "VITE_AUTH_BASE=https://auth.comprom.org" >> "$GITHUB_ENV"
             echo "GITHUB_BRANCH=master" >> "$GITHUB_ENV"
             echo "WRANGLER_COMMAND=deploy" >> "$GITHUB_ENV"
           fi

@@ -40,8 +40,8 @@
       // public site so test mailings never read production content.
       "vars": {
         "VERSION": "0.2.0",
-        "ADMIN_HOSTNAME": "admin.comprom.org",
-        "ALLOWED_ORIGIN": "https://admin.comprom.org",
+        "ADMIN_HOSTNAME": "dev-admin.comprom.org",
+        "ALLOWED_ORIGIN": "https://dev-admin.comprom.org",
         "CONTENT_BASE_URL": "https://dev.comprom.org",
         "PUBLIC_BASE_URL": "https://dev-lists.comprom.org"
       },
