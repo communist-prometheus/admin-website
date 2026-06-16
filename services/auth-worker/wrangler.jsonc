@@ -17,7 +17,17 @@
   "env": {
     "develop": {
       "name": "auth-worker-develop",
-      "routes": [{ "pattern": "dev-auth.comprom.org", "custom_domain": true }]
+      "routes": [{ "pattern": "dev-auth.comprom.org", "custom_domain": true }],
+      // Named envs do NOT inherit top-level vars — repeat them. The
+      // allowed origin is dev-admin so the dev SPA can mint sessions
+      // here; the cookie domain stays parent-scoped so the dev
+      // resource workers (dev-lists) receive it.
+      "vars": {
+        "VERSION": "0.2.0",
+        "GITHUB_ORG": "communist-prometheus",
+        "ALLOWED_ORIGIN": "https://dev-admin.comprom.org",
+        "COOKIE_DOMAIN": ".comprom.org"
+      }
     }
   }
 }
