@@ -197,6 +197,7 @@ const reset = (): void => {
 .force-dispatch {
   display: grid;
   gap: var(--spacing-sm);
+  min-width: 0;
 }
 
 .lead {
@@ -209,11 +210,16 @@ const reset = (): void => {
   display: grid;
   gap: var(--spacing-sm);
   justify-items: start;
+  min-width: 0;
 }
 
 .picker {
   width: 100%;
   box-sizing: border-box;
+
+  /* A <fieldset> defaults to min-inline-size: min-content, which a
+     long recipient email would force past the viewport — pin it to 0. */
+  min-width: 0;
   margin: 0;
   padding: var(--spacing-sm);
   border: 1px solid var(--color-border);
@@ -228,6 +234,7 @@ const reset = (): void => {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
+  min-width: 0;
   font-size: 0.875rem;
   color: var(--color-text-primary);
   cursor: pointer;
@@ -245,6 +252,8 @@ const reset = (): void => {
 
 .recipient .email {
   font-family: var(--font-mono);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .empty {

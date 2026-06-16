@@ -41,9 +41,11 @@ const onClick = (lang: Lang): void => {
 
 <style scoped>
 .lang-toggle {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-xs);
+  max-width: 100%;
+  min-width: 0;
 }
 
 .pill {
@@ -67,6 +69,11 @@ const onClick = (lang: Lang): void => {
 .pill:disabled {
   cursor: not-allowed;
   opacity: 50%;
+}
+
+/* Suppress the ring on pointer (tap/click); keep it for keyboard nav. */
+.pill:focus {
+  outline: none;
 }
 
 .pill:focus-visible {

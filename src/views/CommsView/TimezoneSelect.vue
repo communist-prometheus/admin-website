@@ -46,6 +46,8 @@ const onChange = (e: Event): void => {
 .field-select {
   appearance: none;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 0.55rem 0.85rem;
   background: var(--color-surface-elevated);
   color: var(--color-text-primary);
