@@ -3,7 +3,10 @@ import type { MiddlewareHandler } from 'hono'
 export type CorsEnv = { readonly ALLOWED_ORIGIN: string }
 
 const ALLOW_HEADERS = 'Authorization, Content-Type'
-const ALLOW_METHODS = 'GET, POST, PUT, DELETE, OPTIONS'
+// PATCH is required: the admin edits subscriber langs via
+// `PATCH /api/subscribers/:id`. Omitting it made the browser block the
+// cross-origin preflight, so language changes silently failed.
+const ALLOW_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
 
 /**
  * Hono middleware that mirrors the request origin only when it
