@@ -1,6 +1,7 @@
 import type { SWFetchResponse } from '@/sw/protocol'
 import { normalizeHeaders } from '@/validation/normalize-headers'
 import { serializeBody } from '@/validation/serialize-body'
+import { fetchWithReinit } from './fetch-with-reinit'
 import { getActiveWorker } from './get-active-worker'
 import { postWithTimeout } from './post-with-timeout'
 import { swReady } from './sw-ready'
@@ -30,9 +31,26 @@ const viaMessage = async (
 }
 
 /**
+ * Pick the fast (native fetch) or MessageChannel transport for one
+ * Service Worker request.
+ * @param input - URL string or URL object
+ * @param init - Optional fetch init options
+ * @returns Response from the Service Worker
+ */
+const transport = (
+  input: string | URL,
+  init?: RequestInit
+): Promise<Response> =>
+  navigator.serviceWorker.controller
+    ? fetch(input, init)
+    : viaMessage(String(input), init)
+
+/**
  * Fetch through the Service Worker.
- * Uses native fetch when controller is set (fast path).
- * Falls back to MessageChannel for browsers without controller.
+ * Uses native fetch when controller is set (fast path), falling back
+ * to MessageChannel otherwise. A "SW not ready" 503 triggers a single
+ * re-init from the stored token and retry, so saves survive worker
+ * eviction.
  * @param input - URL string or URL object
  * @param init - Optional fetch init options
  * @returns Response from the Service Worker
@@ -42,6 +60,5 @@ export const swFetch = async (
   init?: RequestInit
 ): Promise<Response> => {
   await swReady
-  if (navigator.serviceWorker.controller) return fetch(input, init)
-  return viaMessage(String(input), init)
+  return fetchWithReinit(transport, input, init)
 }
