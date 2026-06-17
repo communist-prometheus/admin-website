@@ -68,6 +68,9 @@ const onClick = (lang: Lang, event: MouseEvent): void => {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
+
+  /* Kill the mobile tap-highlight square that covers the whole pill. */
+  -webkit-tap-highlight-color: transparent;
   transition:
     background var(--transition-fast),
     color var(--transition-fast),
