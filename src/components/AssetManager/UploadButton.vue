@@ -5,6 +5,7 @@ defineProps<{
   readonly label: string
   readonly accept: string
   readonly testId: string
+  readonly multiple?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -19,8 +20,11 @@ const handleClick = () => {
 
 const handleChange = (event: Event) => {
   if (!(event.target instanceof HTMLInputElement)) return
-  const file = event.target.files?.[0]
-  if (file) emit('upload', file)
+  // Emit one `upload` per picked file so a multi-select in the OS
+  // dialog adds every file, not just the first.
+  for (const file of Array.from(event.target.files ?? [])) {
+    emit('upload', file)
+  }
   event.target.value = ''
 }
 </script>
@@ -33,6 +37,7 @@ const handleChange = (event: Event) => {
     ref="inputRef"
     type="file"
     :accept="accept"
+    :multiple="multiple"
     hidden
     @change="handleChange"
   />

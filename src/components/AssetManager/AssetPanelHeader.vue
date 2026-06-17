@@ -13,6 +13,7 @@ defineEmits<{
     <UploadButton
       label="Upload asset"
       accept="*/*"
+      multiple
       :test-id="ASSET_UPLOAD_ID"
       @upload="$emit('upload', $event)"
     />
