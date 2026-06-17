@@ -11,8 +11,16 @@ const emit = defineEmits<{
   change: [langs: readonly Lang[]]
 }>()
 
-const onClick = (lang: Lang): void => {
+const onClick = (lang: Lang, event: MouseEvent): void => {
   emit('change', toggleLang(props.langs, lang))
+  // `detail === 0` means keyboard (Enter/Space) — keep focus + ring for
+  // a11y. A pointer tap/click leaves the button focused and re-renders
+  // on save, which some browsers flag as :focus-visible; blur it so no
+  // ring lingers after a tap.
+  const el = event.currentTarget
+  if (event.detail !== 0 && el instanceof HTMLElement) {
+    el.blur()
+  }
 }
 </script>
 
@@ -32,7 +40,7 @@ const onClick = (lang: Lang): void => {
       :disabled="disabled"
       :data-testid="`lang-toggle-${lang}`"
       :aria-pressed="langs.includes(lang)"
-      @click="onClick(lang)"
+      @click="onClick(lang, $event)"
     >
       {{ lang }}
     </button>
