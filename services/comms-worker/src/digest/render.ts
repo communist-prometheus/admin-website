@@ -42,7 +42,7 @@ const POST_HEADER = 'List-Unsubscribe=One-Click'
  * @returns Complete digest ready to hand to the Resend client.
  */
 export const renderDigest = (input: DigestRenderInput): Digest => {
-  const chrome = chromeFor(input.subscriber.langs)
+  const chrome = chromeFor()
   const campaign = isoWeekString(input.tickAt)
   const groups = groupByLang(input.subscriber.langs, input.articles, campaign)
   const selection = input.newspapers ?? EMPTY_NEWSPAPERS

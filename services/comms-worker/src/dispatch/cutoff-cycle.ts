@@ -17,16 +17,17 @@ export const loadCutoffMs = async (
 }
 
 /**
- * Advance the global cutoff to the tick moment when at least one
- * recipient was successfully sent. No-op when nothing went out, so a
- * retry on the next tick can still pick up the same articles.
+ * Advance the global cutoff to the tick moment, but only on a CLEAN
+ * tick — something went out and nothing failed. No-op otherwise, so a
+ * partial/total failure replays on the next tick instead of stranding
+ * the failed recipients past the watermark.
  * @param d Dispatch deps.
- * @param anySent Whether any outcome in the tick was `sent`.
+ * @param clean Whether the tick sent something with zero failures.
  */
 export const advanceCutoff = async (
   d: RunDispatchDeps,
-  anySent: boolean
+  clean: boolean
 ): Promise<void> => {
-  if (!anySent) return
+  if (!clean) return
   await d.settingsRepo.setCutoffAt(d.tickAt.toISOString())
 }
