@@ -6,6 +6,7 @@ import {
   createLoad,
   createRemove,
   createUpdateLangs,
+  createUpdateMessageLang,
 } from './comms-actions'
 
 /**
@@ -27,6 +28,7 @@ export const createCommsState = () => {
     load,
     add: createAdd(r, load),
     updateLangs: createUpdateLangs(load),
+    updateMessageLang: createUpdateMessageLang(load),
     remove: createRemove(load),
   }
 }

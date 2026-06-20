@@ -16,6 +16,8 @@ export type Subscriber = {
   readonly id: number
   readonly email: string
   readonly langs: ReadonlyArray<Lang>
+  /** Language of the email shell (subject/intro/footer); content uses `langs`. */
+  readonly messageLang: Lang
   readonly status: SubscriberStatus
   readonly createdAt: string
   readonly lastSentAt: string | undefined
@@ -26,6 +28,8 @@ export type Subscriber = {
 export type NewSubscriber = {
   readonly email: string
   readonly langs: ReadonlyArray<Lang>
+  /** Message (chrome) language; defaults to English when omitted. */
+  readonly messageLang?: Lang
 }
 
 /** Sentinel name used by `DuplicateError` instances. */

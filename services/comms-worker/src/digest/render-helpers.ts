@@ -45,13 +45,14 @@ export const groupByLang = (
 
 /**
  * Chrome dictionary for the email shell (subject, intro, footer,
- * unsubscribe copy). Always English by default, regardless of the
- * subscriber's languages — only the article CONTENT stays localised
- * (see {@link groupByLang}). Centralising it here keeps the one
- * decision in one place if per-language chrome ever returns.
- * @returns English chrome strings.
+ * unsubscribe copy), keyed by the subscriber's chosen MESSAGE language
+ * (defaults to English at the data layer) — independent of the article
+ * CONTENT languages in `langs[]` (see {@link groupByLang}).
+ * @param messageLang The subscriber's message language.
+ * @returns Localised chrome strings.
  */
-export const chromeFor = (): DigestChrome => CHROME.en
+export const chromeFor = (messageLang: Lang): DigestChrome =>
+  CHROME[messageLang]
 
 /**
  * UTM-stamp both arms of a newspaper selection for the campaign.

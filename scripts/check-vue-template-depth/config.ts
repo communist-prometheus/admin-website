@@ -19,6 +19,7 @@ export const config: Config = {
     'src/views/SettingsView/MembersSection.vue',
     'src/views/CommsView/SubscribersTable.vue',
     'src/views/CommsView/SubscriberRow.vue',
+    'src/views/CommsView/StatusLegend.vue',
     'src/views/CommsView/RunHistoryList.vue',
     'src/views/CommsView/RunHistoryRow.vue',
     'src/views/CommsView/AddSubscriberForm.vue',

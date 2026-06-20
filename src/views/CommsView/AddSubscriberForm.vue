@@ -3,14 +3,16 @@ import { computed, ref } from 'vue'
 import type { Lang } from '@/stores/comms'
 import { canSubmitNewSubscriber } from './draft-ops'
 import LangTogglePills from './LangTogglePills.vue'
+import MessageLangSelect from './MessageLangSelect.vue'
 
 const props = defineProps<{ readonly saving?: boolean }>()
 const emit = defineEmits<{
-  add: [email: string, langs: readonly Lang[]]
+  add: [email: string, langs: readonly Lang[], messageLang: Lang]
 }>()
 
 const email = ref('')
 const langs = ref<readonly Lang[]>([])
+const messageLang = ref<Lang>('en')
 const error = ref<string | undefined>(undefined)
 const announce = ref<string>('')
 
@@ -24,10 +26,11 @@ const submit = async (): Promise<void> => {
   if (!canSubmitNewSubscriber(email.value, langs.value)) return
   error.value = undefined
   try {
-    emit('add', email.value.trim(), langs.value)
+    emit('add', email.value.trim(), langs.value, messageLang.value)
     announce.value = `Subscriber ${email.value.trim()} added.`
     email.value = ''
     langs.value = []
+    messageLang.value = 'en'
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to add'
     announce.value = `Failed to add subscriber: ${error.value}`
@@ -61,6 +64,14 @@ const submit = async (): Promise<void> => {
       <span class="field-label">Languages</span>
       <LangTogglePills :langs="langs" :disabled="saving" @change="setLangs" />
     </label>
+    <label class="field field-msg-lang">
+      <span class="field-label">Message language</span>
+      <MessageLangSelect
+        v-model="messageLang"
+        :disabled="saving"
+        label="Message language for new subscriber"
+      />
+    </label>
     <button
       type="submit"
       class="btn btn-primary submit"
@@ -87,9 +98,13 @@ const submit = async (): Promise<void> => {
 <style scoped>
 .add-form {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
   gap: var(--spacing-sm);
   align-items: end;
+}
+
+.field-msg-lang {
+  min-width: 9rem;
 }
 
 @media (width < 640px) {

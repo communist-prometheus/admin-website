@@ -1,25 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Subscriber } from '@/stores/comms'
+import { STATUS_META } from './status-meta'
 
 const props = defineProps<{ readonly status: Subscriber['status'] }>()
 
-const ICON: Readonly<Record<Subscriber['status'], string>> = {
-  active: '●',
-  unsubscribed: '○',
-  bounced: '⚠',
-  complained: '⚠',
-}
-
-const LABEL: Readonly<Record<Subscriber['status'], string>> = {
-  active: 'Active subscriber',
-  unsubscribed: 'Unsubscribed by recipient',
-  bounced: 'Address bounces — skipped',
-  complained: 'Marked as spam — skipped',
-}
-
-const icon = computed(() => ICON[props.status])
-const label = computed(() => LABEL[props.status])
+const icon = computed(() => STATUS_META[props.status].icon)
+const label = computed(() => STATUS_META[props.status].description)
 </script>
 
 <template>

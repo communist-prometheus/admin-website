@@ -47,7 +47,11 @@ const prepare = (db: BetterSqlite3.Database, sql: string) => {
  */
 export const makeTestD1 = (): D1Database => {
   const db = new BetterSqlite3(':memory:')
-  for (const file of ['0001_initial.sql', '0002_seed.sql']) {
+  for (const file of [
+    '0001_initial.sql',
+    '0002_seed.sql',
+    '0003_message_lang.sql',
+  ]) {
     db.exec(readFileSync(resolve(MIG_DIR, file), 'utf8'))
   }
   return {

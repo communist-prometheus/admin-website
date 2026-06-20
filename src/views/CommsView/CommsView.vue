@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { t } from '@/i18n/t'
-import { type Subscriber, useCommsStore } from '@/stores/comms'
+import { useCommsStore } from '@/stores/comms'
 import { useCutoffStore } from '@/stores/cutoff'
 import { useRunsStore } from '@/stores/runs'
 import { useScheduleStore } from '@/stores/schedule'
@@ -13,33 +13,31 @@ import { buildHandlers } from './handlers'
 import RemoveSubscriberDialog from './RemoveSubscriberDialog.vue'
 import RunHistory from './RunHistory.vue'
 import ScheduleEditor from './ScheduleEditor.vue'
+import StatusFilter from './StatusFilter.vue'
+import StatusLegend from './StatusLegend.vue'
 import SubscribersTable from './SubscribersTable.vue'
+import { useRemoveDialog } from './use-remove-dialog'
+import { useStatusFilter } from './use-status-filter'
 
 const store = useCommsStore()
 const schedule = useScheduleStore()
 const cutoff = useCutoffStore()
 const runs = useRunsStore()
+const h = buildHandlers({ comms: store, schedule, cutoff, runs })
 
 const activeSubscribers = computed(() =>
   store.subscribers.filter(s => s.status === 'active')
 )
+const {
+  statusFilter,
+  counts: statusCounts,
+  visible: visibleSubscribers,
+  setStatusFilter,
+} = useStatusFilter(() => store.subscribers)
+const { pendingRemove, requestRemove, confirmRemove, cancelRemove } =
+  useRemoveDialog(() => store.subscribers, h.onRemove)
+
 const showRuns = ref(false)
-const pendingRemove = ref<Subscriber | undefined>(undefined)
-const h = buildHandlers({ comms: store, schedule, cutoff, runs })
-
-const requestRemove = (id: number): void => {
-  pendingRemove.value = store.subscribers.find(s => s.id === id)
-}
-
-const confirmRemove = (): void => {
-  const target = pendingRemove.value
-  pendingRemove.value = undefined
-  if (target) h.onRemove(target.id)
-}
-
-const cancelRemove = (): void => {
-  pendingRemove.value = undefined
-}
 
 onMounted(() => {
   void store.ensureLoaded()
@@ -90,9 +88,17 @@ onMounted(() => {
         :lead="t('comms.subscribers.lead')"
       >
         <AddSubscriberForm :saving="store.saving" @add="h.onAdd" />
+        <StatusLegend />
+        <StatusFilter
+          :model-value="statusFilter"
+          :counts="statusCounts"
+          :total="store.subscribers.length"
+          @update:model-value="setStatusFilter"
+        />
         <SubscribersTable
-          :subscribers="store.subscribers"
+          :subscribers="visibleSubscribers"
           @langs="h.onLangs"
+          @message-lang="h.onMessageLang"
           @remove="requestRemove"
         />
         <p
@@ -102,6 +108,14 @@ onMounted(() => {
           data-testid="comms-loading"
         >
           Loading…
+        </p>
+        <p
+          v-else-if="visibleSubscribers.length === 0 && store.subscribers.length > 0"
+          class="loading"
+          role="status"
+          data-testid="comms-empty-filter"
+        >
+          No subscribers with this status.
         </p>
       </CommsSection>
       <CommsSection

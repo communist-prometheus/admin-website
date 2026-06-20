@@ -1,11 +1,12 @@
 import type { Ref } from 'vue'
 import type { Lang, Subscriber } from '@/validation/schemas/subscriber'
-import {
-  apiAddSubscriber,
-  apiListSubscribers,
-  apiRemoveSubscriber,
-  apiUpdateLangs,
-} from './comms-api'
+import { apiAddSubscriber, apiListSubscribers } from './comms-api'
+
+export {
+  createRemove,
+  createUpdateLangs,
+  createUpdateMessageLang,
+} from './comms-actions-mutations'
 
 /** Mutable refs the action factories read + write. */
 export type CommsRefs = {
@@ -39,36 +40,16 @@ export const createLoad = (r: CommsRefs) => async (): Promise<void> => {
  */
 export const createAdd =
   (r: CommsRefs, load: () => Promise<void>) =>
-  async (email: string, langs: readonly Lang[]): Promise<void> => {
+  async (
+    email: string,
+    langs: readonly Lang[],
+    messageLang: Lang
+  ): Promise<void> => {
     r.saving.value = true
     try {
-      await apiAddSubscriber(email, langs)
+      await apiAddSubscriber(email, langs, messageLang)
       await load()
     } finally {
       r.saving.value = false
     }
-  }
-
-/**
- * Build the `updateLangs` action that PATCHes one row + reloads.
- * @param load Loader used to refresh after the write.
- * @returns Async action returning void.
- */
-export const createUpdateLangs =
-  (load: () => Promise<void>) =>
-  async (id: number, langs: readonly Lang[]): Promise<void> => {
-    await apiUpdateLangs(id, langs)
-    await load()
-  }
-
-/**
- * Build the `remove` action that DELETEs one row + reloads.
- * @param load Loader used to refresh after the write.
- * @returns Async action returning void.
- */
-export const createRemove =
-  (load: () => Promise<void>) =>
-  async (id: number): Promise<void> => {
-    await apiRemoveSubscriber(id)
-    await load()
   }
