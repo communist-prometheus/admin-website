@@ -1,9 +1,8 @@
 import type { IssuesByLang } from '../newspaper/fetch'
 import type { Subscriber } from '../subscribers/types'
 import type { DispatchContext } from './context'
-import type { DispatchOutcome } from './dispatch-one'
 import type { ArticlesByLang } from './fetch-articles'
-import type { DispatchSummary, RunDispatchDeps } from './types'
+import type { RunDispatchDeps } from './types'
 
 const MS_PER_DAY = 86_400_000
 
@@ -35,25 +34,8 @@ export const retentionCutoffIso = (tickAt: Date, days: number): string =>
   new Date(tickAt.getTime() - days * MS_PER_DAY).toISOString()
 
 /**
- * Roll up per-recipient outcomes into the tick summary returned to
- * the worker entrypoint.
- * @param outcomes Per-recipient outcome list.
- * @param durationMs Wall-clock duration of the tick.
- * @returns Tick summary `{sent, failed, skipped, durationMs}`.
- */
-export const summarise = (
-  outcomes: ReadonlyArray<DispatchOutcome>,
-  durationMs: number
-): DispatchSummary => ({
-  sent: outcomes.filter(o => o === 'sent').length,
-  failed: outcomes.filter(o => o === 'failed').length,
-  skipped: outcomes.filter(o => o === 'skipped').length,
-  durationMs,
-})
-
-/**
- * Materialise the per-tick context handed to every `dispatchOne`
- * call — bundles the static deps with the already-fetched articles
+ * Materialise the per-tick context handed to the planner / batch
+ * sender — bundles the static deps with the already-fetched articles
  * and the resolved cutoff.
  * @param d Dispatch deps.
  * @param byLang Articles grouped by language for the tick.

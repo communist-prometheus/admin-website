@@ -14,7 +14,26 @@ export type SendResult =
   | { readonly ok: true; readonly id: string }
   | { readonly ok: false; readonly error: string }
 
-/** Thin send-only client facade. */
+/**
+ * Outcome of one {@link ResendClient.sendBatch} call. The Resend batch
+ * endpoint is all-or-nothing per request: on success every email was
+ * accepted (ids in input order); on failure none went out.
+ */
+export type BatchResult =
+  | { readonly ok: true; readonly ids: ReadonlyArray<string> }
+  | { readonly ok: false; readonly error: string }
+
+/** Thin send client facade — single + batched transactional email. */
 export type ResendClient = {
   readonly send: (input: SendInput) => Promise<SendResult>
+  /**
+   * Send up to 100 emails in one Resend `/emails/batch` call (one HTTP
+   * request → no per-email rate-limit burst). `idempotencyKey` makes a
+   * retried batch a no-op when the first attempt was accepted but its
+   * response was lost.
+   */
+  readonly sendBatch: (
+    inputs: ReadonlyArray<SendInput>,
+    idempotencyKey?: string
+  ) => Promise<BatchResult>
 }

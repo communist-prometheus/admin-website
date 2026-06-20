@@ -35,17 +35,17 @@ const UNSUB = 'https://lists.comprom.org/unsubscribe?t=ABCDEF'
 const TICK = new Date('2026-06-06T09:00:00.000Z')
 
 describe('renderDigest — subject', () => {
-  it('uses the chrome of the subscriber primary lang (ru) with article count', () => {
+  it('uses English chrome regardless of the subscriber language (ru)', () => {
     const d = renderDigest({
       subscriber: SUB,
       articles: ARTICLES,
       unsubscribeUrl: UNSUB,
       tickAt: TICK,
     })
-    expect(d.subject).toBe('Коммунистический Прометей — 2 новых статей')
+    expect(d.subject).toBe('Communist Prometheus — 2 new articles')
   })
 
-  it('switches chrome lang when the subscriber primary lang is English', () => {
+  it('keeps English chrome for an English subscriber too', () => {
     const d = renderDigest({
       subscriber: { ...SUB, langs: ['en'] },
       articles: ARTICLES,

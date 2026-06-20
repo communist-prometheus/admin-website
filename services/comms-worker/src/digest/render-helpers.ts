@@ -44,12 +44,14 @@ export const groupByLang = (
     .filter(([, items]) => items.length > 0)
 
 /**
- * Pick the chrome dictionary for the subscriber's primary language.
- * @param langs Recipient languages, in order.
- * @returns Localised chrome strings.
+ * Chrome dictionary for the email shell (subject, intro, footer,
+ * unsubscribe copy). Always English by default, regardless of the
+ * subscriber's languages — only the article CONTENT stays localised
+ * (see {@link groupByLang}). Centralising it here keeps the one
+ * decision in one place if per-language chrome ever returns.
+ * @returns English chrome strings.
  */
-export const chromeFor = (langs: ReadonlyArray<Lang>): DigestChrome =>
-  CHROME[langs[0] ?? 'en']
+export const chromeFor = (): DigestChrome => CHROME.en
 
 /**
  * UTM-stamp both arms of a newspaper selection for the campaign.

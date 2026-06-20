@@ -118,3 +118,78 @@ describe('createResendClient.send — failure modes', () => {
     expect(fetchFn).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('createResendClient.sendBatch', () => {
+  const inputs = [okPayload, { ...okPayload, to: 'x@y.z' }]
+
+  it('POSTs the batch URL once and returns ids in input order', async () => {
+    fetchFn.mockResolvedValue(
+      new Response(
+        JSON.stringify({ data: [{ id: 're_a' }, { id: 're_b' }] }),
+        {
+          status: 200,
+        }
+      )
+    )
+    const r = await build().sendBatch(inputs, 'idem-1')
+    expect(r).toEqual({ ok: true, ids: ['re_a', 're_b'] })
+    expect(fetchFn).toHaveBeenCalledOnce()
+    const [url, init] = fetchFn.mock.calls[0] ?? []
+    expect(url).toBe('https://api.resend.com/emails/batch')
+    const body = JSON.parse(init.body as string) as ReadonlyArray<unknown>
+    expect(body).toHaveLength(2)
+    expect(new Headers(init.headers).get('Idempotency-Key')).toBe('idem-1')
+  })
+
+  it('does nothing and returns empty ids for an empty batch', async () => {
+    const r = await build().sendBatch([])
+    expect(r).toEqual({ ok: true, ids: [] })
+    expect(fetchFn).not.toHaveBeenCalled()
+  })
+
+  it('fails terminally without retry on a 422', async () => {
+    fetchFn.mockResolvedValue(new Response('bad', { status: 422 }))
+    const r = await build().sendBatch(inputs)
+    expect(r).toEqual({ ok: false, error: 'resend 422' })
+    expect(fetchFn).toHaveBeenCalledOnce()
+  })
+
+  it('retries once on 429 then succeeds', async () => {
+    fetchFn
+      .mockResolvedValueOnce(
+        new Response('rate', { status: 429, headers: { 'Retry-After': '2' } })
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ data: [{ id: 're_1' }, { id: 're_2' }] }),
+          {
+            status: 200,
+          }
+        )
+      )
+    const r = await build().sendBatch(inputs)
+    expect(r).toEqual({ ok: true, ids: ['re_1', 're_2'] })
+    expect(sleep).toHaveBeenCalledWith(2000)
+    expect(fetchFn).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the real status when a retryable failure is exhausted', async () => {
+    fetchFn
+      .mockResolvedValueOnce(new Response('boom', { status: 503 }))
+      .mockResolvedValueOnce(new Response('boom', { status: 503 }))
+    const r = await build().sendBatch(inputs)
+    expect(r).toEqual({ ok: false, error: 'resend 503 (retry exhausted)' })
+  })
+
+  it('reports a network error after both attempts reject', async () => {
+    fetchFn
+      .mockRejectedValueOnce(new Error('econn'))
+      .mockRejectedValueOnce(new Error('econn'))
+    const r = await build().sendBatch(inputs)
+    expect(r).toEqual({
+      ok: false,
+      error: 'resend network (retry exhausted)',
+    })
+    expect(fetchFn).toHaveBeenCalledTimes(2)
+  })
+})

@@ -1,6 +1,6 @@
-import { sendOnce } from './attempt'
-import { buildRequest } from './request'
-import type { ResendClient, SendInput, SendResult } from './types'
+import { sendBatchWithRetry } from './batch-retry'
+import { sendWithRetry } from './send-retry'
+import type { BatchResult, ResendClient, SendInput } from './types'
 
 export { RESEND_API_URL } from './attempt'
 
@@ -13,25 +13,31 @@ type Deps = {
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise(r => setTimeout(r, ms))
 
-const fail = (error: string): SendResult => ({ ok: false, error })
+const empty = (): Promise<BatchResult> =>
+  Promise.resolve({ ok: true, ids: [] })
 
 /**
- * Build a send-only Resend client. Retries once on 429 / 5xx / network
- * error with either the server-provided `Retry-After` or a 1s default.
+ * Build a send client. `send` retries once on 429 / 5xx / network;
+ * `sendBatch` ships ≤100 emails in one `/emails/batch` request (one HTTP
+ * call → no per-second rate-limit burst) with the same single retry.
  * @param d Injected API key, fetch, and sleep for testability.
- * @returns Send-only client.
+ * @returns Single + batch send client.
  */
 export const createResendClient = (d: Deps): ResendClient => {
   const doFetch = d.fetch ?? globalThis.fetch.bind(globalThis)
   const doSleep = d.sleep ?? defaultSleep
   return {
-    send: async (input: SendInput) => {
-      const init = buildRequest(d.apiKey, input)
-      const first = await sendOnce(doFetch, init)
-      if ('ok' in first) return first
-      await doSleep(first.retryAfterMs)
-      const second = await sendOnce(doFetch, init)
-      return 'ok' in second ? second : fail('resend retry exhausted')
-    },
+    send: (input: SendInput) =>
+      sendWithRetry(doFetch, doSleep, d.apiKey, input),
+    sendBatch: (inputs: ReadonlyArray<SendInput>, idempotencyKey?: string) =>
+      inputs.length === 0
+        ? empty()
+        : sendBatchWithRetry(
+            doFetch,
+            doSleep,
+            d.apiKey,
+            inputs,
+            idempotencyKey
+          ),
   }
 }

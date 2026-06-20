@@ -45,16 +45,16 @@ const stubFetch: typeof fetch = async (input, init) => {
     const lang = /\/(\w+)\/rss\.xml$/.exec(url)?.[1] ?? ''
     return new Response(RSS_BODY(lang), { status: 200 })
   }
-  if (url === 'https://api.resend.com/emails') {
-    const body = typeof init?.body === 'string' ? init.body : ''
+  if (url === 'https://api.resend.com/emails/batch') {
+    const body = typeof init?.body === 'string' ? init.body : '[]'
     const headers = new Headers(init?.headers)
     resendCalls.push({
       body,
       idempotencyKey: headers.get('Idempotency-Key'),
     })
-    return new Response(JSON.stringify({ id: `re_${++resendIdCounter}` }), {
-      status: 200,
-    })
+    const emails = JSON.parse(body) as ReadonlyArray<unknown>
+    const data = emails.map(() => ({ id: `re_${++resendIdCounter}` }))
+    return new Response(JSON.stringify({ data }), { status: 200 })
   }
   return new Response('not-stubbed', { status: 404 })
 }
@@ -123,11 +123,12 @@ describe('full-flow happy path (T7.4)', () => {
     })
     expect(tick1.status).toBe(202)
     expect(resendCalls).toHaveLength(1)
-    const captured = JSON.parse(resendCalls[0]?.body ?? '{}') as {
+    const batch = JSON.parse(resendCalls[0]?.body ?? '[]') as Array<{
       to: string[]
       html: string
       headers: Record<string, string>
-    }
+    }>
+    const captured = batch[0] ?? { to: [], html: '', headers: {} }
     expect(captured.to).toEqual(['e2e-bot@example.test'])
     // Articles are grouped per language with uppercased section headers.
     expect(captured.html).toContain('>RU<')

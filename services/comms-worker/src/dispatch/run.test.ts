@@ -38,14 +38,26 @@ const buildResend = (
 ): {
   client: ResendClient
   sends: SendInput[]
+  batchSizes: number[]
 } => {
   const sends: SendInput[] = []
+  const batchSizes: number[] = []
   return {
     sends,
+    batchSizes,
     client: {
       send: async input => {
         sends.push(input)
         return reply(input)
+      },
+      sendBatch: async inputs => {
+        batchSizes.push(inputs.length)
+        for (const i of inputs) sends.push(i)
+        const replies = inputs.map(reply)
+        const firstFail = replies.find(r => !r.ok)
+        return firstFail !== undefined && !firstFail.ok
+          ? { ok: false, error: firstFail.error }
+          : { ok: true, ids: replies.map(r => (r.ok ? r.id : '')) }
       },
     },
   }
@@ -229,6 +241,30 @@ describe('runDispatch — RSS caching across subscribers', () => {
     expect([...rss.calls].sort()).toEqual(['en', 'ru'])
     expect(rss.calls).toHaveLength(2)
     expect(resend.sends).toHaveLength(3)
+    // all three recipients go out in ONE Resend batch call, not three —
+    // this is the fix for the per-second rate-limit mass failure.
+    expect(resend.batchSizes).toEqual([3])
+  })
+})
+
+describe('runDispatch — batch failure (data-loss guard)', () => {
+  it('marks every recipient failed and does NOT advance the cutoff', async () => {
+    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await subs.insert({ email: 'b@b.c', langs: ['ru'] })
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
+    })
+    const resend = buildResend(() => ({
+      ok: false,
+      error: 'resend 429 (retry exhausted)',
+    }))
+    const summary = await runDispatch(baseDeps(rss.fn, resend.client))
+    expect(summary).toMatchObject({ sent: 0, failed: 2, skipped: 0 })
+    // a failed broadcast must replay next tick — the watermark stays put.
+    expect(await settings.getCutoffAt()).toBeUndefined()
+    const logs = await log.listRecent(10)
+    expect(logs).toHaveLength(2)
+    expect(logs.every(l => l.status === 'failed')).toBe(true)
   })
 })
 
