@@ -1,11 +1,8 @@
-import { LANGS, type Lang, type NewSubscriber } from './types'
+import type { NewSubscriber } from './types'
+import { EMAIL_RE, isLang, parseLangs } from './validate-helpers'
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const allowedLangs = new Set<string>(LANGS)
-
-const isLang = (v: unknown): v is Lang =>
-  typeof v === 'string' && allowedLangs.has(v)
+export type { SubscriberPatch } from './validate-patch'
+export { validatePatch } from './validate-patch'
 
 /**
  * Validate the body of `POST /api/subscribers`.
@@ -14,33 +11,25 @@ const isLang = (v: unknown): v is Lang =>
  */
 export const validateNewSubscriber = (
   body: unknown
-): NewSubscriber | { readonly error: 'email' | 'langs' } => {
+): NewSubscriber | { readonly error: 'email' | 'langs' | 'messageLang' } => {
   if (typeof body !== 'object' || body === null) return { error: 'email' }
-  const { email, langs } = body as {
+  const { email, langs, messageLang } = body as {
     readonly email?: unknown
     readonly langs?: unknown
+    readonly messageLang?: unknown
   }
+  const parsedLangs = parseLangs(langs)
   if (typeof email !== 'string' || !EMAIL_RE.test(email)) {
     return { error: 'email' }
   }
-  if (!Array.isArray(langs) || langs.length === 0 || !langs.every(isLang)) {
-    return { error: 'langs' }
+  if (parsedLangs === undefined) return { error: 'langs' }
+  if (messageLang !== undefined && !isLang(messageLang)) {
+    return { error: 'messageLang' }
   }
-  return { email, langs }
-}
-
-/**
- * Validate the body of `PATCH /api/subscribers/:id`.
- * @param body Raw parsed JSON body.
- * @returns Langs array on success, error code otherwise.
- */
-export const validateLangsPatch = (
-  body: unknown
-): { readonly langs: ReadonlyArray<Lang> } | { readonly error: 'langs' } => {
-  if (typeof body !== 'object' || body === null) return { error: 'langs' }
-  const { langs } = body as { readonly langs?: unknown }
-  if (!Array.isArray(langs) || langs.length === 0 || !langs.every(isLang)) {
-    return { error: 'langs' }
+  // Default the message (chrome) language to English when unspecified.
+  return {
+    email,
+    langs: parsedLangs,
+    messageLang: isLang(messageLang) ? messageLang : 'en',
   }
-  return { langs }
 }

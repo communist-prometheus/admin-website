@@ -5,12 +5,14 @@ import {
   apiListSubscribers,
   apiRemoveSubscriber,
   apiUpdateLangs,
+  apiUpdateMessageLang,
 } from './comms-api'
 
 const okSubscriber: Subscriber = {
   id: 7,
   email: 'a@b.c',
   langs: ['ru', 'en'],
+  messageLang: 'en',
   status: 'active',
   createdAt: '2026-06-03T00:00:00.000Z',
   lastSentAt: undefined,
@@ -47,15 +49,17 @@ describe('apiListSubscribers', () => {
 })
 
 describe('apiAddSubscriber', () => {
-  it('POSTs the email + langs and returns the created subscriber', async () => {
+  it('POSTs the email + langs + messageLang and returns the subscriber', async () => {
     mockFetch.mockResolvedValue(
       new Response(JSON.stringify(okSubscriber), { status: 201 })
     )
-    const res = await apiAddSubscriber('a@b.c', ['ru'])
+    const res = await apiAddSubscriber('a@b.c', ['ru'], 'en')
     const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit]
     expect(url).toMatch(/\/api\/subscribers$/)
     expect(init.method).toBe('POST')
-    expect(init.body).toBe(JSON.stringify({ email: 'a@b.c', langs: ['ru'] }))
+    expect(init.body).toBe(
+      JSON.stringify({ email: 'a@b.c', langs: ['ru'], messageLang: 'en' })
+    )
     expect(res.email).toBe('a@b.c')
   })
 
@@ -63,7 +67,9 @@ describe('apiAddSubscriber', () => {
     mockFetch.mockResolvedValue(
       new Response(JSON.stringify({ error: 'email' }), { status: 422 })
     )
-    await expect(apiAddSubscriber('bad', ['ru'])).rejects.toThrow('email')
+    await expect(apiAddSubscriber('bad', ['ru'], 'en')).rejects.toThrow(
+      'email'
+    )
   })
 })
 
@@ -75,6 +81,17 @@ describe('apiUpdateLangs', () => {
     expect(url).toMatch(/\/api\/subscribers\/7$/)
     expect(init.method).toBe('PATCH')
     expect(init.body).toBe(JSON.stringify({ langs: ['en'] }))
+  })
+})
+
+describe('apiUpdateMessageLang', () => {
+  it('PATCHes the messageLang at /api/subscribers/:id', async () => {
+    mockFetch.mockResolvedValue(ok(okSubscriber))
+    await apiUpdateMessageLang(7, 'it')
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(url).toMatch(/\/api\/subscribers\/7$/)
+    expect(init.method).toBe('PATCH')
+    expect(init.body).toBe(JSON.stringify({ messageLang: 'it' }))
   })
 })
 

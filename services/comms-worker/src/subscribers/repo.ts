@@ -1,11 +1,12 @@
 import type { D1Database } from '@cloudflare/workers-types'
 import { insertSubscriber } from './repo-insert'
 import { findById, listActive, listAll } from './repo-read'
+import { setStatus } from './repo-status'
 import {
   markSent,
   removeSubscriber,
-  setStatus,
   updateLangs,
+  updateMessageLang,
 } from './repo-write'
 import type {
   Lang,
@@ -23,6 +24,10 @@ export type SubscriberRepo = {
   readonly updateLangs: (
     id: number,
     langs: ReadonlyArray<Lang>
+  ) => Promise<Subscriber | undefined>
+  readonly updateMessageLang: (
+    id: number,
+    messageLang: Lang
   ) => Promise<Subscriber | undefined>
   readonly remove: (id: number) => Promise<boolean>
   readonly setStatus: (
@@ -45,6 +50,7 @@ export const createRepo = (d: Deps): SubscriberRepo => ({
   listAll: () => listAll(d.db),
   findById: id => findById(d.db, id),
   updateLangs: (id, langs) => updateLangs(d.db, id, langs),
+  updateMessageLang: (id, lang) => updateMessageLang(d.db, id, lang),
   remove: id => removeSubscriber(d.db, id),
   setStatus: (id, status) => setStatus(d.db, d.now, id, status),
   markSent: (id, sentAt) => markSent(d.db, id, sentAt),
