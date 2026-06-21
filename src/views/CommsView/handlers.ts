@@ -11,11 +11,14 @@ type Stores = {
 }
 
 const subscriberHandlers = (s: Stores) => ({
-  onAdd: (email: string, langs: readonly Lang[]): void => {
-    void s.comms.add(email, langs)
+  onAdd: (email: string, langs: readonly Lang[], messageLang: Lang): void => {
+    void s.comms.add(email, langs, messageLang)
   },
   onLangs: (id: number, langs: readonly Lang[]): void => {
     void s.comms.updateLangs(id, langs)
+  },
+  onMessageLang: (id: number, messageLang: Lang): void => {
+    void s.comms.updateMessageLang(id, messageLang)
   },
   onRemove: (id: number): void => {
     void s.comms.remove(id)

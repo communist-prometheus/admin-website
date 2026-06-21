@@ -5,6 +5,7 @@ import SubscriberRow from './SubscriberRow.vue'
 defineProps<{ readonly subscribers: readonly Subscriber[] }>()
 const emit = defineEmits<{
   langs: [id: number, langs: readonly Lang[]]
+  messageLang: [id: number, messageLang: Lang]
   remove: [id: number]
 }>()
 </script>
@@ -19,6 +20,7 @@ const emit = defineEmits<{
       <tr>
         <th scope="col" class="th-email">Email</th>
         <th scope="col" class="th-langs">Languages</th>
+        <th scope="col" class="th-msg-lang">Message</th>
         <th scope="col" class="th-status">Status</th>
         <th scope="col" class="th-actions"><span class="sr-only">Actions</span></th>
       </tr>
@@ -29,6 +31,7 @@ const emit = defineEmits<{
         :key="entry.id"
         :entry="entry"
         @langs="(id, l) => emit('langs', id, l)"
+        @message-lang="(id, ml) => emit('messageLang', id, ml)"
         @remove="id => emit('remove', id)"
       />
     </tbody>
@@ -68,15 +71,19 @@ const emit = defineEmits<{
 }
 
 .th-email {
-  width: 38%;
+  width: 30%;
 }
 
 .th-langs {
-  width: 36%;
+  width: 28%;
+}
+
+.th-msg-lang {
+  width: 18%;
 }
 
 .th-status {
-  width: 18%;
+  width: 16%;
 }
 
 .th-actions {

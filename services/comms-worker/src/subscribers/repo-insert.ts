@@ -7,7 +7,7 @@ import {
 } from './types'
 
 const SQL_INSERT =
-  'INSERT INTO subscribers (email, langs, created_at) VALUES (?, ?, ?)'
+  'INSERT INTO subscribers (email, langs, message_lang, created_at) VALUES (?, ?, ?, ?)'
 const SQL_LAST = 'SELECT * FROM subscribers WHERE rowid = last_insert_rowid()'
 const UNIQUE_MARKER = 'UNIQUE'
 
@@ -28,7 +28,7 @@ export const insertSubscriber = async (
   try {
     await db
       .prepare(SQL_INSERT)
-      .bind(email, langsToJson(input.langs), now())
+      .bind(email, langsToJson(input.langs), input.messageLang ?? 'en', now())
       .run()
   } catch (e) {
     if (e instanceof Error && e.message.includes(UNIQUE_MARKER)) {

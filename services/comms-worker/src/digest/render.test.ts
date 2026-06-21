@@ -8,6 +8,7 @@ const SUB: Subscriber = {
   id: 42,
   email: 'reader@example.test',
   langs: ['ru', 'en'],
+  messageLang: 'en',
   status: 'active',
   createdAt: '2026-05-01T00:00:00.000Z',
   lastSentAt: undefined,
@@ -53,6 +54,16 @@ describe('renderDigest — subject', () => {
       tickAt: TICK,
     })
     expect(d.subject).toBe('Communist Prometheus — 2 new articles')
+  })
+
+  it('uses Russian chrome when the subscriber opts into messageLang ru', () => {
+    const d = renderDigest({
+      subscriber: { ...SUB, messageLang: 'ru' },
+      articles: ARTICLES,
+      unsubscribeUrl: UNSUB,
+      tickAt: TICK,
+    })
+    expect(d.subject).toBe('Коммунистический Прометей — 2 новых статей')
   })
 })
 

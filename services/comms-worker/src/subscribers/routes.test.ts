@@ -75,6 +75,51 @@ describe('POST /api/subscribers', () => {
     expect(body.langs).toEqual(['ru'])
   })
 
+  it('defaults messageLang to en when omitted', async () => {
+    const res = await app.fetch(
+      reqJson('/api/subscribers', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'a@b.c', langs: ['ru'] }),
+      }),
+      env
+    )
+    expect(res.status).toBe(201)
+    const body = (await res.json()) as Subscriber
+    expect(body.messageLang).toBe('en')
+  })
+
+  it('persists an explicit messageLang', async () => {
+    const res = await app.fetch(
+      reqJson('/api/subscribers', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'a@b.c',
+          langs: ['ru'],
+          messageLang: 'ru',
+        }),
+      }),
+      env
+    )
+    expect(res.status).toBe(201)
+    const body = (await res.json()) as Subscriber
+    expect(body.messageLang).toBe('ru')
+  })
+
+  it('returns 422 for an unknown messageLang', async () => {
+    const res = await app.fetch(
+      reqJson('/api/subscribers', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'a@b.c',
+          langs: ['ru'],
+          messageLang: 'xx',
+        }),
+      }),
+      env
+    )
+    expect(res.status).toBe(422)
+  })
+
   it('returns 422 for invalid email syntax', async () => {
     const res = await app.fetch(
       reqJson('/api/subscribers', {
@@ -137,6 +182,32 @@ describe('PATCH /api/subscribers/:id', () => {
     expect(res.status).toBe(200)
     const body = (await res.json()) as Subscriber
     expect(body.langs).toEqual(['en', 'it'])
+  })
+
+  it('updates messageLang and returns the new row', async () => {
+    const s = await repo.insert({ email: 'a@b.c', langs: ['ru'] })
+    const res = await app.fetch(
+      reqJson(`/api/subscribers/${s.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ messageLang: 'it' }),
+      }),
+      env
+    )
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as Subscriber
+    expect(body.messageLang).toBe('it')
+  })
+
+  it('returns 422 for an empty patch', async () => {
+    const s = await repo.insert({ email: 'a@b.c', langs: ['ru'] })
+    const res = await app.fetch(
+      reqJson(`/api/subscribers/${s.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({}),
+      }),
+      env
+    )
+    expect(res.status).toBe(422)
   })
 
   it('returns 404 for unknown id', async () => {

@@ -7,6 +7,7 @@ export const SubscriberSchema = Schema.Struct({
   id: Schema.Number,
   email: Schema.String,
   langs: Schema.Array(LangSchema),
+  messageLang: LangSchema,
   status: Schema.Literal('active', 'unsubscribed', 'bounced', 'complained'),
   createdAt: Schema.String,
   lastSentAt: Schema.UndefinedOr(Schema.String),

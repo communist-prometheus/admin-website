@@ -10,6 +10,8 @@ import {
 } from '@/validation/schemas/subscriber'
 import { commsFetch, ensureOk, jsonHeaders } from './comms-http'
 
+export { apiUpdateLangs, apiUpdateMessageLang } from './comms-api-patch'
+
 /**
  * GET /api/subscribers — list every subscriber row, regardless of status.
  * @returns Parsed list payload.
@@ -23,34 +25,18 @@ export const apiListSubscribers = async (): Promise<SubscribersList> => {
  * POST /api/subscribers — create one new active subscriber.
  * @param email Lower-case canonical email address.
  * @param langs Languages the subscriber wants in their digest.
+ * @param messageLang Language of the email shell (defaults to English).
  * @returns The persisted subscriber row.
  */
 export const apiAddSubscriber = async (
   email: string,
-  langs: ReadonlyArray<Lang>
+  langs: ReadonlyArray<Lang>,
+  messageLang: Lang
 ): Promise<Subscriber> => {
   const res = await commsFetch('/api/subscribers', {
     method: 'POST',
     headers: jsonHeaders(),
-    body: JSON.stringify({ email, langs }),
-  })
-  return decodeResponse(SubscriberSchema)(res)
-}
-
-/**
- * PATCH /api/subscribers/:id — replace the langs[] array.
- * @param id Subscriber id.
- * @param langs Replacement language list.
- * @returns The updated subscriber row.
- */
-export const apiUpdateLangs = async (
-  id: number,
-  langs: ReadonlyArray<Lang>
-): Promise<Subscriber> => {
-  const res = await commsFetch(`/api/subscribers/${id}`, {
-    method: 'PATCH',
-    headers: jsonHeaders(),
-    body: JSON.stringify({ langs }),
+    body: JSON.stringify({ email, langs, messageLang }),
   })
   return decodeResponse(SubscriberSchema)(res)
 }

@@ -5,6 +5,7 @@ type Row = {
   readonly id: number
   readonly email: string
   readonly langs: string
+  readonly message_lang: string
   readonly status: string
   readonly created_at: string
   readonly last_sent_at: string | null
@@ -28,6 +29,7 @@ export const rowToSubscriber = (row: Row): Subscriber => ({
   id: row.id,
   email: row.email,
   langs: parseLangs(row.langs),
+  messageLang: isLang(row.message_lang) ? row.message_lang : 'en',
   status: row.status as SubscriberStatus,
   createdAt: row.created_at,
   lastSentAt: row.last_sent_at ?? undefined,

@@ -1,13 +1,11 @@
 import type { Context } from 'hono'
 import type { SubscriberRepo } from './repo'
+import { parseId } from './route-helpers'
 import { isDuplicateError } from './types'
-import { validateLangsPatch, validateNewSubscriber } from './validate'
+import { validateNewSubscriber } from './validate'
 
-/** Parse a positive integer from a path param. */
-export const parseId = (raw: string): number | undefined => {
-  const n = Number(raw)
-  return Number.isFinite(n) && n > 0 ? n : undefined
-}
+export { parseId } from './route-helpers'
+export { handlePatch } from './route-patch'
 
 /** POST /api/subscribers — create. */
 export const handleCreate = async (
@@ -23,22 +21,6 @@ export const handleCreate = async (
     if (isDuplicateError(e)) return c.json({ error: 'duplicate' }, 409)
     throw e
   }
-}
-
-/** PATCH /api/subscribers/:id — replace langs. */
-export const handlePatch = async (
-  c: Context,
-  repo: SubscriberRepo
-): Promise<Response> => {
-  const id = parseId(c.req.param('id'))
-  if (id === undefined) return c.json({ error: 'not_found' }, 404)
-  const body = await c.req.json().catch(() => undefined)
-  const parsed = validateLangsPatch(body)
-  if ('error' in parsed) return c.json({ error: parsed.error }, 422)
-  const updated = await repo.updateLangs(id, parsed.langs)
-  return updated === undefined
-    ? c.json({ error: 'not_found' }, 404)
-    : c.json(updated)
 }
 
 /** DELETE /api/subscribers/:id — hard delete. */
