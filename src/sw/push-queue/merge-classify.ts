@@ -1,6 +1,7 @@
-/** Outcome of a single auto-merge attempt. */
+/** Outcome of a single auto-merge / recovery attempt. */
 export type MergeOutcome =
   | { readonly kind: 'clean' }
+  | { readonly kind: 'rebased'; readonly sha: string }
   | {
       readonly kind: 'conflict'
       readonly files: ReadonlyArray<string>

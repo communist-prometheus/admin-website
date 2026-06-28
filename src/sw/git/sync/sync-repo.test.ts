@@ -24,6 +24,11 @@ vi.mock('./wipe-repo', () => ({
   wipeRepo: () => mockWipe(),
 }))
 
+const mockListPending = vi.fn()
+vi.mock('../../push-queue', () => ({
+  listPending: () => mockListPending(),
+}))
+
 vi.mock('./mark-ready', () => ({ markReady: vi.fn() }))
 vi.mock('../repo/init-mock-repo', () => ({ initMockRepo: vi.fn() }))
 vi.mock('../fs', () => ({
@@ -59,14 +64,26 @@ describe('checkRepoAndSync', () => {
     expect(mockClone).not.toHaveBeenCalled()
   })
 
-  it('wipes and re-clones when pull fails', async () => {
+  it('wipes and re-clones when pull fails and nothing is queued', async () => {
     mockCheckRepoExists.mockResolvedValueOnce(true)
     mockTryPull.mockResolvedValueOnce(false)
+    mockListPending.mockResolvedValueOnce([])
     mockWipe.mockResolvedValueOnce(undefined)
     mockClone.mockResolvedValueOnce(undefined)
     await checkRepoAndSync(cfg)
     expect(mockWipe).toHaveBeenCalled()
     expect(mockClone).toHaveBeenCalled()
+  })
+
+  it('keeps a diverged clone that still holds unpushed commits', async () => {
+    mockCheckRepoExists.mockResolvedValueOnce(true)
+    mockTryPull.mockResolvedValueOnce(false)
+    mockListPending.mockResolvedValueOnce([{ sha: 'unpushed' }])
+    await checkRepoAndSync(cfg)
+    // Wiping would orphan the queue and lose the edit; recovery happens at
+    // push time via reset-onto-remote replay instead.
+    expect(mockWipe).not.toHaveBeenCalled()
+    expect(mockClone).not.toHaveBeenCalled()
   })
 
   it('clones fresh when repo does not exist', async () => {

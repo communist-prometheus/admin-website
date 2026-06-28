@@ -22,7 +22,7 @@ export const tryMergeAfterNff = async (
 ): Promise<MergeOutcome> => {
   const config = workerState.config
   const outcome =
-    config === undefined ? noConfigOutcome : await attemptMerge(config)
+    config === undefined ? noConfigOutcome : await attemptMerge(config, entry)
   const noop = (): void => undefined
   const fire =
     outcome.kind === 'conflict'
