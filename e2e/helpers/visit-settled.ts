@@ -30,7 +30,19 @@ export const waitForSWControl = async (page: Page): Promise<void> => {
   await page.waitForFunction(async () => {
     const sw = navigator.serviceWorker
     const reg = sw ? await sw.getRegistration() : undefined
-    return !sw || sw.controller !== null || Boolean(reg?.active)
+    const ua = navigator.userAgent
+    // The `reg.active` branch is a WebKit-only escape hatch: WebKit
+    // never exposes `controller` in Playwright. Applied to Chromium it
+    // resolved at ACTIVATION — before clients.claim() fires
+    // controllerchange, which the app turns into a one-time reload.
+    // The gate then returned too early and the next navigation raced
+    // (and was aborted by) that reload → cold SW re-init → 30s-budget
+    // timeout, surfacing as a different random spec each CI run.
+    // Gate Chromium/Firefox on the real `controller` signal so the
+    // claim→reload settles first.
+    const isWebKit =
+      /\bAppleWebKit\b/.test(ua) && !/\b(?:Chrome|Chromium|Edg)\b/.test(ua)
+    return !sw || (isWebKit ? Boolean(reg?.active) : sw.controller !== null)
   })
 }
 
