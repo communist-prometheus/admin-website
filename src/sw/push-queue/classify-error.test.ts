@@ -11,6 +11,21 @@ describe('classifyPushError', () => {
     )
   })
 
+  it('detects isomorphic-git PushRejectedError wording', () => {
+    // The literal message isomorphic-git 1.37.x throws on a
+    // non-fast-forward push. The interposed "simple" used to break
+    // the /not a fast-?forward/ pattern, misclassifying every NFF
+    // push as `unknown` ("Unexpected error").
+    expect(
+      classifyPushError(
+        new Error(
+          'Push rejected because it was not a simple fast-forward. ' +
+            'Use "force: true" to override.'
+        )
+      )
+    ).toBe('non-fast-forward')
+  })
+
   it('detects auth failures', () => {
     expect(classifyPushError(new Error('401 Unauthorized'))).toBe('auth')
     expect(classifyPushError(new Error('403 Forbidden'))).toBe('auth')

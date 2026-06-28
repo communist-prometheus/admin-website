@@ -19,6 +19,10 @@ const AUTH_PATTERNS: ReadonlyArray<RegExp> = [
 
 const FF_PATTERNS: ReadonlyArray<RegExp> = [
   /not a fast-?forward/i,
+  // isomorphic-git's literal PushRejectedError wording — the
+  // interposed "simple" keeps it from matching the bare pattern
+  // above, so it must be listed explicitly.
+  /not a simple fast-forward/i,
   /fetch first/i,
   /non-fast-forward/i,
   /push declined.*non-fast/i,
