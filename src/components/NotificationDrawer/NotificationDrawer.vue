@@ -60,4 +60,16 @@ const onClearAll = (): void => {
   padding: 12px;
   overflow-y: auto;
 }
+
+/*
+ * Below the desktop breakpoint a 360px right-anchored panel left a
+ * broken-looking sliver of the page exposed on the left (no scrim).
+ * Span the full viewport instead so the drawer reads as a sheet.
+ */
+@media (width <= 768px) {
+  .drawer {
+    left: 0;
+    width: auto;
+  }
+}
 </style>
