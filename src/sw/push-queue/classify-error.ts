@@ -26,6 +26,13 @@ const FF_PATTERNS: ReadonlyArray<RegExp> = [
   /fetch first/i,
   /non-fast-forward/i,
   /push declined.*non-fast/i,
+  // A shallow clone whose remote was force-pushed to an unrelated
+  // root is rejected on connectivity, not as a plain NFF. Route these
+  // to the same recovery (reset-onto-remote + replay), which is the
+  // only thing that produces a pushable commit from a depth:1 clone.
+  /missing necessary objects/i,
+  /shallow update not allowed/i,
+  /object .* not found/i,
 ]
 
 const VALIDATION_PATTERNS: ReadonlyArray<RegExp> = [

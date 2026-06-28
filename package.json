@@ -17,6 +17,7 @@
     "preview:test": "vite preview --port 5173 --outDir dist/client",
     "test:unit": "vitest",
     "test:unit:ui": "vitest --ui",
+    "verify:reset-replay": "bun scripts/verify-reset-replay.ts",
     "test:unit:coverage": "vitest --coverage",
     "test:e2e": "cross-env MOCK_OAUTH=true playwright test",
     "test:e2e:ui": "cross-env MOCK_OAUTH=true playwright test --ui",

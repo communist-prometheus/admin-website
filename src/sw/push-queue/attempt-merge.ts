@@ -2,45 +2,24 @@ import { fs, REPO_DIR } from '../git/fs'
 import { loadGit } from '../git/load-git'
 import { buildAuthOpts } from '../git/remote/build-auth-opts'
 import type { SWGitConfig } from '../protocol'
-import { collectConflictFiles } from './collect-conflict-files'
-import {
-  isMergeConflict,
-  isUnrelatedHistories,
-  type MergeOutcome,
-} from './merge-classify'
-import { mergeUnrelated } from './merge-unrelated'
+import type { MergeOutcome } from './merge-classify'
+import { classifyMergeError } from './merge-recover'
+import type { PushQueueEntry } from './types'
 
 export type { MergeOutcome } from './merge-classify'
 
-const conflictOutcome = async (error: unknown): Promise<MergeOutcome> => ({
-  kind: 'conflict',
-  files: await collectConflictFiles(error),
-})
-
-/*
- * A force-pushed remote leaves no common ancestor; pull bails with
- * MergeNotSupportedError. Recover via an explicit unrelated merge.
- * Everything else is a genuine failure surfaced to the caller.
- */
-const classifyMergeError = (
-  config: SWGitConfig,
-  error: unknown
-): Promise<MergeOutcome> | MergeOutcome =>
-  isMergeConflict(error)
-    ? conflictOutcome(error)
-    : isUnrelatedHistories(error)
-      ? mergeUnrelated(config)
-      : { kind: 'fail', error }
-
 /**
- * Attempt to fast-forward / auto-merge the local branch against
- * the remote. Wraps `git.pull` so callers can react to the three
- * outcomes without parsing error names themselves.
+ * Reconcile the local branch with the remote after a non-fast-forward
+ * rejection. A clean `git.pull` fast-forwards / 3-way merges; a genuine
+ * conflict surfaces for the visual-merge UI; anything else (unrelated /
+ * shallow-diverged) is recovered by reset-onto-remote + replay.
  * @param config Validated SW git configuration.
- * @returns Discriminated outcome (clean / conflict / fail).
+ * @param entry Queued user commit (needed to replay on recovery).
+ * @returns Discriminated outcome (clean / rebased / conflict / fail).
  */
 export const attemptMerge = async (
-  config: SWGitConfig
+  config: SWGitConfig,
+  entry: PushQueueEntry
 ): Promise<MergeOutcome> => {
   const git = await loadGit()
   const { default: http } = await import('isomorphic-git/http/web')
@@ -59,6 +38,6 @@ export const attemptMerge = async (
     })
     return { kind: 'clean' }
   } catch (error) {
-    return classifyMergeError(config, error)
+    return classifyMergeError(config, entry, error)
   }
 }

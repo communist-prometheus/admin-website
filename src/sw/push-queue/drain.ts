@@ -44,6 +44,9 @@ const runOnce = async (): Promise<void> => {
  * @returns Resolves once the walk has finished or yielded.
  */
 export const drainPushes = async (): Promise<void> => {
-  const acquired = !inFlight
-  await (acquired ? runOnce() : Promise.resolve())
+  // Never drain while a fresh clone is wiping/rebuilding the object store —
+  // a push reading a half-deleted store throws "Could not read object",
+  // which used to surface as a generic "unknown" failure.
+  const blocked = inFlight || workerState.state === 'cloning'
+  await (blocked ? Promise.resolve() : runOnce())
 }

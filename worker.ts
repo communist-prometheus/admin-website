@@ -19,6 +19,15 @@ export default {
       return api.fetch(request, env)
     }
 
-    return env.ASSETS.fetch(request)
+    const res = await env.ASSETS.fetch(request)
+    // The service worker MUST never be cached by the browser or the CF
+    // edge: a stale /sw.js pins users on an old SW after a deploy (the
+    // June incident — the fix shipped but users kept the broken worker).
+    if (url.pathname === '/sw.js') {
+      const patched = new Response(res.body, res)
+      patched.headers.set('Cache-Control', 'no-store')
+      return patched
+    }
+    return res
   },
 }
