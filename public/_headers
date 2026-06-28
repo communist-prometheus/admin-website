@@ -1,0 +1,8 @@
+# Cloudflare Workers static-assets header rules.
+# The service worker MUST never be cached by the browser or the CF edge:
+# a stale /sw.js pins users on an old worker after a deploy (the June
+# incident — the fix shipped but users kept the broken SW). The worker.ts
+# fallback only runs when assets route through the Worker; this rule
+# applies whether or not that is configured.
+/sw.js
+  Cache-Control: no-store
