@@ -55,6 +55,23 @@ Initial clone: `depth: 1, singleBranch: true, noTags: true`.
 Subsequent syncs: `git.fetch` + fast-forward merge. Full re-clone
 only via explicit user action or SW invalidation.
 
+### Push-rejection recovery
+
+A push that loses the fast-forward race is classified by
+`push-queue/classify-error.ts` and recovered automatically:
+
+- **non-fast-forward** → auto-merge the remote (`attempt-merge.ts`)
+  and re-push. isomorphic-git's literal wording is
+  `not a simple fast-forward` — the classifier must match that exact
+  phrase, not just `not a fast-forward`.
+- **unrelated histories** → if the remote was force-pushed (e.g. an
+  identity rewrite), `git.pull` aborts with `MergeNotSupportedError`
+  because there is no common ancestor. `merge-unrelated.ts` recovers
+  with an explicit `fetch` + `merge({ allowUnrelatedHistories: true })`:
+  identical blobs merge cleanly, so only a genuine same-path content
+  divergence surfaces as a conflict. `git.pull` cannot do this — it
+  never forwards the flag to `merge`.
+
 ## Service Worker Communication Protocol
 
 ### Fetch Interception (Data)

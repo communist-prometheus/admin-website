@@ -2,26 +2,35 @@ import { fs, REPO_DIR } from '../git/fs'
 import { loadGit } from '../git/load-git'
 import { buildAuthOpts } from '../git/remote/build-auth-opts'
 import type { SWGitConfig } from '../protocol'
-import { filesFromError, filesFromStatus } from './merge-conflict-files'
+import { collectConflictFiles } from './collect-conflict-files'
+import {
+  isMergeConflict,
+  isUnrelatedHistories,
+  type MergeOutcome,
+} from './merge-classify'
+import { mergeUnrelated } from './merge-unrelated'
 
-/** Outcome of a single auto-merge attempt. */
-export type MergeOutcome =
-  | { readonly kind: 'clean' }
-  | {
-      readonly kind: 'conflict'
-      readonly files: ReadonlyArray<string>
-    }
-  | { readonly kind: 'fail'; readonly error: unknown }
+export type { MergeOutcome } from './merge-classify'
 
-const isMergeConflict = (error: unknown): boolean =>
-  error instanceof Error && error.name === 'MergeConflictError'
+const conflictOutcome = async (error: unknown): Promise<MergeOutcome> => ({
+  kind: 'conflict',
+  files: await collectConflictFiles(error),
+})
 
-const collectConflictFiles = async (
+/*
+ * A force-pushed remote leaves no common ancestor; pull bails with
+ * MergeNotSupportedError. Recover via an explicit unrelated merge.
+ * Everything else is a genuine failure surfaced to the caller.
+ */
+const classifyMergeError = (
+  config: SWGitConfig,
   error: unknown
-): Promise<ReadonlyArray<string>> => {
-  const fromError = filesFromError(error)
-  return fromError.length > 0 ? fromError : await filesFromStatus()
-}
+): Promise<MergeOutcome> | MergeOutcome =>
+  isMergeConflict(error)
+    ? conflictOutcome(error)
+    : isUnrelatedHistories(error)
+      ? mergeUnrelated(config)
+      : { kind: 'fail', error }
 
 /**
  * Attempt to fast-forward / auto-merge the local branch against
@@ -50,8 +59,6 @@ export const attemptMerge = async (
     })
     return { kind: 'clean' }
   } catch (error) {
-    return isMergeConflict(error)
-      ? { kind: 'conflict', files: await collectConflictFiles(error) }
-      : { kind: 'fail', error }
+    return classifyMergeError(config, error)
   }
 }
