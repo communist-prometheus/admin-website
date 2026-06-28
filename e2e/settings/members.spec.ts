@@ -13,6 +13,15 @@ import { visitSettled } from '../helpers/visit-settled'
 
 const gotoSettings = async (page: Page): Promise<void> => {
   await visitSettled(page, '/settings', 'members-section')
+  // Gate on member-data arrival, not just the structural section.
+  // `members-section` paints before the org-members SW round-trip
+  // resolves; a specific row renders only after it does. Without this
+  // the dialog helpers (which wait for the request graph to go idle)
+  // fight the in-flight load for the whole 30s budget under CI.
+  await expectVisible(
+    page,
+    page.locator('[data-testid="member-row-alice-admin"]')
+  )
 }
 
 test.describe('Members — unified org list with CRUD', () => {

@@ -10,13 +10,13 @@ test.describe('Asset Paste Image', () => {
     await am.navigateToBlog('media-showcase')
     await am.expectPanelVisible()
 
-    const initialCount = await am.getAssetCount()
     await am.getEditorBody().click()
     await dispatchMediaPaste(page, 'test.png', 'image/png')
 
-    await expect(am.getAssetThumbnails()).toHaveCount(initialCount + 1, {
-      timeout: 10000,
-    })
+    // Identity wait: the pasted asset renders its own data-name. A
+    // relative count against getAssetCount() raced the committed-list
+    // SW round-trip (baseline read as 0 mid-load, target settled at 6).
+    await expect(am.getThumbByName('test.png')).toBeVisible()
   })
 
   test('should insert markdown reference on paste', async ({ page }) => {
