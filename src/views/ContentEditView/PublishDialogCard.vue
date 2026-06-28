@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { getGitHubConfig } from '@/config/github'
 
 defineProps<{
   readonly title: string
@@ -7,6 +8,9 @@ defineProps<{
 }>()
 const emit = defineEmits<{ confirm: []; cancel: [] }>()
 const cancelBtn = ref<HTMLButtonElement>()
+// Real push target (master on prod, develop on dev) — never hardcode
+// it: telling a prod editor "develop" hides that they publish live.
+const targetBranch = getGitHubConfig().branch
 
 onMounted(() => {
   cancelBtn.value?.focus()
@@ -20,8 +24,8 @@ onMounted(() => {
     </h2>
     <p>
       Saving <strong>{{ title }}</strong> will push the commit to
-      <code>develop</code>; the change will be visible on the public site
-      in about a minute.
+      <code>{{ targetBranch }}</code>; the change will be visible on the
+      public site in about a minute.
     </p>
     <p v-if="autoPublic" class="hint">
       This content type has no draft mode — every save is a publication.
