@@ -6,7 +6,6 @@ import {
   visit,
 } from '@prometheus/e2e-toolkit'
 import { waitForContentReady } from '../helpers/content-ready'
-import { waitForSWControl } from '../helpers/visit-settled'
 
 test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -24,12 +23,18 @@ test.describe('Login Flow', () => {
       page.getByRole('button', { name: /test user/i })
     )
 
-    // The first authenticated load registers the SW; activation
-    // claims the client and aborts an in-flight goto
-    // (net::ERR_ABORTED). Gate on the lifecycle before navigating —
-    // event-driven, no sleep.
-    await waitForSWControl(page)
-    await visit(page, '/content/blog')
+    // The first authenticated load registers the SW; its one-time
+    // claim fires controllerchange and the app reloads the page
+    // (sw-update-lifecycle), which aborts an in-flight goto
+    // (net::ERR_ABORTED) or tears the page mid-navigation. Gating on
+    // the SW lifecycle can't avoid it — `controller` flips at the very
+    // controllerchange that triggers the reload. Retry the navigation
+    // until it sticks: the SW claims exactly once, so this converges
+    // the instant the reload settles. Event-driven (Playwright polls),
+    // no fixed sleep.
+    await expect(async () => {
+      await page.goto('/content/blog', { waitUntil: 'domcontentloaded' })
+    }).toPass()
     await waitForContentReady(page)
 
     const items = page.locator('[data-testid="content-item"]')
