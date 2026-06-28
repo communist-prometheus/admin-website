@@ -19,12 +19,21 @@ interface PutDeps {
   readonly message: string
 }
 
+/*
+ * The tickets repo is private. GitHub answers a write the caller may only
+ * read with 404 (it hides the repo's existence), and a forbidden write with
+ * 403. Both mean "you lack write access to the tickets repo" — surface that
+ * instead of a bare status so a non-writer editor knows it is a permission
+ * problem, not a broken upload. Attachments are best-effort, so this only
+ * informs; it never blocks ticket creation.
+ */
+const messageFor = (res: Response): string =>
+  res.status === 404 || res.status === 403
+    ? `no write access to the tickets repo (${res.status})`
+    : `Upload failed: ${res.status} ${res.statusText}`
+
 const okOrThrow = async (res: Response): Promise<void> =>
-  res.ok
-    ? undefined
-    : Promise.reject(
-        new Error(`Upload failed: ${res.status} ${res.statusText}`)
-      )
+  res.ok ? undefined : Promise.reject(new Error(messageFor(res)))
 
 /**
  * PUT raw base64 content into the tickets repo via the Contents API.
