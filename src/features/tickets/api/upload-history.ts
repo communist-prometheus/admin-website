@@ -4,7 +4,7 @@ import {
   buildAttachmentUrl,
   randomAttachmentId,
 } from './attachment-paths'
-import { putContent } from './put-content'
+import { proxyAttach } from './proxy-attach'
 
 const toBase64 = (text: string): string =>
   globalThis.btoa(unescape(encodeURIComponent(text)))
@@ -28,7 +28,7 @@ export const uploadTextAttachment = async (
 ): Promise<TicketAttachment> => {
   const id = randomAttachmentId()
   const path = buildAttachmentPath(deps.fileName, id)
-  await putContent({
+  await proxyAttach({
     token: deps.token,
     path,
     content: toBase64(deps.text),

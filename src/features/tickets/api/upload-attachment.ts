@@ -1,14 +1,12 @@
 import { fileToBase64 } from '@/composables/useAssets/file-to-base64'
 import type { TicketAttachment } from '../templates/attachment-types'
-import { CONTENTS_API_THRESHOLD_BYTES } from './attachment-limits'
 import {
   buildAttachmentPath,
   buildAttachmentUrl,
   detectKind,
   randomAttachmentId,
 } from './attachment-paths'
-import { putBlob } from './put-blob'
-import { putContent } from './put-content'
+import { proxyAttach } from './proxy-attach'
 
 interface UploadDeps {
   readonly token: string
@@ -32,15 +30,9 @@ export const uploadAttachment = async (
   const path = buildAttachmentPath(deps.file.name, id)
   const content = await fileToBase64(deps.file)
   const message = `Ticket attachment: ${deps.file.name}`
-  /*
-   * Small files take the single-call Contents API; anything past
-   * GitHub's reliable Contents-API ceiling goes through the Git
-   * Data API (blob → tree → commit → ref) which supports up to
-   * 100 MiB per blob.
-   */
-  const write =
-    deps.file.size <= CONTENTS_API_THRESHOLD_BYTES ? putContent : putBlob
-  await write({ token: deps.token, path, content, message })
+  // Write through the same-origin proxy (service token), so the editor
+  // needs no direct access to the private tickets repo.
+  await proxyAttach({ token: deps.token, path, content, message })
   return {
     id,
     name: deps.file.name,
