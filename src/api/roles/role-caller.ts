@@ -32,6 +32,11 @@ const callerMembership = async (
       // Workers' fetch does not set one, so it must be explicit here.
       'User-Agent': 'prometheus-admin',
     },
+    // This is per-caller, authenticated data behind ONE URL (the
+    // authenticated user's own membership). The CF fetch cache keys on
+    // URL and would both serve a stale result and leak one caller's
+    // membership to another — never cache it.
+    cache: 'no-store',
   })
   const body = await res.json().catch(() => ({}))
   return res.ok && body?.state === 'active'
