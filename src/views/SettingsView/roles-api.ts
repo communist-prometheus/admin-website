@@ -1,6 +1,6 @@
 export { createInvite, revokeInvite } from './org-invite-api'
 export { fetchOrgMembers } from './org-members-api'
-export { setOrgRole } from './org-role-api'
+export { fetchRoleMap, type RoleMap, setOrgRole } from './role-store-api'
 export type {
   InviteRequest,
   OrgInvitation,
