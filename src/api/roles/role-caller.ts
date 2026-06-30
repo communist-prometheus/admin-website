@@ -1,13 +1,8 @@
 import type { Role } from '../../types/role'
+import { ghGet } from './gh-fetch'
 import { type RoleMap, resolveFromMap } from './role-map'
 
-const GH = 'https://api.github.com'
 const ORG = 'communist-prometheus'
-
-interface Membership {
-  readonly orgAdmin: boolean
-  readonly login: string
-}
 
 /** Caller's resolved identity + effective app role. */
 export interface Caller {
@@ -15,52 +10,39 @@ export interface Caller {
   readonly username: string
 }
 
-/**
- * Read the caller's org membership with THEIR OWN token (state they
- * cannot forge) — the confused-deputy source of truth.
- * @param token - Caller's GitHub OAuth token.
- * @returns Membership facts, or undefined when not an active member.
- */
-const callerMembership = async (
-  token: string
-): Promise<Membership | undefined> => {
-  const res = await fetch(`${GH}/user/memberships/orgs/${ORG}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-      // GitHub's API rejects requests without a User-Agent (403). CF
-      // Workers' fetch does not set one, so it must be explicit here.
-      'User-Agent': 'prometheus-admin',
-    },
-    // This is per-caller, authenticated data behind ONE URL (the
-    // authenticated user's own membership). The CF fetch cache keys on
-    // URL and would both serve a stale result and leak one caller's
-    // membership to another — never cache it.
-    cache: 'no-store',
-  })
+const callerLogin = async (token: string): Promise<string | undefined> => {
+  const res = await ghGet(token, '/user')
   const body = await res.json().catch(() => ({}))
-  return res.ok && body?.state === 'active'
-    ? { orgAdmin: body.role === 'admin', login: body.user?.login ?? '' }
-    : undefined
+  return res.ok ? (body?.login ?? undefined) : undefined
+}
+
+const callerIsOrgAdmin = async (token: string): Promise<boolean> => {
+  const res = await ghGet(token, `/user/memberships/orgs/${ORG}`)
+  const body = await res.json().catch(() => ({}))
+  return res.ok && body?.state === 'active' && body?.role === 'admin'
 }
 
 /**
- * Resolve the caller's effective role: org admins are always `admin`;
- * otherwise the highest grant in the KV map. Undefined when the caller
- * is not an active org member.
+ * Resolve the caller's effective role. Identity comes from `GET /user`
+ * — the caller's own, unforgeable login, which needs no `read:org`
+ * scope — and the role is their KV grant. Only the "unlisted org admin"
+ * fallback consults org membership, so an editor explicitly granted in
+ * KV resolves even when their token can't read org membership.
  * @param map - The role grant map from KV.
  * @param token - Caller's GitHub OAuth token.
- * @returns Resolved caller, or undefined for non-members.
+ * @returns Resolved caller, or undefined for an invalid token.
  */
 export const resolveCaller = async (
   map: RoleMap,
   token: string
 ): Promise<Caller | undefined> => {
-  const m = await callerMembership(token)
-  return m === undefined
+  const login = await callerLogin(token)
+  return login === undefined
     ? undefined
     : {
-        username: m.login,
-        role: m.orgAdmin ? 'admin' : resolveFromMap(map, m.login),
+        username: login,
+        role:
+          resolveFromMap(map, login) ??
+          ((await callerIsOrgAdmin(token)) ? 'admin' : undefined),
       }
 }
