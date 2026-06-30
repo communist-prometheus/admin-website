@@ -11,7 +11,7 @@ const myRole = async (
 ): Promise<Response> => {
   const resolved = await resolveCaller(await readRoles(kv), token)
   return resolved === undefined
-    ? new Response('Not an active org member', { status: 403 })
+    ? new Response('Invalid or unauthorized token', { status: 403 })
     : Response.json({
         role: resolved.role ?? null,
         username: resolved.username,
