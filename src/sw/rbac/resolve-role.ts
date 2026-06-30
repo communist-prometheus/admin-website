@@ -1,45 +1,51 @@
-import { Schema } from 'effect'
 import type { Role } from '@/types/role'
-import { ROLE_HIERARCHY } from '@/types/role'
-import { RolesConfigSchema } from '@/validation/schemas/roles'
-import { readRepoFile } from '../git/io/read-file'
 import { log } from '../logging/logger'
-import { isOrgAdmin } from './org-admin-cache'
+import { workerState } from '../state/state'
+import { mockRoleFor } from './org-members-mock'
 
-const ROLES_PATH = '.admin/roles.json'
+let cachedRole: Role | undefined
 
-let cachedRoles: typeof RolesConfigSchema.Type | undefined
-
-/** Clear cached roles (call after repo sync) */
+/** Clear the cached role (call on auth invalidate). */
 export const invalidateRoles = (): void => {
-  cachedRoles = undefined
+  cachedRole = undefined
 }
 
-/** Load roles config from the cloned repo */
-export const loadRoles = async (): Promise<void> => {
-  try {
-    const raw = await readRepoFile(ROLES_PATH)
-    const json: unknown = JSON.parse(raw)
-    cachedRoles = Schema.decodeUnknownSync(RolesConfigSchema)(json)
-    log('info', 'rbac', 'roles loaded')
-  } catch {
-    cachedRoles = undefined
-    log('warn', 'rbac', 'roles.json not found or invalid')
-  }
+interface MeResponse {
+  readonly role?: Role | null
+}
+
+const fetchMyRole = async (
+  token: string | undefined
+): Promise<Role | undefined> => {
+  const res = token
+    ? await fetch('/api/roles/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => undefined)
+    : undefined
+  const body: MeResponse = res?.ok ? await res.json().catch(() => ({})) : {}
+  return body.role ?? undefined
 }
 
 /**
- * Resolve the role for a given GitHub username.
- * @param username - GitHub login
- * @returns Highest matching role or undefined
+ * Fetch the current user's effective role from the CF worker
+ * (`GET /api/roles/me`, KV-backed) with the stored token and cache it.
+ * Replaces the former `.admin/roles.json` read so role changes apply
+ * immediately without a content commit. Org admins resolve to `admin`
+ * server-side. Called after each repo sync (fire-and-log).
  */
-export const resolveRole = (username: string): Role | undefined => {
-  if (isOrgAdmin(username)) return 'admin'
-  if (!cachedRoles) return undefined
-  const { roles } = cachedRoles
-  for (let i = ROLE_HIERARCHY.length - 1; i >= 0; i--) {
-    const role = ROLE_HIERARCHY[i]
-    if (roles[role].includes(username)) return role
-  }
-  return undefined
+export const loadRoles = async (): Promise<void> => {
+  const mock = __MOCK_MODE__ || workerState.config?.mock
+  cachedRole = mock
+    ? mockRoleFor(workerState.config?.username)
+    : await fetchMyRole(workerState.config?.token)
+  log('info', 'rbac', `role resolved: ${cachedRole ?? 'none'}`)
 }
+
+/**
+ * Resolve the current user's role. The username argument is kept for
+ * call-site compatibility; the cached role always belongs to the
+ * authenticated user.
+ * @param _username - GitHub login of the current user (unused).
+ * @returns The cached role, or undefined.
+ */
+export const resolveRole = (_username: string): Role | undefined => cachedRole
