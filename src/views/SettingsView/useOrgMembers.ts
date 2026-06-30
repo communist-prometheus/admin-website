@@ -1,6 +1,8 @@
 import { ref } from 'vue'
+import { overlayRoles } from './member-roles'
 import {
   fetchOrgMembers,
+  fetchRoleMap,
   type OrgInvitation,
   type OrgMember,
 } from './roles-api'
@@ -21,8 +23,11 @@ export const useOrgMembers = () => {
   const load = async (): Promise<void> => {
     loading.value = true
     try {
-      const payload = await fetchOrgMembers()
-      members.value = payload.members
+      const [payload, roleMap] = await Promise.all([
+        fetchOrgMembers(),
+        fetchRoleMap(),
+      ])
+      members.value = overlayRoles(payload.members, roleMap)
       invitations.value = payload.invitations
     } finally {
       loading.value = false
