@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import { createInvite, revokeInvite } from './org-invite-api'
-import { setOrgRole } from './org-role-api'
+import { setOrgRole } from './role-store-api'
 import type { InviteRequest } from './roles-api-types'
 
 interface Bag {

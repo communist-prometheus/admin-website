@@ -1,3 +1,4 @@
+import type { Role } from '@/types/role'
 import { setOrgAdmins } from './org-admin-cache'
 import type {
   OrgInvitation,
@@ -26,3 +27,18 @@ export const mockOrgMembers = (): OrgMembersPayload => {
   setOrgAdmins(['alice-admin'])
   return { members: MOCK_MEMBERS, invitations: MOCK_INVITES }
 }
+
+/**
+ * Resolve a mock user's role for enforcement in mock/E2E mode, where
+ * there is no CF worker / KV to query. The default E2E identity
+ * (`test-user`, from {@link getMockUser}) is the admin actor; the named
+ * members back the Settings → Members UI fixtures.
+ * @param username - Current user's login (config.username).
+ * @returns The mock role, or undefined.
+ */
+export const mockRoleFor = (
+  username: string | undefined
+): Role | undefined =>
+  username === 'test-user'
+    ? 'admin'
+    : MOCK_MEMBERS.find(m => m.login === username)?.appRole

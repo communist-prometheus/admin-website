@@ -14,6 +14,13 @@
   "vars": {
     "GITHUB_CLIENT_ID": "Ov23libphIePjZydDlke"
   },
+  // App-role store (editor / chief-editor / admin grants). Replaces the
+  // former `.admin/roles.json` file in the content repo so role changes
+  // take effect immediately without a content commit + clone. Org admins
+  // are always `admin` regardless of this map (derived from GitHub).
+  "kv_namespaces": [
+    { "binding": "ROLES_KV", "id": "ad749a5a22304573a21fa5e76e20c41e" }
+  ],
   "env": {
     // Develop environment — deploys from the `develop` branch into a
     // separate CF Worker (admin-website-develop) bound to
@@ -27,7 +34,10 @@
       ],
       "vars": {
         "GITHUB_CLIENT_ID": "Ov23liXRu1WNCvOCce7s"
-      }
+      },
+      "kv_namespaces": [
+        { "binding": "ROLES_KV", "id": "7f41b8d0c2964092b49a127ee8bf08f3" }
+      ]
     }
   }
 }
