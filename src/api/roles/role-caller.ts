@@ -28,6 +28,9 @@ const callerMembership = async (
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github+json',
+      // GitHub's API rejects requests without a User-Agent (403). CF
+      // Workers' fetch does not set one, so it must be explicit here.
+      'User-Agent': 'prometheus-admin',
     },
   })
   const body = await res.json().catch(() => ({}))
