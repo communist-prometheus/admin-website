@@ -3,6 +3,7 @@ import type { LabelEntry } from '@/stores/labels'
 import type { LinkEntry } from '@/stores/links'
 import type { LanguageEntry } from '@/stores/settings'
 import ActionHistorySection from './ActionHistorySection.vue'
+import HardResetSection from './HardResetSection.vue'
 import LabelsSection from './LabelsSection.vue'
 import LanguagesSection from './LanguagesSection.vue'
 import LinksSection from './LinksSection.vue'
@@ -55,6 +56,7 @@ defineEmits<{
     />
     <MembersSection />
     <ActionHistorySection />
+    <HardResetSection />
   </section>
 </template>
 
