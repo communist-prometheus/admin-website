@@ -1,22 +1,31 @@
 /*
- * GitHub returns a fixed message when the email-based invite
- * lookup misses ("No GitHub account is associated with <email>.
- * Ask the person to make their email public on GitHub or invite
- * by username."). Detect that exact case so the dialog can offer
- * a "try as username" fallback instead of dead-ending the editor.
+ * The dialog offers a "send invite as @<username>" fallback when a
+ * previous email-based invite failed. We used to trigger it on a
+ * specific error string ("No GitHub account is associated with..."),
+ * which was the message from our own pre-lookup gate — a gate that no
+ * longer exists (we pass the email straight to GitHub now). Any error
+ * response from the invite API, coupled with an email in the input,
+ * is enough to justify surfacing the fallback: the receiver either has
+ * no GitHub account or their address is not in a form GitHub can match.
  */
 
-const NO_ACCOUNT_RE = /no github account is associated with/i
+const looksLikeEmail = (v: string): boolean => {
+  const at = v.indexOf('@')
+  return at > 0 && at < v.length - 1
+}
 
 /**
- * Detect GitHub's "no account associated with this email" error.
+ * Whether to offer the "try as username" fallback for the current
+ * dialog state.
  *
- * @param error Current error string surfaced by the parent invite
- *   API (or the dialog's own validation).
- * @returns true when the error is GitHub's email-lookup-miss.
+ * @param identifier Raw input value the editor typed.
+ * @param error Error string surfaced by the parent invite API.
+ * @returns true when the input is an email AND an error is present.
  */
-export const isEmailLookupMiss = (error: string | undefined): boolean =>
-  error !== undefined && NO_ACCOUNT_RE.test(error)
+export const shouldOfferUsernameFallback = (
+  identifier: string,
+  error: string | undefined
+): boolean => error !== undefined && looksLikeEmail(identifier.trim())
 
 const guessFromAt = (v: string, at: number): string =>
   at < 0 ? v : at === 0 ? '' : v.slice(0, at)

@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import {
   usernameGuess as guessFor,
-  isEmailLookupMiss as isMiss,
+  shouldOfferUsernameFallback as shouldOffer,
 } from './invite-error'
 import {
   type InvitePayload,
@@ -24,7 +24,9 @@ const identifier = ref('')
 const role = ref<InviteRole>('editor')
 const localError = ref<string | undefined>(undefined)
 const shownError = computed(() => localError.value ?? props.error)
-const isEmailLookupMiss = computed(() => isMiss(shownError.value))
+const offerFallback = computed(() =>
+  shouldOffer(identifier.value, shownError.value)
+)
 const usernameGuess = computed(() => guessFor(identifier.value))
 
 const { onSubmit, onTryAsUsername, onCancel } = inviteHandlers(
@@ -76,7 +78,7 @@ const { onSubmit, onTryAsUsername, onCancel } = inviteHandlers(
         {{ shownError }}
       </p>
       <p
-        v-if="isEmailLookupMiss && usernameGuess !== ''"
+        v-if="offerFallback && usernameGuess !== ''"
         class="hint"
       >
         If

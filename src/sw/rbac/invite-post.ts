@@ -1,5 +1,6 @@
 import { Option } from 'effect'
 import { errorResponse, jsonResponse } from '../handlers/shared/json-response'
+import { readGhError } from './gh-error'
 import { API, ghHeaders } from './github-api'
 import { buildInvite, type InviteBody } from './invite-build'
 
@@ -16,7 +17,7 @@ const postInvite = async (
   const txt = await res.text()
   return res.ok
     ? jsonResponse(JSON.parse(txt))
-    : errorResponse(txt || `github ${res.status}`, res.status)
+    : errorResponse(readGhError(txt) || `github ${res.status}`, res.status)
 }
 
 const toMessage = (e: unknown): string =>

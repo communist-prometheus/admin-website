@@ -1,5 +1,4 @@
 import { API, ghJson } from './github-api'
-import { resolveEmailToUser } from './resolve-invite-email'
 import { teamIdsFor } from './team-lookup'
 
 /** Body accepted by the invite endpoint. */
@@ -26,30 +25,22 @@ const byLogin = async (
 }
 
 /*
- * Resolving an email to a GitHub user before inviting avoids the
- * two regressions the user hit:
- *   - Inviting an email whose owner already has a GH account would
- *     fail at the org-invitations endpoint. By resolving to invitee_id
- *     we use the same code path as a login invite, which GH accepts.
- *   - Inviting a totally unregistered email puts the org on GitHub's
- *     spam radar. We refuse those invites explicitly with a message
- *     telling the editor to use a username instead.
+ * Pass the email straight through to POST /orgs/{org}/invitations. GitHub
+ * itself matches the address against verified addresses on any account,
+ * including PRIVATE ones — the public /search/users endpoint we used to
+ * pre-flight against does NOT (index-limited to public emails), which is
+ * why every ProtonMail/HEY/noreply address dead-ended in the dialog even
+ * when the receiver had a perfectly good GitHub account.
+ *
+ * On a match GitHub attaches the invite to that account's notifications;
+ * on no match GitHub emails a cold sign-up-and-join link. Both outcomes
+ * are legitimate — the caller decides. A rejection (422 etc.) surfaces
+ * as an error the dialog can offer the "try as @username" fallback for.
  */
-const byEmail = async (
+const byEmail = (
   base: Record<string, unknown>,
-  email: string,
-  token: string
-): Promise<Record<string, unknown>> => {
-  const user = await resolveEmailToUser(email, token)
-  return user
-    ? { ...base, invitee_id: user.id }
-    : Promise.reject(
-        new Error(
-          `No GitHub account is associated with ${email}. Ask the person ` +
-            `to make their email public on GitHub or invite by username.`
-        )
-      )
-}
+  email: string
+): Record<string, unknown> => ({ ...base, email })
 
 /**
  * Build the payload for POST /orgs/{org}/invitations.
@@ -68,6 +59,6 @@ export const buildInvite = async (
   const role = body.role === 'admin' ? 'admin' : 'direct_member'
   const base = { role, team_ids }
   return body.email !== undefined
-    ? byEmail(base, body.email, token)
+    ? byEmail(base, body.email)
     : byLogin(base, body.login ?? '', token)
 }
