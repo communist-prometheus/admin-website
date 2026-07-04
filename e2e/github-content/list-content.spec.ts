@@ -37,18 +37,28 @@ test.describe('GitHub Content - List', () => {
   })
 
   test('should display content types navigation', async ({ page }) => {
-    await expectVisible(page, page.getByRole('link', { name: /blog/i }))
-    await expectVisible(page, page.getByRole('link', { name: /pages/i }))
-    await expectVisible(page, page.getByRole('link', { name: /positions/i }))
+    /*
+     * Content links live inside the "Content" dropdown group now —
+     * open it before asserting the links are visible. Scope to the
+     * desktop app-nav so the mobile-drawer copies of the same links
+     * don't trip strict mode.
+     */
+    const nav = page.getByTestId('app-nav')
+    await click(page, page.getByTestId('nav-group-content'))
+    /*
+     * Inside a role="menu" dropdown the RouterLinks carry role=menuitem
+     * (proper ARIA). Query by that role, not by role=link.
+     */
+    await expectVisible(page, nav.getByRole('menuitem', { name: /blog/i }))
+    await expectVisible(page, nav.getByRole('menuitem', { name: /pages/i }))
+    await expectVisible(
+      page,
+      nav.getByRole('menuitem', { name: /positions/i })
+    )
   })
 
   test('should navigate between content types', async ({ page }) => {
-    /*
-     * Scope to the desktop content-nav: with the role-gating fix
-     * landing in PR #271, role-gated links now also render in the
-     * mobile-menu surface, so a bare `a[href]` selector matches
-     * twice and trips strict mode.
-     */
+    await click(page, page.getByTestId('nav-group-content'))
     await click(
       page,
       page.getByTestId('app-nav').locator('a[href="/content/pages"]')

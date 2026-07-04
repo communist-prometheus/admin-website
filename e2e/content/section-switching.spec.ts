@@ -56,6 +56,11 @@ test.describe('Content Section Switching', () => {
       .locator('[data-testid="content-item"]')
       .count()
 
+    /*
+     * Desktop nav now groups sections under a dropdown per category.
+     * Open the "Content" group first, then click the target link.
+     */
+    await click(page, page.getByTestId('nav-group-content'))
     await click(
       page,
       page.getByTestId('app-nav').locator('a[href="/content/positions"]')
@@ -74,6 +79,7 @@ test.describe('Content Section Switching', () => {
     await visit(page, '/content/positions')
     await waitForContentReady(page)
 
+    await click(page, page.getByTestId('nav-group-content'))
     await click(
       page,
       page.getByTestId('app-nav').locator('a[href="/content/pages"]')

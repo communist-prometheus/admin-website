@@ -48,8 +48,11 @@ export class ContentPage {
    * @param contentType - Target content section
    */
   async switchSection(contentType: ContentType): Promise<void> {
-    // The nav renders the link twice (desktop bar + mobile menu) —
-    // target the first; only the desktop one is interactable here.
+    /*
+     * Content links live under the "Content" dropdown on the desktop
+     * nav. Open the group first so the link is mounted, then click.
+     */
+    await click(this.page, this.page.getByTestId('nav-group-content'))
     await click(
       this.page,
       this.page.locator(`a[href="/content/${contentType}"]`).first()

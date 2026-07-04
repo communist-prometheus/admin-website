@@ -81,7 +81,9 @@ test.describe('Language Filtering', () => {
       selector.getByRole('button', { name: 'Русский' })
     ).toHaveClass(/active/)
 
-    await page.click('a[href="/content/positions"]')
+    /* Open the Content dropdown then click the Positions link. */
+    await page.getByTestId('nav-group-content').click()
+    await page.locator('a[href="/content/positions"]').first().click()
     await page.waitForURL('/content/positions')
     await waitForContentReady(page)
 

@@ -26,9 +26,15 @@ const route = useRoute()
 .mobile-nav-link {
   display: flex;
   align-items: center;
-  min-height: 48px;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-xl);
+
+  /*
+   * Compact rows so the drawer fits on a single mobile screen even
+   * with several groups expanded. 40px is Apple's minimum touch
+   * target height once a leading padding-inline is added.
+   */
+  min-height: 40px;
+  padding: 0.35rem 1rem 0.35rem 1.6rem;
+  font-size: 0.95rem;
   font-weight: 500;
   color: var(--color-text-primary);
   text-decoration: none;
