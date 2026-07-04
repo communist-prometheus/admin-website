@@ -12,7 +12,11 @@ import {
 import { visitSettled } from '../helpers/visit-settled'
 
 const gotoSettings = async (page: Page): Promise<void> => {
-  await visitSettled(page, '/settings', 'members-section')
+  /*
+   * Settings is now sub-routed — Members lives at /settings/members
+   * instead of scrolling through /settings. Navigate directly.
+   */
+  await visitSettled(page, '/settings/members', 'members-section')
   // Gate on member-data arrival, not just the structural section.
   // `members-section` paints before the org-members SW round-trip
   // resolves; a specific row renders only after it does. Without this
