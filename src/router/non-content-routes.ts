@@ -21,6 +21,19 @@ export const nonContentRoutes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
     component: () => import('../views/SettingsView/SettingsView.vue'),
   },
+  {
+    /*
+     * Labels editing is content, not admin. Editors need to add /
+     * rename / delete labels on articles without going through the
+     * admin-only Settings page. Access gate stays `requiresAuth` (any
+     * signed-in editor can save), because the underlying LabelsStore
+     * push still goes through the SW → develop → auto-merge flow.
+     */
+    path: '/labels',
+    name: 'labels',
+    meta: { requiresAuth: true },
+    component: () => import('../views/LabelsView/LabelsView.vue'),
+  },
   ...ownerRoutes,
   {
     path: '/conflicts',

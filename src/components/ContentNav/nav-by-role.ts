@@ -17,6 +17,12 @@ const ALL_NAV: readonly NavEntry[] = [
   { path: '/content/common', label: 'Common', minRole: 'admin' },
   { path: '/content/newspaper', label: 'Newspaper' },
   { path: '/content/archive', label: 'Archive' },
+  /*
+   * Labels are content editors touch as often as articles — moved
+   * out of the admin Settings so editors don't need a Settings visit
+   * (and the Settings scroll) to rename a label.
+   */
+  { path: '/labels', label: 'Labels' },
   { path: '/tickets', label: 'Tickets' },
   {
     path: '/comms',
