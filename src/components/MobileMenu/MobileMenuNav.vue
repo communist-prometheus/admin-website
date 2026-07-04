@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { t } from '@/i18n/t'
+import { visibleGroups } from '@/components/NavShared/visible-groups'
 import { useAuthStore } from '@/stores/auth'
 import { useRoleStore } from '@/stores/role'
 import MobileAuthAction from './MobileAuthAction.vue'
+import MobileNavGroup from './MobileNavGroup.vue'
 import MobileNavLink from './MobileNavLink.vue'
-import type { NavItem } from './nav-items'
-import { visibleItems } from './visible-items'
 
 const emit = defineEmits<{
   navigate: []
@@ -14,21 +13,27 @@ const emit = defineEmits<{
 
 const auth = useAuthStore()
 const roleStore = useRoleStore()
-const items = computed(() =>
-  visibleItems(!!auth.user, roleStore.role, auth.ssoRoles)
+/*
+ * Groups appear only when the visitor is signed in — Home + Login are
+ * the pre-auth surface. Once signed in, sectioned nav (Content /
+ * Community / Distribution / Admin) replaces the flat list so items
+ * are grouped by mental model, not order-of-implementation.
+ */
+const isAuth = computed(() => Boolean(auth.user))
+const groups = computed(() =>
+  isAuth.value ? visibleGroups(roleStore.role, auth.ssoRoles) : []
 )
-const labelFor = (item: NavItem): string =>
-  item.labelKey === undefined ? item.label : t(item.labelKey)
 </script>
 
 <template>
   <ul class="mobile-nav-list">
-    <MobileNavLink
-      v-for="item in items"
-      :key="item.path"
-      :path="item.path"
-      :label="labelFor(item)"
-      @click="emit('navigate')"
+    <MobileNavLink path="/" label="Home" @click="emit('navigate')" />
+    <MobileNavGroup
+      v-for="group in groups"
+      :key="group.title"
+      :title="group.title"
+      :items="group.items"
+      @navigate="emit('navigate')"
     />
     <MobileAuthAction @navigate="emit('navigate')" />
   </ul>
