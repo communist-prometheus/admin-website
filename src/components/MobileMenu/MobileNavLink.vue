@@ -40,6 +40,18 @@ const route = useRoute()
   text-decoration: none;
   border-radius: var(--radius-sm);
   transition: background var(--transition-fast);
+
+  /*
+   * Wrap at word boundaries — never at character. The root cause of
+   * the vertical-text bug was a rotated ancestor forcing 40 px width
+   * on links; a plain `nowrap + ellipsis` would fix that but silently
+   * truncate longer i18n labels ("Управление рассылками") without any
+   * visible clue that content was cut. The drawer now has 288 px of
+   * inline space, so `overflow-wrap: anywhere` is safe: legible words
+   * stay on one line, rare very-long ones wrap to two — visible.
+   */
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .mobile-nav-link:hover {
