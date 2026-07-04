@@ -14,7 +14,7 @@ import { visitSettled } from '../helpers/visit-settled'
  */
 test.describe('settings offline gate (3.4)', () => {
   test.beforeEach(async ({ page }) => {
-    await visitSettled(page, '/settings', 'members-section')
+    await visitSettled(page, '/settings/members', 'members-section')
     // Gate on member-data arrival before going offline: the banner +
     // invite control live inside the loaded members list. `members-
     // section` is the structural shell and paints before the org-

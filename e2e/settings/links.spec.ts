@@ -14,14 +14,14 @@ test.describe('Settings - Links', () => {
   test('should show links editor with rows from settings', async ({
     page,
   }) => {
-    await visit(page, '/settings')
+    await visit(page, '/settings/links')
     await expectVisible(page, page.locator('[data-testid="links-editor"]'))
     const rows = page.locator('[data-testid="link-row"]')
     await expectMinCount(page, rows, 1)
   })
 
   test('should display link fields from settings', async ({ page }) => {
-    await visit(page, '/settings')
+    await visit(page, '/settings/links')
     const rows = page.locator('[data-testid="link-row"]')
     await expectMinCount(page, rows, 1)
     const firstUrl = rows.first().locator('[data-testid="link-url"]')
@@ -29,7 +29,7 @@ test.describe('Settings - Links', () => {
   })
 
   test('should add a new link row', async ({ page }) => {
-    await visit(page, '/settings')
+    await visit(page, '/settings/links')
     const rows = page.locator('[data-testid="link-row"]')
     await expectMinCount(page, rows, 1)
     const initialCount = await rows.count()
@@ -38,7 +38,7 @@ test.describe('Settings - Links', () => {
   })
 
   test('should remove a link row', async ({ page }) => {
-    await visit(page, '/settings')
+    await visit(page, '/settings/links')
     const rows = page.locator('[data-testid="link-row"]')
     await expectMinCount(page, rows, 1)
     const initialCount = await rows.count()
@@ -49,7 +49,7 @@ test.describe('Settings - Links', () => {
   test('should add a link, save, and persist after reload', async ({
     page,
   }) => {
-    await visit(page, '/settings')
+    await visit(page, '/settings/links')
     const rows = page.locator('[data-testid="link-row"]')
     await expectMinCount(page, rows, 1)
     const initialCount = await rows.count()

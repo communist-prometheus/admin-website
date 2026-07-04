@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { ownerRoutes } from './owner-routes'
+import { settingsRoute } from './settings-routes'
 
 /** Routes outside the content management section. */
 export const nonContentRoutes: RouteRecordRaw[] = [
@@ -15,12 +16,7 @@ export const nonContentRoutes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
     component: () => import('../views/TicketDetailView/TicketDetailView.vue'),
   },
-  {
-    path: '/settings',
-    name: 'settings',
-    meta: { requiresAuth: true },
-    component: () => import('../views/SettingsView/SettingsView.vue'),
-  },
+  settingsRoute,
   {
     /*
      * Labels editing is content, not admin. Editors need to add /
