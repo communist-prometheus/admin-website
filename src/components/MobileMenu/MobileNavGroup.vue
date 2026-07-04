@@ -1,35 +1,41 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import type { NavEntry } from '@/components/NavShared/nav-groups'
 import { t } from '@/i18n/t'
+import MobileNavGroupSummary from './MobileNavGroupSummary.vue'
 import MobileNavLink from './MobileNavLink.vue'
 
-defineProps<{
+const props = defineProps<{
   readonly title: string
   readonly items: readonly NavEntry[]
 }>()
 
 defineEmits<{ navigate: [] }>()
 
+const route = useRoute()
+
+/*
+ * Auto-expand the group whose active item lives inside — otherwise
+ * every group starts collapsed so the drawer stays a single-screen
+ * list of category headers. Tapping any other header opens it and
+ * lets the default <details> behaviour handle the rest.
+ */
+const isActiveGroup = computed(() =>
+  props.items.some(item => route.path.startsWith(item.path))
+)
+
 const labelFor = (item: NavEntry): string =>
   item.labelKey === undefined ? item.label : t(item.labelKey)
 </script>
 
 <template>
-  <li class="mobile-nav-group">
-    <!--
-      role=heading + aria-level keeps the accessibility semantics but
-      avoids matching global `page.locator('h3').first()` selectors used
-      in the content list tests (the first h3 in the DOM would otherwise
-      be this heading — always mounted, invisible when the menu is
-      closed via opacity: 0 on the overlay).
-    -->
-    <span
-      class="mobile-nav-heading"
-      role="heading"
-      aria-level="3"
-    >
-      {{ title }}
-    </span>
+  <details
+    class="mobile-nav-details"
+    :open="isActiveGroup"
+    :data-testid="`mobile-nav-group-${title.toLowerCase()}`"
+  >
+    <MobileNavGroupSummary :title="title" />
     <MobileNavLink
       v-for="item in items"
       :key="item.path"
@@ -37,30 +43,15 @@ const labelFor = (item: NavEntry): string =>
       :label="labelFor(item)"
       @click="$emit('navigate')"
     />
-  </li>
+  </details>
 </template>
 
 <style scoped>
-.mobile-nav-group {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xxs, 0.15rem);
-  padding-block: var(--spacing-xs);
-}
-
-.mobile-nav-group + .mobile-nav-group {
-  border-block-start: 1px solid var(--color-border);
-}
-
-.mobile-nav-heading {
+.mobile-nav-details {
   display: block;
-  margin: 0 0 0.25rem;
-  padding-inline: var(--spacing-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
+}
+
+.mobile-nav-details + .mobile-nav-details {
+  border-block-start: 1px solid var(--color-border);
 }
 </style>
