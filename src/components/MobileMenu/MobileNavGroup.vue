@@ -16,7 +16,20 @@ const labelFor = (item: NavEntry): string =>
 
 <template>
   <li class="mobile-nav-group">
-    <h3 class="mobile-nav-heading">{{ title }}</h3>
+    <!--
+      role=heading + aria-level keeps the accessibility semantics but
+      avoids matching global `page.locator('h3').first()` selectors used
+      in the content list tests (the first h3 in the DOM would otherwise
+      be this heading — always mounted, invisible when the menu is
+      closed via opacity: 0 on the overlay).
+    -->
+    <span
+      class="mobile-nav-heading"
+      role="heading"
+      aria-level="3"
+    >
+      {{ title }}
+    </span>
     <MobileNavLink
       v-for="item in items"
       :key="item.path"
@@ -41,6 +54,7 @@ const labelFor = (item: NavEntry): string =>
 }
 
 .mobile-nav-heading {
+  display: block;
   margin: 0 0 0.25rem;
   padding-inline: var(--spacing-sm);
   font-size: 0.75rem;
