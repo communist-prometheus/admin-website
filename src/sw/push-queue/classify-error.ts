@@ -15,6 +15,15 @@ const AUTH_PATTERNS: ReadonlyArray<RegExp> = [
   /unauthorized/i,
   /forbidden/i,
   /bad credentials/i,
+  /*
+   * GH006 = "Protected branch update failed". GitHub returns this when
+   * a caller without bypass rights direct-pushes into a branch that has
+   * required status checks or reviews. Same recovery as auth (the caller
+   * needs their access broadened) — a bare "Unexpected error" toast made
+   * this indistinguishable from a client bug.
+   */
+  /GH006/,
+  /protected branch/i,
 ]
 
 const FF_PATTERNS: ReadonlyArray<RegExp> = [
