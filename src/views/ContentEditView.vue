@@ -10,8 +10,8 @@ import LanguageSelector from '@/components/LanguageSelector/LanguageSelector.vue
 import ContentEditMain from './ContentEditView/ContentEditMain.vue'
 import ContentPreview from './ContentEditView/ContentPreview.vue'
 import EditBreadcrumb from './ContentEditView/EditBreadcrumb.vue'
+import EditToolbar from './ContentEditView/EditToolbar.vue'
 import { initEditPage } from './ContentEditView/init-edit-page'
-import PreviewFooter from './ContentEditView/PreviewFooter.vue'
 import PublishConfirmDialog from './ContentEditView/PublishConfirmDialog.vue'
 import { setupEditHandlers } from './ContentEditView/setup-handlers'
 import { setupViewer } from './ContentEditView/setup-viewer'
@@ -54,6 +54,14 @@ const {
 
 <template>
   <AppLayout>
+    <EditToolbar
+      :saving="saving"
+      :saved="saved"
+      :previewing="previewing"
+      @save="flow.onSave"
+      @preview="h.enterPreview"
+      @back-to-edit="h.exitPreview"
+    />
     <nav class="edit-nav">
       <EditBreadcrumb
         :content-type="p.contentType.value"
@@ -85,7 +93,6 @@ const {
       :lang="p.editor.currentLang.value"
       @update:body-content="h.updateBody"
       @update:frontmatter="h.updateFm"
-      @preview="h.enterPreview"
       @paste:image="p.ah.onPasteImage"
       @upload-asset="p.ah.onUploadAsset"
       @set-cover="p.ah.onSetCover"
@@ -97,13 +104,6 @@ const {
       :frontmatter-data="p.editor.frontmatterData.value"
       :cover-url="p.assets.coverUrl.value"
       :asset-url-map="p.hasAssets.value ? p.assets.urlMap.value : undefined"
-    />
-    <PreviewFooter
-      v-if="previewing"
-      :saving="saving"
-      :saved="saved"
-      @save="flow.onSave"
-      @back="h.exitPreview"
     />
     <AssetPanel
       v-if="!previewing && p.hasAssets.value && !p.editor.loadingFile.value"
@@ -139,7 +139,13 @@ const {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0;
+
+  /*
+   * Top gutter: EditToolbar is fixed at var(--app-vt); leave enough
+   * room so the breadcrumb doesn't render under it. 3rem covers a
+   * min-block-size 2.25rem button plus its padding.
+   */
+  padding: 3rem 0 0.5rem;
   font-size: clamp(0.875rem, 2vw, 1rem);
 }
 </style>

@@ -18,7 +18,6 @@ defineProps<{
 defineEmits<{
   'update:bodyContent': [value: string]
   'update:frontmatter': [data: Record<string, unknown>]
-  preview: []
   'paste:image': [file: File]
   'upload-asset': [file: File]
   'set-cover': [name: string]
@@ -44,7 +43,6 @@ defineEmits<{
     :asset-url-map="assetUrlMap"
     :assets="assets"
     @update:body-content="$emit('update:bodyContent', $event)"
-    @preview="$emit('preview')"
     @paste:image="$emit('paste:image', $event)"
     @upload-asset="$emit('upload-asset', $event)"
     @set-cover="$emit('set-cover', $event)"

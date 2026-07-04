@@ -13,12 +13,16 @@ const contentPreview = (page: import('@playwright/test').Page) =>
   page.locator('[data-testid="content-preview"]')
 
 test.describe('Preview-before-save flow', () => {
-  test('edit page has Preview button, no Save button', async ({ page }) => {
+  test('edit page has both Preview and Save on the sticky top toolbar', async ({
+    page,
+  }) => {
     await edit(page)
+    // Old flow buried Save at the bottom of the preview footer, so
+    // editors had to Preview → Save even for a quick fix. New sticky
+    // top toolbar exposes both — Save works direct, Preview optional.
     await expect(preview(page)).toBeVisible()
     await expect(preview(page)).toHaveText(/preview/i)
-    // The Save button only exists on the preview page, not the edit page.
-    await expect(page.locator('[data-testid="save-button"]')).toHaveCount(0)
+    await expect(page.locator('[data-testid="save-button"]')).toBeVisible()
   })
 
   test('clicking Preview renders ContentPreview with frontmatter', async ({

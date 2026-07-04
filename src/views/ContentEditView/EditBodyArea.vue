@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import EditorFooter from '@/components/MarkdownEditor/EditorFooter.vue'
 import MarkdownEditorBody from '@/components/MarkdownEditor/MarkdownEditorBody.vue'
 import NewspaperSourceUploads from '@/components/MarkdownEditor/NewspaperSourceUploads.vue'
 import { hasBodyEditor } from '@/components/MarkdownEditor/page-body-policy'
@@ -17,7 +16,6 @@ const props = defineProps<{
 
 defineEmits<{
   'update:bodyContent': [value: string]
-  preview: []
   'paste:image': [file: File]
   'upload-asset': [file: File]
   'set-cover': [name: string]
@@ -55,7 +53,6 @@ const fmString = (key: string): string | undefined => {
       @upload-asset="$emit('upload-asset', $event)"
       @error="$emit('error', $event)"
     />
-    <EditorFooter :disabled="false" @preview="$emit('preview')" />
   </section>
 </template>
 
