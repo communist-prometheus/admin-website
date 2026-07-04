@@ -40,6 +40,18 @@ const route = useRoute()
   text-decoration: none;
   border-radius: var(--radius-sm);
   transition: background var(--transition-fast);
+
+  /*
+   * Never break a label per character. Under a narrow drawer the
+   * default `overflow-wrap: normal` still wraps at whitespace, but
+   * "Newsletter" has none — so the browser was character-wrapping it
+   * and every letter landed on its own line, indistinguishable from
+   * a 90° rotation. `white-space: nowrap` keeps the label on one line
+   * and `text-overflow: ellipsis` truncates if it's still too wide.
+   */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mobile-nav-link:hover {

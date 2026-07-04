@@ -1,6 +1,7 @@
 <script setup lang="ts">
 defineProps<{
   readonly title: string
+  readonly open: boolean
 }>()
 </script>
 
@@ -11,7 +12,7 @@ defineProps<{
       role="heading"
       aria-level="3"
     >{{ title }}</span>
-    <span class="mobile-nav-chevron" aria-hidden="true">▸</span>
+    <span class="mobile-nav-chevron" aria-hidden="true">{{ open ? '▾' : '▸' }}</span>
   </summary>
 </template>
 
@@ -44,19 +45,17 @@ defineProps<{
   color: var(--color-text-secondary);
 }
 
+/*
+ * Chevron rotation is a two-glyph swap, NOT a CSS transform. The
+ * previous attempt scoped a `:global(details[open]) .chevron` rule
+ * expecting Vue's `:global()` to leave the descendant scoped — but
+ * the compiler stripped the descendant part and emitted the global
+ * rule `details[open] { transform: rotate(90deg); }`. That rotated
+ * every open <details> on the page 90°, so nested links measured
+ * 40 × 270 px and their labels wrapped one glyph per line.
+ */
 .mobile-nav-chevron {
   font-size: 0.75rem;
   color: var(--color-text-secondary);
-  transition: transform 0.15s ease;
-}
-
-/*
- * The chevron rotates when the parent <details> is [open]. Scoped
- * styles get a hashed class attribute, but the parent's [open]
- * attribute is unhashed, so this selector reaches it via :global-
- * equivalent — the `:deep()` marker on chevron under [open] parent.
- */
-:global(details[open]) .mobile-nav-chevron {
-  transform: rotate(90deg);
 }
 </style>

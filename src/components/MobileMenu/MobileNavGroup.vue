@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import type { NavEntry } from '@/components/NavShared/nav-groups'
 import { t } from '@/i18n/t'
@@ -25,6 +25,19 @@ const isActiveGroup = computed(() =>
   props.items.some(item => route.path.startsWith(item.path))
 )
 
+/*
+ * Track the details' actual open state so the chevron glyph stays in
+ * sync with user interaction (native `<details>` toggling is outside
+ * Vue's control). A `toggle` event listener bounces the state back.
+ */
+const openState = ref(isActiveGroup.value)
+watch(isActiveGroup, next => {
+  openState.value = next
+})
+const onToggle = (e: Event): void => {
+  openState.value = (e.target as HTMLDetailsElement).open
+}
+
 const labelFor = (item: NavEntry): string =>
   item.labelKey === undefined ? item.label : t(item.labelKey)
 </script>
@@ -32,10 +45,11 @@ const labelFor = (item: NavEntry): string =>
 <template>
   <details
     class="mobile-nav-details"
-    :open="isActiveGroup"
+    :open="openState"
     :data-testid="`mobile-nav-group-${title.toLowerCase()}`"
+    @toggle="onToggle"
   >
-    <MobileNavGroupSummary :title="title" />
+    <MobileNavGroupSummary :title="title" :open="openState" />
     <MobileNavLink
       v-for="item in items"
       :key="item.path"
