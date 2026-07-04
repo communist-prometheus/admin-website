@@ -26,7 +26,7 @@ const groups = computed(() =>
 </script>
 
 <template>
-  <ul class="mobile-nav-list">
+  <div class="mobile-nav-list" role="list">
     <MobileNavLink path="/" label="Home" @click="emit('navigate')" />
     <MobileNavGroup
       v-for="group in groups"
@@ -36,16 +36,16 @@ const groups = computed(() =>
       @navigate="emit('navigate')"
     />
     <MobileAuthAction @navigate="emit('navigate')" />
-  </ul>
+  </div>
 </template>
 
 <style scoped>
 .mobile-nav-list {
-  list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  align-items: stretch;
 }
 </style>

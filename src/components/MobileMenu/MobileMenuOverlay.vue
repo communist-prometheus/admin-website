@@ -32,6 +32,18 @@ const style = computed(() => ({
 .mobile-popup {
   position: fixed;
   z-index: 99;
+
+  /*
+   * Explicit inline-size. Without it the popup's `width: auto` under
+   * `position: fixed` collapses to whichever child happens to be
+   * widest, so an expanded <details> shrinks its siblings — 116 px on
+   * the reporter's viewport — which in turn breaks each menu item's
+   * text into a one-character-per-line column, visually indistinguishable
+   * from a 90° rotation. 18 rem is enough for "Newsletter" +
+   * padding on any locale; the min() clamps to the visible viewport
+   * so the popup can't slide off-screen on 320 px devices.
+   */
+  inline-size: min(18rem, calc(100vw - 2 * var(--fab-margin, 16px)));
   background: var(--color-surface-elevated);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
