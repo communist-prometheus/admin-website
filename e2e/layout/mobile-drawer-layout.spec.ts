@@ -26,7 +26,7 @@ const openDrawer = async (page: import('@playwright/test').Page) => {
 test.describe('Mobile drawer layout (2.mobile-menu)', () => {
   test.use({ viewport: { width: 375, height: 812 } })
   test.skip(
-    ({ browserName, isMobile }) => !isMobile,
+    ({ isMobile }) => !isMobile,
     'The FAB + drawer are display:none above 768 px; only mobile-chromium runs here.'
   )
 
@@ -75,24 +75,27 @@ test.describe('Mobile drawer layout (2.mobile-menu)', () => {
     /*
      * Explicit guard for the exact regression that shipped in PR #350
      * — a global `details[open] { transform: rotate(90deg) }` sneaked
-     * in. Walk every nav link's ancestor chain up to <body> and
+     * in. Walk EVERY nav link's ancestor chain up to <body> and
      * assert nobody carries a transform (except the mobile-popup, which
-     * uses `translateY` for its opening animation).
+     * uses `translateY` for its opening animation). Iterating over
+     * every link — not just the first — catches a per-group
+     * scoped-CSS leak that would otherwise slip through.
      */
     const withTransforms = await page.evaluate(() => {
       const results: { tag: string; cls: string; transform: string }[] = []
-      const first = document.querySelector('a.mobile-nav-link')
-      let cur: Element | null = first
-      while (cur && cur.tagName !== 'BODY') {
-        const t = getComputedStyle(cur).transform
-        if (t !== 'none' && !cur.className?.includes?.('mobile-popup')) {
-          results.push({
-            tag: cur.tagName,
-            cls: String(cur.className ?? ''),
-            transform: t,
-          })
+      for (const link of document.querySelectorAll('a.mobile-nav-link')) {
+        let cur: Element | null = link
+        while (cur && cur.tagName !== 'BODY') {
+          const t = getComputedStyle(cur).transform
+          if (t !== 'none' && !cur.className?.includes?.('mobile-popup')) {
+            results.push({
+              tag: cur.tagName,
+              cls: String(cur.className ?? ''),
+              transform: t,
+            })
+          }
+          cur = cur.parentElement
         }
-        cur = cur.parentElement
       }
       return results
     })
@@ -112,19 +115,50 @@ test.describe('Mobile drawer layout (2.mobile-menu)', () => {
     })
 
     /*
-     * `inline-size: min(18rem, calc(100vw - 32px))` = at most 288 px
-     * on a 375 vw viewport (18 rem @ 16 px base) and at least
-     * `375 - 32 = 343` if the 18 rem clamp isn't in effect. Keep the
-     * assertion loose — the point is that the drawer isn't collapsing
-     * to `content-width` (which used to sit near 116 px).
+     * `inline-size: min(18rem, calc(100vw - 32px))` = **exactly 288 px**
+     * on a 375 vw viewport (18 rem @ 16 px base). Pin the expected size
+     * tightly — a slack upper bound of 343 would silently accept a
+     * regression that widened the clamp to 20rem, and the point of
+     * this test is to detect a return of the shrink-to-content collapse
+     * (~116 px) or an accidental clamp change.
      */
     expect(
       overlayRect.w,
       `drawer width ${overlayRect.w}px too narrow`
-    ).toBeGreaterThan(200)
+    ).toBeGreaterThan(260)
     expect(
       overlayRect.w,
-      `drawer width ${overlayRect.w}px overflows viewport`
-    ).toBeLessThanOrEqual(343)
+      `drawer width ${overlayRect.w}px above expected 288`
+    ).toBeLessThan(300)
+  })
+
+  /*
+   * On the smallest supported width (320 vw, iPhone SE 1st-gen). The
+   * clamp `calc(100vw - 2 * var(--fab-margin, 16px))` was written
+   * specifically so the popup can't slide off-screen at 320 px. Guard
+   * that separately from the 375 vw layout test.
+   */
+  test.describe('320 vw viewport', () => {
+    test.use({ viewport: { width: 320, height: 568 } })
+    test('drawer stays inside the viewport', async ({ page }) => {
+      await page.goto('/')
+      await openDrawer(page)
+      const geom = await page.locator('.mobile-popup').evaluate(el => {
+        const r = el.getBoundingClientRect()
+        return {
+          left: Math.round(r.left),
+          right: Math.round(r.right),
+          w: Math.round(r.width),
+        }
+      })
+      expect(
+        geom.left,
+        `left=${geom.left}px is negative`
+      ).toBeGreaterThanOrEqual(0)
+      expect(
+        geom.right,
+        `right=${geom.right}px overflows 320`
+      ).toBeLessThanOrEqual(320)
+    })
   })
 })

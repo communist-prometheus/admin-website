@@ -42,16 +42,16 @@ const route = useRoute()
   transition: background var(--transition-fast);
 
   /*
-   * Never break a label per character. Under a narrow drawer the
-   * default `overflow-wrap: normal` still wraps at whitespace, but
-   * "Newsletter" has none — so the browser was character-wrapping it
-   * and every letter landed on its own line, indistinguishable from
-   * a 90° rotation. `white-space: nowrap` keeps the label on one line
-   * and `text-overflow: ellipsis` truncates if it's still too wide.
+   * Wrap at word boundaries — never at character. The root cause of
+   * the vertical-text bug was a rotated ancestor forcing 40 px width
+   * on links; a plain `nowrap + ellipsis` would fix that but silently
+   * truncate longer i18n labels ("Управление рассылками") without any
+   * visible clue that content was cut. The drawer now has 288 px of
+   * inline space, so `overflow-wrap: anywhere` is safe: legible words
+   * stay on one line, rare very-long ones wrap to two — visible.
    */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .mobile-nav-link:hover {
