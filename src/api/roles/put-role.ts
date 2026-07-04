@@ -31,8 +31,8 @@ const assign = async (
 /**
  * PUT /api/roles — assign `{ login, role }` (role ∈ editor | chief-editor
  * | admin | none). Admin only, caller re-derived from their own token.
- * Writes KV AND syncs GitHub team membership so the grant is effective
- * both in the UI and for content-repo push access.
+ * Writes KV AND syncs content-repo collaborator access so the grant is
+ * effective both in the UI and for content-repo push access.
  *
  * @param c Hono context (Env carries ROLES_KV).
  * @returns 200 updated map, 400 bad body, 403 non-admin, 502 sync fail.
