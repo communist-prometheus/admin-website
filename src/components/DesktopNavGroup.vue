@@ -40,17 +40,14 @@ router.afterEach(close)
 </script>
 
 <template>
-  <div
-    ref="rootEl"
-    class="dropdown-group"
-    :data-testid="`nav-group-${title.toLowerCase()}`"
-  >
+  <div ref="rootEl" class="dropdown-group">
     <button
       type="button"
       class="dropdown-toggle"
       :class="{ active: isActiveGroup, open }"
       :aria-expanded="open"
       aria-haspopup="menu"
+      :data-testid="`nav-group-${title.toLowerCase()}`"
       @click="toggle"
     >
       {{ title }} ▾
