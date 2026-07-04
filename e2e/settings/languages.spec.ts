@@ -13,7 +13,12 @@ import {
 test.describe('Settings - Languages', () => {
   test('should show Settings link in header navigation', async ({ page }) => {
     await visit(page, '/')
-    const settingsLink = page.locator('.app-nav a[href="/settings"]')
+    /* Settings lives in the "Admin" dropdown — open it first. Inside
+       the dropdown RouterLinks carry role=menuitem, not link. */
+    await page.getByTestId('nav-group-admin').click()
+    const settingsLink = page
+      .getByTestId('app-nav')
+      .getByRole('menuitem', { name: 'Settings' })
     await expectText(page, settingsLink, 'Settings')
   })
 
