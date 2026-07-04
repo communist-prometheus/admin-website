@@ -32,6 +32,27 @@ describe('classifyPushError', () => {
     expect(classifyPushError(new Error('Bad credentials'))).toBe('auth')
   })
 
+  /*
+   * GH006 = protected-branch push rejection. Same recovery as auth
+   * (broaden access); previously read as `unknown` and the toast said
+   * "Unexpected error", which read like a client bug.
+   */
+  it('detects protected-branch rejection (GH006)', () => {
+    expect(
+      classifyPushError(
+        new Error(
+          'GH006: Protected branch update failed for refs/heads/master'
+        )
+      )
+    ).toBe('auth')
+    expect(
+      classifyPushError(
+        new Error('remote: error: GH006: Protected branch update failed')
+      )
+    ).toBe('auth')
+    expect(classifyPushError(new Error('protected branch'))).toBe('auth')
+  })
+
   it('detects validation failures', () => {
     expect(classifyPushError(new Error('422 Unprocessable Entity'))).toBe(
       'validation'
