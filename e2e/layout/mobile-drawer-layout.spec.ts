@@ -3,17 +3,23 @@ import { expect, test, waitForCondition } from '@prometheus/e2e-toolkit'
 /*
  * Guard the mobile drawer geometry.
  *
- * Two prior regressions this file catches:
- *  1. PR #350 shipped a `:global(details[open]) .chevron` rule that
- *     Vue silently reduced to `details[open] { transform: rotate(90deg) }`,
- *     rotating every open <details> and character-wrapping labels.
- *  2. PR #353 introduced a "jumpy" accordion — expanding a group
- *     changed the drawer height and shifted siblings, which the user
- *     called "прыгающее меню".
+ * Design: the mobile drawer is TWO stacked popups. The main drawer is
+ * always mounted while the FAB is toggled open — its rows never move,
+ * never expand, never collapse. When the user taps a group row a
+ * SECOND popup (mobile-submenu) appears on top of the main drawer with
+ * a small offset so both layers stay visible. Tapping another group
+ * swaps the submenu's content in place; tapping the same row toggles
+ * it closed; tapping any nav link closes the whole thing.
  *
- * The current design is drilldown: main panel shows one row per group,
- * tapping a group replaces the panel with a submenu (back + items).
- * Drawer height stays constant; nothing jumps.
+ * Regressions this file guards:
+ *   - PR #350: `:global(details[open]) .chevron` shipped as
+ *     `details[open] { transform: rotate(90deg) }` and character-
+ *     wrapped every label.
+ *   - PR #353 accordion: expanding a group changed the drawer height
+ *     and shifted siblings ("прыгающее меню").
+ *   - PR #356 drilldown: tapping a group swapped the drawer's ENTIRE
+ *     content, so the main list disappeared under the tap
+ *     ("переёбывается всё меню").
  */
 
 const openDrawer = async (page: import('@playwright/test').Page) => {
@@ -34,72 +40,105 @@ test.describe('Mobile drawer layout (2.mobile-menu)', () => {
     'The FAB + drawer are display:none above 768 px; only mobile-chromium runs here.'
   )
 
-  test('root panel shows one row per group, no expanded links', async ({
-    page,
-  }) => {
+  test('main drawer shows all group rows always', async ({ page }) => {
     await page.goto('/')
     await openDrawer(page)
     /*
-     * Root: Home + Content + Community + Distribution + Admin + auth.
-     * Group ROWS are buttons with data-testid=mobile-nav-group-<title>;
-     * no MobileNavLink for section items visible until the user drills in.
+     * Home link + group rows for each visible group. No section items
+     * are rendered in the main drawer — those live in the submenu.
      */
     const groupRows = page.locator('[data-testid^="mobile-nav-group-"]')
     await expect(groupRows).not.toHaveCount(0)
-    /*
-     * Section items (Blog, Positions, Newsletter, etc.) MUST NOT
-     * appear on the root panel — that's the accordion behaviour we
-     * ripped out. Only Home is a MobileNavLink at the root.
-     */
-    const rootLinks = page.locator('a.mobile-nav-link')
-    const rootLinkTexts = await rootLinks.evaluateAll(links =>
-      links.map(l => l.textContent?.trim() ?? '')
-    )
-    expect(rootLinkTexts).toEqual(['Home'])
+    /* Home is the only MobileNavLink on the main drawer. */
+    const rootLinks = await page
+      .locator('.mobile-popup a.mobile-nav-link')
+      .evaluateAll(links => links.map(l => l.textContent?.trim() ?? ''))
+    expect(rootLinks).toEqual(['Home'])
   })
 
-  test('tapping a group row drills into a submenu with a back button', async ({
+  test('tapping a group opens the submenu WITHOUT replacing the main drawer', async ({
     page,
   }) => {
     await page.goto('/')
     await openDrawer(page)
-    /*
-     * Community group has role-independent items (Labels, Tickets)
-     * available to every editor.
-     */
     await page.getByTestId('mobile-nav-group-community').click()
     await expect(page.getByTestId('mobile-submenu')).toBeVisible()
-    await expect(page.getByTestId('mobile-submenu-back')).toBeVisible()
-    /* Section items now visible. */
+    /*
+     * The main drawer stays visible AND every group row is still in the
+     * DOM. This is the exact scenario PR #356 broke: the drilldown
+     * swapped the drawer's content and the user saw the main list
+     * vanish under their tap. Guard it by name.
+     */
+    for (const row of ['content', 'community', 'distribution', 'admin']) {
+      await expect(page.getByTestId(`mobile-nav-group-${row}`)).toBeVisible()
+    }
+    /* Section items visible on the submenu overlay. */
     const submenuLinks = await page
+      .getByTestId('mobile-submenu')
       .locator('a.mobile-nav-link')
       .evaluateAll(links => links.map(l => l.textContent?.trim()))
     expect(submenuLinks).toContain('Labels')
     expect(submenuLinks).toContain('Tickets')
-    /* Root-panel group rows are hidden while the submenu is open. */
-    await expect(page.getByTestId('mobile-nav-group-content')).toHaveCount(0)
   })
 
-  test('back button returns to the root panel', async ({ page }) => {
+  test('tapping another group swaps the submenu content, main unchanged', async ({
+    page,
+  }) => {
     await page.goto('/')
     await openDrawer(page)
     await page.getByTestId('mobile-nav-group-community').click()
-    await page.getByTestId('mobile-submenu-back').click()
-    await expect(page.getByTestId('mobile-submenu')).toHaveCount(0)
-    await expect(page.getByTestId('mobile-nav-group-community')).toBeVisible()
+    await expect(
+      page
+        .getByTestId('mobile-submenu')
+        .getByRole('link', { name: /labels/i })
+    ).toBeVisible()
+
+    /* Snapshot the main drawer height + row positions. */
+    const rowsBefore = await page
+      .locator('[data-testid^="mobile-nav-group-"]')
+      .evaluateAll(rows =>
+        rows.map(r => ({
+          slug: (r.getAttribute('data-testid') ?? '').replace(
+            'mobile-nav-group-',
+            ''
+          ),
+          y: Math.round(r.getBoundingClientRect().top),
+        }))
+      )
+
+    /* Close current submenu, then open a different one. */
+    await page.getByTestId('mobile-submenu-close').click()
+    await page.getByTestId('mobile-nav-group-content').click()
+    await expect(
+      page.getByTestId('mobile-submenu').getByRole('link', { name: /blog/i })
+    ).toBeVisible()
+
+    const rowsAfter = await page
+      .locator('[data-testid^="mobile-nav-group-"]')
+      .evaluateAll(rows =>
+        rows.map(r => ({
+          slug: (r.getAttribute('data-testid') ?? '').replace(
+            'mobile-nav-group-',
+            ''
+          ),
+          y: Math.round(r.getBoundingClientRect().top),
+        }))
+      )
+    /* No jumping — every group row keeps its y-position after swap. */
+    expect(rowsAfter).toEqual(rowsBefore)
   })
 
-  test('landing on a section auto-drills into its submenu', async ({
+  test('close button dismisses the submenu; main drawer stays open', async ({
     page,
   }) => {
-    /* Blog lives under Content — the drawer should open at Content submenu. */
-    await page.goto('/content/blog')
+    await page.goto('/')
     await openDrawer(page)
+    await page.getByTestId('mobile-nav-group-community').click()
     await expect(page.getByTestId('mobile-submenu')).toBeVisible()
-    const backLabel = await page
-      .getByTestId('mobile-submenu-back')
-      .textContent()
-    expect(backLabel?.toLowerCase()).toContain('content')
+    await page.getByTestId('mobile-submenu-close').click()
+    await expect(page.getByTestId('mobile-submenu')).toHaveCount(0)
+    /* Main drawer group rows still there, unchanged. */
+    await expect(page.getByTestId('mobile-nav-group-community')).toBeVisible()
   })
 
   test('nav-link labels never wrap to a single-character column', async ({
@@ -107,7 +146,6 @@ test.describe('Mobile drawer layout (2.mobile-menu)', () => {
   }) => {
     await page.goto('/')
     await openDrawer(page)
-    /* Drill into each group in sequence and measure its items. */
     const groupSlugs = await page
       .locator('[data-testid^="mobile-nav-group-"]')
       .evaluateAll(rows =>
@@ -121,6 +159,7 @@ test.describe('Mobile drawer layout (2.mobile-menu)', () => {
     for (const slug of groupSlugs) {
       await page.getByTestId(`mobile-nav-group-${slug}`).click()
       const dims = await page
+        .getByTestId('mobile-submenu')
         .locator('a.mobile-nav-link')
         .evaluateAll(links =>
           links.map(l => {
@@ -133,16 +172,12 @@ test.describe('Mobile drawer layout (2.mobile-menu)', () => {
           })
         )
       for (const d of dims) {
-        /*
-         * A single glyph at the drawer's font size is ~15 px; any link
-         * under 90 px on a 375 vw viewport means the label has been
-         * character-wrapped (the PR #350 rotation bug). Height above
-         * 3 lines (72 px) is the upper bound.
-         */
         expect(d.w, `"${d.text}" width ${d.w}px < 90px`).toBeGreaterThan(90)
         expect(d.h, `"${d.text}" height ${d.h}px > 72px`).toBeLessThan(72)
       }
-      await page.getByTestId('mobile-submenu-back').click()
+      /* Close between iterations so next tap isn't blocked by an
+         overlapping submenu. */
+      await page.getByTestId('mobile-submenu-close').click()
     }
   })
 
@@ -150,30 +185,29 @@ test.describe('Mobile drawer layout (2.mobile-menu)', () => {
     await page.goto('/')
     await openDrawer(page)
     await page.getByTestId('mobile-nav-group-community').click()
-
-    /*
-     * Guard for the PR #350 class of regression — a global
-     * `details[open] { transform: rotate(90deg) }` sneaked in via
-     * `:global()`. Walk every drawer link's ancestor chain and assert
-     * nobody carries a transform (except .mobile-popup, which uses
-     * translateY for its opening animation).
-     */
     const withTransforms = await page.evaluate(() => {
-      const results: { tag: string; cls: string; transform: string }[] = []
-      for (const link of document.querySelectorAll('a.mobile-nav-link')) {
+      type Hit = { tag: string; cls: string; transform: string }
+      const isSkippable = (el: Element): boolean => {
+        const cn = String(el.className ?? '')
+        return cn.includes('mobile-popup') || cn.includes('submenu-popup')
+      }
+      const collectFor = (link: Element, out: Hit[]): void => {
         let cur: Element | null = link
         while (cur && cur.tagName !== 'BODY') {
           const t = getComputedStyle(cur).transform
-          if (t !== 'none' && !cur.className?.includes?.('mobile-popup')) {
-            results.push({
+          const bad = t !== 'none' && !isSkippable(cur)
+          if (bad)
+            out.push({
               tag: cur.tagName,
               cls: String(cur.className ?? ''),
               transform: t,
             })
-          }
           cur = cur.parentElement
         }
       }
+      const results: Hit[] = []
+      for (const link of document.querySelectorAll('a.mobile-nav-link'))
+        collectFor(link, results)
       return results
     })
     expect(
@@ -182,33 +216,32 @@ test.describe('Mobile drawer layout (2.mobile-menu)', () => {
     ).toEqual([])
   })
 
-  test('drawer height does not jump between root and submenu', async ({
+  test('main drawer height stays constant across submenu toggles', async ({
     page,
   }) => {
     await page.goto('/')
     await openDrawer(page)
-    const heightAt = async (): Promise<number> =>
+    const mainH = async (): Promise<number> =>
       page
         .locator('.mobile-popup')
         .evaluate(el => Math.round(el.getBoundingClientRect().height))
-    const rootH = await heightAt()
+    const rootH = await mainH()
     await page.getByTestId('mobile-nav-group-community').click()
-    const commH = await heightAt()
-    await page.getByTestId('mobile-submenu-back').click()
-    const rootH2 = await heightAt()
+    const openH = await mainH()
+    await page.getByTestId('mobile-submenu-close').click()
+    const closedH = await mainH()
     /*
-     * With drilldown, root and submenu don't share the same height
-     * (each panel has different row counts), but the drawer must
-     * return to EXACTLY the root height when back-navigation lands
-     * home — no ghost row, no residual submenu offset.
+     * The main drawer's height MUST NOT change when a submenu opens
+     * or closes. The whole point of the second-popup pattern is that
+     * the main drawer stays stationary.
      */
+    expect(openH, `main jumped on submenu open: ${rootH} → ${openH}`).toBe(
+      rootH
+    )
     expect(
-      rootH2,
-      `root height changed after back: ${rootH} → ${rootH2}`
+      closedH,
+      `main jumped on submenu close: ${rootH} → ${closedH}`
     ).toBe(rootH)
-    /* And each panel's height must fit inside the visible viewport. */
-    expect(rootH).toBeLessThanOrEqual(812)
-    expect(commH).toBeLessThanOrEqual(812)
   })
 
   test('drawer inline-size is bounded by the viewport', async ({ page }) => {
@@ -218,37 +251,29 @@ test.describe('Mobile drawer layout (2.mobile-menu)', () => {
       const r = el.getBoundingClientRect()
       return { w: Math.round(r.width), h: Math.round(r.height) }
     })
-    expect(
-      overlayRect.w,
-      `drawer width ${overlayRect.w}px too narrow`
-    ).toBeGreaterThan(260)
-    expect(
-      overlayRect.w,
-      `drawer width ${overlayRect.w}px above expected 288`
-    ).toBeLessThan(300)
+    expect(overlayRect.w).toBeGreaterThan(260)
+    expect(overlayRect.w).toBeLessThan(300)
   })
 
   test.describe('320 vw viewport', () => {
     test.use({ viewport: { width: 320, height: 568 } })
-    test('drawer stays inside the viewport', async ({ page }) => {
+    test('drawer + submenu stay inside the viewport', async ({ page }) => {
       await page.goto('/')
       await openDrawer(page)
-      const geom = await page.locator('.mobile-popup').evaluate(el => {
+      const main = await page.locator('.mobile-popup').evaluate(el => {
         const r = el.getBoundingClientRect()
-        return {
-          left: Math.round(r.left),
-          right: Math.round(r.right),
-          w: Math.round(r.width),
-        }
+        return { left: Math.round(r.left), right: Math.round(r.right) }
       })
-      expect(
-        geom.left,
-        `left=${geom.left}px is negative`
-      ).toBeGreaterThanOrEqual(0)
-      expect(
-        geom.right,
-        `right=${geom.right}px overflows 320`
-      ).toBeLessThanOrEqual(320)
+      expect(main.left).toBeGreaterThanOrEqual(0)
+      expect(main.right).toBeLessThanOrEqual(320)
+
+      await page.getByTestId('mobile-nav-group-community').click()
+      const sub = await page.getByTestId('mobile-submenu').evaluate(el => {
+        const r = el.getBoundingClientRect()
+        return { left: Math.round(r.left), right: Math.round(r.right) }
+      })
+      expect(sub.left).toBeGreaterThanOrEqual(0)
+      expect(sub.right).toBeLessThanOrEqual(320)
     })
   })
 })
