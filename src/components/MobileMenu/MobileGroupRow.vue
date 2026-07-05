@@ -4,7 +4,7 @@ defineProps<{
   readonly active: boolean
 }>()
 
-defineEmits<{ enter: [] }>()
+defineEmits<{ enter: [evt: MouseEvent] }>()
 </script>
 
 <template>
@@ -13,7 +13,7 @@ defineEmits<{ enter: [] }>()
     class="group-row"
     :class="{ active }"
     :data-testid="`mobile-nav-group-${title.toLowerCase()}`"
-    @click="$emit('enter')"
+    @click="$emit('enter', $event)"
   >
     <span class="group-label">{{ title }}</span>
     <span class="group-chevron" aria-hidden="true">›</span>
