@@ -80,7 +80,12 @@ const description = computed(() => {
 
 <style scoped>
 .content-item {
-  padding: clamp(0.75rem, 2vw, 1rem);
+  /*
+   * Card padding: bumped from clamp(0.75, 1) → clamp(1, 1.25) so the
+   * inner text has breathing room. The old value put the description
+   * hard against the card edge on 375 vw viewports.
+   */
+  padding: clamp(1rem, 2.5vw, 1.25rem);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-background);
@@ -152,10 +157,32 @@ const description = computed(() => {
 }
 
 .item-description {
-  margin: 0 0 clamp(0.5rem, 1.5vw, 0.75rem);
+  margin: 0 0 clamp(0.75rem, 2vw, 1rem);
   color: var(--color-text-secondary);
-  font-size: clamp(0.875rem, 2vw, 1rem);
-  line-height: 1.5;
+
+  /*
+   * Slightly smaller than before (clamp 0.875-1rem → 0.85-0.95rem)
+   * with a tighter line-height to lift density without shrinking the
+   * whole card. Words stay legible on the smallest supported width.
+   */
+  font-size: clamp(0.85rem, 1.8vw, 0.95rem);
+  line-height: 1.45;
+
+  /*
+   * Cap the description at two lines with the ellipsis pinned to the
+   * end of the SECOND line. Without a line-clamp the paragraph
+   * expanded to whatever the frontmatter shipped — 5-8 lines on some
+   * blog posts — and the user reported "..." appearing "on a random
+   * line" (that was actually a literal "..." in the frontmatter text
+   * showing wherever it wrapped, mistaken for browser truncation).
+   * The line-clamp guarantees the ONLY "..." in the card is the
+   * browser's, always on line 2.
+   */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 </style>
