@@ -1,4 +1,4 @@
-import type { NewspaperFetcher } from '../newspaper/fetch'
+import type { MagazineFetcher } from '../magazine/fetch'
 import type { ResendClient } from '../resend/types'
 import type { RssFetcher } from '../rss/fetch'
 import type { SendLogRepo } from '../send-log/repo'
@@ -11,7 +11,7 @@ export type RunDispatchDeps = {
   readonly sendLogRepo: SendLogRepo
   readonly settingsRepo: SettingsRepo
   readonly rss: RssFetcher
-  readonly newspaper: NewspaperFetcher
+  readonly magazine: MagazineFetcher
   readonly resend: ResendClient
   readonly secret: string
   readonly fromAddress: string

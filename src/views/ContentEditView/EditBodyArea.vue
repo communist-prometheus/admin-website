@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import MagazineSourceUploads from '@/components/MarkdownEditor/MagazineSourceUploads.vue'
 import MarkdownEditorBody from '@/components/MarkdownEditor/MarkdownEditorBody.vue'
-import NewspaperSourceUploads from '@/components/MarkdownEditor/NewspaperSourceUploads.vue'
 import { hasBodyEditor } from '@/components/MarkdownEditor/page-body-policy'
 import type { AssetDisplay } from '@/composables/useAssets/types'
 import type { ContentType } from '@/types/content'
@@ -22,7 +22,7 @@ defineEmits<{
   error: [message: string]
 }>()
 
-const isNewspaper = (type: ContentType) => type === 'newspaper'
+const isMagazine = (type: ContentType) => type === 'magazine'
 
 const fmString = (key: string): string | undefined => {
   const v = props.frontmatterData[key]
@@ -32,8 +32,8 @@ const fmString = (key: string): string | undefined => {
 
 <template>
   <section class="edit-body-area">
-    <NewspaperSourceUploads
-      v-if="isNewspaper(contentType) && slug"
+    <MagazineSourceUploads
+      v-if="isMagazine(contentType) && slug"
       :assets="assets"
       :slug="slug"
       :current-cover="fmString('image')"

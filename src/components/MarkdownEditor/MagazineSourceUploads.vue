@@ -25,7 +25,7 @@ const HINT =
 </script>
 
 <template>
-  <section class="source-uploads" data-testid="newspaper-source-uploads">
+  <section class="source-uploads" data-testid="magazine-source-uploads">
     <SourceUploadsHeader title="Source files" :hint="HINT" />
     <PdfUpload
       :assets="assets"

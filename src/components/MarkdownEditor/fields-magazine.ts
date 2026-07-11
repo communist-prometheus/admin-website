@@ -1,11 +1,11 @@
 import type { FieldDefinition } from './frontmatter-fields'
 
 /**
- * Frontmatter fields shown on the newspaper-issue edit page.
+ * Frontmatter fields shown on the magazine-issue edit page.
  * Description is optional — kept for parity with the create
  * dialog so editors can fill in a preface when wanted.
  */
-export const newspaperFields: readonly FieldDefinition[] = [
+export const magazineFields: readonly FieldDefinition[] = [
   {
     key: 'title',
     label: 'Title',

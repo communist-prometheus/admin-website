@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Article } from '../rss/types'
 import type { Subscriber } from '../subscribers/types'
-import { classifyNewspapers } from './classify'
+import { classifyMagazines } from './classify'
 import type { IssuesByLang } from './fetch'
 
 const SUB: Subscriber = {
@@ -17,7 +17,7 @@ const SUB: Subscriber = {
 const issue = (overrides: Partial<Article>): Article => ({
   guid: 'g',
   title: 'Issue #1',
-  link: 'https://comprom.org/ru/newspaper/issue-1',
+  link: 'https://comprom.org/ru/magazine/issue-1',
   lang: 'ru',
   pubDate: '2026-06-10T00:00:00.000Z',
   ...overrides,
@@ -25,12 +25,12 @@ const issue = (overrides: Partial<Article>): Article => ({
 
 const CUTOFF = Date.parse('2026-06-05T00:00:00.000Z')
 
-describe('classifyNewspapers', () => {
+describe('classifyMagazines', () => {
   it('routes an issue published after the cutoff into announcements', () => {
     const byLang: IssuesByLang = {
       ru: issue({ guid: 'ru-2', pubDate: '2026-06-08T00:00:00.000Z' }),
     }
-    const sel = classifyNewspapers({ ...SUB, langs: ['ru'] }, byLang, CUTOFF)
+    const sel = classifyMagazines({ ...SUB, langs: ['ru'] }, byLang, CUTOFF)
     expect(sel.announcements.map(a => a.guid)).toEqual(['ru-2'])
     expect(sel.current).toEqual([])
   })
@@ -39,7 +39,7 @@ describe('classifyNewspapers', () => {
     const byLang: IssuesByLang = {
       ru: issue({ guid: 'ru-1', pubDate: '2026-06-01T00:00:00.000Z' }),
     }
-    const sel = classifyNewspapers({ ...SUB, langs: ['ru'] }, byLang, CUTOFF)
+    const sel = classifyMagazines({ ...SUB, langs: ['ru'] }, byLang, CUTOFF)
     expect(sel.announcements).toEqual([])
     expect(sel.current.map(a => a.guid)).toEqual(['ru-1'])
   })
@@ -48,7 +48,7 @@ describe('classifyNewspapers', () => {
     const byLang: IssuesByLang = {
       ru: issue({ guid: 'ru-1', pubDate: '2020-01-01T00:00:00.000Z' }),
     }
-    const sel = classifyNewspapers(
+    const sel = classifyMagazines(
       { ...SUB, langs: ['ru'] },
       byLang,
       undefined
@@ -62,7 +62,7 @@ describe('classifyNewspapers', () => {
       pubDate: '2026-06-09T00:00:00.000Z',
     })
     const byLang: IssuesByLang = { ru: shared, en: shared }
-    const sel = classifyNewspapers(SUB, byLang, CUTOFF)
+    const sel = classifyMagazines(SUB, byLang, CUTOFF)
     expect(sel.announcements).toHaveLength(1)
     expect(sel.announcements[0]?.guid).toBe('shared')
   })
@@ -71,7 +71,7 @@ describe('classifyNewspapers', () => {
     const byLang: IssuesByLang = {
       ru: issue({ guid: 'bad', pubDate: 'not-a-date' }),
     }
-    const sel = classifyNewspapers({ ...SUB, langs: ['ru'] }, byLang, CUTOFF)
+    const sel = classifyMagazines({ ...SUB, langs: ['ru'] }, byLang, CUTOFF)
     expect(sel.announcements).toEqual([])
     expect(sel.current.map(a => a.guid)).toEqual(['bad'])
   })

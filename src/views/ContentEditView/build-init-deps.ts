@@ -7,7 +7,7 @@ type Page = ReturnType<typeof useEditPage>
 
 /*
  * For entries whose public-website template does not render a body
- * (newspaper, common, the frontmatter-only `pages` slugs), drop any
+ * (magazine, common, the frontmatter-only `pages` slugs), drop any
  * body content loaded from disk AND realign both caches so isDirty
  * reports clean post-init. Without realigning, the unsaved-changes
  * guard would fire on first navigation because draft.body='' would

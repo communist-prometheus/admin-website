@@ -24,7 +24,7 @@ const TITLE = 'Il giornale «Prometeo Comunista» #1 — Maggio 2026'
  */
 const PDF_FIXTURE = join(
   process.cwd(),
-  'src/features/newspaper/__fixtures__/magazine-1-it.pdf'
+  'src/features/magazine/__fixtures__/magazine-1-it.pdf'
 )
 const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47] as const
 const PDF_MAGIC = [0x25, 0x50, 0x44, 0x46] as const
@@ -40,7 +40,7 @@ test.beforeEach(async () => {
 
 /*
  * Captures the exact user-reported flow:
- *   "load the Italian version of the newspaper with title
+ *   "load the Italian version of the magazine with title
  *    Il giornale «Prometeo Comunista» #1 — Maggio 2026"
  *
  * The flow exercises every regression we shipped on the per-lang +
@@ -54,15 +54,15 @@ test.beforeEach(async () => {
  * If any of those silently regress, this test fails on the next CI
  * run rather than waiting for the next user report.
  */
-test('Italian newspaper full upload: title + PDF + cover commit per-lang', async ({
+test('Italian magazine full upload: title + PDF + cover commit per-lang', async ({
   page,
 }) => {
   test.setTimeout(240_000)
-  await bootRealmode(page, 'newspaper-italian-upload')
-  await visit(page, `/content/newspaper/edit/${SLUG}`, SLOW)
+  await bootRealmode(page, 'magazine-italian-upload')
+  await visit(page, `/content/magazine/edit/${SLUG}`, SLOW)
   await expectVisible(
     page,
-    page.locator('[data-testid="newspaper-source-uploads"]'),
+    page.locator('[data-testid="magazine-source-uploads"]'),
     SLOW
   )
 
@@ -115,7 +115,7 @@ test('Italian newspaper full upload: title + PDF + cover commit per-lang', async
   /* Verify the index.it.md frontmatter round-trips the hostile
    * title verbatim. Anything missing or escaped wrong is a
    * regression in `serializeFrontmatter`. */
-  const indexPath = `newspaper/${SLUG}/index.it.md`
+  const indexPath = `magazine/${SLUG}/index.it.md`
   const indexBody = await readFile(indexPath)
   expect(indexBody, `${indexPath} must exist on sandbox`).toBeTruthy()
   expect(
@@ -129,10 +129,10 @@ test('Italian newspaper full upload: title + PDF + cover commit per-lang', async
   /* Astro is the downstream gate — if its parser rejects the
    * frontmatter, the public-website build goes red and prod stays
    * stuck on the old issue. */
-  await assertAstroAccepts('newspaper', indexBody ?? '')
+  await assertAstroAccepts('magazine', indexBody ?? '')
 
   /* Verify per-lang assets actually committed with valid magic. */
-  const pdfPath = `newspaper/${SLUG}/assets/${SLUG}.it.pdf`
+  const pdfPath = `magazine/${SLUG}/assets/${SLUG}.it.pdf`
   const pdfBytes = await readBinary(pdfPath)
   expect(pdfBytes, `${pdfPath} must exist`).toBeDefined()
   expect(
@@ -145,7 +145,7 @@ test('Italian newspaper full upload: title + PDF + cover commit per-lang', async
    * back cover". The Italian render is ~1MB+ and starts with the
    * PNG magic. A pdf.js mis-render would still pass magic but is
    * usually <50KB (mostly white space + small masthead). */
-  const coverPath = `newspaper/${SLUG}/assets/cover.it.png`
+  const coverPath = `magazine/${SLUG}/assets/cover.it.png`
   const coverBytes = await readBinary(coverPath)
   expect(coverBytes, `${coverPath} must exist`).toBeDefined()
   expect(

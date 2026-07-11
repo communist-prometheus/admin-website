@@ -5,7 +5,7 @@ export type DigestChrome = {
   readonly newIssueSubject: (title: string) => string
   readonly intro: string
   readonly readLabel: string
-  /** Banner above a freshly-published newspaper issue. */
+  /** Banner above a freshly-published magazine issue. */
   readonly newIssueLabel: string
   /** Label for the already-announced latest issue, shown at the foot. */
   readonly currentIssueLabel: string

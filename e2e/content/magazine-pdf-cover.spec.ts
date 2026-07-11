@@ -4,9 +4,9 @@ import { expect, test } from '@prometheus/e2e-toolkit'
 
 /*
  * Reproducer for the reported "PDF cover doesn't take when uploading"
- * bug on /content/newspaper. Drives the create-new flow end-to-end
+ * bug on /content/magazine. Drives the create-new flow end-to-end
  * in mock-auth mode:
- *   1. Navigate to /content/newspaper
+ *   1. Navigate to /content/magazine
  *   2. Click + New, fill the slug, submit
  *   3. Land on the edit page, find the PDF dropzone
  *   4. Pick a real PDF file from disk
@@ -26,7 +26,7 @@ import { expect, test } from '@prometheus/e2e-toolkit'
  */
 const PDF_FIXTURE = resolve('e2e/fixtures/pdf-sample.pdf')
 
-test.describe('Newspaper — PDF cover auto-extraction', () => {
+test.describe('Magazine — PDF cover auto-extraction', () => {
   test('uploading a PDF auto-extracts the first page as cover', async ({
     page,
   }) => {
@@ -43,7 +43,7 @@ test.describe('Newspaper — PDF cover auto-extraction', () => {
 
     const slug = `pdf-cover-test-${Date.now()}`
 
-    await page.goto('/content/newspaper', { waitUntil: 'domcontentloaded' })
+    await page.goto('/content/magazine', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('[data-testid="content-list"]')).toBeVisible({
       timeout: 20_000,
     })
@@ -57,7 +57,7 @@ test.describe('Newspaper — PDF cover auto-extraction', () => {
     await dialog.locator('[data-testid="create-submit"]').click()
 
     await expect(page).toHaveURL(
-      new RegExp(`/content/newspaper/edit/${slug}`),
+      new RegExp(`/content/magazine/edit/${slug}`),
       {
         timeout: 15_000,
       }

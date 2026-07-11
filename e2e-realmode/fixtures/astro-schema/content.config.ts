@@ -34,7 +34,7 @@ const blogSchema = (allowed: ReadonlySet<string>) =>
     publishDate: z.union([z.string(), z.date()]).optional(),
     image: imageStub(),
     lang: langEnum(allowed),
-    newspaper: z.string().optional(),
+    magazine: z.string().optional(),
     archive: z.string().optional(),
   })
 
@@ -71,7 +71,7 @@ const commonSchema = (allowed: ReadonlySet<string>) =>
     blog: z.string().optional(),
     positions: z.string().optional(),
     manifest: z.string().optional(),
-    newspaper: z.string().optional(),
+    magazine: z.string().optional(),
     archive: z.string().optional(),
     archiveTitle: z.string().optional(),
     viewArchive: z.string().optional(),
@@ -88,7 +88,7 @@ const commonSchema = (allowed: ReadonlySet<string>) =>
     tableOfContents: z.string().optional(),
   })
 
-const newspaperSchema = (allowed: ReadonlySet<string>) =>
+const magazineSchema = (allowed: ReadonlySet<string>) =>
   z.object({
     title: z.string(),
     description: z.string().optional(),
@@ -122,6 +122,6 @@ export const astroSchemas = (allowed: ReadonlySet<string>) => ({
   pages: pagesSchema(allowed),
   positions: positionsSchema(allowed),
   common: commonSchema(allowed),
-  newspaper: newspaperSchema(allowed),
+  magazine: magazineSchema(allowed),
   archive: archiveSchema(allowed),
 })

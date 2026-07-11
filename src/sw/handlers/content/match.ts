@@ -1,9 +1,9 @@
 const CONTENT_LIST =
-  /^\/api\/github\/content\/(blog|pages|positions|common|newspaper|archive)$/
+  /^\/api\/github\/content\/(blog|pages|positions|common|magazine|archive)$/
 const CONTENT_ITEM =
-  /^\/api\/github\/content\/(blog|pages|positions|common|newspaper|archive)\/([^/]+)\/([^/]+)$/
+  /^\/api\/github\/content\/(blog|pages|positions|common|magazine|archive)\/([^/]+)\/([^/]+)$/
 const CONTENT_SLUG =
-  /^\/api\/github\/content\/(blog|pages|positions|common|newspaper|archive)\/([^/]+)$/
+  /^\/api\/github\/content\/(blog|pages|positions|common|magazine|archive)\/([^/]+)$/
 
 /** Matched content list route */
 export interface ContentListMatch {

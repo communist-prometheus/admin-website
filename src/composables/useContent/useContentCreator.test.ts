@@ -77,9 +77,9 @@ describe('useContentCreator', () => {
     expect(body).not.toMatch(/^publishDate:/m)
   })
 
-  it('creates newspaper content without any date field', async () => {
+  it('creates magazine content without any date field', async () => {
     mockCreate.mockResolvedValueOnce({ success: true })
-    const { createContent } = useContentCreator('newspaper')
+    const { createContent } = useContentCreator('magazine')
     await createContent({
       slug: 'week-1',
       lang: 'en',

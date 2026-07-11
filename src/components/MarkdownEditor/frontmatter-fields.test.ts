@@ -12,7 +12,7 @@ describe('getFields', () => {
         'category',
         'published',
         'publishDate',
-        'newspaper',
+        'magazine',
         'archive',
       ])
     })
@@ -35,9 +35,9 @@ describe('getFields', () => {
     })
   })
 
-  describe('newspaper', () => {
+  describe('magazine', () => {
     it('includes optional description', () => {
-      const fields = getFields('newspaper')
+      const fields = getFields('magazine')
       const description = fields.find(f => f.key === 'description')
       expect(description?.type).toBe('textarea')
       expect(description?.required).toBeUndefined()

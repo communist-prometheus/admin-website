@@ -43,7 +43,7 @@ export const makeSwitchLang =
  * regression where the SW would 404 on a slug that has no files
  * committed in the working branch.
  *
- * @param type content type (e.g. 'blog', 'newspaper')
+ * @param type content type (e.g. 'blog', 'magazine')
  * @param oldSlug the slug being renamed
  * @param deps `isUnsaved` (langs.value.size === 0 in the page),
  *   optional `currentDraft` builder for the local-rename fallback,

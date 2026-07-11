@@ -1,5 +1,5 @@
 import { convertDocxToHtml } from '@/components/MarkdownEditor/ImportDocs/convert-docx'
-import { htmlToFb2 } from '@/features/newspaper/html-to-fb2/html-to-fb2'
+import { htmlToFb2 } from '@/features/magazine/html-to-fb2/html-to-fb2'
 
 /** Issue metadata baked into the FB2 description block. */
 export interface IssueMeta {
@@ -10,7 +10,7 @@ export interface IssueMeta {
 }
 
 const buildFb2Meta = (meta: IssueMeta) => ({
-  title: meta.issueTitle ?? 'Newspaper issue',
+  title: meta.issueTitle ?? 'Magazine issue',
   ...(meta.issueLang === undefined ? {} : { lang: meta.issueLang }),
   ...(meta.issueDescription === undefined
     ? {}

@@ -5,7 +5,7 @@ import { test } from '@prometheus/e2e-toolkit'
 
 /**
  * Investigation probe: PDF upload on dev. Drives dev-admin live with a
- * real PAT, navigates to a newspaper edit page, and tries the full
+ * real PAT, navigates to a magazine edit page, and tries the full
  * upload chain (file picker → extractPdfCover → addAsset → save).
  * Streams console / SW logs / network so we can see exactly where it
  * breaks.
@@ -13,7 +13,7 @@ import { test } from '@prometheus/e2e-toolkit'
 const PAT = process.env.GITHUB_E2E_KEY ?? ''
 const PDF_PATH =
   'C:/Projects/Prometheus/public-website/src/content/blog/demo-test-artiche/assets/pdf-sample_0 (1).pdf'
-const TARGET = 'https://admin.comprom.org/content/newspaper/edit/test-2'
+const TARGET = 'https://admin.comprom.org/content/magazine/edit/test-2'
 
 test('probe: PDF upload on dev', async ({ browser }) => {
   test.setTimeout(180_000)
@@ -118,7 +118,7 @@ test('probe: PDF upload on dev', async ({ browser }) => {
     .waitFor({ state: 'visible', timeout: 10_000 })
   out('[probe] clicking Save')
   await page.locator('[data-testid="save-button"]').click()
-  // Newspaper has its own publish gate (frontmatter.published). The
+  // Magazine has its own publish gate (frontmatter.published). The
   // fixture probably doesn't set published=true, so no confirm dialog.
   // Wait either way.
   const dialog = page.locator('[data-testid="publish-confirm-btn"]')

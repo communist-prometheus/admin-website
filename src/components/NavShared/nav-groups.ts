@@ -27,7 +27,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       },
       { path: '/content/pages', label: 'Pages', minRole: 'admin' },
       { path: '/content/common', label: 'Common', minRole: 'admin' },
-      { path: '/content/newspaper', label: 'Newspaper' },
+      { path: '/content/magazine', label: 'Magazine' },
       { path: '/content/archive', label: 'Archive' },
     ],
   },
