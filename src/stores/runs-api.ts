@@ -1,6 +1,12 @@
 import { decodeResponse } from '@/validation/decode-response'
-import type { RunLogList } from '@/validation/schemas/run-log'
-import { RunLogListSchema } from '@/validation/schemas/run-log'
+import type {
+  FailedRecipientList,
+  RunLogList,
+} from '@/validation/schemas/run-log'
+import {
+  FailedRecipientListSchema,
+  RunLogListSchema,
+} from '@/validation/schemas/run-log'
 import { commsFetch } from './comms-http'
 
 /**
@@ -36,3 +42,16 @@ export const apiListSubscriberRuns = async (
   const res = await commsFetch(`/api/subscribers/${id}/runs`)
   return decodeResponse(RunLogListSchema)(res)
 }
+
+/**
+ * GET /api/runs/failed — the addresses a "resend to failed" run would
+ * target: active, and whose most recent attempt failed. A later success
+ * writes a newer row and drops the address out of this set, which is what
+ * makes the retry safe to press twice.
+ * @returns Parsed recipient list.
+ */
+export const apiListFailedRecipients =
+  async (): Promise<FailedRecipientList> => {
+    const res = await commsFetch('/api/runs/failed')
+    return decodeResponse(FailedRecipientListSchema)(res)
+  }
