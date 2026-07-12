@@ -3,9 +3,14 @@ import { onMounted } from 'vue'
 import { t } from '@/i18n/t'
 import { useRunsStore } from '@/stores/runs'
 import CommsSection from '../CommsSection.vue'
+import RetryFailedPanel from '../RetryFailedPanel.vue'
 import RunHistory from '../RunHistory.vue'
 
 const runs = useRunsStore()
+
+const onDispatched = (): void => {
+  void runs.load()
+}
 
 onMounted(() => {
   void runs.ensureLoaded()
@@ -13,6 +18,12 @@ onMounted(() => {
 </script>
 
 <template>
+  <CommsSection
+    :title="t('comms.retryFailed.title')"
+    :lead="t('comms.retryFailed.lead')"
+  >
+    <RetryFailedPanel @dispatched="onDispatched" />
+  </CommsSection>
   <CommsSection
     :title="t('comms.runHistory.title')"
     :lead="t('comms.runHistory.lead')"
