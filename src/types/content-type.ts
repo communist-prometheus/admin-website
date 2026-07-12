@@ -6,7 +6,7 @@ export type ContentType =
   | 'positions'
   | 'pages'
   | 'common'
-  | 'newspaper'
+  | 'magazine'
   | 'archive'
 
 /** All valid content type values */
@@ -15,7 +15,7 @@ const CONTENT_TYPE_VALUES: readonly string[] = [
   'positions',
   'pages',
   'common',
-  'newspaper',
+  'magazine',
   'archive',
 ]
 
@@ -36,6 +36,6 @@ export const NESTED_TYPES: ReadonlySet<ContentType> = new Set([
   'positions',
   'pages',
   'common',
-  'newspaper',
+  'magazine',
   'archive',
 ])

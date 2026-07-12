@@ -25,7 +25,7 @@ export const config: Config = {
     'src/views/CommsView/AddSubscriberForm.vue',
     'src/views/CommsView/TimezoneSelect.vue',
     'src/views/CommsView/ScheduleEditor.vue',
-    'src/views/CommsView/CommsView.vue',
+    'src/views/CommsView/SubscriberHistory.vue',
     'src/views/CommsView/CommsSection.vue',
     'src/views/CommsView/ForceDispatchPanel.vue',
     'src/views/CommsView/RemoveSubscriberDialog.vue',

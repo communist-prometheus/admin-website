@@ -41,8 +41,8 @@ describe('validateFrontmatter', () => {
     expect(Either.isLeft(r)).toBe(true)
   })
 
-  it('accepts newspaper with optional publishDate', () => {
-    const r = validateFrontmatter('newspaper', {
+  it('accepts magazine with optional publishDate', () => {
+    const r = validateFrontmatter('magazine', {
       title: 'T',
       description: 'D',
       lang: 'en',

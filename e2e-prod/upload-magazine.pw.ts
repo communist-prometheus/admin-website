@@ -5,13 +5,13 @@ import { test } from '@prometheus/e2e-toolkit'
 
 /*
  * "Do the real work" script: creates the magazine-1-mai-2026 RU
- * newspaper issue on admin.comprom.org, uploads the magazine PDF,
+ * magazine issue on admin.comprom.org, uploads the magazine PDF,
  * links every published RU article that references this issue in
  * its frontmatter, and saves. Streams console / SW logs / network
  * so any failure surfaces with a real cause.
  *
  * Run with:
- *   bunx playwright test --config playwright.config.prod.ts upload-newspaper
+ *   bunx playwright test --config playwright.config.prod.ts upload-magazine
  */
 
 const PAT = process.env.GITHUB_E2E_KEY ?? ''
@@ -72,7 +72,7 @@ test('create magazine-1-mai-2026 (ru), upload PDF, link articles', async ({
   // round-trip through the SW which sometimes takes a moment, so we
   // give the editor a generous deadline before deciding.
   out('[probe] navigating to edit page directly')
-  await page.goto(`${ROOT}/content/newspaper/edit/${SLUG}`, {
+  await page.goto(`${ROOT}/content/magazine/edit/${SLUG}`, {
     waitUntil: 'domcontentloaded',
   })
   const editorReady = page
@@ -85,7 +85,7 @@ test('create magazine-1-mai-2026 (ru), upload PDF, link articles', async ({
 
   if (!editorVisible) {
     out('[probe] edit page not ready — falling back to create flow')
-    await page.goto(`${ROOT}/content/newspaper?lang=${LANG}`, {
+    await page.goto(`${ROOT}/content/magazine?lang=${LANG}`, {
       waitUntil: 'domcontentloaded',
     })
     await page
@@ -108,7 +108,7 @@ test('create magazine-1-mai-2026 (ru), upload PDF, link articles', async ({
     await dialog.locator('#slug').fill(SLUG)
     await dialog.locator('#title').fill(TITLE)
     await dialog.locator('[data-testid="create-submit"]').click()
-    await page.waitForURL(new RegExp(`/content/newspaper/edit/${SLUG}`), {
+    await page.waitForURL(new RegExp(`/content/magazine/edit/${SLUG}`), {
       timeout: 15_000,
     })
   }

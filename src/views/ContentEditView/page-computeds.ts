@@ -27,7 +27,7 @@ export const createPageComputeds = (
     () =>
       validType === 'blog' ||
       validType === 'positions' ||
-      validType === 'newspaper'
+      validType === 'magazine'
   ),
   isBlog: computed(() => validType === 'blog'),
   langs: computed(() => getAvailableLanguages(list.items.value, slug)),

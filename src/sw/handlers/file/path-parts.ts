@@ -14,11 +14,11 @@
  * language whitelist lives in `workerState.supportedLangs`.
  */
 const CONTENT_MD_RE =
-  /(?:^|\/)(blog|positions|pages|common|newspaper)\/[^/]+\/index\.([a-z]{2,8})\.md$/
+  /(?:^|\/)(blog|positions|pages|common|magazine)\/[^/]+\/index\.([a-z]{2,8})\.md$/
 
 /** Parsed content-md path parts. */
 export interface ContentPathParts {
-  readonly type: 'blog' | 'positions' | 'pages' | 'common' | 'newspaper'
+  readonly type: 'blog' | 'positions' | 'pages' | 'common' | 'magazine'
   readonly lang: string
 }
 

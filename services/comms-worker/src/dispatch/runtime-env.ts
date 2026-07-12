@@ -9,7 +9,7 @@ export type DispatchEnv = {
   readonly PUBLIC_BASE_URL?: string
   /**
    * Base URL of the public content site the digest reads RSS +
-   * newspaper feeds from. Unset on prod (defaults to comprom.org);
+   * magazine feeds from. Unset on prod (defaults to comprom.org);
    * the develop env points it at dev.comprom.org so test mailings
    * never touch production content.
    */

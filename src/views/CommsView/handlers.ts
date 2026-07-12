@@ -20,6 +20,9 @@ const subscriberHandlers = (s: Stores) => ({
   onMessageLang: (id: number, messageLang: Lang): void => {
     void s.comms.updateMessageLang(id, messageLang)
   },
+  onLastSent: (id: number, lastSentAt: string | null): void => {
+    void s.comms.updateLastSent(id, lastSentAt)
+  },
   onRemove: (id: number): void => {
     void s.comms.remove(id)
   },

@@ -1,5 +1,5 @@
 import type { Lang, Subscriber } from '../subscribers/types'
-import type { IssuesByLang, NewspaperFetcher } from './fetch'
+import type { IssuesByLang, MagazineFetcher } from './fetch'
 
 const uniqueLangs = (
   subs: ReadonlyArray<Subscriber>
@@ -12,15 +12,15 @@ const uniqueLangs = (
 }
 
 /**
- * Fetch the latest newspaper issue for every language any subscriber
+ * Fetch the latest magazine issue for every language any subscriber
  * wants, once per tick. Languages with no issue are simply absent.
  * @param subs Active subscribers for the current tick.
- * @param fetcher Per-language newspaper fetcher.
+ * @param fetcher Per-language magazine fetcher.
  * @returns Latest issue grouped by language.
  */
 export const fetchLatestIssues = async (
   subs: ReadonlyArray<Subscriber>,
-  fetcher: NewspaperFetcher
+  fetcher: MagazineFetcher
 ): Promise<IssuesByLang> => {
   const acc: IssuesByLang = {}
   for (const lang of uniqueLangs(subs)) {

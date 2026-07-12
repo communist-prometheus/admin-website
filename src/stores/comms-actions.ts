@@ -5,6 +5,7 @@ import { apiAddSubscriber, apiListSubscribers } from './comms-api'
 export {
   createRemove,
   createUpdateLangs,
+  createUpdateLastSent,
   createUpdateMessageLang,
 } from './comms-actions-mutations'
 

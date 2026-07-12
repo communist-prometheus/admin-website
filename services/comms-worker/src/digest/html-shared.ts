@@ -9,8 +9,8 @@ export type LangGroups = ReadonlyArray<
   readonly [Lang, ReadonlyArray<StampedArticle>]
 >
 
-/** Stamped newspaper issues split into top announcements + foot current. */
-export type StampedNewspapers = {
+/** Stamped magazine issues split into top announcements + foot current. */
+export type StampedMagazines = {
   readonly announcements: ReadonlyArray<StampedArticle>
   readonly current: ReadonlyArray<StampedArticle>
 }

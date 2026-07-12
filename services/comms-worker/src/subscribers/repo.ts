@@ -1,51 +1,28 @@
-import type { D1Database } from '@cloudflare/workers-types'
 import { insertSubscriber } from './repo-insert'
 import { findById, listActive, listAll } from './repo-read'
 import { setStatus } from './repo-status'
+import type { RepoDeps, SubscriberRepo } from './repo-types'
 import {
   markSent,
   removeSubscriber,
+  setLastSentAt,
   updateLangs,
   updateMessageLang,
 } from './repo-write'
-import type {
-  Lang,
-  NewSubscriber,
-  Subscriber,
-  SubscriberStatus,
-} from './types'
 
-/** Aggregated subscriber-repo surface used by Hono handlers. */
-export type SubscriberRepo = {
-  readonly insert: (input: NewSubscriber) => Promise<Subscriber>
-  readonly listActive: () => Promise<ReadonlyArray<Subscriber>>
-  readonly listAll: () => Promise<ReadonlyArray<Subscriber>>
-  readonly findById: (id: number) => Promise<Subscriber | undefined>
-  readonly updateLangs: (
-    id: number,
-    langs: ReadonlyArray<Lang>
-  ) => Promise<Subscriber | undefined>
-  readonly updateMessageLang: (
-    id: number,
-    messageLang: Lang
-  ) => Promise<Subscriber | undefined>
-  readonly remove: (id: number) => Promise<boolean>
-  readonly setStatus: (
-    id: number,
-    status: SubscriberStatus
-  ) => Promise<Subscriber | undefined>
-  readonly markSent: (id: number, sentAtIso: string) => Promise<void>
-}
-
-type Deps = { readonly db: D1Database; readonly now: () => string }
+export type { RepoDeps, SubscriberRepo } from './repo-types'
 
 /**
  * Build a subscriber repo bound to a D1 database + clock.
  * @param d Injected dependencies.
  * @returns Repo facade.
  */
-export const createRepo = (d: Deps): SubscriberRepo => ({
-  insert: input => insertSubscriber(d.db, d.now, input),
+export const createRepo = (d: RepoDeps): SubscriberRepo => ({
+  insert: async input =>
+    insertSubscriber(d.db, d.now, {
+      ...input,
+      lastSentAt: input.lastSentAt ?? (await d.cutoffAt?.()),
+    }),
   listActive: () => listActive(d.db),
   listAll: () => listAll(d.db),
   findById: id => findById(d.db, id),
@@ -54,4 +31,5 @@ export const createRepo = (d: Deps): SubscriberRepo => ({
   remove: id => removeSubscriber(d.db, id),
   setStatus: (id, status) => setStatus(d.db, d.now, id, status),
   markSent: (id, sentAt) => markSent(d.db, id, sentAt),
+  setLastSentAt: (id, iso) => setLastSentAt(d.db, id, iso),
 })

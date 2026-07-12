@@ -52,7 +52,7 @@ describe('PdfUpload — happy path', () => {
      * MUST result in all three events. If the user picks a PDF and
      * sees no cover, one of these emissions is missing.
      */
-    vi.doMock('@/features/newspaper/extract-pdf-cover', () => ({
+    vi.doMock('@/features/magazine/extract-pdf-cover', () => ({
       extractPdfCover: async () => fakeCover(),
     }))
     const w = mount(PdfUpload, { props: { slug: 'sample', lang: 'en' } })
@@ -70,7 +70,7 @@ describe('PdfUpload — happy path', () => {
   })
 
   it('skips set-cover when frontmatter.image already set (custom cover preserved)', async () => {
-    vi.doMock('@/features/newspaper/extract-pdf-cover', () => ({
+    vi.doMock('@/features/magazine/extract-pdf-cover', () => ({
       extractPdfCover: async () => fakeCover(),
     }))
     const w = mount(PdfUpload, {
@@ -100,7 +100,7 @@ describe('PdfUpload — error path', () => {
      * any failure surfaces via the `error` event; upload-cover and
      * set-cover MUST NOT fire on the error path.
      */
-    vi.doMock('@/features/newspaper/extract-pdf-cover', () => ({
+    vi.doMock('@/features/magazine/extract-pdf-cover', () => ({
       extractPdfCover: async () => {
         throw new Error('worker fetch failed: 404')
       },
@@ -118,7 +118,7 @@ describe('PdfUpload — error path', () => {
   })
 
   it('non-PDF files are rejected without emitting anything', async () => {
-    vi.doMock('@/features/newspaper/extract-pdf-cover', () => ({
+    vi.doMock('@/features/magazine/extract-pdf-cover', () => ({
       extractPdfCover: async () => fakeCover(),
     }))
     const w = mount(PdfUpload, { props: { slug: 'sample', lang: 'en' } })

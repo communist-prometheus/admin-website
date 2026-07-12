@@ -25,11 +25,11 @@ describe('makeRename — saved content path', () => {
   })
 })
 
-describe('makeRename — unsaved newspaper path (regression for create→rename→save flow)', () => {
+describe('makeRename — unsaved magazine path (regression for create→rename→save flow)', () => {
   /*
-   * The user-reported bug: creating a newspaper, renaming the slug
+   * The user-reported bug: creating a magazine, renaming the slug
    * BEFORE first save, then clicking Save fails with
-   * "No files found for newspaper/<old-slug>" because
+   * "No files found for magazine/<old-slug>" because
    * `renameContent` calls the SW BFF which expects the source
    * directory to exist on disk.
    *
@@ -47,7 +47,7 @@ describe('makeRename — unsaved newspaper path (regression for create→rename�
       title: 'Test',
       description: 'desc',
     }
-    const rename = makeRename('newspaper', 'old-slug', {
+    const rename = makeRename('magazine', 'old-slug', {
       isUnsaved: () => true,
       currentDraft: () => draft,
       navigate: mockNavigate,
@@ -59,14 +59,14 @@ describe('makeRename — unsaved newspaper path (regression for create→rename�
     ).not.toHaveBeenCalled()
     expect(stashSpy).toHaveBeenCalledWith({ ...draft, slug: 'renamed-slug' })
     expect(mockNavigate).toHaveBeenCalledWith(
-      '/content/newspaper/edit/renamed-slug'
+      '/content/magazine/edit/renamed-slug'
     )
   })
 
   it('still navigates to the new URL even when no draft is available', async () => {
     const apiSpy = vi.spyOn(renameApi, 'renameContent')
     const stashSpy = vi.spyOn(draftStash, 'setNewContentDraft')
-    const rename = makeRename('newspaper', 'old-slug', {
+    const rename = makeRename('magazine', 'old-slug', {
       isUnsaved: () => true,
       currentDraft: () => undefined,
       navigate: mockNavigate,
@@ -75,7 +75,7 @@ describe('makeRename — unsaved newspaper path (regression for create→rename�
     expect(apiSpy).not.toHaveBeenCalled()
     expect(stashSpy).not.toHaveBeenCalled()
     expect(mockNavigate).toHaveBeenCalledWith(
-      '/content/newspaper/edit/renamed-slug'
+      '/content/magazine/edit/renamed-slug'
     )
   })
 })

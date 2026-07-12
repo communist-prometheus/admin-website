@@ -1,12 +1,12 @@
-import type { NewspaperSelection } from '../newspaper/classify'
+import type { MagazineSelection } from '../magazine/classify'
 import type { Article } from '../rss/types'
 import type { Subscriber } from '../subscribers/types'
 import { renderHtml } from './html'
 import {
   chromeFor,
-  EMPTY_NEWSPAPERS,
+  EMPTY_MAGAZINES,
   groupByLang,
-  stampNewspapers,
+  stampMagazines,
   subjectFor,
 } from './render-helpers'
 import { renderText } from './text'
@@ -16,7 +16,7 @@ import { isoWeekString } from './utm'
 export type DigestRenderInput = {
   readonly subscriber: Subscriber
   readonly articles: ReadonlyArray<Article>
-  readonly newspapers?: NewspaperSelection
+  readonly magazines?: MagazineSelection
   readonly unsubscribeUrl: string
   readonly tickAt: Date
 }
@@ -45,8 +45,8 @@ export const renderDigest = (input: DigestRenderInput): Digest => {
   const chrome = chromeFor(input.subscriber.messageLang)
   const campaign = isoWeekString(input.tickAt)
   const groups = groupByLang(input.subscriber.langs, input.articles, campaign)
-  const selection = input.newspapers ?? EMPTY_NEWSPAPERS
-  const papers = stampNewspapers(selection, campaign)
+  const selection = input.magazines ?? EMPTY_MAGAZINES
+  const papers = stampMagazines(selection, campaign)
   return {
     subject: subjectFor(
       chrome,

@@ -26,7 +26,7 @@ const emit = defineEmits<{ preview: [] }>()
 /*
  * `position: sticky; bottom: 0` was the original intent (keep
  * Preview reachable on long pages), but the sticky containing
- * block here is `.edit-body-area`, which on /content/newspaper/edit
+ * block here is `.edit-body-area`, which on /content/magazine/edit
  * sits entirely below the viewport at scrollY=0 (frontmatter +
  * articles picker push it down past 812px on a 375x812 mobile).
  * Sticky then clamps to `.edit-body-area`'s TOP instead of the

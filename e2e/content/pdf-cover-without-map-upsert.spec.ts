@@ -21,7 +21,7 @@ const PDF_FIXTURE = resolve(
   'C:/Projects/Prometheus/public-website/src/content/blog/demo-test-artiche/assets/pdf-sample_0 (1).pdf'
 )
 
-test.describe('Newspaper — PDF cover when runtime lacks Map.getOrInsertComputed', () => {
+test.describe('Magazine — PDF cover when runtime lacks Map.getOrInsertComputed', () => {
   test('uploading a PDF still extracts the cover via the polyfill', async ({
     page,
   }) => {
@@ -52,7 +52,7 @@ test.describe('Newspaper — PDF cover when runtime lacks Map.getOrInsertCompute
 
     const slug = `pdf-no-map-upsert-${Date.now()}`
 
-    await page.goto('/content/newspaper', { waitUntil: 'domcontentloaded' })
+    await page.goto('/content/magazine', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('[data-testid="content-list"]')).toBeVisible({
       timeout: 20_000,
     })
@@ -65,7 +65,7 @@ test.describe('Newspaper — PDF cover when runtime lacks Map.getOrInsertCompute
     await dialog.locator('[data-testid="create-submit"]').click()
 
     await expect(page).toHaveURL(
-      new RegExp(`/content/newspaper/edit/${slug}`),
+      new RegExp(`/content/magazine/edit/${slug}`),
       { timeout: 15_000 }
     )
 

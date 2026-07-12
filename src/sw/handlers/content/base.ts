@@ -6,7 +6,7 @@ export const NESTED_TYPES = new Set([
   'positions',
   'pages',
   'common',
-  'newspaper',
+  'magazine',
   'archive',
 ])
 

@@ -7,7 +7,7 @@ export interface MultiLangEditorOptions {
   /**
    * Frontmatter keys that are scoped to a single language and
    * MUST NOT be carried over when seeding a fresh draft after the
-   * user clicks a dimmed lang tab. For newspaper, `image` is
+   * user clicks a dimmed lang tab. For magazine, `image` is
    * per-lang (each translation has its own cover); for blog or
    * positions the cover is entity-level and stays shared.
    */

@@ -60,11 +60,11 @@ describe('transactionalSave — replace-collision regression', () => {
      * same filename the target path collides — flushAdds writes,
      * then flushDeletes runs `git rm` on the same path → file gone.
      */
-    const path = 'newspaper/magazine-1-mai-2026/assets/cover.png'
+    const path = 'magazine/magazine-1-mai-2026/assets/cover.png'
     await transactionalSave({
-      type: 'newspaper',
+      type: 'magazine',
       slug: 'magazine-1-mai-2026',
-      articlePath: 'newspaper/magazine-1-mai-2026/index.ru.md',
+      articlePath: 'magazine/magazine-1-mai-2026/index.ru.md',
       articleContent: '---\ntitle: x\n---\n',
       message: 'updated',
       pendingAdds: [pendingAsset('cover.png')],
@@ -75,11 +75,11 @@ describe('transactionalSave — replace-collision regression', () => {
   })
 
   it('still deletes paths that are NOT being re-added', async () => {
-    const orphan = 'newspaper/magazine-1-mai-2026/assets/old-illustration.jpg'
+    const orphan = 'magazine/magazine-1-mai-2026/assets/old-illustration.jpg'
     await transactionalSave({
-      type: 'newspaper',
+      type: 'magazine',
       slug: 'magazine-1-mai-2026',
-      articlePath: 'newspaper/magazine-1-mai-2026/index.ru.md',
+      articlePath: 'magazine/magazine-1-mai-2026/index.ru.md',
       articleContent: '---\ntitle: x\n---\n',
       message: 'updated',
       pendingAdds: [pendingAsset('cover.png')],
@@ -89,12 +89,12 @@ describe('transactionalSave — replace-collision regression', () => {
   })
 
   it('handles many pending adds + a colliding delete cleanly', async () => {
-    const collide = 'newspaper/magazine-1-mai-2026/assets/Magazine1 (3).pdf'
-    const orphan = 'newspaper/magazine-1-mai-2026/assets/notes.txt'
+    const collide = 'magazine/magazine-1-mai-2026/assets/Magazine1 (3).pdf'
+    const orphan = 'magazine/magazine-1-mai-2026/assets/notes.txt'
     await transactionalSave({
-      type: 'newspaper',
+      type: 'magazine',
       slug: 'magazine-1-mai-2026',
-      articlePath: 'newspaper/magazine-1-mai-2026/index.ru.md',
+      articlePath: 'magazine/magazine-1-mai-2026/index.ru.md',
       articleContent: '---\ntitle: x\n---\n',
       message: 'updated',
       pendingAdds: [

@@ -1,4 +1,4 @@
-import { createNewspaperFetcher } from '../newspaper/fetch'
+import { createMagazineFetcher } from '../magazine/fetch'
 import { createResendClient } from '../resend/client'
 import { createRssFetcher } from '../rss/fetch'
 import { createSendLogRepo } from '../send-log/repo'
@@ -27,11 +27,15 @@ export const buildRuntimeDeps = (
   tickAt: Date,
   targetIds?: ReadonlyArray<number>
 ): RunDispatchDeps => ({
-  subscriberRepo: createRepo({ db: env.DB, now: nowIso }),
+  subscriberRepo: createRepo({
+    db: env.DB,
+    now: nowIso,
+    cutoffAt: () => createSettingsRepo({ db: env.DB }).getCutoffAt(),
+  }),
   sendLogRepo: createSendLogRepo({ db: env.DB }),
   settingsRepo: createSettingsRepo({ db: env.DB }),
   rss: createRssFetcher({ base: env.CONTENT_BASE_URL }),
-  newspaper: createNewspaperFetcher({ base: env.CONTENT_BASE_URL }),
+  magazine: createMagazineFetcher({ base: env.CONTENT_BASE_URL }),
   resend: createResendClient({ apiKey: env.RESEND_API_KEY }),
   secret: env.UNSUBSCRIBE_SECRET,
   fromAddress: env.FROM_ADDRESS ?? DEFAULT_FROM,

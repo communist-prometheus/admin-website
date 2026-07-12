@@ -12,7 +12,7 @@ import type { EditorDraft, MultiLangEditorState } from './types'
  * `loaded: true` empty entries during init (currentLang briefly =
  * 'en', frontmatter briefly = {}), and `tryRestoreCached('en')`
  * later treated them as real loaded files, wiping the editor on
- * lang switch (the 2026-05-10 newspaper regression). A computed
+ * lang switch (the 2026-05-10 magazine regression). A computed
  * must not mutate.
  * @param cache - Per-lang draft cache
  * @param originalCache - Per-lang baseline for diffing

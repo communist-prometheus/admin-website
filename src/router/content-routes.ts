@@ -7,7 +7,7 @@ const CONTENT_SECTIONS: readonly ContentType[] = [
   'positions',
   'pages',
   'common',
-  'newspaper',
+  'magazine',
   'archive',
 ]
 

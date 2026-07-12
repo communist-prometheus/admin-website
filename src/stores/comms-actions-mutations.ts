@@ -2,6 +2,7 @@ import type { Lang } from '@/validation/schemas/subscriber'
 import {
   apiRemoveSubscriber,
   apiUpdateLangs,
+  apiUpdateLastSent,
   apiUpdateMessageLang,
 } from './comms-api'
 
@@ -26,6 +27,18 @@ export const createUpdateMessageLang =
   (load: () => Promise<void>) =>
   async (id: number, messageLang: Lang): Promise<void> => {
     await apiUpdateMessageLang(id, messageLang)
+    await load()
+  }
+
+/**
+ * Build the `updateLastSent` action that moves one address's watermark.
+ * @param load Loader used to refresh after the write.
+ * @returns Async action returning void.
+ */
+export const createUpdateLastSent =
+  (load: () => Promise<void>) =>
+  async (id: number, lastSentAt: string | null): Promise<void> => {
+    await apiUpdateLastSent(id, lastSentAt)
     await load()
   }
 

@@ -2,13 +2,13 @@ import { expect, test } from '@prometheus/e2e-toolkit'
 import { MOBILE_FAB } from '../helpers/mobile-constants'
 
 /**
- * Regression for the broken mobile layout on /content/newspaper/edit
+ * Regression for the broken mobile layout on /content/magazine/edit
  * at iPhone-class viewports.
  *
  * Two visible bugs that this test pins:
  *
  * 1. The `EditorFooter` had `position: sticky; bottom: 0`. Its sticky
- *    containing block was `.edit-body-area`, which on a newspaper edit
+ *    containing block was `.edit-body-area`, which on a magazine edit
  *    page sits entirely below the viewport at scroll=0 (frontmatter +
  *    articles picker push it past 812px on iPhone 12 Pro). Sticky
  *    clamps to the parent's TOP when its target (`bottom: 0` against
@@ -28,12 +28,12 @@ import { MOBILE_FAB } from '../helpers/mobile-constants'
  *   - The "Add" button on the articles-picker does not intersect the
  *     floating FAB.
  */
-test.describe('Newspaper edit — mobile layout', () => {
+test.describe('Magazine edit — mobile layout', () => {
   test('Preview button sits after source uploads (no sticky overlap)', async ({
     page,
   }) => {
-    await page.goto('/content/newspaper/edit/issue-1')
-    const sources = page.getByTestId('newspaper-source-uploads')
+    await page.goto('/content/magazine/edit/issue-1')
+    const sources = page.getByTestId('magazine-source-uploads')
     const preview = page.getByTestId('preview-button')
     await expect(sources).toBeVisible()
     await expect(preview).toBeVisible()
@@ -55,7 +55,7 @@ test.describe('Newspaper edit — mobile layout', () => {
   test('Preview and Add buttons do not collide with the FAB', async ({
     page,
   }) => {
-    await page.goto('/content/newspaper/edit/issue-1')
+    await page.goto('/content/magazine/edit/issue-1')
     const fab = page.getByTestId(MOBILE_FAB)
     const preview = page.getByTestId('preview-button')
     const add = page.getByTestId('article-add')

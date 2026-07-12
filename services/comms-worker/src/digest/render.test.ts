@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { NewspaperSelection } from '../newspaper/classify'
+import type { MagazineSelection } from '../magazine/classify'
 import type { Article } from '../rss/types'
 import type { Subscriber } from '../subscribers/types'
 import { renderDigest } from './render'
@@ -172,7 +172,7 @@ describe('renderDigest — headers + body invariants', () => {
 const NEW_ISSUE: Article = {
   guid: 'np-new',
   title: 'Prometheus Weekly #7',
-  link: 'https://comprom.org/en/newspaper/weekly-7',
+  link: 'https://comprom.org/en/magazine/weekly-7',
   lang: 'en',
   pubDate: '2026-06-05T08:00:00.000Z',
 }
@@ -180,39 +180,39 @@ const NEW_ISSUE: Article = {
 const OLD_ISSUE: Article = {
   guid: 'np-old',
   title: 'Prometheus Weekly #6',
-  link: 'https://comprom.org/en/newspaper/weekly-6',
+  link: 'https://comprom.org/en/magazine/weekly-6',
   lang: 'en',
   pubDate: '2026-05-20T08:00:00.000Z',
 }
 
-describe('renderDigest — newspaper', () => {
+describe('renderDigest — magazine', () => {
   it('renders a new issue at the top with the "New issue" banner + link', () => {
-    const newspapers: NewspaperSelection = {
+    const magazines: MagazineSelection = {
       announcements: [NEW_ISSUE],
       current: [],
     }
     const d = renderDigest({
       subscriber: { ...SUB, langs: ['en'] },
       articles: ARTICLES.filter(a => a.lang === 'en'),
-      newspapers,
+      magazines,
       unsubscribeUrl: UNSUB,
       tickAt: TICK,
     })
     expect(d.html).toContain('New issue')
     expect(d.html).toContain('Prometheus Weekly #7')
-    expect(d.html).toContain('en/newspaper/weekly-7?utm_source=newsletter')
+    expect(d.html).toContain('en/magazine/weekly-7?utm_source=newsletter')
     expect(d.text).toContain('New issue: Prometheus Weekly #7')
   })
 
   it('renders the current issue at the foot with the "Current issue" label', () => {
-    const newspapers: NewspaperSelection = {
+    const magazines: MagazineSelection = {
       announcements: [],
       current: [OLD_ISSUE],
     }
     const d = renderDigest({
       subscriber: { ...SUB, langs: ['en'] },
       articles: ARTICLES.filter(a => a.lang === 'en'),
-      newspapers,
+      magazines,
       unsubscribeUrl: UNSUB,
       tickAt: TICK,
     })
@@ -222,14 +222,14 @@ describe('renderDigest — newspaper', () => {
   })
 
   it('falls back to the new-issue subject when there are no new articles', () => {
-    const newspapers: NewspaperSelection = {
+    const magazines: MagazineSelection = {
       announcements: [NEW_ISSUE],
       current: [],
     }
     const d = renderDigest({
       subscriber: { ...SUB, langs: ['en'] },
       articles: [],
-      newspapers,
+      magazines,
       unsubscribeUrl: UNSUB,
       tickAt: TICK,
     })
@@ -239,14 +239,14 @@ describe('renderDigest — newspaper', () => {
   })
 
   it('keeps the article-count subject when articles AND a new issue exist', () => {
-    const newspapers: NewspaperSelection = {
+    const magazines: MagazineSelection = {
       announcements: [NEW_ISSUE],
       current: [],
     }
     const d = renderDigest({
       subscriber: { ...SUB, langs: ['en'] },
       articles: ARTICLES,
-      newspapers,
+      magazines,
       unsubscribeUrl: UNSUB,
       tickAt: TICK,
     })

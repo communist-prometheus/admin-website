@@ -3,14 +3,14 @@ import type { Subscriber } from '../subscribers/types'
 import type { IssuesByLang } from './fetch'
 
 /**
- * The newspaper issues a subscriber sees, split by how they appear:
+ * The magazine issues a subscriber sees, split by how they appear:
  * `announcements` are issues published since the cutoff (a NEW issue —
  * goes first, with the "new issue" banner); `current` are issues that
  * predate the cutoff (already announced — go last, as "current issue").
  * Per language at most one of the two carries that language's latest
  * issue.
  */
-export type NewspaperSelection = {
+export type MagazineSelection = {
   readonly announcements: ReadonlyArray<Article>
   readonly current: ReadonlyArray<Article>
 }
@@ -31,11 +31,11 @@ const isNew = (issue: Article, cutoffMs: number | undefined): boolean => {
  * @param cutoffMs Global cutoff in ms (undefined = no cutoff yet).
  * @returns Issues split into announcements + current.
  */
-export const classifyNewspapers = (
+export const classifyMagazines = (
   sub: Subscriber,
   byLang: IssuesByLang,
   cutoffMs: number | undefined
-): NewspaperSelection => {
+): MagazineSelection => {
   const announcements: Article[] = []
   const current: Article[] = []
   const seen = new Set<string>()

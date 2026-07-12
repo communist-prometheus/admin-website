@@ -1,4 +1,4 @@
-import type { StampedArticle, StampedNewspapers } from './html-shared'
+import type { StampedArticle, StampedMagazines } from './html-shared'
 import type { DigestChrome } from './i18n-types'
 
 const line = (label: string, [issue, url]: StampedArticle): string =>
@@ -33,22 +33,22 @@ export const renderCurrentText = (
     : issues.map(i => line(chrome.currentIssueLabel, i)).join('\n\n')
 
 /**
- * Assemble the optional newspaper text blocks around the article
+ * Assemble the optional magazine text blocks around the article
  * sections: announcements first, sections, then current issues.
  * @param chrome Localised strings.
  * @param sections Already-rendered per-language article sections.
- * @param newspapers Stamped issues split into announcements + current.
+ * @param magazines Stamped issues split into announcements + current.
  * @returns Joined body, dropping empty blocks.
  */
 export const composeBody = (
   chrome: DigestChrome,
   sections: string,
-  newspapers: StampedNewspapers
+  magazines: StampedMagazines
 ): string =>
   [
-    renderAnnouncementsText(chrome, newspapers.announcements),
+    renderAnnouncementsText(chrome, magazines.announcements),
     sections,
-    renderCurrentText(chrome, newspapers.current),
+    renderCurrentText(chrome, magazines.current),
   ]
     .filter(part => part.length > 0)
     .join('\n\n')

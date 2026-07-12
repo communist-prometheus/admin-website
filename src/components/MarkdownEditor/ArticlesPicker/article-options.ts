@@ -1,7 +1,7 @@
 import type { ContentItem } from '@/types/content'
 import type { Language } from '@/types/language'
 
-/** A blog article available to be linked into a newspaper issue. */
+/** A blog article available to be linked into a magazine issue. */
 export interface ArticleOption {
   readonly slug: string
   readonly title: string
@@ -41,7 +41,7 @@ const compare = (a: ArticleOption, b: ArticleOption): number =>
   b.publishedAt - a.publishedAt || a.title.localeCompare(b.title)
 
 /**
- * Build the available-articles list for the newspaper picker, scoped
+ * Build the available-articles list for the magazine picker, scoped
  * to a single language and sorted newest-first with an alphabetical
  * title tie-break. Already-linked slugs and items in other languages
  * are dropped.

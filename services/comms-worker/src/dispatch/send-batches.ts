@@ -35,8 +35,9 @@ export const sendInBatches = async (
 ): Promise<SendCounts> => {
   let sent = 0
   let failed = 0
-  for (const group of chunk(plans, CHUNK_SIZE)) {
-    const c = await sendChunk(ctx, group)
+  const groups = chunk(plans, CHUNK_SIZE)
+  for (let i = 0; i < groups.length; i += 1) {
+    const c = await sendChunk(ctx, groups[i] ?? [], i)
     sent += c.sent
     failed += c.failed
   }

@@ -12,12 +12,12 @@
  *   - pages/manifest, pages/about: body rendered -> editor SHOWN
  *   - pages/home, pages/blog-listing, pages/positions-listing:
  *     frontmatter only -> editor HIDDEN
- *   - newspaper/<slug>: only a list page exists; the detail "page"
+ *   - magazine/<slug>: only a list page exists; the detail "page"
  *     is the PDF download. Body never rendered -> editor HIDDEN
  *   - common/<slug> (menu, labels, ...): translation tables read
  *     via `entry.data.*` only -> editor HIDDEN
  */
-const ALWAYS_BODYLESS: ReadonlySet<string> = new Set(['common', 'newspaper'])
+const ALWAYS_BODYLESS: ReadonlySet<string> = new Set(['common', 'magazine'])
 
 const BODYLESS_PAGE_SLUGS: ReadonlySet<string> = new Set([
   'home',

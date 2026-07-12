@@ -5,7 +5,7 @@ const GROUP_BY_PATH: Record<string, string> = {
   '/content/positions': 'content',
   '/content/pages': 'content',
   '/content/common': 'content',
-  '/content/newspaper': 'content',
+  '/content/magazine': 'content',
   '/content/archive': 'content',
   '/labels': 'community',
   '/tickets': 'community',

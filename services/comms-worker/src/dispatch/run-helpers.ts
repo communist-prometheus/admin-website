@@ -1,4 +1,4 @@
-import type { IssuesByLang } from '../newspaper/fetch'
+import type { IssuesByLang } from '../magazine/fetch'
 import type { Subscriber } from '../subscribers/types'
 import type { DispatchContext } from './context'
 import type { ArticlesByLang } from './fetch-articles'
@@ -39,14 +39,14 @@ export const retentionCutoffIso = (tickAt: Date, days: number): string =>
  * and the resolved cutoff.
  * @param d Dispatch deps.
  * @param byLang Articles grouped by language for the tick.
- * @param newspapersByLang Latest newspaper issue per language for the tick.
+ * @param magazinesByLang Latest magazine issue per language for the tick.
  * @param cutoffMs Resolved cutoff (undefined = no cutoff yet).
  * @returns DispatchContext.
  */
 export const buildCtx = (
   d: RunDispatchDeps,
   byLang: ArticlesByLang,
-  newspapersByLang: IssuesByLang,
+  magazinesByLang: IssuesByLang,
   cutoffMs: number | undefined
 ): DispatchContext => ({
   subscriberRepo: d.subscriberRepo,
@@ -57,6 +57,6 @@ export const buildCtx = (
   publicBaseUrl: d.publicBaseUrl,
   tickAt: d.tickAt,
   byLang,
-  newspapersByLang,
+  magazinesByLang,
   cutoffMs,
 })
