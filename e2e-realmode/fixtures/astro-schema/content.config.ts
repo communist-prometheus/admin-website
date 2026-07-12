@@ -107,7 +107,15 @@ const magazineSchema = (allowed: ReadonlySet<string>) =>
  * pre-rename content folder while the content repo migrates. The mirror
  * has to carry it too — the drift guard compares the collection sets
  * both ways.
+ *
+ * It is byte-identical to magazineSchema, and it has to STAY spelled out:
+ * astro-schema-drift.spec.ts finds collections by scraping this file for
+ * `const (\w+)Schema = (allowed: ReadonlySet<string>) => z.object({`.
+ * Factoring the duplicate away makes the collection invisible to the very
+ * guard this file exists to feed. Goes away with the transitional
+ * collection itself.
  */
+// oxlint-disable-next-line sonarjs/no-identical-functions
 const newspaperSchema = (allowed: ReadonlySet<string>) =>
   z.object({
     title: z.string(),
