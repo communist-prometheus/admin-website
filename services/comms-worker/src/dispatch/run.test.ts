@@ -79,13 +79,13 @@ const noIssue = async (): Promise<Article | undefined> => undefined
 const baseDeps = (
   rss: (l: Lang) => Promise<ReadonlyArray<Article>>,
   resend: ResendClient,
-  newspaper: (l: Lang) => Promise<Article | undefined> = noIssue
+  magazine: (l: Lang) => Promise<Article | undefined> = noIssue
 ) => ({
   subscriberRepo: subs,
   sendLogRepo: log,
   settingsRepo: settings,
   rss,
-  newspaper,
+  magazine,
   resend,
   secret: SECRET,
   fromAddress: FROM,
@@ -151,7 +151,7 @@ describe('runDispatch — happy path', () => {
   })
 })
 
-describe('runDispatch — new newspaper issue with no new articles', () => {
+describe('runDispatch — new magazine issue with no new articles', () => {
   it('sends when only a fresh issue exists past the cutoff', async () => {
     await subs.insert({ email: 'a@b.c', langs: ['ru'] })
     await settings.setCutoffAt('2026-06-04T00:00:00.000Z')
@@ -161,7 +161,7 @@ describe('runDispatch — new newspaper issue with no new articles', () => {
     const fresh = article({
       guid: 'np',
       lang: 'ru',
-      link: 'https://comprom.org/ru/newspaper/issue-9',
+      link: 'https://comprom.org/ru/magazine/issue-9',
       pubDate: '2026-06-05T00:00:00.000Z',
     })
     const resend = buildResend(() => ({ ok: true, id: 're_np' }))
@@ -170,7 +170,7 @@ describe('runDispatch — new newspaper issue with no new articles', () => {
     )
     expect(summary).toMatchObject({ sent: 1, failed: 0, skipped: 0 })
     expect(resend.sends).toHaveLength(1)
-    expect(resend.sends[0]?.html).toContain('ru/newspaper/issue-9')
+    expect(resend.sends[0]?.html).toContain('ru/magazine/issue-9')
   })
 
   it('skips when the only issue predates the cutoff and nothing is new', async () => {

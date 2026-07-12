@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { AssetDisplay } from '@/composables/useAssets/types'
-import { sanitizeFb2 } from '@/features/newspaper/sanitize-fb2'
+import { sanitizeFb2 } from '@/features/magazine/sanitize-fb2'
 import { createDragHandlers } from './pdf-upload-handlers'
 import { readFb2Text } from './read-fb2-text'
 import { matchesSource, sourceName } from './source-asset-naming'

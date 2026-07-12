@@ -1,6 +1,6 @@
 import type { ContentItem } from '@/types/content'
 
-/** A newspaper issue available to link a blog post to. */
+/** A magazine issue available to link a blog post to. */
 export interface IssueOption {
   readonly slug: string
   readonly title: string
@@ -34,13 +34,13 @@ const accumulate = (
 }
 
 /**
- * Reduce the newspaper content store to a deduped, alphabetised
+ * Reduce the magazine content store to a deduped, alphabetised
  * list of issues with the best human-readable title pulled from
  * any language-specific frontmatter. The blog-side picker uses
  * this so editors choose the issue from the same set the
- * newspaper TOC will then echo.
+ * magazine TOC will then echo.
  *
- * @param items All newspaper ContentItems from the store.
+ * @param items All magazine ContentItems from the store.
  * @returns Alphabetised available issues.
  */
 export const issueOptions = (

@@ -11,7 +11,7 @@ import { renderFirstPage } from './render-pdf-page'
  */
 const FIXTURE = join(
   process.cwd(),
-  'src/features/newspaper/__fixtures__/magazine-1-it.pdf'
+  'src/features/magazine/__fixtures__/magazine-1-it.pdf'
 )
 const raw = readFileSync(FIXTURE)
 const fixtureBytes: ArrayBuffer = raw.buffer.slice(

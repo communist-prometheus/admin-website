@@ -20,7 +20,7 @@ export const openPreview = async (page: Page): Promise<Locator> => {
  *
  * Issue #15 introduced a confirmation dialog that fires when saving
  * will publish to the live site (pages/common always, blog/positions/
- * newspaper only when `published: true`). Tests that just want to
+ * magazine only when `published: true`). Tests that just want to
  * exercise the save pipeline should wait for the dialog and click
  * Confirm, or proceed if no dialog shows (draft content).
  *

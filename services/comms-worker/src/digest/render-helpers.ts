@@ -1,13 +1,13 @@
-import type { NewspaperSelection } from '../newspaper/classify'
+import type { MagazineSelection } from '../magazine/classify'
 import type { Article } from '../rss/types'
 import type { Lang } from '../subscribers/types'
-import type { LangGroups, StampedArticle, StampedNewspapers } from './html'
+import type { LangGroups, StampedArticle, StampedMagazines } from './html'
 import { CHROME } from './i18n'
 import type { DigestChrome } from './i18n-types'
 import { appendUtm } from './utm'
 
-/** Empty selection used when a render has no newspaper issues. */
-export const EMPTY_NEWSPAPERS: NewspaperSelection = {
+/** Empty selection used when a render has no magazine issues. */
+export const EMPTY_MAGAZINES: MagazineSelection = {
   announcements: [],
   current: [],
 }
@@ -55,15 +55,15 @@ export const chromeFor = (messageLang: Lang): DigestChrome =>
   CHROME[messageLang]
 
 /**
- * UTM-stamp both arms of a newspaper selection for the campaign.
+ * UTM-stamp both arms of a magazine selection for the campaign.
  * @param selection Announcements + current issues.
  * @param campaign ISO-week campaign tag.
  * @returns Stamped announcements + current pairs.
  */
-export const stampNewspapers = (
-  selection: NewspaperSelection,
+export const stampMagazines = (
+  selection: MagazineSelection,
   campaign: string
-): StampedNewspapers => ({
+): StampedMagazines => ({
   announcements: selection.announcements.map(a => stampedFor(a, campaign)),
   current: selection.current.map(a => stampedFor(a, campaign)),
 })

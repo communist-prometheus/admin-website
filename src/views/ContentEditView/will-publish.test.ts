@@ -27,8 +27,8 @@ describe('willPublish', () => {
     expect(willPublish('positions', { published: true })).toBe(true)
   })
 
-  it('returns false for newspaper when published is off', () => {
-    expect(willPublish('newspaper', { published: false })).toBe(false)
+  it('returns false for magazine when published is off', () => {
+    expect(willPublish('magazine', { published: false })).toBe(false)
   })
 
   it('ignores non-boolean truthy "published" values', () => {

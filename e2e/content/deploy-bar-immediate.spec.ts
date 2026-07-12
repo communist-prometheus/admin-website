@@ -13,13 +13,13 @@ const openFirstArticle = async (
 }
 
 /**
- * Reported flow: "I save the newspaper, the 'something is deploying'
+ * Reported flow: "I save the magazine, the 'something is deploying'
  * badge does not appear in the UI until I refresh the page". Existing
  * suite (`save-deploy-flow.spec.ts > Deploy Bar After Save`) only
  * asserts the bar shows up within 15 s — that timeout is wide enough
  * to hide the actual bug, which is that the optimistic pending entry
  * is being eaten by an older workflow_run that shares the commit
- * message (`updated <title> in newspaper` is byte-identical on every
+ * message (`updated <title> in magazine` is byte-identical on every
  * re-edit of the same issue).
  *
  * This suite pins the *optimistic* contract:

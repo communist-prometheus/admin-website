@@ -5,7 +5,7 @@ import ListHeaderActions from './ListHeaderActions.vue'
 describe('ListHeaderActions — out-of-select-mode', () => {
   it('hides the Select button when there are no items to select', () => {
     /*
-     * Reported regression on /content/newspaper?lang=ru — list was
+     * Reported regression on /content/magazine?lang=ru — list was
      * empty ("No content found for en"), but the Select button was
      * still shown. Click did nothing visible (the list has no rows
      * to gain checkboxes). The Select affordance only earns its

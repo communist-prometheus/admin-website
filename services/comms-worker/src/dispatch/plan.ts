@@ -1,5 +1,5 @@
 import { computeDelta } from '../delta/calculator'
-import { classifyNewspapers } from '../newspaper/classify'
+import { classifyMagazines } from '../magazine/classify'
 import type { SendInput } from '../resend/types'
 import type { Subscriber } from '../subscribers/types'
 import { buildSendInput } from './build-input'
@@ -15,7 +15,7 @@ export type SendPlan = {
 /**
  * Decide whether one subscriber gets a digest this tick, and if so
  * build their Resend payload. Skip only when there is neither a new
- * article nor a freshly-published newspaper issue; a "current issue"
+ * article nor a freshly-published magazine issue; a "current issue"
  * reference alone never triggers a send (it rides at the foot).
  * @param ctx Static tick-wide context.
  * @param sub The recipient.
@@ -26,7 +26,7 @@ export const planOne = async (
   sub: Subscriber
 ): Promise<SendPlan | undefined> => {
   const delta = computeDelta(sub, ctx.byLang, ctx.cutoffMs)
-  const papers = classifyNewspapers(sub, ctx.newspapersByLang, ctx.cutoffMs)
+  const papers = classifyMagazines(sub, ctx.magazinesByLang, ctx.cutoffMs)
   if (delta.length === 0 && papers.announcements.length === 0)
     return undefined
   const count = delta.length + papers.announcements.length

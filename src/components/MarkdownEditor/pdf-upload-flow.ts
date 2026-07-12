@@ -19,7 +19,7 @@ const extractCover = async (
   file: File,
   lang: string
 ): Promise<File | undefined> => {
-  const m = await import('@/features/newspaper/extract-pdf-cover')
+  const m = await import('@/features/magazine/extract-pdf-cover')
   const raw = await m.extractPdfCover(file)
   return new File([raw], coverName(lang), { type: raw.type || 'image/png' })
 }

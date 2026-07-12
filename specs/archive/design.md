@@ -131,7 +131,7 @@ includes the filename to stay unique and avoid the `view/save/new` collisions.
     pages, mirroring blog; `DownloadLink`-style controls per file.
   - `src/integrations/archive-files/` build hook copying
     `archive/{slug}/assets/*` → `dist/archive/{slug}/assets/*` (model:
-    `newspaper-pdfs`), reading sizes at build time.
+    `magazine-pdfs`), reading sizes at build time.
   - i18n labels (`archiveTitle`, `openViewer`, `downloadFile`, …) + a feature
     flag in `settings/features.json`.
 

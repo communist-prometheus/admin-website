@@ -50,7 +50,7 @@ const onClick = (): void => {
    * On mobile the MobileMenu FAB (fixed, bottom-right, ~56px) would
    * otherwise sit on top of the Add button when the picker happens
    * to align with the viewport bottom — observed regression on
-   * /content/newspaper/edit at 375px. `--fab-safe-inline-end`
+   * /content/magazine/edit at 375px. `--fab-safe-inline-end`
    * resolves to 0 on desktop (FAB hidden) and the FAB gutter on
    * narrow screens.
    */

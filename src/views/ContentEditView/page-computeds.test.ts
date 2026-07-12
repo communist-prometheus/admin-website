@@ -28,9 +28,9 @@ describe('createPageComputeds.hasCover', () => {
     ).toBe(true)
   })
 
-  it('is true for newspaper (manual cover override)', () => {
+  it('is true for magazine (manual cover override)', () => {
     expect(
-      createPageComputeds('newspaper', 'x', fakeList()).hasCover.value
+      createPageComputeds('magazine', 'x', fakeList()).hasCover.value
     ).toBe(true)
   })
 

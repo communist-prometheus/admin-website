@@ -111,8 +111,8 @@ describe('isPendingMatched', () => {
   })
 
   /*
-   * Regression: the newspaper edit view always emits the commit
-   * message `updated <title> in newspaper`. Re-editing the same
+   * Regression: the magazine edit view always emits the commit
+   * message `updated <title> in magazine`. Re-editing the same
    * issue (e.g. uploading a PDF for another language) produces the
    * SAME message every time. The old run that completed a few
    * minutes ago carried that exact message. Without a timestamp
@@ -124,11 +124,11 @@ describe('isPendingMatched', () => {
   it('does NOT match a real run that already existed before the pending was created', () => {
     const before = '2026-04-16T10:00:00Z'
     const justNow = '2026-04-16T10:30:00Z'
-    setPendingDeploy('updated Magazine N 1 in newspaper')
+    setPendingDeploy('updated Magazine N 1 in magazine')
     const pending = requirePending()
     const overrideCreatedAt = { ...pending, createdAt: justNow }
     const oldRun = realBuild(
-      'updated Magazine N 1 in newspaper',
+      'updated Magazine N 1 in magazine',
       'deadbeef',
       before
     )
@@ -138,11 +138,11 @@ describe('isPendingMatched', () => {
   it('matches a real run that started AFTER the pending was created', () => {
     const justNow = '2026-04-16T10:30:00Z'
     const afterPending = '2026-04-16T10:30:08Z'
-    setPendingDeploy('updated Magazine N 1 in newspaper')
+    setPendingDeploy('updated Magazine N 1 in magazine')
     const pending = requirePending()
     const overrideCreatedAt = { ...pending, createdAt: justNow }
     const newRun = realBuild(
-      'updated Magazine N 1 in newspaper',
+      'updated Magazine N 1 in magazine',
       'cafef00d',
       afterPending
     )
@@ -158,11 +158,11 @@ describe('isPendingMatched', () => {
   it('matches a fresh run stamped within the clock-skew slack window', () => {
     const justNow = '2026-04-16T10:30:00Z'
     const slightlyEarlier = '2026-04-16T10:29:55Z'
-    setPendingDeploy('updated Magazine N 1 in newspaper')
+    setPendingDeploy('updated Magazine N 1 in magazine')
     const pending = requirePending()
     const overrideCreatedAt = { ...pending, createdAt: justNow }
     const skewedRun = realBuild(
-      'updated Magazine N 1 in newspaper',
+      'updated Magazine N 1 in magazine',
       'cafef00d',
       slightlyEarlier
     )

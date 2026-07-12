@@ -14,7 +14,7 @@ const dropFields = (
 /**
  * Seed a fresh draft for a brand-new lang. Frontmatter is mostly
  * entity-level (every translation shares title/category/etc.); the
- * exceptions live in `langScopedFields`. Newspaper passes
+ * exceptions live in `langScopedFields`. Magazine passes
  * `['image']` so each lang gets its own cover; blog and positions
  * pass nothing (cover stays shared).
  *

@@ -12,9 +12,9 @@ const emit = defineEmits<{
 }>()
 
 const store = useContentStore()
-const newspaper = store.itemsByType('newspaper')
+const magazine = store.itemsByType('magazine')
 
-const options = computed(() => issueOptions(newspaper.value))
+const options = computed(() => issueOptions(magazine.value))
 
 const onChange = (e: Event): void => {
   const raw = (e.target as HTMLSelectElement).value

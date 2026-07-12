@@ -1,7 +1,7 @@
 import type { AssetDisplay } from '@/composables/useAssets/types'
 
 /**
- * Per-lang filename for a newspaper source. Mirrors the convention
+ * Per-lang filename for a magazine source. Mirrors the convention
  * used by `findIssueAsset` in public-website.
  * @param slug - Issue slug
  * @param lang - Language code

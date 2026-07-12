@@ -1,16 +1,16 @@
 import { expect, expectVisible, test, visit } from '@prometheus/e2e-toolkit'
 
 /**
- * Regression — newspaper home build appears immediately after a save
+ * Regression — magazine home build appears immediately after a save
  * even when a historical run shares the commit message.
  *
- * Reported flow: "Upload a PDF for one language of a newspaper, click
+ * Reported flow: "Upload a PDF for one language of a magazine, click
  * save, navigate to home — the new build does not appear until you
  * refresh ~10 times."
  *
  * Root cause: `isPendingMatched` used pure substring matching on the
- * commit message. The newspaper edit always emits
- * `updated <title> in newspaper`, so an old completed run from a
+ * commit message. The magazine edit always emits
+ * `updated <title> in magazine`, so an old completed run from a
  * previous edit (same title) instantly matched the freshly-queued
  * pending and dropped it. The user had no signal until GitHub's API
  * eventually surfaced the real new run.
@@ -25,7 +25,7 @@ test.describe('Pending deploy survives stale runs with the same message', () => 
     page,
   }) => {
     const SAME_MESSAGE =
-      'updated Il giornale «Prometeo Comunista» #1 — Maggio 2026 in newspaper'
+      'updated Il giornale «Prometeo Comunista» #1 — Maggio 2026 in magazine'
 
     /* Intercept the GitHub workflow_runs poll and return a single
      * historical run from a month ago whose commit message is

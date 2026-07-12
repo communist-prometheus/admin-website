@@ -30,8 +30,8 @@ describe('hasBodyEditor', () => {
     expect(hasBodyEditor('positions', 'whatever')).toBe(true)
   })
 
-  it('hides body for newspaper (only list page exists, body unused)', () => {
-    expect(hasBodyEditor('newspaper', 'issue-01')).toBe(false)
+  it('hides body for magazine (only list page exists, body unused)', () => {
+    expect(hasBodyEditor('magazine', 'issue-01')).toBe(false)
   })
 
   it('hides body for any common slug (translation tables only)', () => {

@@ -6,7 +6,7 @@ import {
   blogFields,
   commonFieldsBySlug,
   labelsFields,
-  newspaperFields,
+  magazineFields,
   pageFieldsBySlug,
   positionsFields,
 } from './field-definitions'
@@ -21,7 +21,7 @@ const fieldsByContentType: Readonly<
   positions: positionsFields,
   pages: basePageFields,
   common: labelsFields,
-  newspaper: newspaperFields,
+  magazine: magazineFields,
   archive: archiveFields,
 }
 

@@ -51,7 +51,7 @@ export const buildCreateData = (
     }
   }
 
-  if (contentType === 'positions' || contentType === 'newspaper') {
+  if (contentType === 'positions' || contentType === 'magazine') {
     return { ...baseData, description: state.description }
   }
 

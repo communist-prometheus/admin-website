@@ -9,7 +9,7 @@ import { wirePageLog } from './helpers/page-log'
 import { bootRealmode, SLOW } from './helpers/realmode-page'
 import { resetSandboxBaseline } from './helpers/reset-baseline'
 
-const TARGET = '/content/newspaper/edit/issue-1'
+const TARGET = '/content/magazine/edit/issue-1'
 
 const titleField = (page: import('@prometheus/e2e-toolkit').Page) =>
   page.locator('input#fm-title')
@@ -33,7 +33,7 @@ test.beforeEach(async () => {
  * description so the user can translate over them; clicking an
  * existing lang must load that file's title. */
 
-test('lang-switch newspaper: existing → existing loads target file', async ({
+test('lang-switch magazine: existing → existing loads target file', async ({
   page,
 }) => {
   test.setTimeout(180_000)
@@ -58,7 +58,7 @@ test('lang-switch newspaper: existing → existing loads target file', async ({
   expect(await titleField(page).inputValue()).toBe('Песочный выпуск 1')
 })
 
-test('lang-switch newspaper: existing → dimmed preserves frontmatter', async ({
+test('lang-switch magazine: existing → dimmed preserves frontmatter', async ({
   page,
 }) => {
   test.setTimeout(180_000)
@@ -95,7 +95,7 @@ test('lang-switch newspaper: existing → dimmed preserves frontmatter', async (
  * "кликаю кликаю и нихуя не открывается"). Pair the visual-state
  * fix with an explicit "no XYZ version yet" hint below the tabs so
  * the user sees a concrete affordance instead of guessing. */
-test('lang-switch newspaper: active button drops the dimmed modifier + missing-translation hint shows', async ({
+test('lang-switch magazine: active button drops the dimmed modifier + missing-translation hint shows', async ({
   page,
 }) => {
   test.setTimeout(180_000)
@@ -130,7 +130,7 @@ test('lang-switch ru-only: switching to dimmed EN keeps the RU title', async ({
   test.setTimeout(180_000)
   wirePageLog(page, 'lang-switch-ruonly')
   await bootRealmode(page, 'lang-switch-ruonly')
-  await visit(page, '/content/newspaper/edit/ru-only-issue', SLOW)
+  await visit(page, '/content/magazine/edit/ru-only-issue', SLOW)
   await expectVisible(page, titleField(page), SLOW)
   await waitForCondition(
     page,

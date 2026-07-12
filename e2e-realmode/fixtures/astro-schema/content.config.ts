@@ -34,6 +34,7 @@ const blogSchema = (allowed: ReadonlySet<string>) =>
     publishDate: z.union([z.string(), z.date()]).optional(),
     image: imageStub(),
     lang: langEnum(allowed),
+    magazine: z.string().optional(),
     newspaper: z.string().optional(),
     archive: z.string().optional(),
   })
@@ -71,6 +72,7 @@ const commonSchema = (allowed: ReadonlySet<string>) =>
     blog: z.string().optional(),
     positions: z.string().optional(),
     manifest: z.string().optional(),
+    magazine: z.string().optional(),
     newspaper: z.string().optional(),
     archive: z.string().optional(),
     archiveTitle: z.string().optional(),
@@ -88,6 +90,32 @@ const commonSchema = (allowed: ReadonlySet<string>) =>
     tableOfContents: z.string().optional(),
   })
 
+const magazineSchema = (allowed: ReadonlySet<string>) =>
+  z.object({
+    title: z.string(),
+    description: z.string().optional(),
+    pubDate: z.union([z.string(), z.date()]).optional(),
+    published: z.boolean().optional(),
+    publishDate: z.union([z.string(), z.date()]).optional(),
+    image: imageStub(),
+    lang: langEnum(allowed),
+    articles: z.array(z.string()).optional(),
+  })
+
+/*
+ * TRANSITIONAL: the site keeps a `newspaper` collection over the
+ * pre-rename content folder while the content repo migrates. The mirror
+ * has to carry it too — the drift guard compares the collection sets
+ * both ways.
+ *
+ * It is byte-identical to magazineSchema, and it has to STAY spelled out:
+ * astro-schema-drift.spec.ts finds collections by scraping this file for
+ * `const (\w+)Schema = (allowed: ReadonlySet<string>) => z.object({`.
+ * Factoring the duplicate away makes the collection invisible to the very
+ * guard this file exists to feed. Goes away with the transitional
+ * collection itself.
+ */
+// oxlint-disable-next-line sonarjs/no-identical-functions
 const newspaperSchema = (allowed: ReadonlySet<string>) =>
   z.object({
     title: z.string(),
@@ -122,6 +150,7 @@ export const astroSchemas = (allowed: ReadonlySet<string>) => ({
   pages: pagesSchema(allowed),
   positions: positionsSchema(allowed),
   common: commonSchema(allowed),
+  magazine: magazineSchema(allowed),
   newspaper: newspaperSchema(allowed),
   archive: archiveSchema(allowed),
 })

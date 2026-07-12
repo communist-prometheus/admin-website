@@ -7,11 +7,11 @@ import { createPageComputeds } from './page-computeds'
 import { validateContentType } from './validate-type'
 
 /* Frontmatter keys that should NOT carry over when the user
- * switches to a brand-new language file. Newspaper issues store the
+ * switches to a brand-new language file. Magazine issues store the
  * cover per-lang (each translation publishes a different printed
  * issue with its own cover image), so `image` resets on switch. */
 const langScopedByType: Partial<Record<ContentType, readonly string[]>> = {
-  newspaper: ['image'],
+  magazine: ['image'],
 }
 
 /**

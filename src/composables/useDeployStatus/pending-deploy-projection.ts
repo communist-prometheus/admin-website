@@ -44,8 +44,8 @@ const PENDING_MATCH_SLACK_MS = 60_000
  * run. Match by commit message + timestamp floor — the admin
  * injects the same message into the content-repo commit that
  * triggers the workflow, but the message is NOT unique across
- * pushes (newspaper edit always emits `updated <title> in
- * newspaper`), so message alone matches old runs that happen to
+ * pushes (magazine edit always emits `updated <title> in
+ * magazine`), so message alone matches old runs that happen to
  * share the text. The timestamp floor restricts the match to runs
  * created at or after the pending was queued (modulo clock skew).
  * @param pending - Pending deploy candidate
