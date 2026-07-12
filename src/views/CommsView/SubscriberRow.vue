@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import type { Lang, Subscriber } from '@/stores/comms'
 import LangTogglePills from './LangTogglePills.vue'
+import LastSentEditor from './LastSentEditor.vue'
 import MessageLangSelect from './MessageLangSelect.vue'
 import { shortTickAt } from './run-history-ops'
 import SubscriberHistory from './SubscriberHistory.vue'
@@ -11,6 +12,7 @@ const props = defineProps<{ readonly entry: Subscriber }>()
 const emit = defineEmits<{
   langs: [id: number, langs: readonly Lang[]]
   messageLang: [id: number, messageLang: Lang]
+  lastSent: [id: number, lastSentAt: string | null]
   remove: [id: number]
 }>()
 
@@ -19,9 +21,9 @@ const onMessageLang = (next: Lang): void => {
 }
 
 /*
- * `lastSentAt` was already served by the worker and carried by the
- * schema — nothing ever wrote it (the dispatch only appended to the send
- * log) and nothing ever showed it. Both ends are fixed now.
+ * `lastSentAt` is this address's own "what is new" watermark: dispatch
+ * mails only articles published after it, a successful send moves it,
+ * and the editor can move it by hand from the panel below.
  */
 const lastSent = computed(() =>
   props.entry.lastSentAt === undefined
@@ -87,6 +89,10 @@ const toggleHistory = (): void => {
   </tr>
   <tr v-if="historyOpen" class="history-row">
     <td colspan="6">
+      <LastSentEditor
+        :entry="entry"
+        @save="(id, at) => emit('lastSent', id, at)"
+      />
       <SubscriberHistory :subscriber-id="entry.id" />
     </td>
   </tr>

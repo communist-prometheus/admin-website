@@ -54,6 +54,7 @@ onMounted(() => {
       :subscribers="visibleSubscribers"
       @langs="h.onLangs"
       @message-lang="h.onMessageLang"
+      @last-sent="h.onLastSent"
       @remove="requestRemove"
     />
     <p

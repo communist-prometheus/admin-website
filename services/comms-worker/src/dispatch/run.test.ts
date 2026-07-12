@@ -118,9 +118,14 @@ describe('runDispatch — empty list', () => {
 })
 
 describe('runDispatch — empty delta', () => {
-  it('skips subscribers when nothing new exists past the global cutoff', async () => {
-    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
-    await settings.setCutoffAt('2026-06-07T00:00:00.000Z')
+  /*
+   * The watermark is per address now: what counts as "new" is measured
+   * against that row's own last_sent_at, not a boundary shared by the
+   * whole list.
+   */
+  it('skips a subscriber when nothing is new past their own watermark', async () => {
+    const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await subs.setLastSentAt(s.id, '2026-06-07T00:00:00.000Z')
     const rss = buildRss({
       ru: [article({ guid: 'a', pubDate: '2026-06-01T00:00:00.000Z' })],
     })
@@ -128,8 +133,20 @@ describe('runDispatch — empty delta', () => {
     const summary = await runDispatch(baseDeps(rss.fn, resend.client))
     expect(summary).toMatchObject({ sent: 0, failed: 0, skipped: 1 })
     expect(resend.sends).toHaveLength(0)
-    // cutoff is NOT advanced on a tick that sent nothing.
-    expect(await settings.getCutoffAt()).toBe('2026-06-07T00:00:00.000Z')
+  })
+
+  it('still mails an address whose own watermark is behind the list', async () => {
+    const stale = await subs.insert({ email: 'stale@b.c', langs: ['ru'] })
+    const fresh = await subs.insert({ email: 'fresh@b.c', langs: ['ru'] })
+    await subs.setLastSentAt(stale.id, '2026-06-01T00:00:00.000Z')
+    await subs.setLastSentAt(fresh.id, '2026-06-07T00:00:00.000Z')
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
+    })
+    const resend = buildResend(() => ({ ok: true, id: 'r' }))
+    const summary = await runDispatch(baseDeps(rss.fn, resend.client))
+    expect(summary).toMatchObject({ sent: 1, failed: 0, skipped: 1 })
+    expect(resend.sends[0]?.to).toBe('stale@b.c')
   })
 })
 
@@ -166,8 +183,8 @@ describe('runDispatch — happy path', () => {
 
 describe('runDispatch — new magazine issue with no new articles', () => {
   it('sends when only a fresh issue exists past the cutoff', async () => {
-    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
-    await settings.setCutoffAt('2026-06-04T00:00:00.000Z')
+    const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await subs.setLastSentAt(s.id, '2026-06-04T00:00:00.000Z')
     const rss = buildRss({
       ru: [article({ guid: 'a', pubDate: '2026-06-01T00:00:00.000Z' })],
     })
@@ -187,8 +204,8 @@ describe('runDispatch — new magazine issue with no new articles', () => {
   })
 
   it('skips when the only issue predates the cutoff and nothing is new', async () => {
-    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
-    await settings.setCutoffAt('2026-06-04T00:00:00.000Z')
+    const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await subs.setLastSentAt(s.id, '2026-06-04T00:00:00.000Z')
     const rss = buildRss({
       ru: [article({ guid: 'a', pubDate: '2026-06-01T00:00:00.000Z' })],
     })
@@ -366,8 +383,8 @@ describe('runDispatch — run report', () => {
 
   /* Silence is what hid the breakage — a tick that reaches nobody must still speak. */
   it('reports even when the tick had nothing to send', async () => {
-    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
-    await settings.setCutoffAt('2026-06-07T00:00:00.000Z')
+    const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await subs.setLastSentAt(s.id, '2026-06-07T00:00:00.000Z')
     const rss = buildRss({
       ru: [article({ guid: 'a', pubDate: '2026-06-01T00:00:00.000Z' })],
     })
@@ -402,7 +419,8 @@ describe('runDispatch — last_sent_at', () => {
    */
   it('stamps the subscriber when the digest goes out', async () => {
     const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
-    expect(s.lastSentAt).toBeUndefined()
+    /* Seeded at signup — the watermark is never null for a new row. */
+    expect(s.lastSentAt).toBe('2026-05-01T00:00:00.000Z')
     const rss = buildRss({
       ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
     })
@@ -424,7 +442,30 @@ describe('runDispatch — last_sent_at', () => {
     )
     await runDispatch(baseDeps(rss.fn, resend.client))
     const after = await subs.findById(s.id)
-    expect(after?.lastSentAt).toBeUndefined()
+    /* Watermark untouched, so the next tick replays exactly what they missed. */
+    expect(after?.lastSentAt).toBe('2026-05-01T00:00:00.000Z')
+  })
+})
+
+describe('subscriber watermark — seeding', () => {
+  /*
+   * Without a seed a brand-new address would fall back to the shared
+   * cutoff and be mailed everything the list has already seen since then.
+   */
+  it('seeds a new address with the shared cutoff', async () => {
+    await settings.setCutoffAt('2026-06-04T00:00:00.000Z')
+    const seeded = createRepo({
+      db: makeTestD1(),
+      now: () => '2026-05-01T00:00:00.000Z',
+      cutoffAt: () => settings.getCutoffAt(),
+    })
+    const s = await seeded.insert({ email: 'new@b.c', langs: ['ru'] })
+    expect(s.lastSentAt).toBe('2026-06-04T00:00:00.000Z')
+  })
+
+  it('falls back to the signup moment when no cutoff is set yet', async () => {
+    const s = await subs.insert({ email: 'first@b.c', langs: ['ru'] })
+    expect(s.lastSentAt).toBe('2026-05-01T00:00:00.000Z')
   })
 })
 

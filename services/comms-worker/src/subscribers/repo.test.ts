@@ -17,7 +17,12 @@ describe('SubscriberRepo.insert', () => {
     expect(s.langs).toEqual(['ru'])
     expect(s.status).toBe('active')
     expect(s.createdAt).toBe('2026-06-03T08:00:00.000Z')
-    expect(s.lastSentAt).toBeUndefined()
+    /*
+     * `last_sent_at` is the address's own "what is new" watermark, so a
+     * new row is seeded with one (the shared cutoff when the caller
+     * supplies it, else the signup moment) rather than left null.
+     */
+    expect(s.lastSentAt).toBe('2026-06-03T08:00:00.000Z')
   })
 
   it('throws DuplicateError when an active row with that email exists', async () => {

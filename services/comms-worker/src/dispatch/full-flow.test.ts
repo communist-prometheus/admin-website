@@ -112,6 +112,18 @@ describe('full-flow happy path (T7.4)', () => {
     expect(add.status).toBe(201)
     const sub = (await add.json()) as { id: number; email: string }
 
+    /*
+     * A new address is seeded with its own watermark at signup, so it is
+     * NOT mailed articles published before it existed. Wind it back by
+     * hand — which is also how an editor replays a digest for one
+     * address.
+     */
+    const rewind = await adminFetch(`/api/subscribers/${sub.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ lastSentAt: '2026-06-01T00:00:00.000Z' }),
+    })
+    expect(rewind.status).toBe(200)
+
     const put = await adminFetch('/api/schedule', {
       method: 'PUT',
       body: JSON.stringify({ cron: '* * * * *', timezone: 'Etc/UTC' }),
@@ -176,6 +188,11 @@ describe('full-flow happy path (T7.4)', () => {
       }),
     })
     const sub = (await add.json()) as { id: number }
+    /* See above: wind the fresh address's watermark back so it has mail. */
+    await adminFetch(`/api/subscribers/${sub.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ lastSentAt: '2026-06-01T00:00:00.000Z' }),
+    })
     await adminFetch('/api/schedule', {
       method: 'PUT',
       body: JSON.stringify({ cron: '* * * * *', timezone: 'Etc/UTC' }),

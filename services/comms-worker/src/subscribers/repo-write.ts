@@ -38,6 +38,28 @@ export const markSent = async (
   await db.prepare(SQL_MARK_SENT).bind(sentAtIso, id).run()
 }
 
+/**
+ * Move one address's watermark by hand. `last_sent_at` is what the
+ * dispatch measures "new" against, so this is how the editor replays a
+ * digest for a single address (wind it back) or skips one forward.
+ * @param db D1 database binding.
+ * @param id Subscriber id.
+ * @param iso New watermark, or undefined to clear it (falls back to the
+ * shared cutoff).
+ * @returns The updated row, or undefined when the id is unknown.
+ */
+export const setLastSentAt = async (
+  db: D1Database,
+  id: number,
+  iso: string | undefined
+): Promise<Subscriber | undefined> => {
+  await db
+    .prepare(SQL_MARK_SENT)
+    .bind(iso ?? null, id)
+    .run()
+  return findById(db, id)
+}
+
 /** Hard-delete one row by id, returning `true` iff something was deleted. */
 export const removeSubscriber = async (
   db: D1Database,

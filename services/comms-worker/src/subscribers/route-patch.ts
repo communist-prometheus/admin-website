@@ -17,10 +17,17 @@ const applyPatch = async (
     patch.messageLang !== undefined
       ? await repo.updateMessageLang(id, patch.messageLang)
       : undefined
-  return afterMsg ?? afterLangs
+  const afterSent =
+    patch.lastSentAt !== undefined
+      ? await repo.setLastSentAt(id, patch.lastSentAt ?? undefined)
+      : undefined
+  return afterSent ?? afterMsg ?? afterLangs
 }
 
-/** PATCH /api/subscribers/:id — update `langs` and/or `messageLang`. */
+/**
+ * PATCH /api/subscribers/:id — update `langs`, `messageLang` and/or
+ * `lastSentAt` (the address's own watermark; `null` clears it).
+ */
 export const handlePatch = async (
   c: Context,
   repo: SubscriberRepo

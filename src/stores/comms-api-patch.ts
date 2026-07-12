@@ -36,3 +36,17 @@ export const apiUpdateMessageLang = (
   id: number,
   messageLang: Lang
 ): Promise<Subscriber> => patchSubscriber(id, { messageLang })
+
+/**
+ * PATCH /api/subscribers/:id — move this address's own "what is new"
+ * watermark. The dispatch measures new articles against it, so winding it
+ * back replays a digest for this address alone; `null` clears it and drops
+ * the address back to the shared cutoff.
+ * @param id Subscriber id.
+ * @param lastSentAt New watermark (ISO-8601), or null to clear.
+ * @returns The updated subscriber row.
+ */
+export const apiUpdateLastSent = (
+  id: number,
+  lastSentAt: string | null
+): Promise<Subscriber> => patchSubscriber(id, { lastSentAt })

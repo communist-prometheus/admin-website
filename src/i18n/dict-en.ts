@@ -18,7 +18,7 @@ export const EN = {
     },
     cutoff: {
       title: 'Cutoff watermark',
-      lead: 'Single shared "last run at" moment. Articles published after it count as new. Auto-advances on every successful tick; can be moved manually.',
+      lead: 'Seed for new addresses, and the fallback for any that has never been mailed. What each subscriber actually gets is measured against their OWN Last sent stamp — edit that on the Emails tab to replay or skip a digest for one address.',
     },
     subscribers: {
       title: 'Subscribers',

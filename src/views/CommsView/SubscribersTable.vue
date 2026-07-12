@@ -6,6 +6,7 @@ defineProps<{ readonly subscribers: readonly Subscriber[] }>()
 const emit = defineEmits<{
   langs: [id: number, langs: readonly Lang[]]
   messageLang: [id: number, messageLang: Lang]
+  lastSent: [id: number, lastSentAt: string | null]
   remove: [id: number]
 }>()
 </script>
@@ -33,6 +34,7 @@ const emit = defineEmits<{
         :entry="entry"
         @langs="(id, l) => emit('langs', id, l)"
         @message-lang="(id, ml) => emit('messageLang', id, ml)"
+        @last-sent="(id, at) => emit('lastSent', id, at)"
         @remove="id => emit('remove', id)"
       />
     </tbody>
