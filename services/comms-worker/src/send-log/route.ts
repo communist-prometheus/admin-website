@@ -1,6 +1,7 @@
 import type { Context, Hono } from 'hono'
 import type { Bindings } from '../bindings'
 import { listForSubscriber } from './by-subscriber'
+import { listFailedRecipients } from './failed'
 import { listRecentWithEmail } from './with-email'
 
 type App = Hono<{ Bindings: object; Variables: object }>
@@ -36,6 +37,11 @@ const handle = async (c: Context): Promise<Response> => {
   return c.json({ runs })
 }
 
+const handleFailed = async (c: Context): Promise<Response> => {
+  const recipients = await listFailedRecipients((c.env as Bindings).DB)
+  return c.json({ recipients })
+}
+
 const handleForSubscriber = async (c: Context): Promise<Response> => {
   const id = Number(c.req.param('id'))
   if (!Number.isInteger(id) || id <= 0)
@@ -48,15 +54,19 @@ const handleForSubscriber = async (c: Context): Promise<Response> => {
  * Mount the send-log routes:
  * - `GET /api/runs?limit=N&offset=M` — a page of send_log rows joined
  *   with the subscriber email, newest first (R5.1).
+ * - `GET /api/runs/failed` — the addresses a "resend to failed" run
+ *   would target: active, and their most recent attempt failed.
  * - `GET /api/subscribers/:id/runs` — the full send history of one
  *   address, so the editor can see what that recipient actually got.
  *
- * Both sit behind the `/api/*` `requireSession` middleware mounted in
+ * All sit behind the `/api/*` `requireSession` middleware mounted in
  * `app.ts`, so callers must present a valid SSO session cookie.
  * @param app Hono app, already wrapped with `requireSession` for /api/*.
  * @returns The same app for chaining.
  */
 export const mountRunsRoute = (app: App): App => {
+  /* Registered before `/api/runs` would ever shadow it. */
+  app.get('/api/runs/failed', handleFailed)
   app.get('/api/runs', handle)
   app.get('/api/subscribers/:id/runs', handleForSubscriber)
   return app

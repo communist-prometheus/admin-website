@@ -30,3 +30,22 @@ export const RunLogListSchema = Schema.Struct({
 
 /** List response type. */
 export type RunLogList = typeof RunLogListSchema.Type
+
+/** An active address whose most recent send attempt failed. */
+export const FailedRecipientSchema = Schema.Struct({
+  id: Schema.Number,
+  email: Schema.String,
+  tickAt: Schema.String,
+  error: Schema.UndefinedOr(Schema.String),
+})
+
+/** Row type derived from the schema. */
+export type FailedRecipient = typeof FailedRecipientSchema.Type
+
+/** Wrapper around the `GET /api/runs/failed` payload. */
+export const FailedRecipientListSchema = Schema.Struct({
+  recipients: Schema.Array(FailedRecipientSchema),
+})
+
+/** List response type. */
+export type FailedRecipientList = typeof FailedRecipientListSchema.Type
