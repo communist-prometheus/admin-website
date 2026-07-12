@@ -35,6 +35,7 @@ const blogSchema = (allowed: ReadonlySet<string>) =>
     image: imageStub(),
     lang: langEnum(allowed),
     magazine: z.string().optional(),
+    newspaper: z.string().optional(),
     archive: z.string().optional(),
   })
 
@@ -72,6 +73,7 @@ const commonSchema = (allowed: ReadonlySet<string>) =>
     positions: z.string().optional(),
     manifest: z.string().optional(),
     magazine: z.string().optional(),
+    newspaper: z.string().optional(),
     archive: z.string().optional(),
     archiveTitle: z.string().optional(),
     viewArchive: z.string().optional(),
@@ -89,6 +91,24 @@ const commonSchema = (allowed: ReadonlySet<string>) =>
   })
 
 const magazineSchema = (allowed: ReadonlySet<string>) =>
+  z.object({
+    title: z.string(),
+    description: z.string().optional(),
+    pubDate: z.union([z.string(), z.date()]).optional(),
+    published: z.boolean().optional(),
+    publishDate: z.union([z.string(), z.date()]).optional(),
+    image: imageStub(),
+    lang: langEnum(allowed),
+    articles: z.array(z.string()).optional(),
+  })
+
+/*
+ * TRANSITIONAL: the site keeps a `newspaper` collection over the
+ * pre-rename content folder while the content repo migrates. The mirror
+ * has to carry it too — the drift guard compares the collection sets
+ * both ways.
+ */
+const newspaperSchema = (allowed: ReadonlySet<string>) =>
   z.object({
     title: z.string(),
     description: z.string().optional(),
@@ -123,5 +143,6 @@ export const astroSchemas = (allowed: ReadonlySet<string>) => ({
   positions: positionsSchema(allowed),
   common: commonSchema(allowed),
   magazine: magazineSchema(allowed),
+  newspaper: newspaperSchema(allowed),
   archive: archiveSchema(allowed),
 })

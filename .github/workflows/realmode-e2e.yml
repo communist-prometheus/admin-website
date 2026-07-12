@@ -42,6 +42,18 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
 
+      # `sandbox:reset` only rewinds the sandbox branch to the baseline TAG —
+      # it does not rebuild that tag from the fixtures. So a fixture change
+      # (renaming e2e-realmode/fixtures/baseline/newspaper/ → magazine/) was a
+      # silent no-op: the suite kept running against the OLD baseline and every
+      # spec died on "File not found: magazine/issue-1/index.en.md". Re-seed the
+      # baseline from the fixtures on every run so what the tests assert and
+      # what the sandbox holds can never drift apart again.
+      - name: Re-seed sandbox baseline from fixtures
+        env:
+          GITHUB_E2E_KEY: ${{ secrets.GH_E2E_PAT }}
+        run: bun run sandbox:setup -- --force
+
       - name: Reset sandbox to baseline
         env:
           GITHUB_E2E_KEY: ${{ secrets.GH_E2E_PAT }}
