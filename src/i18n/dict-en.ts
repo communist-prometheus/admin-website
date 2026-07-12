@@ -5,6 +5,11 @@ export const EN = {
     features: 'Features',
   },
   comms: {
+    tabs: {
+      settings: 'Settings',
+      subscribers: 'Emails',
+      log: 'Log',
+    },
     title: 'Newsletter',
     lead: 'Subscribers receive a digest of new articles in the languages they pick. The schedule and cutoff are shared across the list.',
     schedule: {
@@ -24,8 +29,10 @@ export const EN = {
       lead: "Owner-only — fires the dispatch loop immediately for testing. Doesn't modify the saved schedule.",
     },
     runHistory: {
-      title: 'Run history',
-      lead: 'Last twenty dispatch attempts. Click a failed row to reveal its error message.',
+      title: 'Send log',
+      lead: 'One row per recipient per run. Click a failed row to reveal its error. For a single address, open its Last sent cell on the Emails tab.',
+      more: 'Load older',
+      loading: 'Loading…',
     },
   },
   features: {

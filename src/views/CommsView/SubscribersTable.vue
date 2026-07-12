@@ -22,6 +22,7 @@ const emit = defineEmits<{
         <th scope="col" class="th-langs">Languages</th>
         <th scope="col" class="th-msg-lang">Message</th>
         <th scope="col" class="th-status">Status</th>
+        <th scope="col" class="th-sent">Last sent</th>
         <th scope="col" class="th-actions"><span class="sr-only">Actions</span></th>
       </tr>
     </thead>
@@ -71,23 +72,27 @@ const emit = defineEmits<{
 }
 
 .th-email {
-  width: 30%;
+  width: 26%;
 }
 
 .th-langs {
-  width: 28%;
+  width: 22%;
 }
 
 .th-msg-lang {
-  width: 18%;
+  width: 14%;
 }
 
 .th-status {
-  width: 16%;
+  width: 13%;
+}
+
+.th-sent {
+  width: 18%;
 }
 
 .th-actions {
-  width: 8%;
+  width: 7%;
   text-align: right;
 }
 

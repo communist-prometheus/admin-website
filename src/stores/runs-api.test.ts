@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RunLog } from '@/validation/schemas/run-log'
-import { apiListRuns } from './runs-api'
+import {
+  apiListRuns,
+  apiListSubscriberRuns,
+  RUNS_PAGE_SIZE,
+} from './runs-api'
 
 const sample: RunLog = {
   id: 1,
@@ -31,22 +35,37 @@ const ok = (body: unknown) =>
   })
 
 describe('apiListRuns', () => {
-  it('GETs /api/runs without limit by default and parses the list', async () => {
+  it('asks for a full page by default and parses the list', async () => {
     mockFetch.mockResolvedValue(ok({ runs: [sample] }))
     const res = await apiListRuns()
     expect(mockFetch).toHaveBeenCalledOnce()
     const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit]
-    expect(url).toMatch(/\/api\/runs$/)
+    /*
+     * The old default asked for 20 rows. One tick writes one row per
+     * recipient, so 20 rows did not even cover a single run — which is
+     * why the log looked almost empty.
+     */
+    expect(url.endsWith(`/api/runs?limit=${RUNS_PAGE_SIZE}&offset=0`)).toBe(
+      true
+    )
     expect(init.credentials).toBe('include')
     expect(res.runs).toHaveLength(1)
     expect(res.runs[0]?.email).toBe('reader@example.test')
   })
 
-  it('appends ?limit=N when caller passes a limit', async () => {
+  it('pages back through history with limit + offset', async () => {
     mockFetch.mockResolvedValue(ok({ runs: [] }))
-    await apiListRuns(50)
+    await apiListRuns(50, 200)
     const [url] = mockFetch.mock.calls[0] as [string, RequestInit]
-    expect(url).toMatch(/\/api\/runs\?limit=50$/)
+    expect(url).toMatch(/\/api\/runs\?limit=50&offset=200$/)
+  })
+
+  it('fetches the send history of one address', async () => {
+    mockFetch.mockResolvedValue(ok({ runs: [sample] }))
+    const res = await apiListSubscriberRuns(7)
+    const [url] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(url).toMatch(/\/api\/subscribers\/7\/runs$/)
+    expect(res.runs[0]?.status).toBe('sent')
   })
 
   it('bubbles a readable error on non-2xx', async () => {

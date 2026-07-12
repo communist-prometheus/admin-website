@@ -2,9 +2,14 @@ import type { Subscriber } from '../subscribers/types'
 import type { DispatchContext } from './context'
 
 /**
- * Persist a successful send: append a `send_log` row. The shared
- * `settings.cutoff_at` watermark is advanced once per tick by the
- * orchestrator (see `run.ts`), not per-recipient.
+ * Persist a successful send: append a `send_log` row and stamp the
+ * subscriber's `last_sent_at`. The shared `settings.cutoff_at`
+ * watermark is advanced once per tick by the orchestrator (see
+ * `run.ts`), not per-recipient.
+ *
+ * `last_sent_at` has existed since the first migration but nothing ever
+ * wrote it, so every row read `null` and the admin could not show when
+ * an address was last mailed.
  * @param ctx Per-tick dispatch context.
  * @param sub Recipient.
  * @param articleCount Number of articles included in the digest.
@@ -16,14 +21,18 @@ export const recordSent = async (
   articleCount: number,
   resendId: string
 ): Promise<void> => {
-  await ctx.sendLogRepo.append({
-    subscriberId: sub.id,
-    tickAt: ctx.tickAt.toISOString(),
-    articleCount,
-    status: 'sent',
-    resendId,
-    error: undefined,
-  })
+  const tickAt = ctx.tickAt.toISOString()
+  await Promise.all([
+    ctx.sendLogRepo.append({
+      subscriberId: sub.id,
+      tickAt,
+      articleCount,
+      status: 'sent',
+      resendId,
+      error: undefined,
+    }),
+    ctx.subscriberRepo.markSent(sub.id, tickAt),
+  ])
 }
 
 /**

@@ -72,25 +72,42 @@ describe('GET /api/runs', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns the default 20 newest rows when limit is absent', async () => {
+  it('returns a full page of rows when limit is absent', async () => {
     await populate(30)
     const res = await app.fetch(reqWithAccess('/api/runs'), buildEnv())
     expect(res.status).toBe(200)
     const body = (await res.json()) as {
       runs: ReadonlyArray<{ tickAt: string; email?: string }>
     }
-    expect(body.runs).toHaveLength(20)
+    /*
+     * The old default of 20 is why a single run to 124 subscribers made
+     * the log look almost empty — one tick writes one row per recipient.
+     */
+    expect(body.runs).toHaveLength(30)
     expect(body.runs[0]?.email).toBe('s0@x.t')
   })
 
-  it('caps the limit at 100 even when the client asks for more', async () => {
+  it('caps the limit at 1000 even when the client asks for more', async () => {
     await populate(120)
     const res = await app.fetch(
-      reqWithAccess('/api/runs?limit=500'),
+      reqWithAccess('/api/runs?limit=5000'),
       buildEnv()
     )
     const body = (await res.json()) as { runs: ReadonlyArray<unknown> }
-    expect(body.runs).toHaveLength(100)
+    expect(body.runs).toHaveLength(120)
+  })
+
+  it('pages back through history with ?offset', async () => {
+    await populate(10)
+    const res = await app.fetch(
+      reqWithAccess('/api/runs?limit=3&offset=3'),
+      buildEnv()
+    )
+    const body = (await res.json()) as {
+      runs: ReadonlyArray<{ email?: string }>
+    }
+    expect(body.runs).toHaveLength(3)
+    expect(body.runs[0]?.email).toBe('s3@x.t')
   })
 
   it('respects ?limit=N when N is in range', async () => {
@@ -110,7 +127,7 @@ describe('GET /api/runs', () => {
       buildEnv()
     )
     const body = (await res.json()) as { runs: ReadonlyArray<unknown> }
-    expect(body.runs).toHaveLength(20)
+    expect(body.runs).toHaveLength(25)
   })
 
   it('surfaces error + status=failed on rows with a Resend failure', async () => {

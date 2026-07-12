@@ -150,8 +150,37 @@ describe('createResendClient.sendBatch', () => {
   it('fails terminally without retry on a 422', async () => {
     fetchFn.mockResolvedValue(new Response('bad', { status: 422 }))
     const r = await build().sendBatch(inputs)
-    expect(r).toEqual({ ok: false, error: 'resend 422' })
+    /*
+     * `definitive` marks a rejection Resend actually made — nothing was
+     * sent — so the caller may safely retry the chunk one email at a
+     * time and pin the failure on the address that caused it.
+     */
+    expect(r).toEqual({ ok: false, error: 'resend 422', definitive: true })
     expect(fetchFn).toHaveBeenCalledOnce()
+  })
+
+  /*
+   * A 100-email batch takes Resend longer than the backoff, so the retry
+   * used to re-send the same idempotency key while the original was
+   * still in flight; Resend answered 409, it was classified terminal,
+   * and the 2026-07-11 dispatch dropped 100 of 123 recipients. 409 is
+   * transient: back off and let the original settle, and Resend replays
+   * its recorded response.
+   */
+  it('retries the 409 idempotency conflict instead of writing the batch off', async () => {
+    fetchFn
+      .mockResolvedValueOnce(new Response('conflict', { status: 409 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ data: [{ id: 're_1' }, { id: 're_2' }] }),
+          {
+            status: 200,
+          }
+        )
+      )
+    const r = await build().sendBatch(inputs)
+    expect(r).toEqual({ ok: true, ids: ['re_1', 're_2'] })
+    expect(fetchFn).toHaveBeenCalledTimes(2)
   })
 
   it('retries once on 429 then succeeds', async () => {
@@ -174,22 +203,34 @@ describe('createResendClient.sendBatch', () => {
   })
 
   it('keeps the real status when a retryable failure is exhausted', async () => {
-    fetchFn
-      .mockResolvedValueOnce(new Response('boom', { status: 503 }))
-      .mockResolvedValueOnce(new Response('boom', { status: 503 }))
+    fetchFn.mockResolvedValue(new Response('boom', { status: 503 }))
     const r = await build().sendBatch(inputs)
-    expect(r).toEqual({ ok: false, error: 'resend 503 (retry exhausted)' })
+    /*
+     * Not `definitive`: the batch may or may not have landed, so the
+     * caller must NOT re-send it — the next tick replays it instead
+     * (the cutoff does not advance on a failed tick).
+     */
+    expect(r).toEqual({
+      ok: false,
+      error: 'resend 503 (retry exhausted)',
+      definitive: false,
+    })
   })
 
-  it('reports a network error after both attempts reject', async () => {
-    fetchFn
-      .mockRejectedValueOnce(new Error('econn'))
-      .mockRejectedValueOnce(new Error('econn'))
+  it('backs off exponentially so a slow batch can settle', async () => {
+    fetchFn.mockResolvedValue(new Response('boom', { status: 503 }))
+    await build().sendBatch(inputs)
+    expect(sleep.mock.calls.map(c => c[0])).toEqual([2000, 4000, 8000])
+  })
+
+  it('reports a network error once the attempts are exhausted', async () => {
+    fetchFn.mockRejectedValue(new Error('econn'))
     const r = await build().sendBatch(inputs)
     expect(r).toEqual({
       ok: false,
       error: 'resend network (retry exhausted)',
+      definitive: false,
     })
-    expect(fetchFn).toHaveBeenCalledTimes(2)
+    expect(fetchFn).toHaveBeenCalledTimes(4)
   })
 })

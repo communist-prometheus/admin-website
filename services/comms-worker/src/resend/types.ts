@@ -18,10 +18,21 @@ export type SendResult =
  * Outcome of one {@link ResendClient.sendBatch} call. The Resend batch
  * endpoint is all-or-nothing per request: on success every email was
  * accepted (ids in input order); on failure none went out.
+ *
+ * `definitive` says whether Resend actually rejected the request (a
+ * terminal 4xx — nothing was sent, and one bad payload can poison the
+ * whole batch) as opposed to the attempts running out on a transient
+ * error, where the batch may or may not have landed. Only a definitive
+ * rejection is safe to retry one email at a time; re-sending after an
+ * exhausted transient failure risks duplicates.
  */
 export type BatchResult =
   | { readonly ok: true; readonly ids: ReadonlyArray<string> }
-  | { readonly ok: false; readonly error: string }
+  | {
+      readonly ok: false
+      readonly error: string
+      readonly definitive: boolean
+    }
 
 /** Thin send client facade — single + batched transactional email. */
 export type ResendClient = {

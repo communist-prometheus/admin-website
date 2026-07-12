@@ -33,30 +33,43 @@ const buildRss = (
   return { fn, calls }
 }
 
+/*
+ * Every tick now also mails a run report back to the newsletter's own
+ * From address. It is the one send whose recipient IS the sender, so
+ * park it in its own bucket — `sends` stays "digests that went to
+ * subscribers", which is what the assertions below are about.
+ */
 const buildResend = (
   reply: (input: SendInput) => SendResult
 ): {
   client: ResendClient
   sends: SendInput[]
+  reports: SendInput[]
   batchSizes: number[]
+  batchKeys: (string | undefined)[]
 } => {
   const sends: SendInput[] = []
+  const reports: SendInput[] = []
   const batchSizes: number[] = []
+  const batchKeys: (string | undefined)[] = []
   return {
     sends,
+    reports,
     batchSizes,
+    batchKeys,
     client: {
       send: async input => {
-        sends.push(input)
+        ;(input.to === FROM ? reports : sends).push(input)
         return reply(input)
       },
-      sendBatch: async inputs => {
+      sendBatch: async (inputs, idempotencyKey) => {
         batchSizes.push(inputs.length)
+        batchKeys.push(idempotencyKey)
         for (const i of inputs) sends.push(i)
         const replies = inputs.map(reply)
         const firstFail = replies.find(r => !r.ok)
         return firstFail !== undefined && !firstFail.ok
-          ? { ok: false, error: firstFail.error }
+          ? { ok: false, error: firstFail.error, definitive: true }
           : { ok: true, ids: replies.map(r => (r.ok ? r.id : '')) }
       },
     },
@@ -332,5 +345,103 @@ describe('runDispatch — retention sweep', () => {
     })
     const logs = await log.listRecent(10)
     expect(logs.map(l => l.resendId)).not.toContain('old')
+  })
+})
+
+describe('runDispatch — run report', () => {
+  it('mails a report back to the sender on every tick that fires', async () => {
+    const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
+    })
+    const resend = buildResend(() => ({ ok: true, id: 'r' }))
+    await runDispatch(baseDeps(rss.fn, resend.client))
+    expect(resend.reports).toHaveLength(1)
+    const report = resend.reports[0]
+    expect(report?.to).toBe(FROM)
+    expect(report?.subject).toContain('1 sent')
+    expect(report?.text).toContain('a@b.c')
+    expect(s.id).toBeGreaterThan(0)
+  })
+
+  /* Silence is what hid the breakage — a tick that reaches nobody must still speak. */
+  it('reports even when the tick had nothing to send', async () => {
+    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    await settings.setCutoffAt('2026-06-07T00:00:00.000Z')
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-01T00:00:00.000Z' })],
+    })
+    const resend = buildResend(() => ({ ok: true, id: 'r' }))
+    await runDispatch(baseDeps(rss.fn, resend.client))
+    expect(resend.reports).toHaveLength(1)
+    expect(resend.reports[0]?.subject).toContain('0 sent')
+  })
+
+  it('names the failed recipients in the report', async () => {
+    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
+    })
+    const resend = buildResend(input =>
+      input.to === FROM
+        ? { ok: true, id: 'r' }
+        : { ok: false, error: 'resend 422' }
+    )
+    await runDispatch(baseDeps(rss.fn, resend.client))
+    const report = resend.reports[0]
+    expect(report?.subject).toContain('FAILED')
+    expect(report?.text).toContain('a@b.c')
+    expect(report?.text).toContain('resend 422')
+  })
+})
+
+describe('runDispatch — last_sent_at', () => {
+  /*
+   * The column has existed since the first migration and nothing ever
+   * wrote it, so the admin could never say when an address was mailed.
+   */
+  it('stamps the subscriber when the digest goes out', async () => {
+    const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    expect(s.lastSentAt).toBeUndefined()
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
+    })
+    const resend = buildResend(() => ({ ok: true, id: 'r' }))
+    await runDispatch(baseDeps(rss.fn, resend.client))
+    const after = await subs.findById(s.id)
+    expect(after?.lastSentAt).toBe(TICK.toISOString())
+  })
+
+  it('does not stamp a subscriber whose send failed', async () => {
+    const s = await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
+    })
+    const resend = buildResend(input =>
+      input.to === FROM
+        ? { ok: true, id: 'r' }
+        : { ok: false, error: 'resend 422' }
+    )
+    await runDispatch(baseDeps(rss.fn, resend.client))
+    const after = await subs.findById(s.id)
+    expect(after?.lastSentAt).toBeUndefined()
+  })
+})
+
+describe('runDispatch — idempotency key', () => {
+  /*
+   * The old key was built from the cutoff watermark, which does NOT move
+   * on a failed tick — so the next tick could reuse it with different
+   * content. Key on the tick instead: stable within a tick (a retry
+   * replays), never repeated across ticks.
+   */
+  it('keys the batch on the tick, not on the cutoff', async () => {
+    await subs.insert({ email: 'a@b.c', langs: ['ru'] })
+    const rss = buildRss({
+      ru: [article({ guid: 'a', pubDate: '2026-06-05T00:00:00.000Z' })],
+    })
+    const resend = buildResend(() => ({ ok: true, id: 'r' }))
+    await runDispatch(baseDeps(rss.fn, resend.client))
+    expect(resend.batchKeys).toEqual([`digest:${TICK.toISOString()}:0`])
   })
 })
