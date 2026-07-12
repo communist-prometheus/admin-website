@@ -13,6 +13,27 @@ test.describe.configure({ mode: 'serial' })
 const sleep = (ms: number) =>
   new Promise<void>(resolve => setTimeout(resolve, ms))
 
+/**
+ * Move to one of the newsletter tabs and wait for its sub-route to
+ * settle. The page used to stack every section vertically, so the scenes
+ * scrolled between them; each section now owns a URL.
+ * @param page Playwright page.
+ * @param tab Tab slug — settings | subscribers | log.
+ */
+const openTab = async (
+  page: Page,
+  tab: 'settings' | 'subscribers' | 'log'
+): Promise<void> => {
+  const anchor = {
+    settings: 'schedule-editor',
+    subscribers: 'add-subscriber-form',
+    log: 'run-history',
+  } as const
+  await page.getByTestId(`comms-nav-${tab}`).click()
+  await page.waitForURL(`**/comms/${tab}`)
+  await page.waitForSelector(`[data-testid="${anchor[tab]}"]`)
+}
+
 const titleCard = async (
   page: Page,
   parts: { eyebrow: string; title: string; sub: string }
@@ -192,10 +213,15 @@ test('comms walkthrough recording', async ({ page }) => {
   })
   await page.goto('/')
   await page.waitForLoadState('networkidle')
+  /*
+   * /comms is now a tab shell: it redirects to the Settings tab, and the
+   * subscriber form + send log live on their own sub-routes. Every scene
+   * below opens the tab it needs first.
+   */
   await page.goto('/comms')
   await page.waitForSelector('[data-testid="comms-view"]')
+  await page.waitForSelector('[data-testid="comms-nav"]')
   await page.waitForSelector('[data-testid="schedule-editor"]')
-  await page.waitForSelector('[data-testid="add-subscriber-form"]')
   await page.waitForLoadState('networkidle')
   await sleep(800)
 
@@ -221,6 +247,7 @@ test('comms walkthrough recording', async ({ page }) => {
     const a = await highlightSelector(page, '[data-testid="schedule-editor"]')
     await sleep(1_400)
     await a()
+    await openTab(page, 'subscribers')
     const b = await highlightSelector(
       page,
       '[data-testid="add-subscriber-form"]'
@@ -302,7 +329,7 @@ test('comms walkthrough recording', async ({ page }) => {
       title: 'Настроить расписание',
       sub: 'Crontab + IANA timezone + сохранение',
     })
-    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+    await openTab(page, 'settings')
     await sleep(700)
     const clear = await highlightSelector(
       page,
@@ -383,6 +410,7 @@ test('comms walkthrough recording', async ({ page }) => {
       },
       ...state.runs,
     ]
+    await openTab(page, 'log')
     await page.reload()
     await page.waitForSelector('[data-testid="run-history-list"]')
     await installOverlay(page)
@@ -403,6 +431,7 @@ test('comms walkthrough recording', async ({ page }) => {
       sub: 'Красная строка — клик раскрывает текст ошибки',
     })
     addFakeFailedRun(state)
+    await openTab(page, 'log')
     await page.reload()
     await page.waitForSelector('[data-testid="run-history-list"]')
     await installOverlay(page)

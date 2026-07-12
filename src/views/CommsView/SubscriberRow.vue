@@ -1,18 +1,40 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import type { Lang, Subscriber } from '@/stores/comms'
 import LangTogglePills from './LangTogglePills.vue'
+import LastSentEditor from './LastSentEditor.vue'
 import MessageLangSelect from './MessageLangSelect.vue'
+import { shortTickAt } from './run-history-ops'
+import SubscriberHistory from './SubscriberHistory.vue'
 import SubscriberStatusBadge from './SubscriberStatusBadge.vue'
 
 const props = defineProps<{ readonly entry: Subscriber }>()
 const emit = defineEmits<{
   langs: [id: number, langs: readonly Lang[]]
   messageLang: [id: number, messageLang: Lang]
+  lastSent: [id: number, lastSentAt: string | null]
   remove: [id: number]
 }>()
 
 const onMessageLang = (next: Lang): void => {
   emit('messageLang', props.entry.id, next)
+}
+
+/*
+ * `lastSentAt` is this address's own "what is new" watermark: dispatch
+ * mails only articles published after it, a successful send moves it,
+ * and the editor can move it by hand from the panel below.
+ */
+const lastSent = computed(() =>
+  props.entry.lastSentAt === undefined
+    ? 'never'
+    : shortTickAt(props.entry.lastSentAt)
+)
+
+const historyOpen = ref(false)
+
+const toggleHistory = (): void => {
+  historyOpen.value = !historyOpen.value
 }
 </script>
 
@@ -38,6 +60,21 @@ const onMessageLang = (next: Lang): void => {
     <td class="status-cell">
       <SubscriberStatusBadge :status="entry.status" />
     </td>
+    <td class="sent-cell">
+      <span class="cell-label" aria-hidden="true">Last sent</span>
+      <button
+        type="button"
+        class="last-sent"
+        :class="{ never: entry.lastSentAt === undefined }"
+        data-testid="subscriber-last-sent"
+        :aria-expanded="historyOpen"
+        :aria-label="`Send history for ${entry.email}`"
+        @click="toggleHistory"
+      >
+        {{ lastSent }}
+        <span aria-hidden="true">{{ historyOpen ? '▾' : '▸' }}</span>
+      </button>
+    </td>
     <td class="actions">
       <button
         type="button"
@@ -48,6 +85,15 @@ const onMessageLang = (next: Lang): void => {
       >
         ✕
       </button>
+    </td>
+  </tr>
+  <tr v-if="historyOpen" class="history-row">
+    <td colspan="6">
+      <LastSentEditor
+        :entry="entry"
+        @save="(id, at) => emit('lastSent', id, at)"
+      />
+      <SubscriberHistory :subscriber-id="entry.id" />
     </td>
   </tr>
 </template>
@@ -72,6 +118,38 @@ const onMessageLang = (next: Lang): void => {
 .email {
   font-family: var(--font-mono);
   overflow-wrap: anywhere;
+}
+
+.last-sent {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.last-sent:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+}
+
+.last-sent:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.last-sent.never {
+  color: var(--color-text-secondary);
+}
+
+.history-row td {
+  padding: 0 var(--spacing-xs) var(--spacing-sm);
 }
 
 .actions {
@@ -117,7 +195,8 @@ const onMessageLang = (next: Lang): void => {
       'email actions'
       'langs langs'
       'msg msg'
-      'status status';
+      'status status'
+      'sent sent';
     gap: var(--spacing-xs);
     padding: var(--spacing-sm) 0;
   }
@@ -149,6 +228,13 @@ const onMessageLang = (next: Lang): void => {
 
   .subscriber-row .status-cell {
     grid-area: status;
+  }
+
+  .subscriber-row .sent-cell {
+    grid-area: sent;
+    display: grid;
+    gap: 0.25rem;
+    justify-items: start;
   }
 
   .cell-label {

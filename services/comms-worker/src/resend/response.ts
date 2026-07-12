@@ -3,9 +3,20 @@ import type { SendResult } from './types'
 /** Default backoff used when the server does not send Retry-After. */
 export const DEFAULT_BACKOFF_MS = 1_000
 
-/** Status codes that are eligible for a single retry. */
+/**
+ * Status codes eligible for a retry.
+ *
+ * 409 is an idempotency conflict. Because the key is unique per (tick,
+ * chunk) — see `dispatch/send-chunk.ts` — it can only ever mean "the
+ * identical request is still being processed", which is transient. It
+ * used to be classified terminal, and that is what silently killed the
+ * 2026-07-11 dispatch: a 100-email batch takes Resend longer than the
+ * backoff, the retry re-sent the same key while the original was still
+ * in flight, Resend answered 409, and 100 of 123 recipients were
+ * written off as failed with no mail actually sent.
+ */
 export const isRetryableStatus = (status: number): boolean =>
-  status === 429 || status >= 500
+  status === 409 || status === 429 || status >= 500
 
 /**
  * Read `Retry-After` (seconds) from a response, falling back to the

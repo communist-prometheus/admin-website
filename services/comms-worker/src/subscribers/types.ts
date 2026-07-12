@@ -30,6 +30,12 @@ export type NewSubscriber = {
   readonly langs: ReadonlyArray<Lang>
   /** Message (chrome) language; defaults to English when omitted. */
   readonly messageLang?: Lang
+  /**
+   * Seed for the address's own "what is new" watermark. Callers pass the
+   * shared cutoff so a new address starts level with the list; defaults
+   * to the moment of signup.
+   */
+  readonly lastSentAt?: string
 }
 
 /** Sentinel name used by `DuplicateError` instances. */

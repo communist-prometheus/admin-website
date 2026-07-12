@@ -35,9 +35,19 @@ export const createApp = (opts: CreateAppOptions = {}): Hono<WorkerCtx> => {
   app.use('*', cors())
   registerHealthRoute(app)
   app.use('/api/*', requireSession({ verifier: opts.sessionVerifier }))
-  mountSubscriberRoutes(app, c =>
-    createRepo({ db: (c.env as Bindings).DB, now: nowIso })
-  )
+  mountSubscriberRoutes(app, c => {
+    const db = (c.env as Bindings).DB
+    /*
+     * A new address is seeded with the shared cutoff as its own
+     * watermark, so it starts level with the list instead of being
+     * mailed everything published since the list's last run.
+     */
+    return createRepo({
+      db,
+      now: nowIso,
+      cutoffAt: () => createSettingsRepo({ db }).getCutoffAt(),
+    })
+  })
   mountScheduleRoutes(
     app,
     c => createSettingsRepo({ db: (c.env as Bindings).DB }),

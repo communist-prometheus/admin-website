@@ -12,7 +12,7 @@ type JoinedRow = SendLogRow & { readonly email: string | null }
 const SQL =
   'SELECT l.*, s.email AS email ' +
   'FROM send_log l LEFT JOIN subscribers s ON s.id = l.subscriber_id ' +
-  'ORDER BY l.tick_at DESC, l.id DESC LIMIT ?'
+  'ORDER BY l.tick_at DESC, l.id DESC LIMIT ? OFFSET ?'
 
 const lift = (row: JoinedRow): SendLogWithEmail => ({
   ...rowToSendLog(row),
@@ -20,17 +20,19 @@ const lift = (row: JoinedRow): SendLogWithEmail => ({
 })
 
 /**
- * Return the most-recent N send-log rows enriched with the subscriber's
+ * Return one page of send-log rows enriched with the subscriber's
  * email, when still present. Used by `GET /api/runs` to show the editor
  * a readable run history without a second round-trip.
  * @param db D1 database binding.
  * @param limit Maximum rows to return (caller validates the bound).
+ * @param offset Rows to skip, for paging back through history.
  * @returns Joined rows, newest tick first.
  */
 export const listRecentWithEmail = async (
   db: D1Database,
-  limit: number
+  limit: number,
+  offset = 0
 ): Promise<ReadonlyArray<SendLogWithEmail>> => {
-  const r = await db.prepare(SQL).bind(limit).all<JoinedRow>()
+  const r = await db.prepare(SQL).bind(limit, offset).all<JoinedRow>()
   return (r.results ?? []).map(lift)
 }

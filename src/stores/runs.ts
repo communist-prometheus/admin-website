@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { computed } from 'vue'
 import { createRunsState } from './runs-state'
 
 export type { RunLog, RunLogList } from '@/validation/schemas/run-log'
@@ -12,5 +13,9 @@ export const useRunsStore = defineStore('comms-runs', () => {
     await (s.loaded.value ? Promise.resolve() : s.load())
   }
 
-  return { ...s, ensureLoaded }
+  const canLoadMore = computed(
+    () => s.hasMore.value && s.runs.value.length > 0
+  )
+
+  return { ...s, ensureLoaded, canLoadMore }
 })

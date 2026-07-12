@@ -27,7 +27,11 @@ export const buildRuntimeDeps = (
   tickAt: Date,
   targetIds?: ReadonlyArray<number>
 ): RunDispatchDeps => ({
-  subscriberRepo: createRepo({ db: env.DB, now: nowIso }),
+  subscriberRepo: createRepo({
+    db: env.DB,
+    now: nowIso,
+    cutoffAt: () => createSettingsRepo({ db: env.DB }).getCutoffAt(),
+  }),
   sendLogRepo: createSendLogRepo({ db: env.DB }),
   settingsRepo: createSettingsRepo({ db: env.DB }),
   rss: createRssFetcher({ base: env.CONTENT_BASE_URL }),

@@ -10,7 +10,11 @@ import {
 } from '@/validation/schemas/subscriber'
 import { commsFetch, ensureOk, jsonHeaders } from './comms-http'
 
-export { apiUpdateLangs, apiUpdateMessageLang } from './comms-api-patch'
+export {
+  apiUpdateLangs,
+  apiUpdateLastSent,
+  apiUpdateMessageLang,
+} from './comms-api-patch'
 
 /**
  * GET /api/subscribers — list every subscriber row, regardless of status.
