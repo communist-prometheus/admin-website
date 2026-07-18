@@ -45,8 +45,12 @@ export const sendChunk = async (
     await recordSentChunk(ctx, group, res.ids)
     return { sent: group.length, failed: 0 }
   }
-  logEvent('batch.fail', { error: res.error, definitive: res.definitive })
-  return res.definitive
-    ? sendIndividually(ctx, group)
-    : recordFailedChunk(ctx, group, res.error)
+  logEvent('batch.fail', {
+    error: res.error,
+    definitive: res.definitive,
+    quota: res.quota,
+  })
+  if (res.definitive) return sendIndividually(ctx, group)
+  const counts = await recordFailedChunk(ctx, group, res.error)
+  return res.quota === undefined ? counts : { ...counts, quota: res.quota }
 }

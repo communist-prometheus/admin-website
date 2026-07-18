@@ -7,13 +7,24 @@ const addressOf = (row: SendLogWithEmail): string =>
 const withError = (row: SendLogWithEmail): string =>
   `${addressOf(row)} — ${row.error ?? 'unknown error'}`
 
-/** The three buckets a run report is written from. */
+/** The buckets a run report is written from. */
 export type ReportParts = {
   readonly tickAt: Date
   readonly sent: ReadonlyArray<SendLogWithEmail>
   readonly failed: ReadonlyArray<SendLogWithEmail>
   readonly skipped: number
+  /**
+   * ISO resume instant when the tick paused on an account-wide Resend
+   * quota; undefined on a normal tick. When set, the un-sent recipients
+   * are deferred to the first tick at/after it, not lost.
+   */
+  readonly pausedUntil?: string
 }
+
+const pausedLine = (pausedUntil: string | undefined): string =>
+  pausedUntil === undefined
+    ? ''
+    : `Paused: daily quota hit — dispatch deferred, resumes ${pausedUntil}`
 
 /**
  * Plain-text report body — the failures first, because that is the only
@@ -27,6 +38,7 @@ export const textBody = (p: ReportParts): string =>
     `Sent: ${p.sent.length}`,
     `Failed: ${p.failed.length}`,
     `Skipped (no new content): ${p.skipped}`,
+    ...(p.pausedUntil === undefined ? [] : [pausedLine(p.pausedUntil)]),
     '',
     p.failed.length > 0 ? 'FAILED' : 'No failures.',
     ...p.failed.map(r => `  ${withError(r)}`),
@@ -53,6 +65,9 @@ export const htmlBody = (p: ReportParts): string =>
     `<p><strong>${p.sent.length}</strong> sent, `,
     `<strong>${p.failed.length}</strong> failed, `,
     `${p.skipped} skipped (no new content).</p>`,
+    ...(p.pausedUntil === undefined
+      ? []
+      : [`<p><strong>${htmlEscape(pausedLine(p.pausedUntil))}</strong></p>`]),
     '<h3>Failed</h3>',
     list(p.failed.map(withError)),
     '<h3>Sent</h3>',

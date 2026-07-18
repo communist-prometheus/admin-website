@@ -10,15 +10,17 @@ const DEFAULT_RETENTION_DAYS = 90
  * throws: a broken report must not fail the tick that just succeeded.
  * @param d Dispatch deps.
  * @param skipped Subscribers with no new content this tick.
+ * @param pausedUntil ISO resume instant when the tick paused on a quota.
  */
 export const reportRun = async (
   d: RunDispatchDeps,
-  skipped: number
+  skipped: number,
+  pausedUntil?: string
 ): Promise<void> => {
   try {
     const rows = await d.sendLogRepo.listByTick(d.tickAt.toISOString())
     const res = await d.resend.send(
-      buildReport(d.fromAddress, d.tickAt, rows, skipped)
+      buildReport(d.fromAddress, d.tickAt, rows, skipped, pausedUntil)
     )
     logEvent('report.sent', { ok: res.ok })
   } catch (e) {
@@ -33,12 +35,14 @@ export const reportRun = async (
  * that reached nobody is exactly the one worth hearing about.
  * @param d Dispatch deps.
  * @param skipped Subscribers with no new content this tick.
+ * @param pausedUntil ISO resume instant when the tick paused on a quota.
  */
 export const finishTick = async (
   d: RunDispatchDeps,
-  skipped: number
+  skipped: number,
+  pausedUntil?: string
 ): Promise<void> => {
-  await reportRun(d, skipped)
+  await reportRun(d, skipped, pausedUntil)
   await d.sendLogRepo.purgeOlderThan(
     retentionCutoffIso(d.tickAt, d.retentionDays ?? DEFAULT_RETENTION_DAYS)
   )

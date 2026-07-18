@@ -1,7 +1,22 @@
 import { sendBatchOnce } from './batch'
 import { buildBatchInit } from './batch-request'
-import { exhaustedError } from './response'
+import { exhaustedError, type QuotaKind } from './response'
 import type { BatchResult, SendInput } from './types'
+
+/**
+ * A quota rejection ends the retry loop at once: the daily / monthly
+ * cap will not clear in the seconds a backoff buys, so backing off just
+ * burns the tick's wall-clock. Surface it so the dispatcher can pause
+ * until the quota actually resets.
+ * @param quota Which quota Resend reported exhausted.
+ * @returns An all-failed batch result carrying the quota kind.
+ */
+const quotaResult = (quota: QuotaKind): BatchResult => ({
+  ok: false,
+  error: `resend ${quota}_quota_exceeded`,
+  definitive: false,
+  quota,
+})
 
 /**
  * Attempts per batch, and the base backoff between them.
@@ -45,6 +60,7 @@ export const sendBatchWithRetry = async (
     if (verdict.kind === 'ok') return { ok: true, ids: verdict.ids }
     if (verdict.kind === 'fail')
       return { ok: false, error: verdict.error, definitive: true }
+    if (verdict.quota !== undefined) return quotaResult(verdict.quota)
     lastStatus = verdict.status
     if (attempt < MAX_ATTEMPTS)
       await doSleep(backoffMs(attempt, verdict.waitMs))
