@@ -5,6 +5,7 @@ import { resumeAt } from './pause-window'
 import { planOne, type SendPlan } from './plan'
 import { finishTick } from './run-finish'
 import { prepareDispatch } from './run-prepare'
+import { summarize } from './run-summary'
 import { sendInBatches } from './send-batches'
 import type { DispatchSummary, RunDispatchDeps } from './types'
 
@@ -57,13 +58,5 @@ export const runDispatch = async (
     quota === undefined ? undefined : await pauseForQuota(d, quota)
   const skipped = subs.length - plans.length
   await finishTick(d, skipped, pausedUntil)
-  const result: DispatchSummary = {
-    sent,
-    failed,
-    skipped,
-    durationMs: Date.now() - start,
-    ...(pausedUntil ? { pausedUntil } : {}),
-  }
-  logEvent('tick.done', { ...result })
-  return result
+  return summarize({ sent, failed, skipped }, start, pausedUntil)
 }

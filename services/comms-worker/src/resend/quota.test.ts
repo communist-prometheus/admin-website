@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { sendBatchWithRetry } from './batch-retry'
-import { quotaKindFromName, readQuotaKind } from './response'
+import { quotaKindFromName, readQuotaKind } from './quota'
 import type { SendInput } from './types'
 
 const INPUT: SendInput = {
