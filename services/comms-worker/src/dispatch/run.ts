@@ -1,12 +1,33 @@
 import { logEvent } from '../log/structured'
+import type { QuotaKind } from '../resend/response'
 import { advanceCutoff } from './cutoff-cycle'
+import { resumeAt } from './pause-window'
 import { planOne, type SendPlan } from './plan'
 import { finishTick } from './run-finish'
 import { prepareDispatch } from './run-prepare'
+import { summarize } from './run-summary'
 import { sendInBatches } from './send-batches'
 import type { DispatchSummary, RunDispatchDeps } from './types'
 
 const isPlan = (p: SendPlan | undefined): p is SendPlan => p !== undefined
+
+/**
+ * Pause the dispatch until the exhausted quota resets, so the cron
+ * stops re-attempting a send that can only fail until then. Returns the
+ * resume instant for the summary + report.
+ * @param d Dispatch deps.
+ * @param quota The quota Resend reported exhausted.
+ * @returns ISO resume instant.
+ */
+const pauseForQuota = async (
+  d: RunDispatchDeps,
+  quota: QuotaKind
+): Promise<string> => {
+  const until = resumeAt(quota, d.tickAt).toISOString()
+  await d.settingsRepo.setPausedUntil(until)
+  logEvent('dispatch.paused', { quota, until })
+  return until
+}
 
 /**
  * Execute one dispatch tick: load the shared cutoff, fetch RSS per
@@ -30,17 +51,12 @@ export const runDispatch = async (
   const plans = (await Promise.all(subs.map(s => planOne(ctx, s)))).filter(
     isPlan
   )
-  const { sent, failed } = await sendInBatches(ctx, plans)
+  const { sent, failed, quota } = await sendInBatches(ctx, plans)
   const clean = plans.length > 0 && failed === 0 && d.targetIds === undefined
   await advanceCutoff(d, clean)
+  const pausedUntil =
+    quota === undefined ? undefined : await pauseForQuota(d, quota)
   const skipped = subs.length - plans.length
-  await finishTick(d, skipped)
-  const result: DispatchSummary = {
-    sent,
-    failed,
-    skipped,
-    durationMs: Date.now() - start,
-  }
-  logEvent('tick.done', { ...result })
-  return result
+  await finishTick(d, skipped, pausedUntil)
+  return summarize({ sent, failed, skipped }, start, pausedUntil)
 }

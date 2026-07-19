@@ -33,4 +33,10 @@ export type DispatchSummary = {
   readonly failed: number
   readonly skipped: number
   readonly durationMs: number
+  /**
+   * Set when the tick hit an account-wide Resend quota and paused the
+   * dispatch until this ISO instant (the quota's next reset). The
+   * un-sent recipients replay on the first matching tick at/after it.
+   */
+  readonly pausedUntil?: string
 }

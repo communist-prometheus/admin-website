@@ -1,3 +1,5 @@
+import type { QuotaKind } from './response'
+
 /** Resend transactional email payload, as sent by the worker. */
 export type SendInput = {
   readonly from: string
@@ -32,6 +34,13 @@ export type BatchResult =
       readonly ok: false
       readonly error: string
       readonly definitive: boolean
+      /**
+       * Set when the batch was rejected by an account-wide sending
+       * quota (`daily_quota_exceeded` / `monthly_quota_exceeded`). The
+       * dispatcher pauses until that quota resets rather than replaying
+       * the un-sent recipients every tick.
+       */
+      readonly quota?: QuotaKind
     }
 
 /** Thin send client facade — single + batched transactional email. */

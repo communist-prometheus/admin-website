@@ -4,6 +4,15 @@ import type { SendResult } from './types'
 export const DEFAULT_BACKOFF_MS = 1_000
 
 /**
+ * Which Resend sending quota was exhausted. Distinct from the
+ * per-second `rate_limit_exceeded`, which is a transient burst worth a
+ * short retry — a quota is account-wide and only resets on a calendar
+ * boundary, so the whole dispatch must pause until then instead of
+ * re-attempting every tick.
+ */
+export type QuotaKind = 'daily' | 'monthly'
+
+/**
  * Status codes eligible for a retry.
  *
  * 409 is an idempotency conflict. Because the key is unique per (tick,

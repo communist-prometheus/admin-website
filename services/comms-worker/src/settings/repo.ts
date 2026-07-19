@@ -2,6 +2,11 @@ import type { D1Database } from '@cloudflare/workers-types'
 import type { Schedule } from '../cron/matcher'
 import { dropCutoffAt, fetchCutoffAt, persistCutoffAt } from './cutoff-repo'
 import {
+  dropPausedUntil,
+  fetchPausedUntil,
+  persistPausedUntil,
+} from './pause-repo'
+import {
   fetchSchedule,
   persistSchedule,
   type ScheduleWithNext,
@@ -19,6 +24,9 @@ export type SettingsRepo = {
   readonly getCutoffAt: () => Promise<string | undefined>
   readonly setCutoffAt: (iso: string) => Promise<void>
   readonly clearCutoffAt: () => Promise<void>
+  readonly getPausedUntil: () => Promise<string | undefined>
+  readonly setPausedUntil: (iso: string) => Promise<void>
+  readonly clearPausedUntil: () => Promise<void>
 }
 
 type Deps = { readonly db: D1Database }
@@ -36,4 +44,7 @@ export const createSettingsRepo = (d: Deps): SettingsRepo => ({
   getCutoffAt: () => fetchCutoffAt(d.db),
   setCutoffAt: iso => persistCutoffAt(d.db, iso),
   clearCutoffAt: () => dropCutoffAt(d.db),
+  getPausedUntil: () => fetchPausedUntil(d.db),
+  setPausedUntil: iso => persistPausedUntil(d.db, iso),
+  clearPausedUntil: () => dropPausedUntil(d.db),
 })

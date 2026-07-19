@@ -1,3 +1,4 @@
+import type { QuotaKind } from '../resend/response'
 import type { DispatchContext } from './context'
 import type { SendPlan } from './plan'
 import { sendChunk } from './send-chunk'
@@ -9,6 +10,12 @@ const CHUNK_SIZE = 100
 export type SendCounts = {
   readonly sent: number
   readonly failed: number
+  /**
+   * Set once any chunk hit an account-wide quota. Sending stopped at
+   * that chunk — the recipients after it were never attempted, so they
+   * carry no failed rows and replay on the tick after the quota resets.
+   */
+  readonly quota?: QuotaKind
 }
 
 const chunk = (
@@ -40,6 +47,7 @@ export const sendInBatches = async (
     const c = await sendChunk(ctx, groups[i] ?? [], i)
     sent += c.sent
     failed += c.failed
+    if (c.quota !== undefined) return { sent, failed, quota: c.quota }
   }
   return { sent, failed }
 }
