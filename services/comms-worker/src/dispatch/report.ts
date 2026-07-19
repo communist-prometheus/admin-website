@@ -23,18 +23,25 @@ const dayOf = (tickAt: Date): string => tickAt.toISOString().slice(0, 10)
  * @param tickAt Tick moment.
  * @param rows Every send_log row written by this tick.
  * @param skipped Subscribers with no new content this tick.
+ * @param pausedUntil ISO resume instant when the tick paused on a quota.
  * @returns Ready-to-send Resend payload.
  */
 export const buildReport = (
   fromAddress: string,
   tickAt: Date,
   rows: ReadonlyArray<SendLogWithEmail>,
-  skipped: number
+  skipped: number,
+  pausedUntil?: string
 ): SendInput => {
   const sent = rows.filter(r => r.status === 'sent')
   const failed = rows.filter(r => r.status === 'failed')
-  const parts = { tickAt, sent, failed, skipped }
-  const verdict = failed.length === 0 ? 'OK' : 'FAILED'
+  const parts = { tickAt, sent, failed, skipped, pausedUntil }
+  const verdict =
+    pausedUntil !== undefined
+      ? 'PAUSED'
+      : failed.length === 0
+        ? 'OK'
+        : 'FAILED'
   return {
     from: fromAddress,
     to: fromAddress,

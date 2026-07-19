@@ -1,4 +1,5 @@
 import { logEvent } from '../log/structured'
+import type { QuotaKind } from '../resend/response'
 import type { DispatchContext } from './context'
 import type { SendPlan } from './plan'
 import { recordFailed, recordSent } from './record'
@@ -7,6 +8,13 @@ import { recordFailed, recordSent } from './record'
 export type ChunkCounts = {
   readonly sent: number
   readonly failed: number
+  /**
+   * Set when the chunk was rejected by an account-wide quota. The
+   * caller stops sending further chunks and pauses the dispatch until
+   * the quota resets, rather than recording every remaining recipient
+   * as failed.
+   */
+  readonly quota?: QuotaKind
 }
 
 const sendOne = async (

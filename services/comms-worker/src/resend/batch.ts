@@ -2,6 +2,8 @@ import { RESEND_BATCH_URL } from './batch-request'
 import {
   DEFAULT_BACKOFF_MS,
   isRetryableStatus,
+  type QuotaKind,
+  readQuotaKind,
   retryAfterMs,
 } from './response'
 
@@ -12,6 +14,8 @@ export type BatchVerdict =
       readonly kind: 'retry'
       readonly waitMs: number
       readonly status: number
+      /** Set when the 429 was a quota rejection, not a rate-limit burst. */
+      readonly quota?: QuotaKind
     }
   | { readonly kind: 'fail'; readonly error: string }
 
@@ -29,9 +33,15 @@ const classifyBatch = async (res: Response): Promise<BatchVerdict> => {
     const body = await res.json().catch(() => undefined)
     return { kind: 'ok', ids: parseIds(body) }
   }
-  return isRetryableStatus(res.status)
-    ? { kind: 'retry', waitMs: retryAfterMs(res), status: res.status }
-    : { kind: 'fail', error: `resend ${res.status}` }
+  if (!isRetryableStatus(res.status))
+    return { kind: 'fail', error: `resend ${res.status}` }
+  const quota = res.status === 429 ? await readQuotaKind(res) : undefined
+  return {
+    kind: 'retry',
+    waitMs: retryAfterMs(res),
+    status: res.status,
+    ...(quota ? { quota } : {}),
+  }
 }
 
 const attemptBatch = async (
