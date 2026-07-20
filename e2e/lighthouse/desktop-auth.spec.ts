@@ -1,11 +1,12 @@
 import { test } from '@prometheus/e2e-toolkit'
 import { playAudit } from 'playwright-lighthouse'
+import { waitForSWControl } from '../helpers/visit-settled'
 
 test('should achieve 100 on desktop with auth', async ({ page }) => {
   await page.goto('/')
   await page.evaluate(() => localStorage.setItem('gh_token', 'mock-token'))
   await page.reload()
-  await page.waitForLoadState('networkidle')
+  await waitForSWControl(page)
 
   await playAudit({
     page,

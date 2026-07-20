@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { waitForSWControl } from '../helpers/visit-settled'
 import { installCommsMocks, type MockState } from './install-routes'
 import {
   clearHighlight,
@@ -212,18 +213,20 @@ test('comms walkthrough recording', async ({ page }) => {
     document.documentElement.setAttribute('data-theme', 'dark')
   })
   await page.goto('/')
-  await page.waitForLoadState('networkidle')
+  // SW (re)registers on the first authenticated load; gate on it
+  // CONTROLLING the document before navigating away, else activation
+  // aborts the next goto (net::ERR_ABORTED). Replaces networkidle.
+  await waitForSWControl(page)
   /*
    * /comms is now a tab shell: it redirects to the Settings tab, and the
    * subscriber form + send log live on their own sub-routes. Every scene
    * below opens the tab it needs first.
    */
   await page.goto('/comms')
+  await waitForSWControl(page)
   await page.waitForSelector('[data-testid="comms-view"]')
   await page.waitForSelector('[data-testid="comms-nav"]')
   await page.waitForSelector('[data-testid="schedule-editor"]')
-  await page.waitForLoadState('networkidle')
-  await sleep(800)
 
   await installOverlay(page)
 
@@ -313,7 +316,9 @@ test('comms walkthrough recording', async ({ page }) => {
       .getByTestId('subscriber-row')
       .filter({ hasText: 'demo-reader@example.test' })
     await row.getByTestId('subscriber-remove').click()
-    await sleep(1_200)
+    // The confirm dialog mounts only after the remove click; wait for
+    // its confirm button instead of guessing a mount delay.
+    await expect(page.getByTestId('remove-subscriber-confirm')).toBeVisible()
     await page.getByTestId('remove-subscriber-confirm').click()
     await expect(
       page
@@ -363,8 +368,14 @@ test('comms walkthrough recording', async ({ page }) => {
     const input = page.getByTestId('cutoff-input')
     await input.fill('2026-06-05T12:00')
     await sleep(1_000)
+    // The cutoff save is fire-and-forget on the DOM (no rendered
+    // confirmation), so gate on the PUT round-trip completing rather
+    // than on a fixed delay.
+    const cutoffSaved = page.waitForResponse(
+      r => r.url().includes('/api/cutoff') && r.request().method() === 'PUT'
+    )
     await page.getByTestId('cutoff-save').click()
-    await sleep(1_400)
+    await cutoffSaved
     await clear()
   })
 
@@ -382,11 +393,14 @@ test('comms walkthrough recording', async ({ page }) => {
     await page.getByTestId('force-dispatch-select-all').click()
     await sleep(1_000)
     await page.getByTestId('force-dispatch-start').click()
-    await sleep(1_400)
+    // Clicking "start" flips the panel to its confirm phase; wait for
+    // the confirm button to render instead of a fixed delay.
+    await expect(page.getByTestId('force-dispatch-confirm')).toBeVisible()
     await page.getByTestId('force-dispatch-confirm').click()
-    await page.waitForSelector('[data-testid="force-dispatch-result"]', {
-      timeout: 5_000,
-    })
+    // The result panel renders when the dispatch round-trip resolves.
+    // Web-first expect uses the shared env-tunable ceiling — no
+    // per-call timeout override.
+    await expect(page.getByTestId('force-dispatch-result')).toBeVisible()
     await sleep(2_200)
     await clear()
   })
@@ -412,6 +426,9 @@ test('comms walkthrough recording', async ({ page }) => {
     ]
     await openTab(page, 'log')
     await page.reload()
+    // reload re-runs the SW claim→controllerchange handshake; settle it
+    // before anchoring on the reloaded DOM (replaces the old race).
+    await waitForSWControl(page)
     await page.waitForSelector('[data-testid="run-history-list"]')
     await installOverlay(page)
     const list = page.getByTestId('run-history-list')
@@ -433,12 +450,15 @@ test('comms walkthrough recording', async ({ page }) => {
     addFakeFailedRun(state)
     await openTab(page, 'log')
     await page.reload()
+    await waitForSWControl(page)
     await page.waitForSelector('[data-testid="run-history-list"]')
     await installOverlay(page)
     const list = page.getByTestId('run-history-list')
     await list.scrollIntoViewIfNeeded()
-    await sleep(700)
+    // The failed row is data-dependent (arrives with the reloaded run
+    // list); wait for it to render before clicking, not a fixed delay.
     const failedRow = page.getByTestId('send-log-failed').first()
+    await expect(failedRow).toBeVisible()
     await failedRow.click()
     await sleep(2_500)
   })

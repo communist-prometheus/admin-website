@@ -1,4 +1,5 @@
 import { expect, test } from '@prometheus/e2e-toolkit'
+import { waitForSWControl } from '../helpers/visit-settled'
 
 const broadcastTerminal = (
   reason: 'network' | 'auth' | 'unknown'
@@ -29,7 +30,7 @@ globalThis.__retryChannel = ch
 test.describe('push retry CTA (2.4)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await waitForSWControl(page)
     await page
       .locator('[data-testid="notification-indicator"]')
       .waitFor({ state: 'visible' })

@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { waitForSWControl } from '../helpers/visit-settled'
 import { BUTTON_NAMES, SELECTORS } from './constants'
 
 /**
@@ -9,7 +10,7 @@ export const loginViaMockOAuth = async (page: Page): Promise<void> => {
   await page.goto('/')
   await page.evaluate(() => localStorage.setItem('gh_token', 'mock-token'))
   await page.reload()
-  await page.waitForLoadState('networkidle')
+  await waitForSWControl(page)
 }
 
 /**

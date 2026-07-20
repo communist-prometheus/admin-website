@@ -1,4 +1,5 @@
 import { expect, test } from '@prometheus/e2e-toolkit'
+import { waitForSWControl } from '../helpers/visit-settled'
 
 const broadcastConflict = (files: ReadonlyArray<string>): string => `
 const ch = new BroadcastChannel('sw-push-conflict')
@@ -14,7 +15,7 @@ ch.close()
 test.describe('push conflict bridge (4.1)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await waitForSWControl(page)
     await page
       .locator('[data-testid="notification-indicator"]')
       .waitFor({ state: 'visible' })
