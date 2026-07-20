@@ -1,4 +1,5 @@
 import { expect, test } from '@prometheus/e2e-toolkit'
+import { waitForSWControl } from '../helpers/visit-settled'
 
 const broadcastConflict = (files: ReadonlyArray<string>): string => `
 const ch = new BroadcastChannel('sw-push-conflict')
@@ -24,7 +25,7 @@ test.describe('per-file conflict resolution (4.3)', () => {
       .evaluate(() => globalThis.localStorage?.removeItem('admin-conflicts'))
       .catch(() => undefined)
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await waitForSWControl(page)
     await page
       .locator('[data-testid="notification-indicator"]')
       .waitFor({ state: 'visible' })

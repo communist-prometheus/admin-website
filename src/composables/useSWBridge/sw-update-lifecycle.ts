@@ -16,19 +16,27 @@ const isOfflineError = (e: unknown): boolean =>
  * @param reg - ServiceWorkerRegistration to monitor
  */
 export const wireUpdateLifecycle = (reg: ServiceWorkerRegistration): void => {
+  /*
+   * Reload only when an UPDATE swaps the controller — never on the first,
+   * uncontrolled load. A first visit fires `controllerchange` from the
+   * SW's initial `clients.claim()`, but that page already runs the latest
+   * network-loaded code, so the reload is pointless — and, landing late
+   * under load, it re-inits Pinia mid-interaction, wiping the in-memory
+   * notification queue (a rapid burst counted 1→2→3→4→1 in a trace). The
+   * `updatefound → activated` reload is dropped for the same reason:
+   * activation precedes control, so it fired BEFORE the claim and then
+   * `controllerchange` reloaded again. `controllerchange` alone covers
+   * updates (old SW → new SW) since activation always claims.
+   */
+  const controlledAtStart = navigator.serviceWorker.controller !== null
+
   reg.addEventListener('updatefound', () => {
-    const installing = reg.installing
-    if (!installing) return
-    log('info', 'New SW version found, waiting for activation')
-    installing.addEventListener('statechange', () => {
-      if (installing.state === 'activated') {
-        log('info', 'New SW activated — reloading page')
-        globalThis.location.reload()
-      }
-    })
+    if (reg.installing)
+      log('info', 'New SW version found, waiting for control')
   })
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!controlledAtStart) return
     log('info', 'SW controller changed — reloading page')
     globalThis.location.reload()
   })

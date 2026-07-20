@@ -1,9 +1,10 @@
 import { expect, test } from '@prometheus/e2e-toolkit'
+import { waitForSWControl } from '../helpers/visit-settled'
 
 test.describe('notifications: toast + indicator (1.2)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await waitForSWControl(page)
     await page
       .locator('[data-testid="notification-indicator"]')
       .waitFor({ state: 'visible' })
@@ -48,6 +49,17 @@ test.describe('notifications: toast + indicator (1.2)', () => {
     for (let i = 0; i < 5; i += 1) {
       await trigger.click()
     }
+    /*
+     * Wait for all five to register before counting. The queue appends
+     * synchronously but the stack re-renders on Vue's next tick, so a
+     * bare count can read a half-rendered stack and pass or fail by luck.
+     * The unread badge reflects the queue length and error toasts are
+     * sticky, so `badge === 5` is the event proving every notification
+     * landed — after which the three-item visible cap is deterministic.
+     */
+    await expect(
+      page.locator('[data-testid="notification-indicator-badge"]')
+    ).toHaveText('5')
     const visible = page.locator('[data-testid="notification-toast"]')
     await expect(visible).toHaveCount(3)
   })
