@@ -1,4 +1,5 @@
 import { expect, test } from '@prometheus/e2e-toolkit'
+import { waitForSWControl } from '../helpers/visit-settled'
 
 const broadcastError = (
   reason: 'network' | 'auth' | 'non-fast-forward' | 'validation' | 'unknown',
@@ -17,7 +18,7 @@ ch.close()
 test.describe('push error bridge → notification (2.3)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await waitForSWControl(page)
     await page
       .locator('[data-testid="notification-indicator"]')
       .waitFor({ state: 'visible' })

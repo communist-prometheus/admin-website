@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import type { NavEntry } from '@/components/NavShared/nav-groups'
 import DesktopNavDropdown from './DesktopNavDropdown.vue'
 
@@ -10,7 +10,6 @@ const props = defineProps<{
 }>()
 
 const route = useRoute()
-const router = useRouter()
 const open = ref(false)
 const rootEl = ref<HTMLElement | undefined>(undefined)
 
@@ -36,7 +35,6 @@ const onPointerDown = (e: PointerEvent): void =>
 
 onMounted(() => document.addEventListener('pointerdown', onPointerDown))
 onUnmounted(() => document.removeEventListener('pointerdown', onPointerDown))
-router.afterEach(close)
 </script>
 
 <template>
@@ -52,7 +50,13 @@ router.afterEach(close)
     >
       {{ title }} ▾
     </button>
-    <DesktopNavDropdown v-if="open" :items="items" />
+    <!-- Close on a menuitem click (the RouterLink navigation the user
+         chose) rather than on every router navigation: a global
+         `afterEach(close)` also fired for programmatic redirects and the
+         late-settling initial navigation, snapping the dropdown shut the
+         instant a user opened it during load — a real race parallelism
+         surfaced. Clicks on the items bubble to this handler. -->
+    <DesktopNavDropdown v-if="open" :items="items" @click="close" />
   </div>
 </template>
 

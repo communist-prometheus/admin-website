@@ -1,5 +1,6 @@
 import type { FullConfig } from '@playwright/test'
 import { chromium } from '@playwright/test'
+import { waitForSWControl } from '../helpers/visit-settled'
 
 const STORAGE_PATH = 'e2e/.auth/state.json'
 
@@ -16,7 +17,7 @@ const globalSetup = async (config: FullConfig): Promise<void> => {
   await page.goto(`${baseURL}/`)
   await page.evaluate(() => localStorage.setItem('gh_token', 'mock-token'))
   await page.reload()
-  await page.waitForLoadState('networkidle')
+  await waitForSWControl(page)
   await page.context().storageState({ path: STORAGE_PATH })
   await browser.close()
 }

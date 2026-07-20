@@ -1,9 +1,29 @@
-import { expect, test } from '@prometheus/e2e-toolkit'
+import { expect, type Page, test } from '@prometheus/e2e-toolkit'
+import { waitForSWControl } from '../helpers/visit-settled'
+
+/*
+ * Fire the dev-trigger notifications, then wait for the unread badge to
+ * reach the expected total before reading the drawer. The queue appends
+ * synchronously, but rapid back-to-back clicks let a `toHaveCount` read a
+ * half-populated list; the badge (queue length) reaching `total` is the
+ * event that proves every notification registered. Event-driven, no delay.
+ */
+const fireAndSettle = async (
+  page: Page,
+  kinds: readonly string[]
+): Promise<void> => {
+  for (const kind of kinds) {
+    await page.locator(`[data-testid="notify-trigger-${kind}"]`).click()
+  }
+  await expect(
+    page.locator('[data-testid="notification-indicator-badge"]')
+  ).toHaveText(String(kinds.length))
+}
 
 test.describe('notifications: history drawer (1.3)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await waitForSWControl(page)
     await page
       .locator('[data-testid="notification-indicator"]')
       .waitFor({ state: 'visible' })
@@ -14,8 +34,7 @@ test.describe('notifications: history drawer (1.3)', () => {
   }) => {
     const drawer = page.locator('[data-testid="notification-drawer"]')
     await expect(drawer).toBeHidden()
-    await page.locator('[data-testid="notify-trigger-info"]').click()
-    await page.locator('[data-testid="notify-trigger-error"]').click()
+    await fireAndSettle(page, ['info', 'error'])
     await page.locator('[data-testid="notification-indicator"]').click()
     await expect(drawer).toBeVisible()
     await expect(
@@ -30,7 +49,7 @@ test.describe('notifications: history drawer (1.3)', () => {
       page.locator('[data-testid="notification-drawer-item"]')
     ).toHaveCount(1)
     await page.reload()
-    await page.waitForLoadState('networkidle')
+    await waitForSWControl(page)
     await page
       .locator('[data-testid="notification-indicator"]')
       .waitFor({ state: 'visible' })
@@ -41,8 +60,7 @@ test.describe('notifications: history drawer (1.3)', () => {
   })
 
   test('clear all empties the history', async ({ page }) => {
-    await page.locator('[data-testid="notify-trigger-info"]').click()
-    await page.locator('[data-testid="notify-trigger-error"]').click()
+    await fireAndSettle(page, ['info', 'error'])
     await page.locator('[data-testid="notification-indicator"]').click()
     const items = page.locator('[data-testid="notification-drawer-item"]')
     await expect(items).toHaveCount(2)
@@ -54,9 +72,7 @@ test.describe('notifications: history drawer (1.3)', () => {
   })
 
   test('filter by kind narrows the list', async ({ page }) => {
-    await page.locator('[data-testid="notify-trigger-info"]').click()
-    await page.locator('[data-testid="notify-trigger-error"]').click()
-    await page.locator('[data-testid="notify-trigger-error"]').click()
+    await fireAndSettle(page, ['info', 'error', 'error'])
     await page.locator('[data-testid="notification-indicator"]').click()
     const items = page.locator('[data-testid="notification-drawer-item"]')
     await expect(items).toHaveCount(3)
@@ -70,8 +86,7 @@ test.describe('notifications: history drawer (1.3)', () => {
   })
 
   test('mark all read flips items to data-read=true', async ({ page }) => {
-    await page.locator('[data-testid="notify-trigger-info"]').click()
-    await page.locator('[data-testid="notify-trigger-error"]').click()
+    await fireAndSettle(page, ['info', 'error'])
     await page.locator('[data-testid="notification-indicator"]').click()
     const items = page.locator('[data-testid="notification-drawer-item"]')
     await expect(items).toHaveCount(2)
