@@ -23,36 +23,51 @@ import type { HistoryEntry } from './notifications-history-types'
  * @returns Object exposing `refresh`, `appendEntry`, `markAllRead`,
  *          `removeEntry`, and `clear` actions.
  */
+const byCreatedAt = (a: HistoryEntry, b: HistoryEntry): number =>
+  a.createdAt - b.createdAt
+
 export const createHistoryActions = (items: Ref<readonly HistoryEntry[]>) => {
+  /*
+   * In-memory `items` is the source of truth; IDB is write-through.
+   *
+   * The previous model rebuilt `items` from a full `listAll` after every
+   * write. Under concurrency that dropped entries: the boot-time `hydrate`
+   * refresh reads IDB once and, resolving AFTER the first live appends had
+   * committed, overwrote `items` with its stale snapshot — the drawer went
+   * empty though the notifications were there (proven by trace). Now every
+   * mutation edits the ref directly and persists; nothing ever replaces
+   * the ref with a bulk snapshot, so a slow read can neither clobber nor
+   * head-of-line-block live writes. `refresh` (hydrate only) MERGES the
+   * persisted set in without displacing live entries.
+   */
   const refresh = async (): Promise<void> => {
-    items.value = await listAll()
-  }
-  let chain: Promise<void> = Promise.resolve()
-  const serial = (op: () => Promise<void>): Promise<void> => {
-    chain = chain.then(op, op)
-    return chain
+    const loaded = await listAll()
+    const have = new Set(items.value.map(entry => entry.id))
+    items.value = [
+      ...items.value,
+      ...loaded.filter(entry => !have.has(entry.id)),
+    ].sort(byCreatedAt)
   }
   return {
     refresh,
-    appendEntry: (entry: HistoryEntry): Promise<void> =>
-      serial(async () => {
-        await append(entry)
-        await refresh()
-      }),
-    markAllRead: (): Promise<void> =>
-      serial(async () => {
-        await dbMarkAllRead()
-        await refresh()
-      }),
-    removeEntry: (id: string): Promise<void> =>
-      serial(async () => {
-        await removeOne(id)
-        await refresh()
-      }),
-    clear: (): Promise<void> =>
-      serial(async () => {
-        await dbClearAll()
-        await refresh()
-      }),
+    appendEntry: async (entry: HistoryEntry): Promise<void> => {
+      items.value = [...items.value, entry].sort(byCreatedAt)
+      await append(entry)
+    },
+    markAllRead: async (): Promise<void> => {
+      const readAt = Date.now()
+      items.value = items.value.map(entry =>
+        entry.readAt === undefined ? { ...entry, readAt } : entry
+      )
+      await dbMarkAllRead()
+    },
+    removeEntry: async (id: string): Promise<void> => {
+      items.value = items.value.filter(entry => entry.id !== id)
+      await removeOne(id)
+    },
+    clear: async (): Promise<void> => {
+      items.value = []
+      await dbClearAll()
+    },
   }
 }
