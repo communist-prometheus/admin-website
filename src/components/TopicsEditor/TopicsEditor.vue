@@ -50,7 +50,6 @@ const handleSave = () => emit('save', draft.value.filter(isValidEntry))
   <TopicsTable
     :topics="draft"
     :languages="languages"
-    data-testid="topics-editor"
     @update-key="onKey"
     @update-color="onColor"
     @update-name="onName"
