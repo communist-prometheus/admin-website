@@ -14,6 +14,7 @@ defineEmits<{
   'update-color': [index: number, value: string]
   'update-name': [index: number, lang: string, value: string]
   'update-subtitle': [index: number, lang: string, value: string]
+  'update-description': [index: number, lang: string, value: string]
   remove: [index: number]
 }>()
 </script>
@@ -31,6 +32,9 @@ defineEmits<{
       @update-name="(lang, val) => $emit('update-name', index, lang, val)"
       @update-subtitle="
         (lang, val) => $emit('update-subtitle', index, lang, val)
+      "
+      @update-description="
+        (lang, val) => $emit('update-description', index, lang, val)
       "
       @remove="$emit('remove', index)"
     />

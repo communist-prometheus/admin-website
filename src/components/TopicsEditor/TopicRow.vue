@@ -16,6 +16,7 @@ const emit = defineEmits<{
   'update-color': [value: string]
   'update-name': [lang: string, value: string]
   'update-subtitle': [lang: string, value: string]
+  'update-description': [lang: string, value: string]
   remove: []
 }>()
 </script>
@@ -35,10 +36,12 @@ const emit = defineEmits<{
       :key="lang.code"
       :name="props.entry.name[lang.code] ?? ''"
       :subtitle="props.entry.subtitle[lang.code] ?? ''"
+      :description="props.entry.description[lang.code] ?? ''"
       :lang-code="lang.code"
       :lang-label="lang.label"
       @update-name="emit('update-name', lang.code, $event)"
       @update-subtitle="emit('update-subtitle', lang.code, $event)"
+      @update-description="emit('update-description', lang.code, $event)"
     />
     <TopicRemoveButton @click="emit('remove')" />
   </tr>

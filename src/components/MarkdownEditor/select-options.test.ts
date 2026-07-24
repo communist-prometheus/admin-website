@@ -50,12 +50,14 @@ const topics: readonly TopicEntry[] = [
     color: '#b03a2e',
     name: { en: 'Editorial', ru: 'От редакции' },
     subtitle: {},
+    description: {},
   },
   {
     key: 'translation',
     color: '#2563eb',
     name: { en: 'Translation' },
     subtitle: {},
+    description: {},
   },
 ]
 

@@ -2,7 +2,7 @@ import type { TopicEntry } from '@/stores/topics'
 
 const DEFAULT_COLOR = '#3b82f6'
 
-type LocalizedField = 'name' | 'subtitle'
+type LocalizedField = 'name' | 'subtitle' | 'description'
 
 /**
  * Create a new empty topic entry with a default colour.
@@ -13,6 +13,7 @@ export const emptyTopic = (): TopicEntry => ({
   color: DEFAULT_COLOR,
   name: {},
   subtitle: {},
+  description: {},
 })
 
 /**
@@ -66,6 +67,9 @@ export const updateName = updateLocalized('name')
 /** Update a localized subtitle (приписка) for a topic entry. */
 export const updateSubtitle = updateLocalized('subtitle')
 
+/** Update a localized description (article-banner disclaimer). */
+export const updateDescription = updateLocalized('description')
+
 /**
  * Deep-clone a topic entry so draft edits never mutate store state.
  * @param entry - Topic entry to clone
@@ -75,6 +79,7 @@ export const cloneTopic = (entry: TopicEntry): TopicEntry => ({
   ...entry,
   name: { ...entry.name },
   subtitle: { ...entry.subtitle },
+  description: { ...entry.description },
 })
 
 /**
