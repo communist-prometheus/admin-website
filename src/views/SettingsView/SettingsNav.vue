@@ -9,6 +9,7 @@ interface SectionEntry {
 const SECTIONS: readonly SectionEntry[] = [
   { path: '/settings/languages', label: 'Languages' },
   { path: '/settings/links', label: 'Links' },
+  { path: '/settings/topics', label: 'Topics' },
   { path: '/settings/members', label: 'Members' },
   { path: '/settings/history', label: 'Action history' },
   { path: '/settings/reset', label: 'Reset' },

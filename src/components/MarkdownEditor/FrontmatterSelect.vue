@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useLabelsStore } from '@/stores/labels'
+import { useTopicsStore } from '@/stores/topics'
 import type { Language } from '@/types/language'
 import type { FieldDefinition } from './field-types'
-import { buildLabelOptions } from './select-options'
+import { buildLabelOptions, buildTopicOptions } from './select-options'
 
 const props = defineProps<{
   readonly field: FieldDefinition
@@ -14,13 +15,21 @@ const props = defineProps<{
 const emit = defineEmits<{ change: [v: string] }>()
 
 const labelsStore = useLabelsStore()
+const topicsStore = useTopicsStore()
 void labelsStore.ensureLoaded()
+void topicsStore.ensureLoaded()
 
-const options = computed(() =>
-  props.field.type === 'select' && props.field.optionsSource === 'labels'
-    ? buildLabelOptions(labelsStore.labels, props.lang, props.value)
-    : []
+const source = computed(() =>
+  props.field.type === 'select' ? props.field.optionsSource : undefined
 )
+
+const options = computed(() => {
+  if (source.value === 'labels')
+    return buildLabelOptions(labelsStore.labels, props.lang, props.value)
+  if (source.value === 'topics')
+    return buildTopicOptions(topicsStore.topics, props.lang, props.value)
+  return []
+})
 
 const onChange = (e: Event): void => {
   emit('change', (e.target as HTMLSelectElement).value)
@@ -35,8 +44,8 @@ const onChange = (e: Event): void => {
     class="field-input"
     @change="onChange"
   >
-    <option value="" disabled>
-      Select {{ field.label.toLowerCase() }}
+    <option value="" :disabled="field.required">
+      {{ field.required ? `Select ${field.label.toLowerCase()}` : '— none —' }}
     </option>
     <option
       v-for="opt in options"
