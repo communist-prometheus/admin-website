@@ -2,6 +2,7 @@
 const props = defineProps<{
   readonly name: string
   readonly subtitle: string
+  readonly description: string
   readonly langCode: string
   readonly langLabel: string
 }>()
@@ -9,16 +10,28 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update-name': [value: string]
   'update-subtitle': [value: string]
+  'update-description': [value: string]
 }>()
 
-const onName = (event: Event) => {
-  const target = event.target
-  if (target instanceof HTMLInputElement) emit('update-name', target.value)
+const readValue = (event: Event): string | undefined =>
+  event.target instanceof HTMLInputElement ||
+  event.target instanceof HTMLTextAreaElement
+    ? event.target.value
+    : undefined
+
+const onName = (e: Event) => {
+  const v = readValue(e)
+  if (v !== undefined) emit('update-name', v)
 }
 
-const onSubtitle = (event: Event) => {
-  const target = event.target
-  if (target instanceof HTMLInputElement) emit('update-subtitle', target.value)
+const onSubtitle = (e: Event) => {
+  const v = readValue(e)
+  if (v !== undefined) emit('update-subtitle', v)
+}
+
+const onDescription = (e: Event) => {
+  const v = readValue(e)
+  if (v !== undefined) emit('update-description', v)
 }
 
 const cellLabel = `${props.langLabel} (${props.langCode})`
@@ -37,17 +50,25 @@ const cellLabel = `${props.langLabel} (${props.langCode})`
     <input
       :value="subtitle"
       type="text"
-      :placeholder="`${langCode} — subtitle`"
+      :placeholder="`${langCode} — tag (short)`"
       class="lang-input"
       data-testid="topic-subtitle"
       @input="onSubtitle"
+    />
+    <textarea
+      :value="description"
+      :placeholder="`${langCode} — banner disclaimer (long)`"
+      class="lang-input lang-textarea"
+      data-testid="topic-description"
+      rows="2"
+      @input="onDescription"
     />
   </td>
 </template>
 
 <style scoped>
 .lang-cell {
-  min-inline-size: 12rem;
+  min-inline-size: 14rem;
 }
 
 .lang-input {
@@ -58,5 +79,10 @@ const cellLabel = `${props.langLabel} (${props.langCode})`
   border-radius: var(--radius-sm);
   background: var(--color-bg);
   color: var(--color-text);
+}
+
+.lang-textarea {
+  resize: vertical;
+  font: inherit;
 }
 </style>

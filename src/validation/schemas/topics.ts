@@ -16,6 +16,10 @@ export const TopicEntrySchema = Schema.Struct({
     key: Schema.String,
     value: Schema.String,
   }),
+  description: Schema.Record({
+    key: Schema.String,
+    value: Schema.String,
+  }),
 })
 
 /** Topic entry type derived from schema. */

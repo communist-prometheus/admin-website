@@ -5,6 +5,7 @@ import {
   emptyTopic,
   isValidEntry,
   updateColor,
+  updateDescription,
   updateKey,
   updateName,
   updateSubtitle,
@@ -16,8 +17,15 @@ const sample: readonly TopicEntry[] = [
     color: '#b03a2e',
     name: { en: 'Editorial' },
     subtitle: {},
+    description: {},
   },
-  { key: 'translation', color: '#2563eb', name: {}, subtitle: {} },
+  {
+    key: 'translation',
+    color: '#2563eb',
+    name: {},
+    subtitle: {},
+    description: {},
+  },
 ]
 
 describe('emptyTopic', () => {
@@ -27,6 +35,7 @@ describe('emptyTopic', () => {
     expect(topic.color).toMatch(/^#[0-9a-f]{6}$/i)
     expect(topic.name).toEqual({})
     expect(topic.subtitle).toEqual({})
+    expect(topic.description).toEqual({})
   })
 })
 
@@ -44,7 +53,7 @@ describe('updateKey / updateColor', () => {
   })
 })
 
-describe('updateName / updateSubtitle', () => {
+describe('localized updates', () => {
   it('sets a localized name without touching other languages', () => {
     const next = updateName(sample, 0, 'ru', 'От редакции')
     expect(next[0]?.name).toEqual({ en: 'Editorial', ru: 'От редакции' })
@@ -55,6 +64,12 @@ describe('updateName / updateSubtitle', () => {
     expect(next[0]?.subtitle).toEqual({ en: 'Our own position' })
     expect(next[0]?.name).toEqual({ en: 'Editorial' })
   })
+
+  it('sets a localized description independently of the subtitle', () => {
+    const next = updateDescription(sample, 1, 'en', 'A long disclaimer.')
+    expect(next[1]?.description).toEqual({ en: 'A long disclaimer.' })
+    expect(next[1]?.subtitle).toEqual({})
+  })
 })
 
 describe('cloneTopic', () => {
@@ -63,6 +78,7 @@ describe('cloneTopic', () => {
     const copy = cloneTopic(first as TopicEntry)
     expect(copy.name).not.toBe(first?.name)
     expect(copy.subtitle).not.toBe(first?.subtitle)
+    expect(copy.description).not.toBe(first?.description)
     expect(copy).toEqual(first)
   })
 })

@@ -7,6 +7,7 @@ import {
   emptyTopic,
   isValidEntry,
   updateColor,
+  updateDescription,
   updateKey,
   updateName,
   updateSubtitle,
@@ -41,6 +42,8 @@ const onName = (i: number, l: string, v: string) =>
   set(updateName(draft.value, i, l, v))
 const onSubtitle = (i: number, l: string, v: string) =>
   set(updateSubtitle(draft.value, i, l, v))
+const onDescription = (i: number, l: string, v: string) =>
+  set(updateDescription(draft.value, i, l, v))
 const removeTopic = (i: number) => set(draft.value.filter((_, j) => j !== i))
 const addTopic = () => set([...draft.value, emptyTopic()])
 const handleSave = () => emit('save', draft.value.filter(isValidEntry))
@@ -54,6 +57,7 @@ const handleSave = () => emit('save', draft.value.filter(isValidEntry))
     @update-color="onColor"
     @update-name="onName"
     @update-subtitle="onSubtitle"
+    @update-description="onDescription"
     @remove="removeTopic"
   />
   <TopicsActions
