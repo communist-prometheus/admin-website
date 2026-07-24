@@ -51,7 +51,12 @@ const topics: readonly TopicEntry[] = [
     name: { en: 'Editorial', ru: 'От редакции' },
     subtitle: {},
   },
-  { key: 'translation', color: '#2563eb', name: { en: 'Translation' }, subtitle: {} },
+  {
+    key: 'translation',
+    color: '#2563eb',
+    name: { en: 'Translation' },
+    subtitle: {},
+  },
 ]
 
 describe('buildTopicOptions', () => {

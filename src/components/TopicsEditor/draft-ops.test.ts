@@ -11,7 +11,12 @@ import {
 } from './draft-ops'
 
 const sample: readonly TopicEntry[] = [
-  { key: 'editorial', color: '#b03a2e', name: { en: 'Editorial' }, subtitle: {} },
+  {
+    key: 'editorial',
+    color: '#b03a2e',
+    name: { en: 'Editorial' },
+    subtitle: {},
+  },
   { key: 'translation', color: '#2563eb', name: {}, subtitle: {} },
 ]
 

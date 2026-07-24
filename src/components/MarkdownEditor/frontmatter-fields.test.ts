@@ -40,9 +40,9 @@ describe('getFields', () => {
       const topic = fields.find(f => f.key === 'topic')
       expect(topic?.type).toBe('select')
       expect(topic?.required).toBeUndefined()
-      expect(
-        topic?.type === 'select' ? topic.optionsSource : undefined
-      ).toBe('topics')
+      expect(topic?.type === 'select' ? topic.optionsSource : undefined).toBe(
+        'topics'
+      )
     })
   })
 
