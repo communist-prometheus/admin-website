@@ -1,5 +1,5 @@
 /** Discriminator for select-typed fields, naming the data source. */
-export type SelectOptionsSource = 'labels'
+export type SelectOptionsSource = 'labels' | 'topics'
 
 interface BaseField {
   readonly key: string

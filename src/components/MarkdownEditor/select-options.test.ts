@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { LabelEntry } from '@/stores/labels'
-import { buildLabelOptions } from './select-options'
+import type { TopicEntry } from '@/stores/topics'
+import { buildLabelOptions, buildTopicOptions } from './select-options'
 
 const labels: readonly LabelEntry[] = [
   { key: 'news', translations: { en: 'News', uk: 'Новини' } },
@@ -40,5 +41,46 @@ describe('buildLabelOptions', () => {
   it('treats empty current as known (no fallback prepended)', () => {
     const options = buildLabelOptions(labels, 'en', '')
     expect(options[0]?.disabled).toBeUndefined()
+  })
+})
+
+const topics: readonly TopicEntry[] = [
+  {
+    key: 'editorial',
+    color: '#b03a2e',
+    name: { en: 'Editorial', ru: 'От редакции' },
+    subtitle: {},
+    description: {},
+  },
+  {
+    key: 'translation',
+    color: '#2563eb',
+    name: { en: 'Translation' },
+    subtitle: {},
+    description: {},
+  },
+]
+
+describe('buildTopicOptions', () => {
+  it('returns one option per topic, localised by name', () => {
+    const options = buildTopicOptions(topics, 'ru', '')
+    expect(options).toEqual([
+      { value: 'editorial', label: 'От редакции' },
+      { value: 'translation', label: 'translation' },
+    ])
+  })
+
+  it('falls back to the key when the language has no name', () => {
+    const options = buildTopicOptions(topics, 'it', '')
+    expect(options[0]).toEqual({ value: 'editorial', label: 'editorial' })
+  })
+
+  it('prepends a disabled fallback when current is unknown', () => {
+    const options = buildTopicOptions(topics, 'en', 'legacy')
+    expect(options[0]).toEqual({
+      value: 'legacy',
+      label: '(unknown: legacy)',
+      disabled: true,
+    })
   })
 })

@@ -25,6 +25,11 @@ export const settingsRoute: RouteRecordRaw = {
       component: () => import('../views/SettingsView/pages/LinksPage.vue'),
     },
     {
+      path: 'topics',
+      name: 'settings-topics',
+      component: () => import('../views/SettingsView/pages/TopicsPage.vue'),
+    },
+    {
       path: 'members',
       name: 'settings-members',
       component: () => import('../views/SettingsView/pages/MembersPage.vue'),

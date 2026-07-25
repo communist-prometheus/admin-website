@@ -10,6 +10,7 @@ describe('getFields', () => {
         'title',
         'description',
         'category',
+        'topic',
         'published',
         'publishDate',
         'magazine',
@@ -32,6 +33,16 @@ describe('getFields', () => {
       expect(
         category?.type === 'select' ? category.optionsSource : undefined
       ).toBe('labels')
+    })
+
+    it('exposes topic as an optional topics-sourced select', () => {
+      const fields = getFields('blog')
+      const topic = fields.find(f => f.key === 'topic')
+      expect(topic?.type).toBe('select')
+      expect(topic?.required).toBeUndefined()
+      expect(topic?.type === 'select' ? topic.optionsSource : undefined).toBe(
+        'topics'
+      )
     })
   })
 

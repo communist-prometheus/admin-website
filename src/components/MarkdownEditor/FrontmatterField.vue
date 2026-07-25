@@ -46,7 +46,7 @@ const handleInput = (event: Event) => {
 }
 
 const onSelect = (v: string): void => {
-  emit('update', parseFieldValue('select', v))
+  emit('update', v === '' ? undefined : parseFieldValue('select', v))
 }
 </script>
 
