@@ -1,8 +1,8 @@
 import { extractString } from '@/validation/extract-string'
-import { exchangeCodeForToken } from './exchange-token'
+import { exchangeCodeForSession } from './exchange-token'
 import { mintSession } from './mint-session'
 import { loadAndClearState, loadAndClearVerifier } from './pkce-storage'
-import { saveToken } from './token-storage'
+import { saveSession } from './session-storage'
 
 type QueryValue = string | null | undefined | (string | null)[]
 
@@ -36,12 +36,12 @@ export const completeCallback = async (
   const code = extractString(codeRaw) ?? fail('Missing code or verifier')
   const verifier = loadAndClearVerifier() ?? fail('Missing code or verifier')
   requireStateMatch(extractString(stateRaw), loadAndClearState())
-  const token = await exchangeCodeForToken(code, verifier)
-  saveToken(token)
+  const session = await exchangeCodeForSession(code, verifier)
+  saveSession(session)
   // Mint the parent-domain SSO cookie so subsequent calls to
   // *.comprom.org workers carry auth automatically. Fire-and-forget
   // — if the user is not yet on the admins team, the SPA still
   // loads but cookie-gated workers will 401 until membership lands.
-  void mintSession(token)
-  return token
+  void mintSession(session.accessToken)
+  return session.accessToken
 }

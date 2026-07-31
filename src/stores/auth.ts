@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
 import type { Ref } from 'vue'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { loadToken } from '@/composables/useAuth/token-storage'
 import type { User } from '@/types/user'
 import { createLogout, createSetUser } from './auth-actions'
 import { createCheckAuth } from './auth-check'
-import { syncTokenToSW } from './auth-sync-sw'
+import { installUserSync } from './auth-user-sync'
 import {
   clearSsoRolesStorage,
   loadSsoRoles,
@@ -34,12 +34,12 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
   const ssoRoles = ref<readonly string[]>(loadSsoRoles())
 
-  watch(user, syncTokenToSW, { immediate: true })
-
   const logout = createLogout(user, loading)
   const checkAuth = createCheckAuth(user, loading, logout)
   const setUser = createSetUser(user)
   const ssoActions = buildSsoActions(ssoRoles)
+
+  installUserSync({ user, setUser, logout })
 
   return {
     user,

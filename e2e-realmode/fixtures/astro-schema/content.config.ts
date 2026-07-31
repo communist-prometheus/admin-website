@@ -29,6 +29,7 @@ const blogSchema = (allowed: ReadonlySet<string>) =>
     title: z.string(),
     description: z.string().optional(),
     category: z.string(),
+    topic: z.string().optional(),
     pubDate: z.union([z.string(), z.date()]).optional(),
     published: z.boolean().optional(),
     publishDate: z.union([z.string(), z.date()]).optional(),

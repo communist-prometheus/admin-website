@@ -1,61 +1,60 @@
-import { Effect, Option, pipe } from 'effect'
 import type { User } from '@/types/user'
-import { fetchGitHubUser } from './fetch-github-user'
+import { ensureFreshToken } from './ensure-fresh-token'
+import { fetchGitHubUser, GitHubAuthError } from './fetch-github-user'
 import { mintSession } from './mint-session'
 import { getMockUser } from './mock-user'
 import { saveProfile } from './profile-cache'
-import { loadToken, saveToken } from './token-storage'
+import { clearToken, saveToken } from './token-storage'
+
+const isMockAuth = (): boolean => import.meta.env.VITE_MOCK_AUTH === 'true'
+
+const persistDevToken = (): void => {
+  const dev = import.meta.env.VITE_DEV_TOKEN
+  void (dev ? saveToken(dev) : undefined)
+}
+
+const cacheAndMint = (user: User): User => {
+  saveProfile({
+    username: user.username,
+    name: user.name,
+    avatar: user.avatar,
+  })
+  // Refresh the *.comprom.org SSO cookie so cookie-gated workers carry
+  // auth. Fire-and-forget — failure only delays the next call by a retry.
+  void mintSession(user.accessToken)
+  return user
+}
+
+/*
+ * A GitHubAuthError means the token is dead despite the refresh attempt
+ * (revoked authorization, or the refresh token itself expired): clear the
+ * corpse so the app treats the user as logged-out instead of looping on a
+ * bad token. A transient error (network/5xx) leaves the session intact so a
+ * blip at boot does not force a re-login.
+ */
+const fetchUser = async (token: string): Promise<User | null> => {
+  try {
+    return cacheAndMint(await fetchGitHubUser(token))
+  } catch (error) {
+    void (error instanceof GitHubAuthError ? clearToken() : undefined)
+    return null
+  }
+}
+
+// Mock auth only substitutes the profile fetch — it still requires a live
+// session, so empty storage stays unauthenticated (login button) exactly
+// like production. Checking isMockAuth() before the token would auto-log-in.
+const resolveUser = (token: string): User | Promise<User | null> =>
+  isMockAuth() ? getMockUser() : fetchUser(token)
 
 /**
- * Resolve auth token from dev env or localStorage.
- * @returns Token Option from dev env or localStorage
+ * Resolve the initial user, guaranteeing a fresh (renewed if needed)
+ * access token before hitting GitHub. Returns null when no live session
+ * exists so the caller routes to login.
+ * @returns The authenticated user, or null
  */
-const resolveToken = (): Option.Option<string> =>
-  pipe(
-    Option.fromNullable(import.meta.env.VITE_DEV_TOKEN),
-    Option.tap(t => {
-      saveToken(t)
-      return Option.some(t)
-    }),
-    Option.orElse(() => Option.fromNullable(loadToken()))
-  )
-
-const isMockAuth = () => import.meta.env.VITE_MOCK_AUTH === 'true'
-
-const fetchAndCache = (token: string) =>
-  Effect.tryPromise(() => fetchGitHubUser(token)).pipe(
-    Effect.tap(u =>
-      Effect.sync(() => {
-        saveProfile({
-          username: u.username,
-          name: u.name,
-          avatar: u.avatar,
-        })
-        // Returning visitor with a persisted gh_token: refresh the
-        // *.comprom.org SSO cookie in case it was never minted or
-        // has since expired. Fire-and-forget — failure here just
-        // delays the next cookie-gated worker call by one 401-retry.
-        void mintSession(token)
-      })
-    )
-  )
-
-/**
- * Get initial user from token or mock.
- * Saves profile to cache on successful fetch.
- * @returns Promise resolving to User or null
- */
-export const getInitialUser = (): Promise<User | null> =>
-  pipe(
-    resolveToken(),
-    Option.match({
-      onNone: () => Effect.succeed<User | null>(null),
-      onSome: token =>
-        isMockAuth()
-          ? Effect.sync<User>(() => getMockUser())
-          : fetchAndCache(token).pipe(
-              Effect.catchAll(() => Effect.succeed<User | null>(null))
-            ),
-    }),
-    Effect.runPromise
-  )
+export const getInitialUser = async (): Promise<User | null> => {
+  persistDevToken()
+  const token = await ensureFreshToken()
+  return token ? resolveUser(token) : null
+}
