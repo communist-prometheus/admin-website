@@ -1,39 +1,23 @@
-import { deleteCookie, readCookie } from './cookie-token'
 import { clearProfile } from './profile-cache'
-
-const TOKEN_KEY = 'gh_token'
+import { clearSession, loadSession, saveSession } from './session-storage'
 
 /**
- * Save GitHub token to localStorage.
+ * Save a bare access token (dev/mock/legacy paths that have no refresh
+ * material). The OAuth flow persists a full session via saveSession.
  * @param token - GitHub access token
  */
 export const saveToken = (token: string): void => {
-  localStorage.setItem(TOKEN_KEY, token)
+  saveSession({ accessToken: token })
 }
 
 /**
- * Load GitHub token from localStorage or cookie fallback.
- * When found in cookie, persists to localStorage and expires the
- * cookie — the JS-readable copy must not linger as a second
- * exfiltration target after the one-time migration.
+ * Load the current access token.
  * @returns Token string or undefined
  */
-export const loadToken = (): string | undefined => {
-  const stored = localStorage.getItem(TOKEN_KEY) ?? undefined
-  if (stored) return stored
+export const loadToken = (): string | undefined => loadSession()?.accessToken
 
-  const fromCookie = readCookie(TOKEN_KEY)
-  if (fromCookie) {
-    saveToken(fromCookie)
-    deleteCookie(TOKEN_KEY)
-  }
-  return fromCookie
-}
-
-/**
- * Remove GitHub token from localStorage.
- */
+/** Remove the session (token + refresh material) and cached profile. */
 export const clearToken = (): void => {
-  localStorage.removeItem(TOKEN_KEY)
+  clearSession()
   clearProfile()
 }

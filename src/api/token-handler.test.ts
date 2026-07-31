@@ -35,6 +35,9 @@ beforeEach(() => {
         access_token: 'gho_abc',
         token_type: 'bearer',
         scope: 'repo',
+        refresh_token: 'ghr_new',
+        expires_in: 28_800,
+        refresh_token_expires_in: 15_897_600,
         internal_field: 'leak-me',
       }),
       { status: 200 }
@@ -55,8 +58,39 @@ describe('tokenHandler client pinning', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('rejects a missing code', async () => {
+  it('rejects a request with neither code nor refresh_token', async () => {
     const res = await post({ client_id: CLIENT_ID })
+    expect(res.status).toBe(400)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('fails closed when GITHUB_CLIENT_ID is unset', async () => {
+    const res = await post(
+      { client_id: CLIENT_ID, code: 'c' },
+      { GITHUB_CLIENT_ID: undefined }
+    )
+    expect(res.status).toBe(500)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('accepts a refresh grant and forwards it with the secret', async () => {
+    const res = await post({
+      client_id: CLIENT_ID,
+      grant_type: 'refresh_token',
+      refresh_token: 'ghr_old',
+    })
+    expect(res.status).toBe(200)
+    const sent = String(fetchMock.mock.calls[0]?.[1]?.body)
+    expect(sent).toContain('grant_type=refresh_token')
+    expect(sent).toContain('refresh_token=ghr_old')
+    expect(sent).toContain('client_secret=s3cret')
+  })
+
+  it('rejects grant_type=refresh_token without a refresh_token', async () => {
+    const res = await post({
+      client_id: CLIENT_ID,
+      grant_type: 'refresh_token',
+    })
     expect(res.status).toBe(400)
     expect(fetchMock).not.toHaveBeenCalled()
   })
@@ -86,6 +120,15 @@ describe('tokenHandler response filtering', () => {
     const body: Record<string, unknown> = await res.json()
     expect(body.access_token).toBe('gho_abc')
     expect(body.internal_field).toBeUndefined()
+  })
+
+  it('relays the refresh material so the client can renew', async () => {
+    const res = await post({ client_id: CLIENT_ID, code: 'c' })
+    const body: Record<string, unknown> = await res.json()
+    expect(body.refresh_token).toBe('ghr_new')
+    // expires_in is a number from GitHub; it survives as a string.
+    expect(body.expires_in).toBe('28800')
+    expect(body.refresh_token_expires_in).toBe('15897600')
   })
 
   it('survives a non-JSON GitHub response', async () => {
