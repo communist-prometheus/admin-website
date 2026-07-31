@@ -41,10 +41,11 @@ const fetchUser = async (token: string): Promise<User | null> => {
   }
 }
 
-const fromRealSession = async (): Promise<User | null> => {
-  const token = await ensureFreshToken()
-  return token ? fetchUser(token) : null
-}
+// Mock auth only substitutes the profile fetch — it still requires a live
+// session, so empty storage stays unauthenticated (login button) exactly
+// like production. Checking isMockAuth() before the token would auto-log-in.
+const resolveUser = (token: string): User | Promise<User | null> =>
+  isMockAuth() ? getMockUser() : fetchUser(token)
 
 /**
  * Resolve the initial user, guaranteeing a fresh (renewed if needed)
@@ -54,5 +55,6 @@ const fromRealSession = async (): Promise<User | null> => {
  */
 export const getInitialUser = async (): Promise<User | null> => {
   persistDevToken()
-  return isMockAuth() ? getMockUser() : fromRealSession()
+  const token = await ensureFreshToken()
+  return token ? resolveUser(token) : null
 }
