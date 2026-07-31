@@ -1,55 +1,58 @@
-import { Effect, pipe } from 'effect'
+import { postToken } from './post-token'
+import {
+  type GitHubSession,
+  sessionFromResponse,
+  type TokenResponse,
+} from './session'
+
+const clientId = (): string => import.meta.env.VITE_GITHUB_CLIENT_ID ?? ''
+
+const raise = (message: string): never => {
+  throw new Error(message)
+}
 
 /**
- * Get the token exchange endpoint URL.
- * @returns Token exchange endpoint URL
+ * Turn a token response into a session, anchoring lifetimes to now.
+ * Throws the GitHub error (or a generic message) when no token came back.
+ * @param response - Proxied token response
+ * @returns The resulting session
  */
-const getTokenUrl = (): string =>
-  import.meta.env.VITE_TOKEN_PROXY ?? '/api/oauth/token'
+const toSession = (response: TokenResponse): GitHubSession =>
+  sessionFromResponse(response, Date.now()) ??
+  raise(response.error ?? 'Token exchange failed')
 
-/**
- * Build URL-encoded token exchange body.
- * @param code - OAuth authorization code
- * @param verifier - PKCE code verifier
- * @returns URLSearchParams body
- */
-const buildTokenBody = (code: string, verifier: string): URLSearchParams =>
+const codeBody = (code: string, verifier: string): URLSearchParams =>
   new URLSearchParams({
-    client_id: import.meta.env.VITE_GITHUB_CLIENT_ID ?? '',
+    client_id: clientId(),
     code,
     code_verifier: verifier,
   })
 
-interface TokenData {
-  readonly access_token?: string
-  readonly error?: string
-}
+const refreshBody = (refreshToken: string): URLSearchParams =>
+  new URLSearchParams({
+    client_id: clientId(),
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+  })
 
 /**
- * Exchange OAuth code + PKCE verifier for access token.
- * @param code - Authorization code from callback
+ * Exchange an OAuth code + PKCE verifier for a fresh session.
+ * @param code - Authorization code from the callback
  * @param verifier - PKCE code verifier
- * @returns GitHub access token
+ * @returns The new session (access token + refresh material)
  */
-export const exchangeCodeForToken = (
+export const exchangeCodeForSession = async (
   code: string,
   verifier: string
-): Promise<string> =>
-  pipe(
-    Effect.tryPromise(() =>
-      fetch(getTokenUrl(), {
-        method: 'POST',
-        body: buildTokenBody(code, verifier),
-      })
-    ),
-    Effect.flatMap(res =>
-      Effect.tryPromise((): Promise<TokenData> => res.json())
-    ),
-    Effect.filterOrFail(
-      (d): d is TokenData & { access_token: string } =>
-        !d.error && !!d.access_token,
-      d => new Error(d.error ?? 'Token exchange failed')
-    ),
-    Effect.map(d => d.access_token),
-    Effect.runPromise
-  )
+): Promise<GitHubSession> =>
+  toSession(await postToken(codeBody(code, verifier)))
+
+/**
+ * Exchange a refresh token for a renewed (rotated) session.
+ * @param refreshToken - The current refresh token
+ * @returns The renewed session
+ */
+export const refreshSession = async (
+  refreshToken: string
+): Promise<GitHubSession> =>
+  toSession(await postToken(refreshBody(refreshToken)))
