@@ -1,207 +1,309 @@
 # Design System — Design
 
 How the locked language (`requirements.md`, R1–R8) is realized as a shared Lit 3
-component library. Source of truth for values: `public-website/src/styles/theme.css`
-+ `utilities.css`. Base package: `@communist-prometheus/cp-components`
-(`C:\Projects\Prometheus\components`, v0.1.7).
+component library. Value source of truth: the approved reference prototype
+`prototypes/document-direction.html`, reconciled with
+`public-website/src/styles/theme.css`. Base package:
+`@communist-prometheus/cp-components` (`C:\Projects\Prometheus\components`, v0.1.7).
+
+> **Review status:** revised after architect/designer/PO review (2026-08-01).
+> All foldable findings integrated below; the single decision left to the user is
+> **repo topology** (§10). `requirements.md` R1 amended to add `--danger*`/`--cb`.
 
 ## Discovery baseline (what exists today)
 
 - **Site tokens** (`theme.css`): `--color-{background,surface,surface-elevated,
   text-primary,text-secondary,border,accent,accent-hover,on-accent}`,
   `--spacing-{xs..2xl}`, `--radius-{sm,md,lg}`, `--font-{sans,mono}`,
-  `--shadow-{sm,md,lg}`, `--transition-{fast,base}`. Accent = warm-red
-  `hsl(12 80% 45%)` light / `hsl(14 85% 60%)` dark; `--color-on-accent` = white
-  light / `hsl(0 0% 7%)` dark. The site defines **only** base `:root` + a single
-  `:root[data-theme="dark"]` override (no `prefers-color-scheme` block — it
-  defaults to light and toggles explicitly).
-- **cp-components**: `cp-button` (variants primary/secondary/ghost, sizes
-  sm/md/lg, `cp-click` event, `part="button"`, Shadow DOM) and `cp-card`, both
-  reading `--cp-*` tokens with **violet** fallbacks (`hsl(250 84% 54%)`).
-  Tokens-as-TS under `src/tokens/*`. Tested with `@open-wc/testing` + `wtr`.
-  Consumed by nobody yet.
+  `--shadow-{sm,md,lg}`, `--transition-{fast,base}`. Warm-red accent. The site
+  defines **only** base `:root` + a single `:root[data-theme="dark"]` (no
+  `prefers-color-scheme` block — it defaults to light and toggles explicitly).
+- **cp-components**: `cp-button` (variants primary/secondary/ghost; sizes;
+  `cp-click`; `part="button"`; Shadow DOM; **hardcoded `color:white` + violet
+  fallbacks**) and `cp-card` (reads 8 `--cp-*` tokens). Tokens-as-TS under
+  `src/tokens/*`. `tsc`-only build, single barrel `index.ts`, `lit` as a normal
+  dependency, no subpath exports, no `sideEffects`. Consumed by nobody yet.
 
-Two gaps to close: (1) the **accent divergence** (cp violet vs site red);
-(2) cp defines no `prefers-color-scheme` / atomic theme layer (R2).
+Gaps to close: accent divergence (violet vs red), no atomic theme layer, no
+`prefers-color-scheme`, packaging not ready for 20+ components, no SSR story.
 
-## Architecture
+## 1. Architecture
 
-### Layering (three files, one direction of dependency)
+### Layering (one direction of dependency)
 
 ```
-public-website/theme.css        ← source of truth (unchanged)
-      │  values copied verbatim
+public-website/theme.css        ← value reference (unchanged)
+      │  values copied + refined (deltas noted in §3)
       ▼
-admin theme layer  src/styles/theme.css       (R1, R2)
+admin theme layer  src/styles/theme.css              (R1, R2)
    ├─ 4 atomic theme blocks (full token set each)
-   ├─ admin semantic tokens  --ok --draft --info --accent-bg --cb
-   └─ cp bridge:  --cp-color-accent: var(--color-accent);  … (R8)
-      │  custom props inherit through Shadow DOM
+   ├─ admin semantic tokens  --ok/-bg --draft/-bg --info/-bg --danger/-bg
+   │                          --accent-bg --cb --color-hairline
+   └─ cp bridge (single declaration on :root, §2)      (R8)
+      │  custom properties inherit through Shadow DOM
       ▼
 cp-components (Lit, Shadow DOM)  +  admin composite components
 ```
 
-Custom properties inherit into shadow roots, so setting `--cp-color-accent:
-var(--color-accent)` on the light-DOM `:root` re-themes every cp component
-without touching the package. **This is the reconciliation** (R8): cp stays
-generic; the admin's bridge points its `--cp-*` tokens at the site `--color-*`
-tokens. cp's hardcoded fallbacks (`color: white`, violet) are only reached when
-the bridge is absent — the admin always loads it.
+Admin depends on cp-components only — no cycle. The token bridge re-themes every
+cp component via inherited custom properties, resolved at each `var()` use-site,
+so it auto-flips with the theme.
 
-### Component ownership (where each lives)
+### Component ownership
 
 | Layer | Components | Rationale |
 |---|---|---|
-| **cp-components** (generic, reusable by site too) | `cp-button`*, `cp-card`*, `cp-input`, `cp-select`, `cp-checkbox`, `cp-radio`, `cp-textarea`, `cp-switch`, `cp-tabs`, `cp-table`, `cp-toast`, `cp-dialog`, `cp-drawer`, `cp-sheet`, `cp-progress`, `cp-skeleton`, `cp-pill`, `cp-status`, `cp-badge`, `cp-tooltip`, `cp-pagination` | design-system primitives; no admin domain knowledge |
-| **admin-local** (`src/components/*`) | `app-shell` / side-nav, publish-progress, sync-status chip, save-bar, confirm-dialog wrapper, editor (Obsidian preview), 3-way-merge view | compose primitives + carry admin domain/git state |
+| **cp-components** (generic, palette-agnostic, zero admin domain) | `cp-icon`, `cp-button`*, `cp-card`*, `cp-input`, `cp-select`, `cp-checkbox`, `cp-radio`, `cp-textarea`, `cp-switch`, `cp-color-input`, `cp-date-input`, `cp-tabs`, `cp-table`, `cp-list-row`, `cp-menu`, `cp-toast`, `cp-dialog`, `cp-drawer`, `cp-sheet`, `cp-progress`, `cp-steps`, `cp-skeleton`, `cp-empty-state`, `cp-pill`, `cp-tag`, `cp-badge`, `cp-chip`, `cp-tooltip`, `cp-pagination`, `cp-upload`, `cp-banner` | design-system primitives |
+| **admin-local** (`src/components/*`) | `app-shell`/side-nav, `sync-status` chip, `publish-progress`, `save-bar`, `confirm-dialog`, editor (Obsidian preview), `merge-view` (3-way), `danger-zone` | compose primitives + carry git/content domain |
 
-`*` = already exists, extended (below). Everything in column 1 is delivered
-**into the cp-components repo** so both apps consume it; admin composites stay in
-admin. This settles the "adopt and extend cp-components" decision for primitives;
-it does **not** by itself require the monorepo (open decision — see below).
+`*` already exists, extended (§5). Column-1 components carry **generic tones/
+states only** (`success|warning|info|danger`, `queued|running|done|failed`); the
+admin's git state machine (`pushing/retrying/deploying/deploy-failed`, `draft`)
+is mapped onto those generic tones inside the admin composites — the library
+stays domain-free (architect #8, designer B1).
 
-### cp-button / cp-card extensions
+## 2. Token bridge (R8) — full map, single declaration
 
-- `cp-button`: add optional `arrow` boolean → renders the trailing `→` SVG
-  (R4 primary-button treatment) after the slot; add `loading` boolean →
-  disables + swaps a spinner into the leading slot; drop the hardcoded
-  `color: white` in favor of `var(--cp-color-on-accent, …)`. Keep `cp-click`,
-  `part`, variants. Backwards compatible (new props default off).
-- `cp-card`: add `interactive` boolean (renders as `<a>`/role=button, focus
-  ring, hover lift) and named slots `pill` / `title` / `summary` / `meta` /
-  `actions` (kebab overflow), matching the reference index card. Non-interactive
-  default unchanged.
+Declared **once** on the base `:root` (never repeated per theme block — `var()`
+re-resolves per use, so one mapping flips with every theme; architect #12):
 
-## Token design
+```css
+:root{
+  --cp-color-accent:        var(--color-accent);
+  --cp-color-accent-hover:  var(--color-accent-hover);
+  --cp-color-on-accent:     var(--color-on-accent);
+  --cp-color-text-primary:  var(--color-text-primary);
+  --cp-color-text-secondary:var(--color-text-secondary);
+  --cp-color-background:    var(--color-background);
+  --cp-color-surface:       var(--color-surface);
+  --cp-color-surface-elevated: var(--color-surface-elevated);
+  --cp-color-border:        var(--color-border);
+  --cp-spacing-xs:var(--spacing-xs); --cp-spacing-sm:var(--spacing-sm);
+  --cp-spacing-md:var(--spacing-md); --cp-spacing-lg:var(--spacing-lg);
+  --cp-spacing-xl:var(--spacing-xl);
+  --cp-radius-sm:var(--radius-sm); --cp-radius-md:var(--radius-md);
+  --cp-radius-lg:var(--radius-lg);
+  --cp-shadow-sm:var(--shadow-sm); --cp-shadow-md:var(--shadow-md);
+  --cp-shadow-lg:var(--shadow-lg);
+  --cp-transition-fast:var(--transition-fast);
+  --cp-transition-base:var(--transition-base);
+}
+```
 
-### Admin theme layer (R1, R2) — the 4 atomic blocks
+**Completeness is enforced, not trusted** (architect #1, designer S3): a unit
+test greps every `--cp-*` custom property *read* in cp-components' compiled CSS
+and asserts each has a bridge entry — fails on any unmapped token. cp's own
+violet/`white` fallbacks then become unreachable (safety net only). cp-button's
+hardcoded `color:white` is replaced by `var(--cp-color-on-accent)` in the §5
+extension.
 
-The complete color set is redefined in **each** of:
-1. base `:root` (light default) — copied verbatim from site + admin semantics
-2. `:root[data-theme="light"]` (explicit light, wins over OS)
-3. `@media (prefers-color-scheme: dark) :root:not([data-theme="light"])` (OS dark)
-4. `:root[data-theme="dark"]` (explicit dark, wins over OS)
+## 3. Theme layer (R1, R2)
 
-Blocks 2–4 carry the **full** token set, never a partial override — this is the
-fix for the header/cards split-theme defect (R2). All backgrounds are solid
-tokens; no `color-mix`+backdrop translucency.
+### The 4 atomic blocks
 
-> Admin extends the site here: the site has no `prefers-color-scheme` block, so
-> the admin adds blocks 2 & 3 to honor OS preference *and* keep the toggle
-> authoritative. Values are identical to the site's light/dark sets.
+Full token set redefined in **each** of: (1) base `:root` (light default),
+(2) `:root[data-theme="light"]`, (3) `@media (prefers-color-scheme:dark)
+:root:not([data-theme="light"])`, (4) `:root[data-theme="dark"]`. Blocks 2–4
+carry the complete set, never partial — the split-theme fix (R2). All
+backgrounds are solid tokens.
 
-### Admin semantic tokens (R1, R4, R5) — added, AA in every block
+**Generation, not hand-duplication** (architect #9): the four blocks are emitted
+from the single tokens-as-TS source (`src/tokens/`), so light/dark values live in
+one place and the 4× duplication is structural, not a drift surface. The guard
+test asserts the invariant: block1 ≡ block2 (light), block3 ≡ block4 (dark), and
+an **identical key set** across all four (not "all equal" — blocks differ by
+light/dark by design; the earlier phrasing was wrong).
 
-| Token | Role | Light | Dark | Contrast target |
-|---|---|---|---|---|
-| `--ok` | success (deploy ok, ready) | darkened green | green | ≥4.5:1 on surface |
-| `--draft` | draft/pending | darkened amber | amber | ≥4.5:1 on surface |
-| `--info` | neutral info | blue | light blue | ≥4.5:1 on surface |
-| `--accent-bg` | active nav / tinted accent surface | red-tint | red-tint | text on it ≥4.5:1 |
-| `--cb` | control border (input/select outline) | `hsl(0 0% 62%)` | `hsl(0 0% 42%)` | ≥3:1 vs surface |
+### Authoritative token values (designer B2/B3 — exact HSL, drift killed)
 
-`--cb` was added during prototype review to satisfy the ≥3:1 non-text contrast
-minimum for input outlines (WCAG 1.4.11); `--color-border` (hairline, decorative)
-stays for card separators.
+Reconciled to `document-direction.html`; `--danger*`/`--cb`/`*-bg` lifted from
+the status/settings prototypes with **one** value chosen per token.
 
-### Motion tokens (R3, NFR-3)
+| Token | Light | Dark |
+|---|---|---|
+| `--color-background` | `hsl(0 0% 100%)` | `hsl(0 0% 10%)` |
+| `--color-surface` | `hsl(0 0% 98%)` | `hsl(0 0% 15%)` |
+| `--color-surface-elevated` | `hsl(0 0% 100%)` | `hsl(0 0% 17%)` |
+| `--color-text-primary` | `hsl(0 0% 13%)` | `hsl(0 0% 96%)` |
+| `--color-text-secondary` | `hsl(0 0% 40%)` | `hsl(0 0% 66%)` |
+| `--color-border` | `hsl(0 0% 88%)` | `hsl(0 0% 28%)` |
+| `--color-hairline` | `hsl(0 0% 93%)` | `hsl(0 0% 22%)` |
+| `--color-accent` | `hsl(12 80% 45%)` | `hsl(14 85% 62%)` |
+| `--color-accent-hover` | `hsl(12 80% 38%)` | `hsl(14 85% 70%)` |
+| `--color-on-accent` | `#fff` | `hsl(0 0% 7%)` |
+| `--cb` (control border) | `hsl(0 0% 64%)` | `hsl(0 0% 46%)` |
+| `--ok` / `--ok-bg` | `hsl(145 60% 30%)` / `hsl(145 55% 34%/.12)` | `hsl(145 55% 60%)` / `…/.16` |
+| `--draft` / `--draft-bg` | `hsl(35 90% 33%)` / `hsl(35 90% 45%/.14)` | `hsl(40 85% 66%)` / `…/.16` |
+| `--info` / `--info-bg` | `hsl(212 80% 43%)` / `hsl(212 80% 48%/.12)` | `hsl(212 85% 70%)` / `…/.16` |
+| `--danger` / `--danger-bg` | `hsl(0 72% 45%)` / `hsl(0 72% 50%/.12)` | `hsl(0 80% 68%)` / `…/.16` |
+| `--accent-bg` | `hsl(12 80% 45%/.08)` | `hsl(14 85% 62%/.16)` |
 
-Reuse site `--transition-fast` (150ms) / `--transition-base` (250ms); add
-`--transition-slow` (350ms) for sheets/drawers. All motion wrapped in
-`@media (prefers-reduced-motion: no-preference)`; the theme toggle reuses the
-site's `document.startViewTransition` circular-reveal (R3) and is skipped under
-reduced-motion (instant swap).
+**Deltas from `theme.css` (deliberate admin refinements, not drift):**
+`--color-border` 88 vs site 90; `--color-surface` dark 15 vs 13;
+`--color-accent-hover` dark 70% vs site 68%; `--color-hairline` is admin-new.
+The admin owns these; the prototypes are the approved visual. `--cb` supersedes
+`--color-border` **everywhere a control outline appears** (input/select/ghost
+button) — the two earlier prototypes still using `--color-border` there are
+retro-fixed to `--cb` at build (designer S2).
 
-## Component contracts
+### `--tc-fg` on solid pills
 
-Each primitive is a Lit element with Shadow DOM, token-styled, exposing `part`s
-for structural theming and a defined **state matrix**
-(default/hover/focus-visible/active/disabled/loading/error where applicable).
+Foreground on a filled category/topic pill defaults to `--color-on-accent` (safe
+on the accent in both themes); overridable per-instance when a custom `--tc`
+background needs a different foreground (the white-on-light-pill fix, R4).
 
-| Component | Key props | Slots | Events | Parts | States |
-|---|---|---|---|---|---|
-| `cp-button` | `variant`, `size`, `arrow`, `loading`, `disabled`, `type` | default | `cp-click` | `button` | all |
-| `cp-input` | `value`, `type`, `label`, `invalid`, `describedby`, `disabled` | — | `cp-input`, `cp-change` | `field`,`label`,`control` | default/focus/invalid/disabled |
-| `cp-select` | `value`, `options`, `label`, `invalid` | — | `cp-change` | `control` | same |
-| `cp-checkbox`/`cp-radio` | `checked`, `label`, `name`, `value` | — | `cp-change` | `control`,`label` | default/focus/checked/disabled |
-| `cp-textarea` | `value`, `label`, `rows`, `invalid` | — | `cp-input` | `control` | same as input |
-| `cp-switch` | `checked`, `label`, `disabled` | — | `cp-change` | `track`,`thumb` | default/focus/checked/disabled |
-| `cp-tabs` | `tabs`, `active` | per-tab | `cp-tab-change` | `tab`,`list`,`panel` | default/hover/active(selected)/focus |
-| `cp-table` | `columns`, `rows`, `caption` | cell | `cp-row-action` | `table`,`row`,`cell` | default/hover-row/empty |
-| `cp-toast` | `variant`, `message`, `duration` | action | `cp-dismiss` | `toast` | info/ok/draft/error, entering/leaving |
-| `cp-dialog` | `open`, `heading`, `tone` | body,footer | `cp-confirm`,`cp-cancel` | `dialog`,`backdrop` | open/closed; tone default/danger |
-| `cp-drawer`/`cp-sheet` | `open`, `side` | default | `cp-close` | `panel`,`backdrop` | open/closed |
-| `cp-progress` | `value`(0–1 or indeterminate), `stage`, `label` | — | — | `track`,`bar` | determinate/indeterminate/staged |
-| `cp-skeleton` | `lines`, `variant` | — | — | `block` | shimmer (reduced-motion → static) |
-| `cp-pill` | `tone`, `--tc-fg` | default | — | `pill` | filled; text = `--color-on-accent` default |
-| `cp-status` | `state`, `label` | — | — | `dot`,`shape`,`label` | dot **+ shape + label** (not color-only, R4/NFR-5) |
-| `cp-badge` | `count`, `tone` | — | — | `badge` | default/zero(hidden) |
-| `cp-tooltip` | `text`, `placement` | trigger | — | `tip` | hidden/shown, focus + hover |
-| `cp-pagination` | `page`, `pages` | — | `cp-page` | `list`,`item` | default/current/disabled |
+## 4. Typography tokens (R6 — designer B4)
 
-Admin composites (`app-shell`, `publish-progress`, `sync-status`, editor,
-merge-view) are specified in their own capability specs; here they are only
-required to compose the primitives above (NFR-4) and reuse the tokens (R6, R5).
+Added as a first-class token group (was missing). Values from
+`document-direction.html`:
 
-## Accessibility (R7, NFR-5)
+| Token | Value | Use |
+|---|---|---|
+| `--fs-h1-hero` | `clamp(2rem, 6.5vw, 2.7rem)`, lh 1.12, wt 700 | article H1 (gradient-clip) |
+| `--fs-h1-section` | `clamp(1.9rem, 7vw, 2.6rem)` | screen titles |
+| `--fs-lede` | `1.22rem`, color `--color-text-secondary` | article lede |
+| `--fs-live` | `1.14rem` (`1.16rem` ≥768px) | editor live-preview body |
+| headings h1–h3 | lh 1.15, wt 700, `text-wrap:balance` | global |
+| token markers | `--font-mono`, wt 600, `--color-accent` | Obsidian raw-markdown reveal |
 
-- Every interactive element has a visible `:focus-visible` ring (a 2px
-  `--color-accent` outline with offset, defined once as a shared token).
-- Form controls: programmatic `label` association, `aria-invalid` +
-  `aria-describedby` for errors; `cp-status`/`cp-pill` never encode meaning by
-  color alone (dot **and** shape **and** text).
-- Dialogs/drawers: focus trap, `Esc` to cancel, restore focus on close,
-  `role="dialog"` + `aria-modal`, labelled by heading.
-- Icons decorative (`aria-hidden`); the logo SVG labelled by its wrapper.
-- Contrast validated in tests (below).
+The editor composite's *behavior* is deferred to `content-editor`, but its
+**type scale is locked here** so primitives and composite share it.
 
-## Testing strategy (R-all, NFR-7)
+## 5. Component contracts
+
+Lit + Shadow DOM, token-styled, `part`s for structural theming, explicit state
+matrix each. New vs the first draft: `cp-icon`, `cp-menu`, `cp-upload`,
+`cp-list-row`, `cp-steps`, `cp-empty-state`, `cp-tag`, `cp-chip`,
+`cp-color-input`, `cp-date-input`, `cp-banner` (all present in the prototypes;
+PO #1/#2/#6, designer S1).
+
+| Component | Key props | Events | States |
+|---|---|---|---|
+| `cp-icon` | `name`, `size=24` | — | renders inline `currentColor` SVG from the registry (§6) |
+| `cp-button` | `variant`, `size`, `arrow`, `loading`, `pressed`, `disabled`, `type` | `cp-click` | default/hover/focus/active/**pressed**(aria-pressed)/disabled/loading |
+| `cp-card` | `interactive` + slots pill/title/summary/meta/actions | `cp-click` | default/hover-lift/focus(interactive) |
+| `cp-input`/`cp-textarea` | `value`,`label`,`type`,`invalid`,`describedby`,`disabled` | `cp-input`,`cp-change` | default/focus/invalid/disabled |
+| `cp-select` | `value`,`options`,`label`,`invalid` | `cp-change` | same |
+| `cp-checkbox`/`cp-radio`/`cp-switch` | `checked`,`label`,`name`,`value`,`disabled` | `cp-change` | default/focus/checked/disabled |
+| `cp-color-input` | `value`(hex),`label` | `cp-change` | swatch + hex field (settings topics) |
+| `cp-date-input` | `value`,`label`,`min`,`max` | `cp-change` | native `type=date/datetime-local` wrapped (PO #6) |
+| `cp-tabs` | `tabs`,`active` | `cp-tab-change` | default/hover/selected/focus/**disabled** (gated nav, PO #12) |
+| `cp-table` | `columns`,`rows`,`caption`,`selectable`,`selected` | `cp-row-action`,`cp-select-change` | default/hover-row/**selected**/**loading**(skeleton rows)/empty (PO #3/#4) |
+| `cp-list-row` | `icon`,`title`,`meta` + actions slot | `cp-row-action` | the dominant bordered icon-circle+content+actions row (queue/deploys/conflicts/links) — distinct from tabular `cp-table` (designer S1) |
+| `cp-menu` | `open`,`items`,`anchor` | `cp-select`,`cp-close` | closed/open; item hover/focus/disabled (kebab overflow, PO #2) |
+| `cp-toast` | `tone`,`message`,`duration` | `cp-dismiss` | success/warning/info/danger; entering/leaving |
+| `cp-dialog` | `open`,`heading`,`tone`,`busy` | `cp-confirm`,`cp-cancel` | open/closed; tone default/danger; **busy**(suppresses Esc/backdrop while action in flight, PO #5) |
+| `cp-drawer`/`cp-sheet` | `open`,`side` | `cp-close` | open/closed; focus-trap |
+| `cp-progress` | `value`(0–1\|indeterminate),`label` | — | determinate/indeterminate (nav top-bar = indeterminate, PO #9) |
+| `cp-steps` | `steps:[{label,state}]` | — | per-step done/running/failed/pending — segmented staged indicator, separate from `cp-progress` bar (designer S1) |
+| `cp-skeleton` | `lines`,`variant` | — | shimmer (static under reduced-motion) |
+| `cp-empty-state` | `icon`,`title`,`hint` + action | — | whole-screen "not yet designed" + inline "queue empty" (designer S1) |
+| `cp-pill` | `--tc`,`--tc-fg` | — | **solid-fill** uppercase category/topic (R4) |
+| `cp-tag` | `tone` | — | **tinted** status badge (`--ok-bg`+`--ok` …), no uppercase — the second pill language, split out (designer B1) |
+| `cp-badge` | `count`,`tone` | — | default/zero(hidden) |
+| `cp-chip` | `label`,`removable`,`add` | `cp-remove`,`cp-add` | list chip with remove/add (magazine articles, designer S1) |
+| `cp-status` | `state`,`label` | — | dot **+ shape + label** (never color-only, NFR-5) |
+| `cp-tooltip` | `text`,`placement` | — | hidden/shown (hover + focus) |
+| `cp-upload` | `accept`,`multiple`,`state` | `cp-files`,`cp-retry` | **dropzone** idle/dragover/uploading(progress)/done/failed (PO #1, NFR-2) |
+| `cp-banner` | `tone`,`title` + action | `cp-action` | full-width overall-status surface (icon-circle+title/desc+action); distinct from the header `sync-status` chip (designer S1) |
+| `cp-pagination` | `page`,`pages` | `cp-page` | default/current/disabled |
+
+## 6. Icons (R3 — architect #10, designer N1, PO #11)
+
+A `cp-icon` primitive renders 24px `currentColor` inline SVG from a **single
+shared registry** (`src/icons/*.ts`, one exported path string per name:
+kebab/close/chevron/sun/moon/check/x/dash/warning/arrow/trash/plus…). One source
+kills drift across composites. The theme toggle is sun/moon via
+`document.startViewTransition` (reduced-motion → instant). Data glyphs currently
+shown as text (`en ✕`, `it —`) are replaced by `cp-icon` check/x/dash.
+
+## 7. SSR / hydration for Astro islands (architect #3)
+
+Primitives are **client-hydrated islands** (`client:visible`/`client:load`), not
+DSD-server-rendered, in v1: Astro renders the static token'd shell (header, page
+chrome, article HTML) as plain markup — so first paint is fully themed and
+FOUC-free via the `:root` tokens regardless of element upgrade — and only the
+interactive primitives hydrate. Each custom element ships a `:not(:defined)`
+fallback (min-height/skeleton) so pre-upgrade layout doesn't shift. DSD via
+`@lit-labs/ssr` is a **later optimization**, out of scope for v1 (recorded so
+Tasks don't assume it). Lit `static styles` ship in the component module.
+
+## 8. Packaging & registration (architect #4/#5/#6)
+
+- **Per-component subpath exports** (`./button`, `./input`, …) plus the barrel;
+  `"sideEffects": ["**/*.ts"]` (every `@customElement` is a required
+  registration side-effect) so admin imports only what it uses without
+  tree-shaking away `define()` calls.
+- **Define-if-absent guard** wraps each registration (`customElements.get(tag) ??
+  customElements.define(tag, cls)`) to survive HMR / double-bundling / two
+  versions coexisting.
+- **`lit` becomes a `peerDependency`** (shared range) so admin and cp resolve a
+  single Lit instance (no duplicate reactive-controller state / define clashes).
+- **Form-associated controls**: `cp-input/select/checkbox/radio/textarea/switch`
+  set `static formAssociated = true` and use `ElementInternals` for value
+  submission + native validity + `aria-invalid`, so they work inside a native
+  `<form>` (architect #7) — core for a form-heavy admin.
+
+## 9. Accessibility (R7, NFR-5)
+
+- Shared `:focus-visible` token: 2px `--color-accent` outline + offset, defined
+  once.
+- Form controls: programmatic label association, `aria-invalid` +
+  `aria-describedby`, form-associated (§8).
+- `cp-status`/`cp-tag` never encode meaning by color alone (dot **and** shape
+  **and** text).
+- Dialogs/drawers: focus-trap, `Esc` (unless `busy`), focus restore,
+  `role=dialog`+`aria-modal`, labelled by heading.
+- **Gradient H1** (R6, designer B5): the `background-clip:text` gradient runs
+  `linear-gradient(135deg, --color-accent, --color-text-primary)` — both
+  endpoints individually meet AA-large (≥3:1) on the page background in both
+  themes; a test asserts each endpoint token's contrast rather than the
+  un-sampleable blended pixel. Rationale documented as the large-text path.
+- Icons decorative (`aria-hidden`); logo labelled by its wrapper.
+
+## 10. Testing strategy (NFR-7)
 
 - **cp-components**: `@open-wc/testing` + `wtr` per component — render, prop→DOM,
-  event emission, `part` presence, disabled/loading behavior, and a
-  contrast/tokens assertion (computed style resolves to the expected token).
-- **Admin theme layer**: a unit test asserts the token set is present and equal
-  across all 4 theme blocks (guards the split-theme regression), and that
-  `data-theme` overrides `prefers-color-scheme` (R2).
-- **Visual states**: the approved prototypes are the reference; a Playwright
-  visual pass (light/dark @390px + desktop) covers the assembled screens later.
-- **Traceability**: each component test file names the requirement(s) it
-  satisfies in a header comment (R1…R8).
+  event emission, `part` presence, disabled/loading/busy behavior, form-value
+  submission, and a computed-style assertion resolving each token.
+- **Bridge completeness** (§2) + **theme-block invariant** (§3) as guard tests.
+- **Contrast**: assert each semantic token + gradient endpoint vs its background.
+- **Visual**: the approved prototypes are the reference; a Playwright pass
+  (light/dark @390px + desktop) covers assembled screens in later specs.
+- **Traceability**: each test file headers the requirement(s) it satisfies.
 
 ## Rejected alternatives
 
-- **Fork cp token *values* to red** (instead of a bridge): rejected — it strands
-  cp-components on the admin's palette and blocks the site from ever consuming it
-  with its own theme. The bridge keeps cp palette-agnostic.
-- **Utility-CSS / Tailwind**: rejected — the site is hand-rolled token CSS;
-  matching it (R1) and theming through custom properties is simpler and pierces
-  Shadow DOM for free.
-- **Light-DOM (unstyled) components**: rejected — Shadow DOM + `part` gives
-  encapsulated state matrices while custom properties still theme them; matches
-  cp's existing approach.
-- **Re-deriving primitives in admin only**: rejected — violates R8 (shared
-  library) and duplicates work the site will want.
-
-## Open decision (needs review before Tasks)
-
-**Repo topology.** Primitives must ship in cp-components so both apps consume
-them. Options: (A) unify `public-website` + `admin-website` + `components` into
-one workspace (`apps/*` + `packages/cp-components`, `workspace:*` deps) —
-cleanest for co-evolving tokens/components; (B) keep siblings and consume
-cp-components as a versioned GitHub-registry dep (publish → bump → install per
-change) — more release friction but zero restructuring. **Recommendation: (A).**
-This affects tooling/CI beyond the design system, so it is flagged here rather
-than decided unilaterally.
+- **Fork cp token *values* to red**: strands cp on the admin palette, blocks site
+  reuse. The bridge keeps cp palette-agnostic.
+- **Utility-CSS / Tailwind**: site is hand-rolled token CSS; custom properties
+  match it (R1) and pierce Shadow DOM for free.
+- **Light-DOM components**: lose encapsulated state matrices; cp already uses
+  Shadow DOM + `part`.
+- **DSD server-rendering in v1**: added complexity before it's needed; tokens
+  already give FOUC-free first paint (§7).
+- **Admin domain tones in the library**: violates the domain-free rule; mapped in
+  composites instead (§1).
 
 ## Requirement → design map
 
 | Req | Realized by |
 |---|---|
-| R1 tokens | Admin theme layer (verbatim site values) + semantic tokens table |
-| R2 atomic theming | 4-block theme layer + cross-block equality test |
-| R3 icons/motion | inline-SVG rule, motion tokens, startViewTransition reuse |
-| R4 components | cp extensions + `cp-pill`/`cp-status`/button/card contracts |
-| R5 progress/status | `cp-progress` (staged/indeterminate) + admin composites |
-| R6 editor | typography tokens + composite (own spec) reusing primitives |
-| R7 mobile/a11y | mobile-first tokens, focus token, a11y section |
-| R8 shared library | bridge reconciliation + cp ownership split |
+| R1 tokens | §3 theme layer (exact HSL) + semantic tokens incl. `--danger*`/`--cb` |
+| R2 atomic theming | §3 4-block generation + invariant test |
+| R3 icons/motion | §6 `cp-icon` registry + motion tokens + startViewTransition |
+| R4 components | §5 contracts; `cp-pill`(solid)/`cp-tag`(tinted) split |
+| R5 progress/status | §5 `cp-progress`/`cp-steps`/`cp-upload`/`cp-banner` + admin composites; nav = indeterminate top-bar |
+| R6 editor | §4 typography tokens + §9 gradient-H1 a11y (behavior → `content-editor`) |
+| R7 mobile/a11y | §9 + mobile-first tokens + focus token |
+| R8 shared library | §2 bridge + §1 ownership split + §8 packaging |
+
+## §10-decision — repo topology (needs user sign-off before Tasks)
+
+Primitives must ship in cp-components for both apps. **(A)** unify
+`public-website`+`admin-website`+`components` into one workspace (`apps/*` +
+`packages/cp-components`, `workspace:*`) — best TDD inner loop (co-edit, no
+publish cycle), but restructures 3 separately-CI'd/deploy-gated repos. **(B)**
+keep siblings, consume cp as a versioned GitHub-registry dep (publish→bump→
+install per change) — zero restructuring, slower loop. This dictates how Tasks
+are sequenced and the TDD cadence, so it is decided with the user, not here.

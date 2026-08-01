@@ -24,9 +24,12 @@ where the admin needs components the site lacks.
   clean neutral greys, warm-red accent `hsl(12 80% 45%)` / dark `hsl(14 85% 60%)`,
   rem spacing scale (`--spacing-xs…2xl`), radii `--radius-sm/md/lg`, system
   fonts, line-height 1.6.
-- THE SYSTEM SHALL add only admin semantic tokens: `--ok`/`--draft`/`--info`
-  and `--accent-bg`, each defined in **every** theme, each meeting WCAG AA
-  (≥4.5:1) against its background.
+- THE SYSTEM SHALL add only admin semantic tokens: `--ok`/`--draft`/`--info`/
+  `--danger` (each with a paired tinted `*-bg`), `--accent-bg`, `--color-hairline`,
+  and `--cb` (control-border), each defined in **every** theme. The foreground
+  variants SHALL meet WCAG AA (≥4.5:1) against their background; `--cb` SHALL meet
+  the ≥3:1 non-text minimum (WCAG 1.4.11) against the control's surface. Exact
+  values are locked in `design.md` §3.
 
 ### R2 — Theming is atomic (no split)
 - THE SYSTEM SHALL define the complete color-token set in each of: base `:root`,
