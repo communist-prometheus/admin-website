@@ -6,10 +6,16 @@ screen, on the design-system primitives (`../design-system/`). Reference:
 
 ## 1. Rendering & routing model
 
-**Decision: a client-side SPA shell** — Astro serves a single shell page that
-hydrates one `app-shell` Lit island; that island owns navigation and swaps screen
-modules in the content region. It is **not** an Astro multi-page/view-transitions
-app.
+**Decision: a client-side SPA shell** — a single HTML entry hydrates one
+`app-shell` Lit island; that island owns navigation and swaps screen modules in
+the content region. It is **not** a multi-page/view-transitions app.
+
+> **Refinement (2026-08-01, from implementation):** the host is **Vite**, not
+> Astro. The current admin is already a Vite+Vue SPA, and Astro's value (content
+> SSG/islands) is negligible for a client-only admin (SW git engine, client
+> auth) — so the shell is a **Vite + Lit SPA**. This is consistent with the
+> SPA-shell decision; only the server/bundler differs. Verified with a runnable
+> `redesign.html` preview mounting `<app-shell>` alongside the current app.
 
 Why (R4 + NFR-8): the admin carries persistent in-page state that must survive
 navigation — the push-queue/progress UI, live toasts, the auth session, and the

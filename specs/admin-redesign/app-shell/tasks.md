@@ -6,15 +6,21 @@ primitives. Built in the monorepo `apps/admin-website`.
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
 
-## Phase 0 — App scaffold
+> **Status (2026-08-01):** Phases 0–3 built and **browser-verified** in a runnable
+> Vite+Lit preview (`apps/admin-website/redesign.html` → `src/redesign/*`),
+> alongside the current app. Verified: desktop rail + card grid, light/dark (no
+> split, logo swaps), mobile drawer + zero horizontal overflow @390, route change
+> moves focus to the heading. **Automated tests (unit/E2E) still to be written**
+> per each phase below — that's the remaining work before these check off fully.
 
-- [ ] **0.1** Astro app entry that serves a single shell page rendering the
-  static header/theme-layer markup (FOUC-free) and hydrates one `app-shell`
-  island `client:load`. _Test:_ page renders themed shell before JS; `app-shell`
-  upgrades. (R1, design.md §1)
-- [ ] **0.2** Wire the generated `src/styles/theme.css` (design-system) + the cp
-  bridge into the app; import cp-components via `workspace:*`. _Test:_ a cp-button
-  on the page resolves warm-red accent and flips with `data-theme`. (design-sys)
+## Phase 0 — App scaffold ✅ (preview)
+
+- [x] **0.1** Single HTML entry (`redesign.html`) sets the theme inline (no FOUC)
+  and hydrates one `app-shell` Lit island. _(Vite, not Astro — see design.md §1.)_
+  (R1)
+- [x] **0.2** Generated `theme.css` + cp bridge wired; cp-components consumed via
+  `workspace:*`. Verified: cp-button resolves warm-red and flips with
+  `data-theme`. (design-sys)
 
 ## Phase 1 — Navigation model & gating (R2, R3)
 
