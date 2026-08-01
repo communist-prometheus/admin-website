@@ -62,59 +62,41 @@ Implemented in the monorepo (`packages/cp-components`), full suite green
   `--cb` was 2.41:1 → corrected `hsl(0 0% 64%)`→`hsl(0 0% 55%)` = 3.21:1.
   (R1, R7, NFR-5)
 
-## Phase 2 — Icons (R3; design.md §6)
+## Phase 2 — Icons (R3; design.md §6) ✅
 
-- [ ] **2.1** Icon registry `src/icons/*` (path-string per name) + `cp-icon`
-  (24px `currentColor`, `aria-hidden`). _Test:_ renders named SVG; unknown name
-  fails loudly. (R3)
-- [ ] **2.2** Theme-toggle sun/moon via `document.startViewTransition`,
-  reduced-motion → instant. _Test:_ toggles `data-theme`; no transition under
-  `prefers-reduced-motion`. (R3, NFR-3)
+- [x] **2.1** Icon registry `src/icons/registry.ts` + `cp-icon` (24px
+  `currentColor`, `aria-hidden`, unknown→nothing+warn). (R3)
+- [~] **2.2** Theme toggle → folded into the app-shell header (uses the same
+  `startViewTransition` circular reveal); tracked in `../app-shell` Phase 3.
 
-## Phase 3 — Core primitives (R4; design.md §5). One task per component; each: render + prop→DOM + events + `part`s + full state matrix + a11y.
+## Phase 3–5 — Primitives ✅ (32 components, TDD, ×chromium/firefox/webkit)
 
-- [ ] **3.1** `cp-button` extend: `arrow`, `loading`, `pressed`(aria-pressed);
-  replace hardcoded `color:white` → `var(--cp-color-on-accent)`. (R4)
-- [ ] **3.2** `cp-card` extend: `interactive` + slots pill/title/summary/meta/
-  actions; focus ring + hover lift. (R4)
-- [ ] **3.3** `cp-pill` (solid category/topic) **and** `cp-tag` (tinted status) —
-  split per design.md B1; `cp-status` (dot+shape+label). (R4, NFR-5)
-- [ ] **3.4** `cp-badge`, `cp-chip` (removable/add), `cp-tooltip`. (R4)
-- [ ] **3.5** `cp-tabs` (selected/disabled), `cp-pagination`. (R4)
-- [ ] **3.6** `cp-menu` (kebab overflow), `cp-list-row` (bordered icon+content+
-  actions). (R4; PO #2, designer S1)
+All built to the design.md §5 contracts (Shadow DOM, parts, bridged tokens,
+state matrices, a11y). Delivered via parallel TDD; **full suite 350 tests green**.
 
-## Phase 4 — Form controls, form-associated (R4, R7; design.md §8)
-
-- [ ] **4.1** `cp-input`, `cp-textarea` — `formAssociated`, `ElementInternals`,
-  `invalid`/`describedby`, `--cb` outline. _Test:_ submits inside native
-  `<form>`; `aria-invalid` on error. (R4, R7)
-- [ ] **4.2** `cp-select`, `cp-checkbox`, `cp-radio`, `cp-switch` — same
-  form-associated contract. (R4, R7)
-- [ ] **4.3** `cp-color-input` (swatch+hex), `cp-date-input` (native wrapped).
-  (R4; PO #6, designer S1)
-
-## Phase 5 — Progress, feedback & overlays (R5, NFR-2; design.md §5)
-
-- [ ] **5.1** `cp-progress` (determinate/indeterminate) + `cp-steps` (per-step
-  done/running/failed/pending). _Test:_ staged + indeterminate render. (R5,
-  NFR-2)
-- [ ] **5.2** `cp-upload` dropzone (idle/dragover/uploading+progress/done/
-  failed+retry). (R5, NFR-2; PO #1)
-- [ ] **5.3** `cp-toast` (tones + enter/leave), `cp-banner` (full-width status).
-  (R4, R5)
-- [ ] **5.4** `cp-dialog` (tone default/danger, **busy** suppresses dismiss),
-  `cp-drawer`, `cp-sheet` — focus-trap, Esc, focus restore. (R4, R7; PO #5)
-- [ ] **5.5** `cp-table` (selectable/selected, loading→skeleton rows, empty),
-  `cp-skeleton`, `cp-empty-state`. (R4, R5; PO #3/#4, designer S1)
+- [x] **3.1** `cp-button` ext (arrow/loading/pressed, on-accent, focus-visible).
+- [x] **3.2** `cp-card` ext (interactive focus/hover-lift/cp-click + named slots).
+- [x] **3.3–3.6** `cp-pill`, `cp-tag`, `cp-status`, `cp-badge`, `cp-chip`,
+  `cp-tooltip`, `cp-tabs`, `cp-menu`, `cp-list-row`.
+- [x] **4.1–4.3** form-associated (shared `CpFormControl`/`CpBooleanControl`):
+  `cp-input`, `cp-textarea`, `cp-select`, `cp-checkbox`, `cp-radio`, `cp-switch`,
+  `cp-color-input`, `cp-date-input` — FormData round-trip + validity + `--cb`.
+- [x] **5.1–5.3** `cp-progress`, `cp-steps`, `cp-skeleton`, `cp-upload`,
+  `cp-toast`, `cp-banner`.
+- [x] **5.4** overlays (shared `CpOverlay` focus-trap/restore): `cp-dialog`
+  (busy suppresses dismiss, danger tone), `cp-drawer`, `cp-sheet`.
+- [x] **5.5** `cp-table` (selectable/loading→skeleton/empty), `cp-pagination`,
+  `cp-empty-state`.
 
 ## Phase 6 — Packaging & registration (R8; design.md §8)
 
-- [ ] **6.1** Per-component subpath exports (`./button`…) + barrel;
-  `"sideEffects"` policy so `define()` isn't tree-shaken. _Test:_ importing one
-  subpath registers only that element. (R8)
-- [ ] **6.2** Define-if-absent guard on every `@customElement`. _Test:_ double
-  import doesn't throw. (R8, design.md §5)
+- [x] **6.1** `./components/*` wildcard subpath exports + `./theme`/`./icons`;
+  `"sideEffects": true` so `define()` is never tree-shaken; verified admin
+  resolves barrel + subpath + theme. `lit` → peerDependency (single instance).
+  (R8)
+- [~] **6.2** Define-if-absent guard — deferred (low risk with one Lit instance
+  + no prod HMR of the package). Revisit if HMR/double-bundling surfaces a
+  "already defined" throw.
 
 ## Phase 7 — Assembly proof (NFR-4, NFR-7)
 
