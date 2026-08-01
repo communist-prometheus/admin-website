@@ -10,24 +10,35 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
 
 ## Phase 0 — Monorepo workspace (prerequisite; design.md §10)
 
-- [ ] **0.1** Scaffold root Bun workspace (`package.json` `workspaces:
-  ["apps/*","packages/*"]`, shared tsconfig base, root scripts). _Test:_
-  `bun install` resolves; `bun run -F '*' build` is wired. (R8)
-- [ ] **0.2** Move `public-website` → `apps/public-website`, `admin-website` →
-  `apps/admin-website`, `components` → `packages/cp-components`, **preserving git
-  history** (subtree/filter-repo). Keep `e2e-toolkit` submodule. _Test:_ each
-  app's existing unit/e2e suite runs from its new path. (R8)
-- [ ] **0.3** Rewire admin `package.json` to depend on
-  `@communist-prometheus/cp-components: workspace:*`; `lit` → peerDependency in
-  cp, shared range pinned at root. _Test:_ admin imports a cp component from
-  source; single Lit instance asserted (no dup-registration warning). (R8,
-  design.md §8)
-- [ ] **0.4** Preserve every CI/deploy gate: each app keeps its own pipeline;
-  update paths only. _Test:_ all three pipelines green on a no-op PR; admin
-  `bun run validate` green; deploy gates unaffected. (NFR-7)
+**POC assembled in isolation at `C:\Projects\Prometheus-mono`** (reversible;
+source repos untouched — admin only unshallowed). History preserved: 1629
+commits, all three origins reachable. See that repo's `CUTOVER.md`.
 
-> Gate: Phase 0 fully green (all three apps build + existing suites pass) before
-> any primitive work.
+- [x] **0.1** Root Bun workspace scaffold (`package.json` `workspaces:
+  ["apps/*","packages/*","apps/*/packages/*"]`, `tsconfig.base.json`,
+  `.gitignore`, root scripts). _Verified:_ `bun install` resolves the whole
+  workspace (2348 pkgs). (R8)
+- [x] **0.2** Subtree-merge `components@master` → `packages/cp-components`,
+  `admin-website@feat/admin-redesign` → `apps/admin-website`,
+  `public-website@master` → `apps/public-website`, **history preserved**.
+  public-website's nested `wfr-*` packages folded under the root via
+  `apps/*/packages/*`. _Verified:_ original commits of all three reachable;
+  `cp-components` builds (`tsc`→`dist`). _Submodule reconciliation deferred to
+  cutover (nested `.gitmodules` are inert)._ (R8)
+- [x] **0.3** admin `package.json` depends on
+  `@communist-prometheus/cp-components: workspace:*`. _Verified:_ admin resolves
+  it **from source** (symlink) — exports `CpButton/CpCard/colors/…`, no publish
+  cycle. _`lit` → peerDependency + shared range: fold into the cp packaging task
+  (design.md §8)._ (R8)
+- [ ] **0.4 — CUTOVER (blast radius; decide with user).** Target remote; move 13
+  scattered workflows to root + path-filter (preserve every gate — admin
+  `validate`/sonar, deploy-gate smoke, dup-publish, dev/master reindex); single
+  root `.gitmodules`; drop per-app locks; re-point deploy configs; full
+  build/test green per app. _Test:_ all pipelines green on a no-op PR per app.
+  (NFR-7)
+
+> Gate: Phase 0.4 fully green (all three apps build + existing suites pass) before
+> any primitive work. **STOP before 0.4** — cutover is a separate reviewed step.
 
 ## Phase 1 — Tokens & theme layer (R1, R2; design.md §2–§4)
 
