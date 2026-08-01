@@ -39,15 +39,17 @@
   h1,h2,h3{line-height:1.15;font-weight:700;text-wrap:balance;}
   button{font:inherit;color:inherit;cursor:pointer;border:none;background:none;} a{color:inherit;text-decoration:none;}
   :focus-visible{outline:2px solid var(--color-accent);outline-offset:2px;border-radius:.3rem;}
+  h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus{outline:none;} /* SR focus move, no visual ring */
   .tnum{font-variant-numeric:tabular-nums;}
   .ic{width:1.35rem;height:1.35rem;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none;}
   .ic.fill{fill:currentColor;stroke:none;}
   @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
 
   .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.05rem;background:var(--color-accent);color:var(--color-on-accent);border-radius:var(--radius-sm);font-size:.92rem;font-weight:600;white-space:nowrap;transition:background var(--transition-fast);}
-  .btn:hover{background:var(--color-accent-hover);} .btn:disabled{opacity:.55;cursor:default;}
+  .btn:hover{background:var(--color-accent-hover);}
+  .btn:disabled{background:var(--color-surface);color:var(--color-text-secondary);border:1px solid var(--color-border);cursor:default;}
   .btn.ghost{background:var(--color-surface-elevated);color:var(--color-text-primary);border:1px solid var(--color-border);} .btn.ghost:hover{border-color:var(--color-text-secondary);}
-  .btn.sm{padding:.38rem .75rem;font-size:.85rem;} .btn .ic{width:1.05rem;height:1.05rem;}
+  .btn.sm{padding:.5rem .9rem;font-size:.85rem;min-height:2.5rem;} .btn .ic{width:1.05rem;height:1.05rem;}
   .pill{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .55rem;border-radius:var(--radius-sm);font-size:.76rem;font-weight:600;white-space:nowrap;}
   .pill.ok{color:var(--ok);background:var(--ok-bg);} .pill.info{color:var(--info);background:var(--info-bg);} .pill.draft{color:var(--draft);background:var(--draft-bg);} .pill.danger{color:var(--danger);background:var(--danger-bg);}
   .pill .ic{width:.85rem;height:.85rem;}
@@ -60,14 +62,14 @@
   .top{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:.7rem;padding:.75rem var(--spacing-sm);background:var(--color-background);border-bottom:1px solid var(--color-border);}
   .brand{display:flex;align-items:center;color:var(--color-text-primary);} .brand svg{height:1.7rem;width:auto;}
   .top .sp{flex:1;}
-  .iconbtn{width:2.3rem;height:2.3rem;border-radius:.55rem;display:grid;place-items:center;color:var(--color-text-secondary);flex:none;} .iconbtn:hover{background:var(--color-surface);color:var(--color-text-primary);}
+  .iconbtn{width:2.6rem;height:2.6rem;border-radius:.55rem;display:grid;place-items:center;color:var(--color-text-secondary);flex:none;} .iconbtn:hover{background:var(--color-surface);color:var(--color-text-primary);}
   .theme-ic .sun{display:none;} .theme-ic .moon{display:block;}
   :root[data-theme="dark"] .theme-ic .moon{display:none;} :root[data-theme="dark"] .theme-ic .sun{display:block;}
   :root[data-theme="light"] .theme-ic .moon{display:block;} :root[data-theme="light"] .theme-ic .sun{display:none;}
   @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .theme-ic .moon{display:none;} :root:not([data-theme="light"]) .theme-ic .sun{display:block;} }
 
   .switcher{display:flex;gap:.3rem;padding:.6rem var(--spacing-sm);overflow-x:auto;border-bottom:1px solid var(--color-hairline);position:sticky;top:3.8rem;background:var(--color-background);z-index:30;}
-  .switcher button{padding:.45rem .9rem;border-radius:var(--radius-sm);font-size:.9rem;font-weight:600;color:var(--color-text-secondary);border:1px solid var(--color-border);background:var(--color-surface-elevated);white-space:nowrap;flex:none;}
+  .switcher button{padding:.5rem .9rem;min-height:2.5rem;border-radius:var(--radius-sm);font-size:.9rem;font-weight:600;color:var(--color-text-secondary);border:1px solid var(--color-border);background:var(--color-surface-elevated);white-space:nowrap;flex:none;}
   .switcher button.on{color:var(--color-on-accent);background:var(--color-accent);border-color:var(--color-accent);}
 
   main{max-width:900px;margin-inline:auto;padding:var(--spacing-lg) var(--spacing-sm) var(--spacing-2xl);}
@@ -80,27 +82,36 @@
   .banner{display:flex;flex-wrap:wrap;align-items:center;gap:.7rem var(--spacing-md);padding:var(--spacing-md);margin-bottom:var(--spacing-lg);border-radius:var(--radius-md);
     border:1px solid var(--color-border);background:var(--color-surface-elevated);}
   .banner>.btn{flex:none;} @media (max-width:540px){ .banner>.btn{flex:1 1 100%;justify-content:center;} }
+  .statetoggle{display:inline-flex;gap:.2rem;padding:.25rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:999px;margin-bottom:var(--spacing-md);}
+  .statetoggle button{padding:.4rem .9rem;border-radius:999px;font-size:.84rem;font-weight:600;color:var(--color-text-secondary);}
+  .statetoggle button.on{background:var(--color-accent);color:var(--color-on-accent);}
+  #sync.resting .state-incident, #sync:not(.resting) .state-resting{display:none;}
+  #sync.resting .queue-live, #sync:not(.resting) .queue-empty{display:none;}
+  .queue-empty{display:flex;align-items:center;gap:.7rem;padding:var(--spacing-md);border:1px solid var(--color-hairline);border-radius:var(--radius-md);color:var(--color-text-secondary);font-size:.92rem;}
+  .queue-empty .ri{color:var(--ok);background:var(--ok-bg);}
   .banner .bi{width:2.6rem;height:2.6rem;border-radius:50%;display:grid;place-items:center;flex:none;}
   .banner .bi.ok{color:var(--ok);background:var(--ok-bg);} .banner .bi.info{color:var(--info);background:var(--info-bg);} .banner .bi.danger{color:var(--danger);background:var(--danger-bg);}
   .banner .bt{flex:1 1 12rem;min-width:0;} .banner .bt b{font-size:1.05rem;} .banner .bt p{font-size:.86rem;color:var(--color-text-secondary);}
 
   /* queue / deploy rows */
   .rows{display:flex;flex-direction:column;border:1px solid var(--color-hairline);border-radius:var(--radius-md);overflow:hidden;}
-  .row{display:flex;align-items:flex-start;gap:.85rem;padding:var(--spacing-md);border-bottom:1px solid var(--color-hairline);}
+  .row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:.6rem .85rem;padding:var(--spacing-md);border-bottom:1px solid var(--color-hairline);}
   .row:last-child{border-bottom:none;}
-  .row .ri{width:1.9rem;height:1.9rem;border-radius:.5rem;display:grid;place-items:center;flex:none;}
-  .row .ri.ok{color:var(--ok);background:var(--ok-bg);} .row .ri.info{color:var(--info);background:var(--info-bg);} .row .ri.draft{color:var(--draft);background:var(--draft-bg);} .row .ri.danger{color:var(--danger);background:var(--danger-bg);}
-  .row .rc{flex:1;min-width:0;} .row .rc .rt{font-weight:600;font-size:.95rem;} .row .rc .rm{font-size:.82rem;color:var(--color-text-secondary);margin-top:.15rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;}
-  .row .ra{display:flex;flex-direction:column;align-items:flex-end;gap:.5rem;flex:none;}
+  .ri{width:1.9rem;height:1.9rem;border-radius:.5rem;display:grid;place-items:center;flex:none;}
+  .ri.ok{color:var(--ok);background:var(--ok-bg);} .ri.info{color:var(--info);background:var(--info-bg);} .ri.draft{color:var(--draft);background:var(--draft-bg);} .ri.danger{color:var(--danger);background:var(--danger-bg);}
+  .row .rc{flex:1 1 55%;min-width:9.5rem;} .row .rc .rt{font-weight:600;font-size:.95rem;} .row .rc .rm{font-size:.82rem;color:var(--color-text-secondary);margin-top:.15rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;}
+  .row .ra{display:flex;flex-direction:column;align-items:flex-end;gap:.5rem;flex:none;margin-left:auto;}
   .steps{display:flex;gap:4px;margin-top:.6rem;} .steps i{height:4px;width:2rem;border-radius:2px;background:var(--color-hairline);}
   .steps i.done{background:var(--ok);} .steps i.run{background:var(--info);animation:pulse 1.1s var(--transition-base) infinite;} .steps i.fail{background:var(--danger);}
   .bar{height:.35rem;border-radius:999px;background:var(--color-hairline);overflow:hidden;width:min(11rem,42vw);margin-top:.5rem;} .bar i{display:block;height:100%;background:var(--color-accent);border-radius:999px;transition:width var(--transition-base);}
+  .bar.info i{background:var(--info);}
   .retry-cd{font-variant-numeric:tabular-nums;}
 
   /* conflicts list */
-  .conf-row{display:flex;align-items:center;gap:.85rem;padding:var(--spacing-md);border-bottom:1px solid var(--color-hairline);}
+  .conf-row{display:flex;flex-wrap:wrap;align-items:center;gap:.7rem .85rem;padding:var(--spacing-md);border-bottom:1px solid var(--color-hairline);}
   .conf-row:last-child{border-bottom:none;}
-  .conf-row .cc{flex:1;min-width:0;} .conf-row .cc .ct{font-weight:600;} .conf-row .cc .cs{font-family:var(--font-mono);font-size:.78rem;color:var(--color-text-secondary);}
+  .conf-row .cc{flex:1 1 60%;min-width:11rem;} .conf-row .cc .ct{font-weight:600;} .conf-row .cc .cs{font-family:var(--font-mono);font-size:.78rem;color:var(--color-text-secondary);word-break:break-all;}
+  .conf-row .btn{flex:none;} .conf-row .pill{flex:none;}
 
   /* merge editor */
   .merge-head{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1rem;margin-bottom:var(--spacing-md);}
@@ -116,15 +127,20 @@
   .side .sl .name{font-size:.76rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--color-text-secondary);}
   .side.ours{background:var(--info-bg);} .side.theirs{background:var(--draft-bg);}
   .side.chosen{outline:2px solid var(--ok);outline-offset:-2px;}
-  .side .take{padding:.3rem .7rem;border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;border:1px solid var(--color-border);background:var(--color-background);}
-  .side .take:hover{border-color:var(--color-text-secondary);}
+  .side .take{padding:.55rem .9rem;min-height:2.75rem;border-radius:var(--radius-sm);font-size:.82rem;font-weight:600;border:1px solid var(--color-border);background:var(--color-surface-elevated);transition:background var(--transition-fast),border-color var(--transition-fast);}
+  .side .take:hover{border-color:var(--color-text-secondary);background:var(--color-surface);box-shadow:var(--shadow-sm);}
+  .side .take[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .hunk .hb{display:flex;gap:.5rem;padding:.6rem .8rem;border-top:1px solid var(--color-hairline);background:var(--color-surface);}
+  .hunk .hb .take{flex:1;justify-content:center;display:inline-flex;align-items:center;gap:.4rem;}
   .hunk.resolved .resolved-note{display:flex;} .resolved-note{display:none;align-items:center;gap:.4rem;padding:.5rem .8rem;color:var(--ok);font-size:.82rem;font-weight:600;background:var(--ok-bg);}
-  .mergebar{position:sticky;bottom:0;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;padding:.8rem 0;margin-top:var(--spacing-lg);border-top:1px solid var(--color-border);background:var(--color-background);}
+  .mergebar{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin:var(--spacing-lg) calc(-1 * var(--spacing-sm)) 0;padding:.8rem var(--spacing-sm);border-top:1px solid var(--color-border);background:var(--color-background);}
   .mergebar .sp{flex:1;}
+  @media (min-width:768px){ .mergebar{margin-inline:calc(-1 * var(--spacing-md));padding-inline:var(--spacing-md);} }
 
   .toasts{position:fixed;left:0;right:0;bottom:var(--spacing-md);z-index:80;display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:0 var(--spacing-sm);pointer-events:none;}
-  .toast{pointer-events:auto;display:flex;gap:.6rem;width:min(100%,420px);padding:.8rem 1rem;background:var(--color-surface-elevated);border:1px solid var(--color-border);border-left:3px solid var(--ok);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);animation:tin var(--transition-base);}
-  @keyframes tin{from{opacity:0;transform:translateY(10px);}to{opacity:1;}} .toast .ic{color:var(--ok);}
+  .toast{pointer-events:auto;display:flex;gap:.6rem;width:min(100%,420px);padding:.8rem 1rem;background:var(--color-surface-elevated);border:1px solid var(--color-border);border-left:3px solid var(--info);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);animation:tin var(--transition-base);}
+  @keyframes tin{from{opacity:0;transform:translateY(10px);}to{opacity:1;}} .toast .ic{color:var(--info);flex:none;}
+  .toast.ok{border-left-color:var(--ok);} .toast.ok .ic{color:var(--ok);}
 
   @media (min-width:768px){
     .top{padding:.75rem var(--spacing-md);} main{padding:var(--spacing-xl) var(--spacing-md) var(--spacing-2xl);}
@@ -154,26 +170,53 @@
   <section class="screen on" id="sync">
     <div class="sechead"><h1>Синхронизация</h1><span class="sp"></span></div>
 
-    <div class="banner">
-      <div class="bi info"><svg class="ic spin" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9" /></svg></div>
+    <div class="statetoggle" role="group" aria-label="Демонстрационное состояние экрана">
+      <button class="on" data-state="incident">Инцидент</button>
+      <button data-state="resting">Спокойно</button>
+    </div>
+
+    <div class="banner state-incident">
+      <div class="bi draft"><svg class="ic" viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg></div>
       <div class="bt"><b>1 коммит в очереди</b><p>Пуш отклонён один раз (сеть) · повтор через <span class="retry-cd" id="cd">0:06</span>. Локально всё сохранено — правки не потеряются.</p></div>
       <button class="btn sm" id="retryNow">Повторить сейчас</button>
     </div>
+    <div class="banner state-resting">
+      <div class="bi ok"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7"/></svg></div>
+      <div class="bt"><b>Всё синхронизировано</b><p>Очередь пуста · последний пуш develop — 3 минуты назад, успешно.</p></div>
+    </div>
 
     <div class="label grouplabel">Очередь пуша</div>
-    <div class="rows">
+    <div class="queue-empty"><div class="ri"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7"/></svg></div>Очередь пуста — все правки отправлены.</div>
+    <div class="rows queue-live">
       <div class="row">
         <div class="ri info"><svg class="ic spin" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/></svg></div>
+        <div class="rc"><div class="rt">Публикация журнала №17 (обложка)</div>
+          <div class="rm"><span>ветка develop</span><span>·</span><span>отправка…</span></div></div>
+        <div class="ra"><span class="pill info">пушится…</span></div>
+      </div>
+      <div class="row">
+        <div class="ri draft"><svg class="ic" viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg></div>
         <div class="rc"><div class="rt">Правки «Иллюзия социализма…» (ru)</div>
-          <div class="rm"><span>ветка develop</span><span>·</span><span>только что</span></div></div>
-        <div class="ra"><span class="pill draft"><svg class="ic" viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>повтор 0:06</span>
-          <button class="btn ghost sm">Повторить</button></div>
+          <div class="rm"><span>ветка develop</span><span>·</span><span>сеть недоступна</span></div></div>
+        <div class="ra"><span class="pill draft">повтор <span id="cd2">0:06</span></span><button class="btn ghost sm">Повторить</button></div>
+      </div>
+      <div class="row">
+        <div class="ri draft"><svg class="ic" viewBox="0 0 24 24"><path d="M8 3v4M8 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM16 9c0 6-8 3-8 6"/></svg></div>
+        <div class="rc"><div class="rt">Правки «К вопросу о партии» (ru)</div>
+          <div class="rm"><span>ветка develop</span><span>·</span><span>chief изменил те же строки</span></div></div>
+        <div class="ra"><span class="pill draft">конфликт · 3 места</span><button class="btn sm" data-goto="merge">Разрешить <svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+      </div>
+      <div class="row">
+        <div class="ri danger"><svg class="ic" viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M12 15v2"/></svg></div>
+        <div class="rc"><div class="rt">Правки «Анатомия гниения» (ru)</div>
+          <div class="rm"><span>ветка develop</span><span>·</span><span>сессия GitHub истекла</span></div></div>
+        <div class="ra"><span class="pill danger">нужен вход</span><button class="btn sm">Войти заново</button></div>
       </div>
       <div class="row">
         <div class="ri danger"><svg class="ic" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></div>
-        <div class="rc"><div class="rt">Публикация журнала №17 (обложка)</div>
+        <div class="rc"><div class="rt">Публикация на master</div>
           <div class="rm"><span>ветка master</span><span>·</span><span>защищённая ветка (GH006)</span></div></div>
-        <div class="ra"><span class="pill danger">пуш отклонён</span><button class="btn ghost sm">Открыть в PR</button></div>
+        <div class="ra"><span class="pill danger">нужен PR</span><button class="btn ghost sm">Открыть PR</button></div>
       </div>
     </div>
 
@@ -184,7 +227,7 @@
         <div class="rc"><div class="rt">develop · «Иллюзия социализма…»</div>
           <div class="rm"><span>andswew</span><span>·</span><span>только что</span><span>·</span><span>шаг 3 из 5 — сборка</span></div>
           <div class="steps"><i class="done"></i><i class="done"></i><i class="run"></i><i></i><i></i></div>
-          <div class="bar"><i style="width:58%"></i></div></div>
+          <div class="bar info"><i style="width:58%"></i></div></div>
         <div class="ra"><span class="pill info">деплой · 58%</span></div>
       </div>
       <div class="row">
@@ -199,7 +242,7 @@
         <div class="rc"><div class="rt">develop · переиндексация (ru)</div>
           <div class="rm"><span>система</span><span>·</span><span>1 час назад</span><span>·</span><span>упал на шаге 4</span></div>
           <div class="steps"><i class="done"></i><i class="done"></i><i class="done"></i><i class="fail"></i><i></i></div></div>
-        <div class="ra"><span class="pill danger">индекс не обновлён</span><button class="btn ghost sm">Открыть лог</button></div>
+        <div class="ra"><span class="pill danger">индекс не обновлён</span><button class="btn ghost sm">Повторить</button><a class="meta" href="#" style="color:var(--info)">открыть лог</a></div>
       </div>
     </div>
     <p class="meta" style="margin-top:var(--spacing-md)">Публикация ≠ индекс: статья на сайте, но поиск обновится отдельно. Деплой и переиндексация — разные статусы, чтобы красный шаг не пугал зря.</p>
@@ -207,18 +250,20 @@
 
   <!-- ===== CONFLICTS LIST ===== -->
   <section class="screen" id="conflicts">
-    <div class="sechead"><h1>Конфликты</h1><span class="pill danger" style="align-self:center">2 файла</span><span class="sp"></span></div>
+    <div class="sechead"><h1>Конфликты</h1><span class="pill draft" style="align-self:center">2 файла</span><span class="sp"></span></div>
     <p class="meta" style="margin-bottom:var(--spacing-md);max-width:64ch">Кто-то изменил те же строки, что и вы, пока правки ждали пуша. Ничего не потеряно — выберите, чью версию оставить, по каждому месту.</p>
     <div class="rows">
       <div class="conf-row">
-        <div class="ri danger" style="width:1.9rem;height:1.9rem;border-radius:.5rem;display:grid;place-items:center;flex:none;color:var(--danger);background:var(--danger-bg)"><svg class="ic" viewBox="0 0 24 24"><path d="M8 3v4M8 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM16 9c0 6-8 3-8 6"/></svg></div>
-        <div class="cc"><div class="ct">Иллюзия социализма и реальность капитала в СССР</div><div class="cs">blog/illuziya-socializma…/index.ru.md · 3 конфликта</div></div>
+        <div class="ri draft"><svg class="ic" viewBox="0 0 24 24"><path d="M8 3v4M8 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM16 9c0 6-8 3-8 6"/></svg></div>
+        <div class="cc"><div class="ct">Иллюзия социализма и реальность капитала в СССР</div><div class="cs">blog/illuziya-socializma…/index.ru.md</div></div>
+        <span class="pill draft">3 места</span>
         <button class="btn sm" data-goto="merge">Разрешить <svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       </div>
       <div class="conf-row">
-        <div class="ri danger" style="width:1.9rem;height:1.9rem;border-radius:.5rem;display:grid;place-items:center;flex:none;color:var(--danger);background:var(--danger-bg)"><svg class="ic" viewBox="0 0 24 24"><path d="M8 3v4M8 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM16 9c0 6-8 3-8 6"/></svg></div>
-        <div class="cc"><div class="ct">Настройки · темы</div><div class="cs">settings/topics.json · 1 конфликт</div></div>
-        <button class="btn ghost sm" data-goto="merge">Разрешить <svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <div class="ri draft"><svg class="ic" viewBox="0 0 24 24"><path d="M8 3v4M8 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM16 9c0 6-8 3-8 6"/></svg></div>
+        <div class="cc"><div class="ct">Настройки · темы</div><div class="cs">settings/topics.json</div></div>
+        <span class="pill draft">1 место</span>
+        <button class="btn sm" data-goto="merge">Разрешить <svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       </div>
     </div>
   </section>
@@ -239,11 +284,12 @@
         <div class="hh"><svg class="ic" style="width:1rem;height:1rem" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>Конфликт 1 — абзац</div>
         <div class="resolved-note"><svg class="ic" style="width:1rem;height:1rem" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7"/></svg>Выбрана ваша версия</div>
         <div class="sides">
-          <div class="side ours"><div class="sl"><span class="name">Ваша версия</span><button class="take" data-take>Взять</button></div>
+          <div class="side ours"><div class="sl"><span class="name">Ваша версия</span><button class="take" data-take aria-pressed="false">Взять</button></div>
             «Накопление богатства на одном полюсе есть накопление нищеты на противоположном».</div>
-          <div class="side theirs"><div class="sl"><span class="name">Из репозитория · chief</span><button class="take" data-take>Взять</button></div>
+          <div class="side theirs"><div class="sl"><span class="name">Из репозитория · chief</span><button class="take" data-take aria-pressed="false">Взять</button></div>
             «Накопление богатства на одном полюсе есть в то же время накопление нищеты, муки труда и рабства».</div>
         </div>
+        <div class="hb"><button class="take" data-both aria-pressed="false"><svg class="ic" style="width:1rem;height:1rem" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7"/></svg>Оставить обе версии</button></div>
       </div>
 
       <p>Между конфликтами — общий текст, который не менялся и переносится как есть.</p>
@@ -252,22 +298,24 @@
         <div class="hh"><svg class="ic" style="width:1rem;height:1rem" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>Конфликт 2 — сноска</div>
         <div class="resolved-note"><svg class="ic" style="width:1rem;height:1rem" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7"/></svg>Выбрана версия из репозитория</div>
         <div class="sides">
-          <div class="side ours"><div class="sl"><span class="name">Ваша версия</span><button class="take" data-take>Взять</button></div>
+          <div class="side ours"><div class="sl"><span class="name">Ваша версия</span><button class="take" data-take aria-pressed="false">Взять</button></div>
             [^24]: Маркс, «Капитал», т. I, гл. XXIII.</div>
-          <div class="side theirs"><div class="sl"><span class="name">Из репозитория · chief</span><button class="take" data-take>Взять</button></div>
+          <div class="side theirs"><div class="sl"><span class="name">Из репозитория · chief</span><button class="take" data-take aria-pressed="false">Взять</button></div>
             [^24]: К. Маркс. Капитал. Том I, глава 23.</div>
         </div>
+        <div class="hb"><button class="take" data-both aria-pressed="false"><svg class="ic" style="width:1rem;height:1rem" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7"/></svg>Оставить обе версии</button></div>
       </div>
 
       <div class="hunk" data-hunk>
         <div class="hh"><svg class="ic" style="width:1rem;height:1rem" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>Конфликт 3 — заголовок</div>
         <div class="resolved-note"><svg class="ic" style="width:1rem;height:1rem" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7"/></svg>Оставлены обе строки</div>
         <div class="sides">
-          <div class="side ours"><div class="sl"><span class="name">Ваша версия</span><button class="take" data-take>Взять</button></div>
+          <div class="side ours"><div class="sl"><span class="name">Ваша версия</span><button class="take" data-take aria-pressed="false">Взять</button></div>
             ## Классовая динамика</div>
-          <div class="side theirs"><div class="sl"><span class="name">Из репозитория · chief</span><button class="take" data-take>Взять</button></div>
+          <div class="side theirs"><div class="sl"><span class="name">Из репозитория · chief</span><button class="take" data-take aria-pressed="false">Взять</button></div>
             ## Динамика классов</div>
         </div>
+        <div class="hb"><button class="take" data-both aria-pressed="false"><svg class="ic" style="width:1rem;height:1rem" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7"/></svg>Оставить обе версии</button></div>
       </div>
     </div>
 
@@ -280,48 +328,67 @@
   </section>
 </main>
 
-<div class="toasts" id="toasts"></div>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 
 <script>
   const root=document.documentElement;
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // decorative icons: hide from assistive tech (every .ic sits next to text)
+  document.querySelectorAll('.ic').forEach(s=>s.setAttribute('aria-hidden','true'));
   document.getElementById('theme').addEventListener('click',()=>{const d=matchMedia('(prefers-color-scheme: dark)').matches;const c=root.getAttribute('data-theme')||(d?'dark':'light');const go=()=>root.setAttribute('data-theme',c==='dark'?'light':'dark');(document.startViewTransition&&!reduce)?document.startViewTransition(go):go();});
 
   const screens=[...document.querySelectorAll('.screen')];
   const sbtns=[...document.querySelectorAll('.switcher button')];
-  function show(id){screens.forEach(s=>s.classList.toggle('on',s.id===id));sbtns.forEach(b=>b.classList.toggle('on',b.dataset.s===id));scrollTo({top:0,behavior:reduce?'auto':'smooth'});}
+  function show(id){
+    screens.forEach(s=>s.classList.toggle('on',s.id===id));
+    sbtns.forEach(b=>{const on=b.dataset.s===id;b.classList.toggle('on',on);on?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current');});
+    const cur=sbtns.find(b=>b.dataset.s===id); if(cur) cur.scrollIntoView({inline:'nearest',block:'nearest'});
+    const h=document.getElementById(id).querySelector('h1,h2'); if(h){h.setAttribute('tabindex','-1');h.focus({preventScroll:true});}
+    scrollTo({top:0,behavior:reduce?'auto':'smooth'});
+  }
   sbtns.forEach(b=>b.addEventListener('click',()=>show(b.dataset.s)));
   document.querySelectorAll('[data-goto]').forEach(el=>el.addEventListener('click',()=>show(el.dataset.goto)));
 
-  // retry countdown demo
-  let sec=6; const cd=document.getElementById('cd');
-  const tick=()=>{sec=sec<=0?6:sec-1;if(cd)cd.textContent='0:'+String(sec).padStart(2,'0');};
-  setInterval(tick,1000);
+  // demo state toggle: incident / resting
+  const sync=document.getElementById('sync');
+  document.querySelectorAll('[data-state]').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-state]').forEach(x=>x.classList.toggle('on',x===b));
+    sync.classList.toggle('resting',b.dataset.state==='resting');
+  }));
 
-  // merge: choose a side per hunk
-  let total=document.querySelectorAll('[data-hunk]').length, resolved=1;
-  document.querySelectorAll('[data-hunk]')[0].classList.add('resolved');
-  document.querySelectorAll('[data-hunk]')[0].querySelector('.side.ours').classList.add('chosen');
+  // retry countdown — one source drives banner + queue row; paused for reduced motion
+  let sec=6; const cd=document.getElementById('cd'),cd2=document.getElementById('cd2');
+  if(!reduce) setInterval(()=>{sec=sec<=0?6:sec-1;const t='0:'+String(sec).padStart(2,'0');if(cd)cd.textContent=t;if(cd2)cd2.textContent=t;},1000);
+
+  // merge: every hunk starts UNRESOLVED (no silent auto-choice)
+  const total=document.querySelectorAll('[data-hunk]').length; let resolved=0;
   function updateMerge(){
     document.getElementById('rcount').textContent=resolved;
     document.getElementById('mbar').style.width=(resolved/total*100)+'%';
     const done=resolved>=total;
     document.getElementById('finish').disabled=!done;
-    document.getElementById('mnote').textContent=done?'Все конфликты разрешены — можно пушить.':'Разрешите оставшиеся конфликты, чтобы продолжить.';
+    document.getElementById('mnote').textContent=done?'Все конфликты разрешены — можно отправлять.':'Разрешите оставшиеся конфликты, чтобы продолжить.';
   }
+  const bump=hunk=>{const was=hunk.classList.contains('resolved');hunk.classList.add('resolved');if(!was){resolved++;updateMerge();}};
+  const clearPressed=hunk=>hunk.querySelectorAll('.take').forEach(b=>b.setAttribute('aria-pressed','false'));
+  const setNote=(hunk,txt)=>{hunk.querySelector('.resolved-note').lastChild.textContent=txt;};
   document.querySelectorAll('[data-take]').forEach(btn=>btn.addEventListener('click',e=>{
-    const hunk=e.target.closest('[data-hunk]'), side=e.target.closest('.side');
-    const was=hunk.classList.contains('resolved');
+    const hunk=e.currentTarget.closest('[data-hunk]'), side=e.currentTarget.closest('.side');
     hunk.querySelectorAll('.side').forEach(s=>s.classList.remove('chosen'));
-    side.classList.add('chosen'); hunk.classList.add('resolved');
-    const note=hunk.querySelector('.resolved-note');
-    note.lastChild.textContent=side.classList.contains('ours')?'Выбрана ваша версия':'Выбрана версия из репозитория';
-    if(!was){resolved++;updateMerge();}
+    side.classList.add('chosen'); clearPressed(hunk); e.currentTarget.setAttribute('aria-pressed','true');
+    setNote(hunk,side.classList.contains('ours')?'Выбрана ваша версия':'Выбрана версия из репозитория'); bump(hunk);
+  }));
+  document.querySelectorAll('[data-both]').forEach(btn=>btn.addEventListener('click',e=>{
+    const hunk=e.currentTarget.closest('[data-hunk]');
+    hunk.querySelectorAll('.side').forEach(s=>s.classList.add('chosen'));
+    clearPressed(hunk); e.currentTarget.setAttribute('aria-pressed','true');
+    setNote(hunk,'Оставлены обе версии'); bump(hunk);
   }));
   updateMerge();
+
   document.getElementById('retryNow').addEventListener('click',()=>{
     const t=document.createElement('div');t.className='toast';
-    t.innerHTML='<svg class="ic" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7"/></svg><div><b>Повтор запущен</b><p>Пуш develop отправлен заново.</p></div>';
+    t.innerHTML='<svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/></svg><div><b>Повтор запущен</b><p>Пуш develop отправлен заново.</p></div>';
     document.getElementById('toasts').appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},3000);
   });
 </script>

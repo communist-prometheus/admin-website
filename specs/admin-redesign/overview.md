@@ -106,6 +106,14 @@ indication**. It reads like a generic CMS rather than a coherent product.
   `prototypes/document-direction.html` (browser-verified light/dark + mobile;
   designer/QA/PO reviewed). Captured in `design-system/requirements.md`.
 - [ ] `design-system` design.md (component API on cp-components) → build.
-- [ ] Hard-screen prototypes next (PO priority): push/deploy status system,
-  conflicts/visual-merge — before their specs.
+- [x] Hard-screen prototypes: push/deploy status + visual 3-way merge
+  (`prototypes/status-and-merge.html`) — designer/QA/PO reviewed, fixed,
+  browser-verified.
+- [ ] Deferred from that review → fold into the `git-engine` spec (not the
+  prototype): word-level diff inside a hunk; manual/free-text hunk edit;
+  binary/asset & whole-file add-delete conflict patterns; merged-document
+  preview before push; role-based escalation ("ask a reviewer") + branch-
+  protection-aware finish (PR vs push); retry-exhaustion & offline states;
+  safe, explicit "Отменить" semantics (never discard local work).
+- [ ] Simpler-screen prototypes: magazine PDF/FB2 upload, newsletter, settings.
 - [ ] Per-capability specs + implementation (TDD).
