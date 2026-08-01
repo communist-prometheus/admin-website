@@ -123,7 +123,19 @@ indication**. It reads like a generic CMS rather than a coherent product.
   (send/reset confirms, settings save-state, topics per-language + description +
   colour, magazine per-language sources + conversion-failure, control-border
   contrast), browser-verified light/dark @390px.
-- [ ] Per-capability specs + implementation (TDD).
+- [x] `app-shell` **full spec** (requirements + design + tasks) — SPA shell,
+  data-driven role/owner-gated nav, History router, engine→status mapping.
+- [ ] Remaining per-capability specs (auth, git-engine, content-*, deploy-status,
+  notifications, settings, tickets, comms) + implementation (TDD).
+
+### Implementation status (monorepo `C:\Projects\Prometheus-mono`)
+- design-system Phase 1 (tokens/theme/bridge/contrast guards) — done, green.
+- Primitives done (TDD, ×chromium/firefox/webkit): cp-icon, cp-button (ext),
+  cp-card (ext), cp-pill, cp-tag, cp-status, cp-badge, cp-chip, cp-tooltip,
+  cp-tabs, cp-progress, cp-steps, cp-skeleton, cp-empty-state, cp-toast,
+  cp-banner, cp-input, cp-textarea (form-associated base). 200 tests green.
+- In progress: select/checkbox/radio/switch, dialog/drawer/sheet, table/
+  pagination, menu/list-row/upload, color/date. Then packaging (Phase 6) + app.
 
 ## Prototype phase complete → fork
 
