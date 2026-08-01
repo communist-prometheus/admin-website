@@ -298,12 +298,22 @@ Tasks don't assume it). Lit `static styles` ship in the component module.
 | R7 mobile/a11y | §9 + mobile-first tokens + focus token |
 | R8 shared library | §2 bridge + §1 ownership split + §8 packaging |
 
-## §10-decision — repo topology (needs user sign-off before Tasks)
+## §10-decision — repo topology (RESOLVED: monorepo, user 2026-08-01)
 
-Primitives must ship in cp-components for both apps. **(A)** unify
-`public-website`+`admin-website`+`components` into one workspace (`apps/*` +
-`packages/cp-components`, `workspace:*`) — best TDD inner loop (co-edit, no
-publish cycle), but restructures 3 separately-CI'd/deploy-gated repos. **(B)**
-keep siblings, consume cp as a versioned GitHub-registry dep (publish→bump→
-install per change) — zero restructuring, slower loop. This dictates how Tasks
-are sequenced and the TDD cadence, so it is decided with the user, not here.
+**Decision: (A) unify into one Bun workspace.** `apps/public-website` +
+`apps/admin-website` + `packages/cp-components`, linked by `workspace:*`
+(`e2e-toolkit` stays the shared submodule). Chosen for the tight TDD inner loop —
+a primitive and its admin consumer are co-edited with no publish→bump→install
+cycle; the bridge/token/component tests run against live source.
+
+Consequences folded into `tasks.md`:
+- **Phase 0 = workspace migration** (a prerequisite, done once before any
+  component work): create the root workspace, move the three repos under
+  `apps/*`+`packages/*` preserving history, rewire each app's `package.json` to
+  `workspace:*`, and **preserve every existing CI/deploy gate** (each app keeps
+  its own pipeline; the deploy-gated flows from the MEMORY notes must stay
+  green). This has blast radius beyond the design system — it is sequenced first
+  and verified (all three apps build + their existing suites pass) before
+  primitives start.
+- Release of cp-components to the GitHub registry stays available for external
+  consumers but is no longer on the admin's critical path.

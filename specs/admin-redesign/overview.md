@@ -29,11 +29,11 @@ production code.
   It is purpose-built to become the shared admin+site component library — **adopt
   and extend it** as the admin's component base. Reconcile the accent divergence
   (cp violet vs site red) into token themes.
-- **Not a monorepo:** `public-website`, `admin-website`, `components` are sibling
-  repos (only `e2e-toolkit` is a shared submodule). **Open decision:** unify into
-  one workspace (`apps/*` + `packages/cp-components`) so admin depends on shared
-  components via `workspace:*`, vs. consuming `cp-components` as a versioned/
-  submodule dep. Recommendation: unify — cleanest for shared evolution.
+- **Repo topology — DECIDED (user, 2026-08-01): unify into one Bun workspace.**
+  `apps/public-website` + `apps/admin-website` + `packages/cp-components`, linked
+  by `workspace:*` (`e2e-toolkit` stays the shared submodule). Was sibling repos;
+  the design-system spec's Phase 0 performs the migration (history-preserving,
+  every existing CI/deploy gate kept green) before any component work.
 - **Admin-specific components to build new** (absent everywhere): data tables,
   full form-control set (input/select/checkbox/radio/textarea), tabs, toasts,
   markdown/rich editor, app-shell/side-nav, pagination, badges/chips, tooltips.
@@ -105,7 +105,9 @@ indication**. It reads like a generic CMS rather than a coherent product.
 - [x] Design language **locked + approved** — reference prototype
   `prototypes/document-direction.html` (browser-verified light/dark + mobile;
   designer/QA/PO reviewed). Captured in `design-system/requirements.md`.
-- [ ] `design-system` design.md (component API on cp-components) → build.
+- [x] `design-system` **full spec** (requirements + design + tasks) — design.md
+  reviewed by architect/designer/PO, all findings folded in; repo topology
+  decided (monorepo). Ready to implement (Phase 0 = workspace migration).
 - [x] Hard-screen prototypes: push/deploy status + visual 3-way merge
   (`prototypes/status-and-merge.html`) — designer/QA/PO reviewed, fixed,
   browser-verified.
