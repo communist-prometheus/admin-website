@@ -40,24 +40,27 @@ commits, all three origins reachable. See that repo's `CUTOVER.md`.
 > Gate: Phase 0.4 fully green (all three apps build + existing suites pass) before
 > any primitive work. **STOP before 0.4** — cutover is a separate reviewed step.
 
-## Phase 1 — Tokens & theme layer (R1, R2; design.md §2–§4)
+## Phase 1 — Tokens & theme layer (R1, R2; design.md §2–§4) ✅ DONE
 
-- [ ] **1.1** Extend `packages/cp-components/src/tokens/*` to the full admin set
-  (exact HSL from design.md §3, + typography §4, + motion). Reconcile accent to
-  warm-red. _Test:_ `tokens.test.ts` asserts each token value. (R1)
-- [ ] **1.2** Generate the admin theme layer (`apps/admin-website/src/styles/
-  theme.css`) from the TS source — 4 atomic blocks (base / `[data-theme=light]`
-  / `@media prefers-dark :not([data-theme=light])` / `[data-theme=dark]`).
-  _Test:_ `theme-blocks.test.ts` — block1≡block2 (light), block3≡block4 (dark),
-  identical key set across all four; `data-theme` overrides `prefers-color-
-  scheme`. (R2)
-- [ ] **1.3** Emit the single-declaration cp bridge (design.md §2) on `:root`.
-  _Test:_ `bridge.test.ts` — every `--cp-*` read in cp's compiled CSS has a
-  bridge entry (fail on unmapped); a themed cp-button resolves to `--color-
-  accent` and flips with `data-theme`. (R8)
-- [ ] **1.4** Contrast guard. _Test:_ `contrast.test.ts` — `--ok/-draft/-info/
-  -danger` ≥4.5:1 on surface; `--cb` ≥3:1; gradient-H1 endpoints ≥3:1, each
-  theme. (R1, R7, NFR-5)
+Implemented in the monorepo (`packages/cp-components`), full suite green
+(30 tests × chromium/firefox/webkit).
+
+- [x] **1.1** `tokens/theme.ts` — single source of truth: full token set (exact
+  HSL, design.md §3) + typography/motion scales (§4). Values shared by the
+  generator. (R1)
+- [x] **1.2** `theme/render.ts` `renderThemeCss()` generates the 4 atomic blocks
+  from the TS source → emitted to `apps/admin-website/src/styles/theme.css`.
+  _Test (`theme/render.test.ts`, 7):_ block1≡block2 (light), block3≡block4
+  (dark), identical key set across all four, `data-theme` follows the OS-dark
+  media block (cascade wins). (R2)
+- [x] **1.3** Single-declaration cp bridge on `:root` (`bridgeDeclarations()`).
+  _Guard (`scripts/check-bridge.ts`):_ every `--cp-*` read in cp sources has a
+  bridge entry — 15 referenced, all mapped (fails on unmapped). (R8)
+- [x] **1.4** Contrast guard (`scripts/check-contrast.ts`) — WCAG ratios from
+  HSL. `--ok/-draft/-info/-danger` ≥4.5:1 on surface; `--cb` ≥3:1; gradient-H1
+  endpoints (accent, text) ≥3:1, both themes. _Caught a real defect:_ light
+  `--cb` was 2.41:1 → corrected `hsl(0 0% 64%)`→`hsl(0 0% 55%)` = 3.21:1.
+  (R1, R7, NFR-5)
 
 ## Phase 2 — Icons (R3; design.md §6)
 

@@ -131,7 +131,7 @@ the status/settings prototypes with **one** value chosen per token.
 | `--color-accent` | `hsl(12 80% 45%)` | `hsl(14 85% 62%)` |
 | `--color-accent-hover` | `hsl(12 80% 38%)` | `hsl(14 85% 70%)` |
 | `--color-on-accent` | `#fff` | `hsl(0 0% 7%)` |
-| `--cb` (control border) | `hsl(0 0% 64%)` | `hsl(0 0% 46%)` |
+| `--cb` (control border) | `hsl(0 0% 55%)` | `hsl(0 0% 46%)` |
 | `--ok` / `--ok-bg` | `hsl(145 60% 30%)` / `hsl(145 55% 34%/.12)` | `hsl(145 55% 60%)` / `…/.16` |
 | `--draft` / `--draft-bg` | `hsl(35 90% 33%)` / `hsl(35 90% 45%/.14)` | `hsl(40 85% 66%)` / `…/.16` |
 | `--info` / `--info-bg` | `hsl(212 80% 43%)` / `hsl(212 80% 48%/.12)` | `hsl(212 85% 70%)` / `…/.16` |
@@ -144,7 +144,9 @@ the status/settings prototypes with **one** value chosen per token.
 The admin owns these; the prototypes are the approved visual. `--cb` supersedes
 `--color-border` **everywhere a control outline appears** (input/select/ghost
 button) — the two earlier prototypes still using `--color-border` there are
-retro-fixed to `--cb` at build (designer S2).
+retro-fixed to `--cb` at build (designer S2). _Impl note: the prototype's light
+`--cb` (`hsl(0 0% 64%)`) actually measured 2.41:1 on surface — the automated
+contrast guard caught it; corrected to `hsl(0 0% 55%)` = 3.21:1._
 
 ### `--tc-fg` on solid pills
 
