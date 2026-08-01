@@ -115,5 +115,18 @@ indication**. It reads like a generic CMS rather than a coherent product.
   preview before push; role-based escalation ("ask a reviewer") + branch-
   protection-aware finish (PR vs push); retry-exhaustion & offline states;
   safe, explicit "Отменить" semantics (never discard local work).
-- [ ] Simpler-screen prototypes: magazine PDF/FB2 upload, newsletter, settings.
+- [x] Simpler-screen prototypes: settings (languages/links/topics/reset) +
+  comms/newsletter (schedule/subscribers/runs) + magazine PDF/FB2 upload
+  (`prototypes/settings-comms-magazine.html`) — designer/QA/PO reviewed, fixed
+  (send/reset confirms, settings save-state, topics per-language + description +
+  colour, magazine per-language sources + conversion-failure, control-border
+  contrast), browser-verified light/dark @390px.
 - [ ] Per-capability specs + implementation (TDD).
+
+## Prototype phase complete → fork
+
+All three prototype clusters are approved & browser-verified: the reference
+document direction, the hard-screen status/merge, and settings/comms/magazine.
+The next phase is a genuine decision point — start the real build (design-system
+spec → cp-components implementation, TDD) vs. prototype any remaining edge
+screens first.
