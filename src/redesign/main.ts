@@ -1,18 +1,21 @@
 /**
- * Entry for the redesigned admin shell preview. Loads the generated theme layer,
- * registers the design-system primitives, resolves the initial theme
- * (localStorage → OS preference, explicit so the toggle is authoritative), and
- * boots the `app-shell` island. Runs alongside the current app without touching
- * it; the formal cutover replaces the old entry later.
+ * Entry for the redesigned admin. When served at the OAuth callback path this
+ * window is the login popup — it completes the exchange, posts the token to the
+ * opener, and closes without mounting the app. Otherwise it mounts the shell and
+ * boots the git engine from the dev token (local) or the OAuth session
+ * (deployed). The initial theme is set inline in the HTML <head> before this
+ * module so first paint is themed (no FOUC).
  */
 import '../styles/theme.css';
 import '@communist-prometheus/cp-components';
 import './app-shell.js';
 import { bootEngineIfTokenPresent } from './engine/engine-boot.js';
+import { handleOAuthCallbackIfPresent } from './engine/oauth-callback.js';
 
-// In local `dev:token` mode (VITE_DEV_TOKEN set), register + init the real
-// content engine so screens run against actual GitHub; a no-op otherwise.
-void bootEngineIfTokenPresent();
+const boot = async (): Promise<void> => {
+  if (await handleOAuthCallbackIfPresent()) return;
+  document.body.appendChild(document.createElement('app-shell'));
+  await bootEngineIfTokenPresent();
+};
 
-// The initial theme is set inline in redesign.html <head> before this module so
-// the shell mirrors it on connect and first paint is themed (no FOUC).
+void boot();
