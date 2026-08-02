@@ -38,18 +38,55 @@ export class ScreenArticles extends LitElement {
       font-size: 0.8rem;
       color: var(--color-text-secondary);
     }
-    .grid {
+    /* Flat document list — no card boxes. Items sit on the page and are
+       separated by a hairline, matching the public site's restrained feel
+       rather than a lighter surface panel. */
+    .list {
+      display: flex;
+      flex-direction: column;
+    }
+    .item {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
-      gap: var(--spacing-md);
+      gap: var(--spacing-xs);
+      padding: var(--spacing-lg) 0;
+      border-top: 1px solid var(--color-border);
+      cursor: pointer;
+      transition: opacity var(--transition-fast, 150ms ease);
+    }
+    .item:first-child {
+      border-top: none;
+    }
+    .item:hover {
+      opacity: 0.72;
+    }
+    .item:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 4px;
+    }
+    .topic {
+      justify-self: start;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+    }
+    .title {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--color-text-primary);
     }
     .meta {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: var(--spacing-sm);
       font-size: 0.85rem;
       color: var(--color-text-secondary);
+    }
+    .meta .dot {
+      opacity: 0.5;
     }
   `;
 
@@ -103,23 +140,29 @@ export class ScreenArticles extends LitElement {
     location.hash = '/editor';
   }
 
-  private renderCard(article: ArticleSummary) {
+  private renderItem(article: ArticleSummary) {
     return html`
-      <cp-card interactive @cp-click=${() => this.openEditor()}>
-        ${article.topic ? html`<cp-pill slot="pill">${article.topic}</cp-pill>` : nothing}
-        <span slot="title">${article.title}</span>
-        <span slot="summary">${article.languages.join(' · ')}</span>
-        <div slot="meta" class="meta">
-          ${article.date ? html`<span>${article.date}</span>` : nothing}
+      <div
+        class="item"
+        role="button"
+        tabindex="0"
+        @click=${() => this.openEditor()}
+        @keydown=${(event: KeyboardEvent) =>
+          (event.key === 'Enter' || event.key === ' ') &&
+          (event.preventDefault(), this.openEditor())}
+      >
+        ${article.topic ? html`<span class="topic">${article.topic}</span>` : nothing}
+        <h3 class="title">${article.title}</h3>
+        <div class="meta">
+          <span>${article.languages.join(' · ')}</span>
+          ${article.date ? html`<span class="dot">·</span><span>${article.date}</span>` : nothing}
+          <span class="dot">·</span>
           <cp-status
             state=${article.published ? 'success' : 'warning'}
             label=${article.published ? 'опубликовано' : 'черновик'}
           ></cp-status>
         </div>
-        <cp-button slot="actions" variant="ghost" size="sm" aria-label="Действия">
-          <cp-icon name="more"></cp-icon>
-        </cp-button>
-      </cp-card>
+      </div>
     `;
   }
 
@@ -137,7 +180,7 @@ export class ScreenArticles extends LitElement {
             ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
             : nothing}
       </div>
-      <div class="grid">${list.map((article) => this.renderCard(article))}</div>
+      <div class="list">${list.map((article) => this.renderItem(article))}</div>
     `;
   }
 }
