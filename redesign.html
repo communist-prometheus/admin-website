@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="hsl(12 80% 45%)" />
+    <title>Админка — Коммунистический Прометей</title>
+    <script>
+      // Set the theme before the module upgrades <app-shell>, so first paint is
+      // themed (no FOUC) and the shell mirrors the correct theme on connect.
+      (function () {
+        var saved = localStorage.getItem('cp-theme');
+        var theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+  </head>
+  <body>
+    <app-shell></app-shell>
+    <script type="module" src="/src/redesign/main.ts"></script>
+  </body>
+</html>

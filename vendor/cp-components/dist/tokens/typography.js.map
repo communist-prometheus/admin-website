@@ -1,0 +1,1 @@
+{"version":3,"file":"typography.js","sourceRoot":"","sources":["../../src/tokens/typography.ts"],"names":[],"mappings":"AAAA,MAAM,CAAC,MAAM,UAAU,GAAG;IACxB,UAAU,EAAE;QACV,IAAI,EAAE,sCAAsC;QAC5C,IAAI,EAAE,0CAA0C;KACjD;IACD,UAAU,EAAE;QACV,MAAM,EAAE,KAAK;KACd;CACO,CAAC"}

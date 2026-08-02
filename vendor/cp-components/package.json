@@ -1,0 +1,75 @@
+{
+  "name": "@communist-prometheus/cp-components",
+  "version": "0.1.7",
+  "type": "module",
+  "description": "Lit-based UI component library with reactive signals and design tokens",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./tokens": {
+      "types": "./dist/tokens/index.d.ts",
+      "default": "./dist/tokens/index.js"
+    },
+    "./theme": {
+      "types": "./dist/theme/render.d.ts",
+      "default": "./dist/theme/render.js"
+    },
+    "./icons": {
+      "types": "./dist/icons/registry.d.ts",
+      "default": "./dist/icons/registry.js"
+    },
+    "./components/*": {
+      "types": "./dist/components/*/index.d.ts",
+      "default": "./dist/components/*/index.js"
+    }
+  },
+  "sideEffects": true,
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "wtr",
+    "test:watch": "wtr --watch",
+    "lint": "tsc --noEmit",
+    "check:bridge": "bun scripts/check-bridge.ts",
+    "check:contrast": "bun scripts/check-contrast.ts",
+    "generate:theme": "bun scripts/generate-theme.ts ../../apps/admin-website/src/styles/theme.css",
+    "validate": "tsc --noEmit && bun scripts/check-bridge.ts && bun scripts/check-contrast.ts && wtr",
+    "prepare": "tsc"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/communist-prometheus/cp-components.git"
+  },
+  "keywords": [
+    "web-components",
+    "lit",
+    "ui-components",
+    "design-system",
+    "typescript"
+  ],
+  "author": "Communist Prometheus",
+  "license": "MIT",
+  "peerDependencies": {
+    "lit": "^3.3.2"
+  },
+  "devDependencies": {
+    "@open-wc/testing": "^4.0.0",
+    "@types/node": "^22.10.5",
+    "@web/dev-server-esbuild": "^1.0.2",
+    "@web/test-runner": "^0.18.0",
+    "@web/test-runner-playwright": "^0.11.0",
+    "lit": "^3.3.2",
+    "typescript": "^5.9.3"
+  }
+}

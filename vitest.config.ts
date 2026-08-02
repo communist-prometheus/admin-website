@@ -12,6 +12,8 @@ export default mergeConfig(
         'e2e/**',
         'e2e-realmode/**',
         '.claude/**',
+        'src/redesign/**',
+        'vendor/**',
       ],
       root: fileURLToPath(new URL('./', import.meta.url)),
     },
