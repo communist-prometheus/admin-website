@@ -4,7 +4,8 @@
   "exclude": [
     "src/**/__tests__/*",
     "src/**/*.fixture.test.ts",
-    "src/sw/**/*"
+    "src/sw/**/*",
+    "src/redesign/**/*"
   ],
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",

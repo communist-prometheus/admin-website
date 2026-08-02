@@ -5,7 +5,7 @@ import { legacyIfFiles } from './eslint.legacy-if.js'
 
 export default [
   {
-    ignores: ['src/components.d.ts'],
+    ignores: ['src/components.d.ts', 'src/redesign/**', 'vendor/**'],
   },
   {
     files: [

@@ -10,7 +10,6 @@ let _git: Git | undefined
  */
 export const loadGit = async (): Promise<Git> => {
   if (_git) return _git
-  // biome-ignore lint/style/useNodejsImportProtocol: npm buffer polyfill, not Node built-in
   const { Buffer } = await import('buffer')
   if (!('Buffer' in globalThis)) {
     Object.defineProperty(globalThis, 'Buffer', {
