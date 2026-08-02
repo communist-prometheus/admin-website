@@ -115,29 +115,6 @@ const readLangCode = (detail: unknown): LangCode | undefined => {
   return isLangCode(detail.id) ? detail.id : undefined;
 };
 
-/** Representative seed content shown when the content engine is not running. */
-const SAMPLE_LANGUAGES: readonly LangSources[] = [
-  {
-    code: 'ru',
-    name: 'Русский',
-    files: [
-      { name: 'magazine-1-mai-2026.ru.pdf', path: 'magazine/magazine-1-mai-2026.ru.pdf', kind: 'pdf' },
-      { name: 'magazine-1-mai-2026.ru.fb2', path: 'magazine/magazine-1-mai-2026.ru.fb2', kind: 'fb2' },
-      { name: 'cover.ru.png', path: 'magazine/cover.ru.png', kind: 'cover' },
-      { name: 'index.ru.md', path: 'magazine/index.ru.md', kind: 'index' },
-    ],
-  },
-  {
-    code: 'en',
-    name: 'English',
-    files: [
-      { name: 'magazine-1-mai-2026.en.pdf', path: 'magazine/magazine-1-mai-2026.en.pdf', kind: 'pdf' },
-    ],
-  },
-  { code: 'es', name: 'Español', files: [] },
-  { code: 'it', name: 'Italiano', files: [] },
-];
-
 /**
  * The "Загрузка журнала" screen (content-editor (magazine), design.md R5),
  * driven by the REAL cloned content repo. On connect it lists `magazine/` via
@@ -286,14 +263,14 @@ export class ScreenMagazine extends LitElement {
     this.loaded = true;
   }
 
-  /** True when the panel reflects real repo files rather than the sample. */
+  /** True when the panel reflects real repo files. */
   private get live(): boolean {
     return this.languages.length > 0;
   }
 
-  /** The effective list: real repo data when live, otherwise the sample. */
+  /** The real repo data (empty until the engine has loaded the listing). */
   private get list(): readonly LangSources[] {
-    return this.live ? this.languages : SAMPLE_LANGUAGES;
+    return this.languages;
   }
 
   /** The currently selected language row (falls back to the first). */
@@ -366,31 +343,34 @@ export class ScreenMagazine extends LitElement {
     const slug = issueSlug(this.list);
     return html`
       <header class="head">
-        <p class="eyebrow">magazine · ${slug ?? 'новый выпуск'}</p>
+        <p class="eyebrow">magazine · ${this.live ? (slug ?? 'новый выпуск') : ''}</p>
         <h1 tabindex="-1">Загрузка журнала</h1>
-        ${this.live
-          ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
-          : this.loaded
-            ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
-            : nothing}
       </header>
 
-      <h2 class="section-label">Источники по языкам</h2>
-      <cp-tabs
-        .tabs=${this.tabs}
-        active=${this.selected}
-        aria-label="Язык источника"
-        @cp-tab-change=${this.onTabChange}
-      ></cp-tabs>
+      ${this.live
+        ? html`
+            <h2 class="section-label">Источники по языкам</h2>
+            <cp-tabs
+              .tabs=${this.tabs}
+              active=${this.selected}
+              aria-label="Язык источника"
+              @cp-tab-change=${this.onTabChange}
+            ></cp-tabs>
 
-      ${this.renderSource(this.current)}
+            ${this.renderSource(this.current)}
 
-      <div class="actions">
-        <p class="status-line">${this.statusLine}</p>
-        <span class="spacer"></span>
-        <cp-button variant="secondary">Сохранить черновик</cp-button>
-        <cp-button arrow>Опубликовать готовые</cp-button>
-      </div>
+            <div class="actions">
+              <p class="status-line">${this.statusLine}</p>
+              <span class="spacer"></span>
+              <cp-button variant="secondary">Сохранить черновик</cp-button>
+              <cp-button arrow>Опубликовать готовые</cp-button>
+            </div>
+          `
+        : html`<p class="empty">
+            ${this.loaded
+              ? 'Войдите через GitHub, чтобы загрузить файлы выпусков из репозитория.'
+              : 'Загружаем выпуски…'}
+          </p>`}
     `;
   }
 }
