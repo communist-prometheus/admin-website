@@ -7,6 +7,7 @@
  * module so first paint is themed (no FOUC).
  */
 import '../styles/theme.css';
+import './styles/view-transition.css';
 import '@communist-prometheus/cp-components';
 import './app-shell.js';
 import { bootEngineIfTokenPresent } from './engine/engine-boot.js';
