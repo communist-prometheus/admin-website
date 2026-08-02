@@ -1,10 +1,27 @@
 import { LitElement, html, css, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, state } from 'lit/decorators.js';
+import { createRef, ref } from 'lit/directives/ref.js';
 import { navItems, groups, canSee, type AuthState } from './nav.js';
 import { screens } from './screens/index.js';
 import { createGitStateStore, type GitStateStore, type SyncStatus } from './engine/git-state.js';
 import { login, currentUser } from './engine/auth.js';
 import { bootEngine } from './engine/engine-boot.js';
+
+/** One of the four viewport corners the draggable FAB can snap to. */
+type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
+const FAB_SIZE = 56;
+const FAB_MARGIN = 16;
+const FAB_GAP = 8;
+const DRAG_THRESHOLD = 10;
+const FAB_STORAGE_KEY = 'fab-corner';
+const DEFAULT_CORNER: Corner = 'bottom-right';
+
+const isCorner = (value: string | undefined): value is Corner =>
+  value === 'top-left' ||
+  value === 'top-right' ||
+  value === 'bottom-left' ||
+  value === 'bottom-right';
 
 /**
  * The admin app shell (app-shell spec R1–R7): a client-side SPA island that owns
@@ -100,33 +117,118 @@ export class AppShell extends LitElement {
       }
     }
 
-    nav {
+    /* Desktop: persistent rail. On mobile it is replaced by the FAB menu. */
+    .body > nav {
       padding: var(--spacing-md);
       border-right: 1px solid var(--color-hairline);
     }
-    .nav-toggle {
-      display: inline-flex;
-    }
-    /* Mobile: nav is an overlay drawer, hidden unless opened. */
     @media (max-width: 767px) {
-      nav {
-        position: fixed;
-        inset: 3.6rem 0 auto 0;
-        z-index: 9;
+      .body > nav {
         display: none;
-        background: var(--color-background);
-        border-right: none;
-        border-bottom: 1px solid var(--color-hairline);
-      }
-      :host([nav-open]) nav {
-        display: block;
       }
     }
-    /* Desktop: persistent rail, no toggle. */
+
+    /* Draggable FAB flying menu (<768px only). */
+    .fab-menu {
+      display: contents;
+    }
     @media (min-width: 768px) {
-      .nav-toggle {
+      .fab-menu {
         display: none;
       }
+    }
+    .mobile-fab {
+      position: fixed;
+      z-index: 200;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      color: var(--color-on-accent);
+      border: none;
+      cursor: pointer;
+      touch-action: none;
+      padding: 0;
+      box-shadow: var(--shadow-md);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .mobile-fab:active {
+      transform: scale(0.92);
+      box-shadow: var(--shadow-sm);
+    }
+    .mobile-fab:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+    .fab-line {
+      position: absolute;
+      left: 50%;
+      width: 24px;
+      height: 2px;
+      background: var(--color-on-accent);
+      border-radius: 1px;
+      transform: translateX(-50%);
+      transition: top var(--transition-base), bottom var(--transition-base),
+        transform var(--transition-base), opacity var(--transition-base);
+    }
+    .fab-line-1 {
+      top: 35%;
+    }
+    .fab-line-2 {
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .fab-line-3 {
+      bottom: 35%;
+    }
+    .fab-menu.open .fab-line-1 {
+      top: 50%;
+      transform: translate(-50%) rotate(45deg);
+    }
+    .fab-menu.open .fab-line-2 {
+      opacity: 0;
+    }
+    .fab-menu.open .fab-line-3 {
+      bottom: 50%;
+      transform: translate(-50%, 50%) rotate(-45deg);
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgb(0 0 0 / 0.4);
+      z-index: 199;
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+      transition: opacity var(--transition-base), visibility var(--transition-base);
+    }
+    .fab-menu.open .overlay {
+      opacity: 1;
+      pointer-events: auto;
+      visibility: visible;
+    }
+    .popup {
+      position: fixed;
+      z-index: 201;
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: clamp(0.5rem, 2vw, 0.75rem);
+      box-shadow: var(--shadow-lg);
+      min-width: 220px;
+      opacity: 0;
+      transform: scale(0.95);
+      pointer-events: none;
+      visibility: hidden;
+      transition: opacity var(--transition-base), transform var(--transition-base),
+        visibility var(--transition-base);
+    }
+    .fab-menu.open .popup {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+      visibility: visible;
     }
     .group + .group {
       margin-top: var(--spacing-md);
@@ -246,8 +348,30 @@ export class AppShell extends LitElement {
   /** Current route id (nav item id). */
   @state() private route = 'articles';
 
-  /** Mobile nav drawer open state; reflected so CSS can show the drawer. */
-  @property({ type: Boolean, reflect: true, attribute: 'nav-open' }) navOpen = false;
+  /** Active theme; seeds the header toggle icon + circular reveal direction. */
+  @state() private theme: 'light' | 'dark' = 'light';
+
+  /** Mobile FAB flying-menu open state. */
+  @state() private fabOpen = false;
+
+  /** Corner the FAB is docked to; persisted under localStorage['fab-corner']. */
+  @state() private fabCorner: Corner = DEFAULT_CORNER;
+
+  /** Live FAB position (px) — driven by drag + corner settling. */
+  @state() private fabX = 0;
+  @state() private fabY = 0;
+
+  /** Whether the FAB should animate to its position (off while dragging). */
+  @state() private fabAnimate = false;
+
+  /** Imperative handle to the FAB button for pointer capture + focus return. */
+  private readonly fabRef = createRef<HTMLButtonElement>();
+
+  /** Transient drag bookkeeping (non-reactive). */
+  private dragging = false;
+  private movedPastThreshold = false;
+  private dragStartX = 0;
+  private dragStartY = 0;
 
   /** Mock session for the local preview — replaced by real auth later. */
   private auth: AuthState = { role: 'admin', owner: true, login: 'undeadliner' };
@@ -266,26 +390,35 @@ export class AppShell extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    const theme = document.documentElement.getAttribute('data-theme');
-    theme && this.setAttribute('data-theme', theme);
+    const theme = document.documentElement.dataset.theme;
+    if (theme) this.setAttribute('data-theme', theme);
+    this.theme = theme === 'dark' ? 'dark' : 'light';
+    this.fabCorner = this.loadCorner();
+    const pos = this.cornerToFabXY(this.fabCorner);
+    this.fabX = pos.x;
+    this.fabY = pos.y;
     this.store = createGitStateStore();
     this.store.subscribe(() => (this.sync = this.store?.syncStatus() ?? this.sync));
     this.sync = this.store.syncStatus();
     void this.resolveAccount();
     this.syncRoute();
-    window.addEventListener('hashchange', this.syncRoute);
+    globalThis.addEventListener('hashchange', this.syncRoute);
+    globalThis.addEventListener('keydown', this.onKeydown);
+    globalThis.addEventListener('resize', this.onResize);
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('hashchange', this.syncRoute);
+    globalThis.removeEventListener('hashchange', this.syncRoute);
+    globalThis.removeEventListener('keydown', this.onKeydown);
+    globalThis.removeEventListener('resize', this.onResize);
     this.store?.dispose();
   }
 
   private syncRoute = (): void => {
     const id = window.location.hash.replace(/^#\/?/, '');
     this.route = id in screens ? id : 'articles';
-    this.navOpen = false;
+    this.fabOpen = false;
     this.updateComplete.then(() => this.focusScreen());
   };
 
@@ -306,49 +439,203 @@ export class AppShell extends LitElement {
     window.location.hash = `/${id}`;
   }
 
-  private toggleTheme(): void {
+  /**
+   * Theme toggle with the public-site circular reveal: seeds --x/--y/--r on
+   * <html> from the click point + farthest-corner distance, then swaps the
+   * theme inside a typed view transition. Falls back to a plain apply when
+   * view transitions are unavailable or motion is reduced.
+   */
+  private toggleTheme(event: MouseEvent): void {
     const root = document.documentElement;
-    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    const apply = (): void => {
-      root.setAttribute('data-theme', next);
+    const next = this.theme === 'dark' ? 'light' : 'dark';
+    const applyTheme = (): void => {
+      this.theme = next;
+      root.dataset.theme = next;
       this.setAttribute('data-theme', next);
       localStorage.setItem('cp-theme', next);
     };
-    'startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches
-      ? document.startViewTransition(apply)
-      : apply();
+    const reduce = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!('startViewTransition' in document) || reduce) {
+      applyTheme();
+      return;
+    }
+    const x = event.clientX;
+    const y = event.clientY;
+    const endRadius = Math.hypot(
+      Math.max(x, globalThis.innerWidth - x),
+      Math.max(y, globalThis.innerHeight - y),
+    );
+    root.style.setProperty('--x', `${x}px`);
+    root.style.setProperty('--y', `${y}px`);
+    root.style.setProperty('--r', `${endRadius}px`);
+    document.startViewTransition({ update: applyTheme, types: ['theme'] });
   }
 
-  private renderNav() {
+  /** Reads the persisted FAB corner, defaulting when absent or invalid. */
+  private loadCorner(): Corner {
+    const stored = localStorage.getItem(FAB_STORAGE_KEY) ?? undefined;
+    return isCorner(stored) ? stored : DEFAULT_CORNER;
+  }
+
+  /** Top-left FAB position (px) for a docked corner. */
+  private cornerToFabXY(corner: Corner): { readonly x: number; readonly y: number } {
+    const right = globalThis.innerWidth - FAB_SIZE - FAB_MARGIN;
+    const bottom = globalThis.innerHeight - FAB_SIZE - FAB_MARGIN;
+    const map: Record<Corner, { readonly x: number; readonly y: number }> = {
+      'top-left': { x: FAB_MARGIN, y: FAB_MARGIN },
+      'top-right': { x: right, y: FAB_MARGIN },
+      'bottom-left': { x: FAB_MARGIN, y: bottom },
+      'bottom-right': { x: right, y: bottom },
+    };
+    return map[corner];
+  }
+
+  /** Nearest corner to a viewport point. */
+  private snapToCorner(x: number, y: number): Corner {
+    const isRight = x > globalThis.innerWidth / 2;
+    const isBottom = y > globalThis.innerHeight / 2;
+    return `${isBottom ? 'bottom' : 'top'}-${isRight ? 'right' : 'left'}`;
+  }
+
+  /** Docks the FAB to a corner with an animated settle. */
+  private settleToCorner(corner: Corner): void {
+    this.fabCorner = corner;
+    const pos = this.cornerToFabXY(corner);
+    this.fabAnimate = true;
+    this.fabX = pos.x;
+    this.fabY = pos.y;
+  }
+
+  private openFab(): void {
+    this.fabOpen = true;
+    this.updateComplete.then(() =>
+      this.renderRoot.querySelector<HTMLButtonElement>('.popup .nav-link')?.focus(),
+    );
+  }
+
+  private closeFab(): void {
+    if (!this.fabOpen) return;
+    this.fabOpen = false;
+    this.fabRef.value?.focus();
+  }
+
+  private onFabPointerDown = (event: PointerEvent): void => {
+    this.dragging = true;
+    this.movedPastThreshold = false;
+    this.dragStartX = event.clientX;
+    this.dragStartY = event.clientY;
+    this.fabRef.value?.setPointerCapture(event.pointerId);
+  };
+
+  private onFabPointerMove = (event: PointerEvent): void => {
+    if (!this.dragging) return;
+    const dx = event.clientX - this.dragStartX;
+    const dy = event.clientY - this.dragStartY;
+    if (Math.abs(dx) + Math.abs(dy) > DRAG_THRESHOLD) this.movedPastThreshold = true;
+    const base = this.cornerToFabXY(this.fabCorner);
+    this.fabAnimate = false;
+    this.fabX = base.x + dx;
+    this.fabY = base.y + dy;
+  };
+
+  private onFabPointerUp = (event: PointerEvent): void => {
+    if (!this.dragging) return;
+    this.dragging = false;
+    this.fabRef.value?.releasePointerCapture(event.pointerId);
+    if (this.movedPastThreshold) {
+      const next = this.snapToCorner(event.clientX, event.clientY);
+      localStorage.setItem(FAB_STORAGE_KEY, next);
+      this.settleToCorner(next);
+      return;
+    }
+    this.fabOpen ? this.closeFab() : this.openFab();
+  };
+
+  private onKeydown = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape' && this.fabOpen) this.closeFab();
+  };
+
+  private onResize = (): void => {
+    const pos = this.cornerToFabXY(this.fabCorner);
+    this.fabAnimate = false;
+    this.fabX = pos.x;
+    this.fabY = pos.y;
+  };
+
+  /** Grouped, role-gated nav items — shared by the desktop rail + FAB popup. */
+  private renderNavItems() {
     const visible = navItems.filter((item) => canSee(item, this.auth));
+    return groups.map(([key, label]) => {
+      const items = visible.filter((item) => item.group === key);
+      return items.length === 0
+        ? nothing
+        : html`
+            <div class="group">
+              <p class="group-label">${label}</p>
+              ${items.map(
+                (item) => html`
+                  <button
+                    class="nav-link"
+                    aria-current=${this.route === item.id ? 'page' : nothing}
+                    @click=${() => this.navigate(item.id)}
+                  >
+                    <cp-icon name=${item.icon} size="18"></cp-icon>
+                    <span>${item.label}</span>
+                    ${item.ownerOnly
+                      ? html`<cp-tag tone="warning" style="margin-inline-start:auto">владелец</cp-tag>`
+                      : nothing}
+                  </button>
+                `,
+              )}
+            </div>
+          `;
+    });
+  }
+
+  private renderRailNav() {
+    return html`<nav aria-label="Основная навигация">${this.renderNavItems()}</nav>`;
+  }
+
+  /** The draggable FAB flying menu (<768px only). */
+  private renderFabMenu() {
+    const fabStyle = `left:${this.fabX}px;top:${this.fabY}px;transition:${
+      this.fabAnimate ? 'all var(--transition-base)' : 'none'
+    }`;
+    const isRight = this.fabCorner.endsWith('right');
+    const isBottom = this.fabCorner.startsWith('bottom');
+    const offset = `${FAB_MARGIN + FAB_SIZE + FAB_GAP}px`;
+    const popupStyle = `left:${isRight ? 'auto' : `${FAB_MARGIN}px`};right:${
+      isRight ? `${FAB_MARGIN}px` : 'auto'
+    };top:${isBottom ? 'auto' : offset};bottom:${isBottom ? offset : 'auto'}`;
     return html`
-      <nav aria-label="Основная навигация">
-        ${groups.map(([key, label]) => {
-          const items = visible.filter((item) => item.group === key);
-          return items.length === 0
-            ? nothing
-            : html`
-                <div class="group">
-                  <p class="group-label">${label}</p>
-                  ${items.map(
-                    (item) => html`
-                      <button
-                        class="nav-link"
-                        aria-current=${this.route === item.id ? 'page' : nothing}
-                        @click=${() => this.navigate(item.id)}
-                      >
-                        <cp-icon name=${item.icon} size="18"></cp-icon>
-                        <span>${item.label}</span>
-                        ${item.ownerOnly
-                          ? html`<cp-tag tone="warning" style="margin-inline-start:auto">владелец</cp-tag>`
-                          : nothing}
-                      </button>
-                    `,
-                  )}
-                </div>
-              `;
-        })}
-      </nav>
+      <div class="fab-menu ${this.fabOpen ? 'open' : ''}">
+        <button
+          ${ref(this.fabRef)}
+          class="mobile-fab"
+          style=${fabStyle}
+          aria-label="Меню"
+          aria-expanded=${this.fabOpen ? 'true' : 'false'}
+          aria-controls="mobile-nav-panel"
+          @pointerdown=${this.onFabPointerDown}
+          @pointermove=${this.onFabPointerMove}
+          @pointerup=${this.onFabPointerUp}
+        >
+          <span class="fab-line fab-line-1"></span>
+          <span class="fab-line fab-line-2"></span>
+          <span class="fab-line fab-line-3"></span>
+        </button>
+        <div class="overlay" aria-hidden="true" @click=${() => this.closeFab()}></div>
+        <nav
+          id="mobile-nav-panel"
+          class="popup"
+          style=${popupStyle}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Основная навигация"
+        >
+          ${this.renderNavItems()}
+        </nav>
+      </div>
     `;
   }
 
@@ -372,14 +659,6 @@ export class AppShell extends LitElement {
     const screen = screens[this.route];
     return html`
       <header>
-        <button
-          class="icon-btn nav-toggle"
-          aria-label="Меню"
-          aria-expanded=${this.navOpen ? 'true' : 'false'}
-          @click=${() => (this.navOpen = !this.navOpen)}
-        >
-          <cp-icon name="more"></cp-icon>
-        </button>
         <a class="brand" href="#/articles" aria-label="Коммунистический Прометей — на главную">
           <img class="logo-light" src="/logo-light.svg" alt="" />
           <img class="logo-dark" src="/logo-dark.svg" alt="" />
@@ -394,15 +673,20 @@ export class AppShell extends LitElement {
                 @cp-click=${() => this.handleLogin()}
                 >Войти</cp-button
               >`}
-          <button class="icon-btn" aria-label="Переключить тему" @click=${() => this.toggleTheme()}>
-            <cp-icon name="sun"></cp-icon>
+          <button
+            class="icon-btn"
+            aria-label="Переключить тему"
+            @click=${(event: MouseEvent) => this.toggleTheme(event)}
+          >
+            <cp-icon name=${this.theme === 'dark' ? 'sun' : 'moon'}></cp-icon>
           </button>
         </div>
       </header>
       <div class="body">
-        ${this.renderNav()}
+        ${this.renderRailNav()}
         <main tabindex="-1" aria-live="polite">${screen ? screen.render() : nothing}</main>
       </div>
+      ${this.renderFabMenu()}
     `;
   }
 }
