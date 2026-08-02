@@ -29,39 +29,6 @@ const LANG_CODES: ReadonlySet<string> = new Set(LANGUAGES.map((tab) => tab.id));
 const isLangCode = (value: string): value is LangCode => LANG_CODES.has(value);
 
 /**
- * A small representative sample used only when the real content engine is off
- * (no `dev:token`), so the preview still renders instead of showing nothing.
- */
-const SAMPLE_TOPICS: readonly Topic[] = [
-  {
-    key: 'editorial',
-    color: '#b03a2e',
-    name: {
-      ru: 'От редакции',
-      en: 'Editorial',
-      it: 'Dalla redazione',
-      es: 'De la redacción',
-      bl: 'От редакцията',
-      pl: 'Od redakcji',
-      uk: 'Від редакції',
-    },
-  },
-  {
-    key: 'translation',
-    color: '#2563eb',
-    name: {
-      ru: 'Наш перевод',
-      en: 'Our translation',
-      it: 'La nostra traduzione',
-      es: 'Nuestra traducción',
-      bl: 'Наш превод',
-      pl: 'Nasze tłumaczenie',
-      uk: 'Наш переклад',
-    },
-  },
-];
-
-/**
  * Topics screen (settings spec: the "Темы" subpanel). When the real content
  * engine is running (local `dev:token`), it reads the repo's
  * `settings/topics.json` and lists the ACTUAL topics — colour, per-language name
@@ -141,7 +108,6 @@ export class ScreenTopics extends LitElement {
       border: 1px solid var(--color-hairline);
       border-inline-start: 4px solid var(--tc, var(--color-accent));
       border-radius: var(--radius-md);
-      box-shadow: var(--shadow-sm);
     }
 
     .thead {

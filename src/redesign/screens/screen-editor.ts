@@ -66,31 +66,6 @@ const RUBRIC_OPTIONS: readonly CpSelectOption[] = [
 /** The real publish pipeline stages, mapped to `stageFile` + `commitAndPush`. */
 const REAL_STAGES: readonly string[] = ['Стейдж', 'Коммит', 'Пуш'];
 
-/**
- * Demo article used when the git engine is off (no `dev:token`): a complete
- * markdown document (frontmatter + body) so the live-preview still renders and
- * the publish dialog can simulate the staged pipeline without any real call.
- */
-const DEMO_MARKDOWN = `---
-title: "Иллюзия социализма и реальность капитала в СССР"
-topic: theory
-pubDate: 2026-07-24
-draft: true
----
-
-Отношение к средствам производства определяет класс. Но на макроуровне динамика производства неизбежно ведёт к концентрации богатства и обнажает пределы «планового» хозяйства.
-
-Хотя уровень дохода — необходимый критерий классовой принадлежности **больших социальных групп**, его нельзя напрямую применять к отдельному индивиду: класс определяется местом в системе производства, а не размером зарплаты.
-
-## Государство как совокупный капиталист
-
-Национализация средств производства не отменяет капитала как отношения. Пока сохраняются наёмный труд, товарная форма продукта и накопление ради накопления, «общенародная собственность» остаётся коллективной собственностью бюрократии.
-
-> «Накопление богатства на одном полюсе есть в то же время накопление нищеты, муки труда и моральной деградации на противоположном полюсе».
-
-Именно поэтому мы публикуем этот перевод: он принадлежит к теоретическому наследию марксизма[^24], а не к его апологетическим подделкам.
-`;
-
 /** Reads a single frontmatter scalar (`key: value`) from a text block. */
 const frontmatterValue = (text: string, key: string): string | undefined => {
   const match = text.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
@@ -504,7 +479,8 @@ export class ScreenEditor extends LitElement {
         return;
       }
     }
-    this.applyMarkdown(DEMO_MARKDOWN, '', false);
+    // No real article (signed out or empty repo): stay empty and prompt sign-in
+    // rather than loading a fabricated demo document.
     this.loaded = true;
   }
 
@@ -632,11 +608,7 @@ export class ScreenEditor extends LitElement {
     this.publishOpen = true;
     this.publishSha = '';
     this.publishError = '';
-    if (this.live && this.articlePath !== '') {
-      void this.runRealPublish();
-    } else {
-      this.runDemoPublish();
-    }
+    void this.runRealPublish();
   };
 
   /** Runs the REAL git cycle: stage the edited markdown, then commit + push. */
@@ -662,23 +634,6 @@ export class ScreenEditor extends LitElement {
     }
     this.publishBusy = false;
   }
-
-  /** Demo mode: simulate the staged pipeline with no real calls. */
-  private runDemoPublish(): void {
-    this.publishBusy = true;
-    this.simulateStage(0);
-  }
-
-  private simulateStage = (index: number): void => {
-    this.stageStates = REAL_STAGES.map((_label, position) =>
-      position < index ? 'done' : position === index ? 'running' : 'pending',
-    );
-    if (index >= REAL_STAGES.length) {
-      this.publishBusy = false;
-      return;
-    }
-    globalThis.setTimeout(() => this.simulateStage(index + 1), 900);
-  };
 
   private closePublish = (): void => {
     if (this.publishBusy) return;
@@ -834,11 +789,7 @@ export class ScreenEditor extends LitElement {
       >`;
     }
     return html`<p class="dialog-note">
-      ${this.live
-        ? html`Файл <code>${this.articlePath}</code> будет застейджен, закоммичен и запушен через
-            git-движок.`
-        : html`Демо-режим: шаги имитируются без реальных вызовов. Запустите dev:token с токеном,
-            чтобы публиковать по-настоящему.`}
+      Файл <code>${this.articlePath}</code> будет застейджен, закоммичен и запушен через git-движок.
     </p>`;
   }
 
@@ -864,18 +815,29 @@ export class ScreenEditor extends LitElement {
   }
 
   override render(): TemplateResult {
+    if (!this.live) {
+      return html`
+        <article class="ed">
+          <div class="head">
+            <p class="eyebrow">Контент · редактор</p>
+            <h1 class="title" tabindex="-1">Редактор</h1>
+          </div>
+          <p class="hint">
+            ${this.loaded
+              ? 'Войдите через GitHub, чтобы открыть материалы репозитория для правки.'
+              : 'Загружаем материал…'}
+          </p>
+        </article>
+      `;
+    }
     return html`
       <article class="ed">
         <div class="head">
-          <p class="eyebrow">Контент · ${this.live ? this.slug : 'демо-материал'} · черновик</p>
+          <p class="eyebrow">Контент · ${this.slug} · черновик</p>
           <h1 class="title" tabindex="-1">
             ${this.articleTitle === '' ? 'Без названия' : this.articleTitle}
           </h1>
-          ${this.live
-            ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
-            : this.loaded
-              ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
-              : nothing}
+          <cp-tag tone="success">данные из репозитория</cp-tag>
         </div>
         <cp-tabs
           .tabs=${LANG_TABS}
@@ -894,10 +856,8 @@ export class ScreenEditor extends LitElement {
           <span class="draft">несохранённые правки</span>
           <span aria-hidden="true">·</span>
           <span>${this.activeLang}</span>
-          ${this.live
-            ? html`<span aria-hidden="true">·</span>
-                <span class="path">${this.articlePath}</span>`
-            : nothing}
+          <span aria-hidden="true">·</span>
+          <span class="path">${this.articlePath}</span>
         </p>
       </article>
       ${this.renderProps()}${this.renderPublishDialog()}

@@ -88,14 +88,6 @@ export class ScreenMembers extends LitElement {
     this.loaded = true;
   }
 
-  private sample(): readonly Member[] {
-    return [
-      { login: 'red-october', role: 'Владелец', avatar: '' },
-      { login: 'praxis-editor', role: 'Редактор', avatar: '' },
-      { login: 'observer-13', role: 'Наблюдатель', avatar: '' },
-    ];
-  }
-
   private static readonly columns: readonly CpTableColumn[] = [
     { key: 'login', label: 'Логин' },
     { key: 'role', label: 'Роль' },
@@ -127,32 +119,25 @@ export class ScreenMembers extends LitElement {
 
   override render() {
     const live = this.members.length > 0;
-    const list = live ? this.members : this.sample();
-    const rows = list.map((member) => this.toRow(member));
+    const rows = this.members.map((member) => this.toRow(member));
     return html`
       <div class="head">
         <p class="eyebrow">Сообщество · роли и доступ</p>
         <h1 tabindex="-1">Участники</h1>
         <cp-button variant="primary" arrow>Пригласить</cp-button>
-        ${live
-          ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
-          : this.loaded
-            ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
-            : nothing}
       </div>
-      <cp-table
-        rowKey="login"
-        caption="Участники репозитория"
-        .columns=${[...ScreenMembers.columns]}
-        .rows=${rows}
-      ></cp-table>
-      <p class="note">
-        ${live
-          ? `Прочитано из GitHub — ${list.length} ${
-              list.length === 1 ? 'участник' : 'участников'
-            } реального репозитория.`
-          : 'Запустите dev:token с токеном, дающим доступ к коллабораторам, чтобы увидеть реальных участников.'}
-      </p>
+      ${live
+        ? html`<cp-table
+            rowKey="login"
+            caption="Участники репозитория"
+            .columns=${[...ScreenMembers.columns]}
+            .rows=${rows}
+          ></cp-table>`
+        : html`<p class="note">
+            ${this.loaded
+              ? 'Войдите через GitHub токеном с доступом к коллабораторам репозитория, чтобы увидеть участников.'
+              : 'Загружаем участников…'}
+          </p>`}
     `;
   }
 }
