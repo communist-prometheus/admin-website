@@ -33,11 +33,11 @@ export const light = {
 /** The color token set for dark mode (design.md §3). */
 export const dark = {
     'color-background': 'hsl(0 0% 10%)',
-    'color-surface': 'hsl(0 0% 15%)',
+    'color-surface': 'hsl(0 0% 13%)',
     'color-surface-elevated': 'hsl(0 0% 17%)',
     'color-text-primary': 'hsl(0 0% 96%)',
     'color-text-secondary': 'hsl(0 0% 66%)',
-    'color-border': 'hsl(0 0% 28%)',
+    'color-border': 'hsl(0 0% 25%)',
     'color-hairline': 'hsl(0 0% 22%)',
     'color-accent': 'hsl(14 85% 62%)',
     'color-accent-hover': 'hsl(14 85% 70%)',
