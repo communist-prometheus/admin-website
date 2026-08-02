@@ -4,7 +4,7 @@ import { createRef, ref } from 'lit/directives/ref.js';
 import { navItems, groups, canSee, type AuthState } from './nav.js';
 import { screens } from './screens/index.js';
 import { createGitStateStore, type GitStateStore, type SyncStatus } from './engine/git-state.js';
-import { login, currentUser } from './engine/auth.js';
+import { login, loginWithToken, logout, currentUser } from './engine/auth.js';
 import { bootEngine } from './engine/engine-boot.js';
 
 /** One of the four viewport corners the draggable FAB can snap to. */
@@ -98,6 +98,23 @@ export class AppShell extends LitElement {
     .account {
       font-size: 0.9rem;
       color: var(--color-text-secondary);
+    }
+    .auth-hint {
+      margin: 0 0 var(--spacing-md);
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      max-width: 32rem;
+    }
+    .auth-error {
+      margin: var(--spacing-sm) 0 0;
+      font-size: 0.85rem;
+      color: var(--danger, hsl(0 72% 45%));
+    }
+    .auth-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+      justify-content: flex-end;
+      flex-wrap: wrap;
     }
 
     .body {
@@ -385,8 +402,17 @@ export class AppShell extends LitElement {
   /** Signed-in GitHub login, or undefined when signed out. */
   @state() private account?: string;
 
-  /** True while an OAuth login popup is in flight. */
+  /** True while a login attempt is in flight. */
   @state() private loggingIn = false;
+
+  /** Whether the login dialog is open. */
+  @state() private authOpen = false;
+
+  /** Last login error message, if any. */
+  @state() private authError?: string;
+
+  /** The token typed into the login dialog. */
+  @state() private authToken = '';
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -645,14 +671,71 @@ export class AppShell extends LitElement {
     this.account = user?.username;
   }
 
-  /** Runs the OAuth login, then boots the engine with the fresh token. */
+  /** Finishes a successful login: records the account, boots the engine, closes. */
+  private async onSignedIn(username: string, token: string): Promise<void> {
+    this.account = username;
+    this.authOpen = false;
+    this.authError = undefined;
+    await bootEngine(token);
+  }
+
+  /** Runs the GitHub OAuth login. */
   private async handleLogin(): Promise<void> {
     this.loggingIn = true;
     const user = await login();
     this.loggingIn = false;
-    if (user === undefined) return;
-    this.account = user.username;
-    await bootEngine(user.accessToken);
+    user === undefined
+      ? (this.authError = 'Вход через GitHub не завершён.')
+      : void this.onSignedIn(user.username, user.accessToken);
+  }
+
+  /** Bypass login with a pasted token (stable, no OAuth). */
+  private async handleTokenLogin(token: string): Promise<void> {
+    this.loggingIn = true;
+    const user = await loginWithToken(token);
+    this.loggingIn = false;
+    user === undefined
+      ? (this.authError = 'Токен отклонён. Нужен GitHub PAT с доступом к репозиториям.')
+      : void this.onSignedIn(user.username, token.trim());
+  }
+
+  /** Signs out and reloads to a clean, signed-out state. */
+  private handleLogout(): void {
+    logout();
+    globalThis.location.reload();
+  }
+
+  /** Renders the login dialog (token bypass + GitHub OAuth). */
+  private renderAuthDialog() {
+    return html`
+      <cp-dialog
+        ?open=${this.authOpen}
+        heading="Вход в админку"
+        ?busy=${this.loggingIn}
+        @cp-cancel=${() => (this.authOpen = false)}
+      >
+        <p class="auth-hint">
+          Вставьте GitHub-токен (fine-grained PAT с доступом Contents к репозиторию контента) —
+          самый стабильный способ. Или войдите через GitHub.
+        </p>
+        <cp-input
+          label="GitHub-токен (PAT)"
+          type="password"
+          .value=${this.authToken}
+          @cp-input=${(event: CustomEvent<{ value: string }>) =>
+            (this.authToken = event.detail.value)}
+        ></cp-input>
+        ${this.authError ? html`<p class="auth-error">${this.authError}</p>` : nothing}
+        <div slot="footer" class="auth-actions">
+          <cp-button variant="secondary" @cp-click=${() => this.handleLogin()}
+            >Войти через GitHub</cp-button
+          >
+          <cp-button arrow ?loading=${this.loggingIn} @cp-click=${() => this.handleTokenLogin(this.authToken)}
+            >Войти по токену</cp-button
+          >
+        </div>
+      </cp-dialog>
+    `;
   }
 
   override render() {
@@ -666,11 +749,11 @@ export class AppShell extends LitElement {
         <div class="header-right">
           <cp-status state=${this.sync.tone} label=${this.sync.label}></cp-status>
           ${this.account
-            ? html`<span class="account">${this.account}</span>`
-            : html`<cp-button
-                size="sm"
-                ?loading=${this.loggingIn}
-                @cp-click=${() => this.handleLogin()}
+            ? html`<span class="account">${this.account}</span>
+                <cp-button variant="ghost" size="sm" @cp-click=${() => this.handleLogout()}
+                  >Выйти</cp-button
+                >`
+            : html`<cp-button size="sm" @cp-click=${() => (this.authOpen = true)}
                 >Войти</cp-button
               >`}
           <button
@@ -686,7 +769,7 @@ export class AppShell extends LitElement {
         ${this.renderRailNav()}
         <main tabindex="-1" aria-live="polite">${screen ? screen.render() : nothing}</main>
       </div>
-      ${this.renderFabMenu()}
+      ${this.renderFabMenu()} ${this.renderAuthDialog()}
     `;
   }
 }

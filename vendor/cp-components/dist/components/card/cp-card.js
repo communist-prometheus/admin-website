@@ -90,8 +90,9 @@ let CpCard = class CpCard extends LitElement {
       flex-direction: column;
       gap: var(--cp-spacing-sm, 1rem);
       background: var(--cp-color-surface, hsl(0, 0%, 98%));
-      border: 1px solid var(--cp-color-border, hsl(0, 0%, 90%));
+      border: 1px solid transparent;
       border-radius: var(--cp-radius-md, 0.75rem);
+      box-shadow: var(--cp-shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
       padding: var(--cp-spacing-lg, 2rem);
       transition:
         box-shadow var(--cp-transition-fast, 150ms cubic-bezier(0.4, 0, 0.2, 1)),
