@@ -3,6 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { navItems, groups, canSee, type AuthState } from './nav.js';
 import { screens } from './screens/index.js';
 import { createGitStateStore, type GitStateStore, type SyncStatus } from './engine/git-state.js';
+import { login, currentUser } from './engine/auth.js';
+import { bootEngine } from './engine/engine-boot.js';
 
 /**
  * The admin app shell (app-shell spec R1–R7): a client-side SPA island that owns
@@ -256,6 +258,12 @@ export class AppShell extends LitElement {
   /** Derived sync-status descriptor (design-system tone + label). */
   @state() private sync: SyncStatus = { tone: 'success', label: 'синхронизировано' };
 
+  /** Signed-in GitHub login, or undefined when signed out. */
+  @state() private account?: string;
+
+  /** True while an OAuth login popup is in flight. */
+  @state() private loggingIn = false;
+
   override connectedCallback(): void {
     super.connectedCallback();
     const theme = document.documentElement.getAttribute('data-theme');
@@ -263,6 +271,7 @@ export class AppShell extends LitElement {
     this.store = createGitStateStore();
     this.store.subscribe(() => (this.sync = this.store?.syncStatus() ?? this.sync));
     this.sync = this.store.syncStatus();
+    void this.resolveAccount();
     this.syncRoute();
     window.addEventListener('hashchange', this.syncRoute);
   }
@@ -343,6 +352,22 @@ export class AppShell extends LitElement {
     `;
   }
 
+  /** Resolves an existing session on load (populates the account name). */
+  private async resolveAccount(): Promise<void> {
+    const user = await currentUser();
+    this.account = user?.username;
+  }
+
+  /** Runs the OAuth login, then boots the engine with the fresh token. */
+  private async handleLogin(): Promise<void> {
+    this.loggingIn = true;
+    const user = await login();
+    this.loggingIn = false;
+    if (user === undefined) return;
+    this.account = user.username;
+    await bootEngine(user.accessToken);
+  }
+
   override render() {
     const screen = screens[this.route];
     return html`
@@ -361,7 +386,14 @@ export class AppShell extends LitElement {
         </a>
         <div class="header-right">
           <cp-status state=${this.sync.tone} label=${this.sync.label}></cp-status>
-          <span class="account">${this.auth.login}</span>
+          ${this.account
+            ? html`<span class="account">${this.account}</span>`
+            : html`<cp-button
+                size="sm"
+                ?loading=${this.loggingIn}
+                @cp-click=${() => this.handleLogin()}
+                >Войти</cp-button
+              >`}
           <button class="icon-btn" aria-label="Переключить тему" @click=${() => this.toggleTheme()}>
             <cp-icon name="sun"></cp-icon>
           </button>
