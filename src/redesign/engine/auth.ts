@@ -14,10 +14,17 @@ import { createPopupWindow } from '@/composables/useOAuthPopup/popup-window';
  * authenticated user; `currentUser()` resolves an existing session on load.
  */
 
-/** Runs the GitHub OAuth popup and resolves with the user, or undefined on cancel/error. */
-export const login = (): Promise<User | undefined> =>
+/**
+ * Runs the GitHub OAuth popup and resolves with the user, or undefined on
+ * cancel/error. `onError` receives the CONCRETE failure surfaced by the popup
+ * (GitHub error, token-exchange failure) so the UI can show the real cause
+ * instead of a generic message; every step is also logged to the console.
+ */
+export const login = (onError?: (message: string) => void): Promise<User | undefined> =>
   new Promise((resolve) => {
     void buildAuthorizeUrl().then((url) => {
+      // eslint-disable-next-line no-console
+      console.info('[oauth-login] opening popup', { authorize: url.split('?')[0] });
       const popup = createPopupWindow(url);
       const cleanup = (): void => {
         globalThis.removeEventListener('message', handleMessage);
@@ -25,14 +32,23 @@ export const login = (): Promise<User | undefined> =>
       };
       const handleMessage = createMessageHandler(
         (user) => {
+          // eslint-disable-next-line no-console
+          console.info('[oauth-login] success', { user: user.username });
           saveToken(user.accessToken);
           resolve(user);
         },
-        () => resolve(undefined),
+        (message) => {
+          // eslint-disable-next-line no-console
+          console.error('[oauth-login] error from popup:', message);
+          onError?.(message);
+          resolve(undefined);
+        },
         cleanup,
       );
       globalThis.addEventListener('message', handleMessage);
       createPopupMonitor(popup, () => {
+        // eslint-disable-next-line no-console
+        console.warn('[oauth-login] popup closed before completing');
         globalThis.removeEventListener('message', handleMessage);
         resolve(undefined);
       });

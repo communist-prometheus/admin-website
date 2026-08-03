@@ -200,7 +200,8 @@ export class ScreenEditor extends LitElement {
 
     .toolbar {
       position: sticky;
-      top: 0;
+      /* Stick just below the app header instead of colliding with it. */
+      top: var(--app-header-h, 3.75rem);
       z-index: 5;
       display: flex;
       flex-wrap: wrap;

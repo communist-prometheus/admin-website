@@ -47,10 +47,12 @@ export class AppShell extends LitElement {
       position: sticky;
       top: 0;
       z-index: 10;
+      box-sizing: border-box;
+      height: var(--app-header-h);
       display: flex;
       align-items: center;
       gap: var(--spacing-md);
-      padding: 0.7rem var(--spacing-md);
+      padding: 0 var(--spacing-md);
       background: var(--color-background);
       border-bottom: 1px solid var(--color-hairline);
     }
@@ -390,8 +392,17 @@ export class AppShell extends LitElement {
   private dragStartX = 0;
   private dragStartY = 0;
 
-  /** Mock session for the local preview — replaced by real auth later. */
-  private auth: AuthState = { role: 'admin', owner: true, login: 'undeadliner' };
+  /**
+   * The session as the nav gating consumes it, derived from the real login —
+   * `undefined` when signed out (so the menu is empty and screens are gated).
+   * Every signed-in maintainer currently gets the full admin/owner surface;
+   * finer role resolution is owned by the auth/RBAC spec.
+   */
+  private get auth(): AuthState | undefined {
+    return this.account === undefined
+      ? undefined
+      : { role: 'admin', owner: true, login: this.account };
+  }
 
   /** Live git-engine state store; drives the header sync-status affordance. */
   private store?: GitStateStore;
@@ -590,7 +601,9 @@ export class AppShell extends LitElement {
 
   /** Grouped, role-gated nav items — shared by the desktop rail + FAB popup. */
   private renderNavItems() {
-    const visible = navItems.filter((item) => canSee(item, this.auth));
+    const auth = this.auth;
+    if (auth === undefined) return nothing;
+    const visible = navItems.filter((item) => canSee(item, auth));
     return groups.map(([key, label]) => {
       const items = visible.filter((item) => item.group === key);
       return items.length === 0
@@ -679,13 +692,15 @@ export class AppShell extends LitElement {
     await bootEngine(token);
   }
 
-  /** Runs the GitHub OAuth login. */
+  /** Runs the GitHub OAuth login, surfacing the concrete failure if any. */
   private async handleLogin(): Promise<void> {
     this.loggingIn = true;
-    const user = await login();
+    this.authError = undefined;
+    let concrete: string | undefined;
+    const user = await login((message) => (concrete = message));
     this.loggingIn = false;
     user === undefined
-      ? (this.authError = 'Вход через GitHub не завершён.')
+      ? (this.authError = concrete ?? 'Вход через GitHub не завершён (окно закрыто до ответа).')
       : void this.onSignedIn(user.username, user.accessToken);
   }
 
@@ -766,10 +781,33 @@ export class AppShell extends LitElement {
         </div>
       </header>
       <div class="body">
-        ${this.renderRailNav()}
-        <main tabindex="-1" aria-live="polite">${screen ? screen.render() : nothing}</main>
+        ${this.account === undefined ? nothing : this.renderRailNav()}
+        <main tabindex="-1" aria-live="polite">
+          ${this.account === undefined
+            ? this.renderSignedOut()
+            : screen
+              ? screen.render()
+              : nothing}
+        </main>
       </div>
-      ${this.renderFabMenu()} ${this.renderAuthDialog()}
+      ${this.account === undefined ? nothing : this.renderFabMenu()} ${this.renderAuthDialog()}
+    `;
+  }
+
+  /** Content-area placeholder shown until a session exists (no repo data leaks). */
+  private renderSignedOut() {
+    return html`
+      <div class="screen-head">
+        <p class="eyebrow">Доступ</p>
+        <h1 tabindex="-1">Войдите в админку</h1>
+      </div>
+      <p class="auth-hint">
+        Управление контентом доступно после входа через GitHub. До входа данные репозитория не
+        загружаются.
+      </p>
+      <div class="form-actions" style="justify-content:flex-start">
+        <cp-button arrow @cp-click=${() => (this.authOpen = true)}>Войти</cp-button>
+      </div>
     `;
   }
 }

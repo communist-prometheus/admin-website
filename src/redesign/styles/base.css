@@ -8,6 +8,9 @@
 html {
   background: var(--color-background);
   color-scheme: light dark;
+  /* Fixed app header height — shared so sticky in-screen toolbars (the editor)
+     can offset below the header instead of colliding with it. */
+  --app-header-h: 3.75rem;
 }
 
 body {
