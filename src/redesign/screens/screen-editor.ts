@@ -3,6 +3,7 @@ import type { TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import type { CpSelectOption, CpTab } from '@communist-prometheus/cp-components';
+import '../editor/cp-markdown-editor.js';
 import { listArticles, readFile, stageFile, commitAndPush } from '../engine/content.js';
 
 /** One editable article block: a stable id plus its raw markdown source line(s).
@@ -402,8 +403,8 @@ export class ScreenEditor extends LitElement {
   /** Frontmatter `title`, shown in the gradient H1. */
   @state() private articleTitle = '';
 
-  /** The article body as editable blocks — the in-memory source of truth. */
-  @state() private blocks: readonly EditorBlock[] = [];
+  /** The article body markdown — the in-memory source of truth for the editor. */
+  @state() private body = '';
 
   /** Id of the block currently revealing/editing its raw markdown; '' reveals none. */
   @state() private focusedBlock = '';
@@ -497,19 +498,18 @@ export class ScreenEditor extends LitElement {
     const parsed = parseArticle(markdown);
     this.frontmatter = parsed.frontmatter;
     this.articleTitle = parsed.title;
-    this.blocks = splitBlocks(parsed.body).map((raw, index) => ({ id: `blk-${index}`, raw }));
+    this.body = parsed.body;
     this.articlePath = path;
     this.live = live;
-    this.focusedBlock = '';
     const date =
       frontmatterValue(parsed.frontmatter, 'pubDate') ?? frontmatterValue(parsed.frontmatter, 'date');
     if (date !== undefined) this.pubDate = date;
     this.published = frontmatterValue(parsed.frontmatter, 'draft') !== 'true';
   }
 
-  /** Reconstructs the full markdown document from the edited in-memory blocks. */
+  /** Reconstructs the full markdown document from the frontmatter + edited body. */
   private get editedMarkdown(): string {
-    const body = this.blocks.map((block) => block.raw).join('\n\n');
+    const body = this.body.trimEnd();
     return this.frontmatter === '' ? `${body}\n` : `${this.frontmatter}\n\n${body}\n`;
   }
 
@@ -846,11 +846,17 @@ export class ScreenEditor extends LitElement {
           @cp-tab-change=${this.onLangChange}
         ></cp-tabs>
         ${this.renderToolbar()}
-        <div class="live">${this.blocks.map((block, index) => this.renderBlock(block, index))}</div>
+        <cp-markdown-editor
+          class="live"
+          .value=${this.body}
+          placeholder="Текст статьи в Markdown…"
+          @cp-change=${(event: CustomEvent<{ value: string }>) =>
+            (this.body = event.detail.value)}
+        ></cp-markdown-editor>
         <p class="hint">
-          Кликни в абзац — раскроется только он и покажет разметку
+          Живой предпросмотр: форматирование отрендерено сразу, а разметку
           <span class="kbd">#</span> <span class="kbd">**</span>
-          <span class="kbd">&gt;</span> <span class="kbd">[^24]</span>. Остальное — вёрстка статьи.
+          <span class="kbd">&gt;</span> видно только на строке с курсором.
         </p>
         <p class="save-note">
           <cp-icon name="warning" size="16"></cp-icon>
