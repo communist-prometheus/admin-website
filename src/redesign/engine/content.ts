@@ -59,6 +59,114 @@ export const commitAndPush = async (message: string): Promise<{ ok: boolean; sha
   }
 };
 
+/** Stages a binary asset (base64-encoded) in the local repo (no commit yet). */
+export const stageAsset = async (path: string, base64: string): Promise<boolean> => {
+  try {
+    const response = await fetch('/api/github/asset', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path, content: base64 }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Inserts or replaces a scalar `key: value` inside a markdown file's YAML
+ * frontmatter, leaving the body untouched. A new key is placed right after
+ * `lang:` (or at the end of the block); an existing key's line is replaced.
+ * Pure — safe to unit test.
+ */
+export const upsertFrontmatterField = (markdown: string, key: string, value: string): string => {
+  const line = `${key}: ${value}`;
+  if (!markdown.startsWith('---')) return `---\n${line}\n---\n\n${markdown}`;
+  const end = markdown.indexOf('\n---', 3);
+  if (end < 0) return markdown;
+  const prefix = `${key}:`;
+  const lines = markdown.slice(4, end).split('\n');
+  const at = lines.findIndex((l) => l.startsWith(prefix));
+  if (at >= 0) lines[at] = line;
+  else {
+    const langAt = lines.findIndex((l) => l.startsWith('lang:'));
+    lines.splice(langAt >= 0 ? langAt + 1 : lines.length, 0, line);
+  }
+  return `---\n${lines.join('\n')}${markdown.slice(end)}`;
+};
+
+/** Fields needed to render a magazine issue's `index.<lang>.md`. */
+export interface IssueIndexInput {
+  readonly title: string;
+  readonly lang: string;
+  readonly publishDate: string;
+  readonly articles: readonly string[];
+  readonly imagePath?: string;
+}
+
+/** Builds a magazine issue `index.<lang>.md` matching the shipped issue format. */
+export const buildIssueIndexMarkdown = (i: IssueIndexInput): string => {
+  const arts = i.articles.map((a) => `  - ${a}`).join('\n');
+  const image = i.imagePath !== undefined && i.imagePath !== '' ? `\nimage: ${i.imagePath}` : '';
+  return (
+    `---\n` +
+    `title: ${JSON.stringify(i.title)}\n` +
+    `lang: ${i.lang}\n` +
+    `published: true\n` +
+    `publishDate: ${i.publishDate}\n` +
+    `articles:\n${arts}${image}\n` +
+    `---\n`
+  );
+};
+
+/** Everything the UI collects to publish a new magazine issue. */
+export interface NewMagazineIssue {
+  readonly slug: string;
+  readonly lang: string;
+  readonly title: string;
+  readonly publishDate: string;
+  readonly articles: readonly string[];
+  /** The issue PDF, base64-encoded. */
+  readonly pdfBase64: string;
+  /** Optional cover image (PNG/JPEG), base64-encoded. */
+  readonly coverBase64?: string;
+}
+
+/**
+ * Publishes a new magazine issue end-to-end through the git engine: stages the
+ * PDF and cover under `magazine/<slug>/assets/`, writes `index.<lang>.md` with
+ * the table of contents, back-links every selected article to the issue via its
+ * `magazine:` frontmatter, then commits and pushes. Returns the commit result.
+ */
+export const createMagazineIssue = async (
+  issue: NewMagazineIssue,
+): Promise<{ ok: boolean; sha?: string; error?: string }> => {
+  const dir = `magazine/${issue.slug}`;
+  const pdfOk = await stageAsset(`${dir}/assets/${issue.slug}.${issue.lang}.pdf`, issue.pdfBase64);
+  if (!pdfOk) return { ok: false, error: 'Не удалось загрузить PDF номера.' };
+
+  let imagePath = '';
+  if (issue.coverBase64 !== undefined && issue.coverBase64 !== '') {
+    const langCover = await stageAsset(`${dir}/assets/cover.${issue.lang}.png`, issue.coverBase64);
+    const defCover = await stageAsset(`${dir}/assets/cover.png`, issue.coverBase64);
+    if (!langCover || !defCover) return { ok: false, error: 'Не удалось загрузить обложку.' };
+    imagePath = `./assets/cover.${issue.lang}.png`;
+  }
+
+  const index = buildIssueIndexMarkdown({ ...issue, imagePath });
+  const indexOk = await stageFile(`${dir}/index.${issue.lang}.md`, index);
+  if (!indexOk) return { ok: false, error: 'Не удалось создать index номера (проверьте поля).' };
+
+  for (const slug of issue.articles) {
+    const path = `blog/${slug}/index.${issue.lang}.md`;
+    const md = await readFile(path);
+    if (md === undefined || md === '') continue;
+    await stageFile(path, upsertFrontmatterField(md, 'magazine', issue.slug));
+  }
+
+  return commitAndPush(`magazine: добавлен номер ${issue.slug} (${issue.articles.length} статей)`);
+};
+
 /** Reads a file's text content from the cloned content repo. */
 export const readFile = async (path: string): Promise<string | undefined> => {
   try {
