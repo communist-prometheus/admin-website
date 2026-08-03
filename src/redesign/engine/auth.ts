@@ -22,6 +22,18 @@ import { createPopupWindow } from '@/composables/useOAuthPopup/popup-window';
  */
 export const login = (onError?: (message: string) => void): Promise<User | undefined> =>
   new Promise((resolve) => {
+    // The callback popup posts the token and then closes itself. The
+    // close-monitor polls every 500ms, but the success handler must first
+    // `fetchGitHubUser` (~1s) before it resolves — so the monitor used to win
+    // the race and report "closed before completing" even though the token had
+    // arrived and been saved. `settled` records the first real outcome; on a
+    // bare close we wait a grace period for a pending message before giving up.
+    let settled = false;
+    const finish = (user: User | undefined): void => {
+      if (settled) return;
+      settled = true;
+      resolve(user);
+    };
     void buildAuthorizeUrl().then((url) => {
       // eslint-disable-next-line no-console
       console.info('[oauth-login] opening popup', { authorize: url.split('?')[0] });
@@ -35,22 +47,28 @@ export const login = (onError?: (message: string) => void): Promise<User | undef
           // eslint-disable-next-line no-console
           console.info('[oauth-login] success', { user: user.username });
           saveToken(user.accessToken);
-          resolve(user);
+          finish(user);
         },
         (message) => {
           // eslint-disable-next-line no-console
           console.error('[oauth-login] error from popup:', message);
           onError?.(message);
-          resolve(undefined);
+          finish(undefined);
         },
         cleanup,
       );
       globalThis.addEventListener('message', handleMessage);
       createPopupMonitor(popup, () => {
-        // eslint-disable-next-line no-console
-        console.warn('[oauth-login] popup closed before completing');
-        globalThis.removeEventListener('message', handleMessage);
-        resolve(undefined);
+        // Popup closed: give an in-flight success/error message time to settle
+        // (the token may already be posted) before treating it as a cancel.
+        if (settled) return;
+        globalThis.setTimeout(() => {
+          if (settled) return;
+          // eslint-disable-next-line no-console
+          console.warn('[oauth-login] popup closed with no result — treating as cancel');
+          globalThis.removeEventListener('message', handleMessage);
+          finish(undefined);
+        }, 2500);
       });
     });
   });

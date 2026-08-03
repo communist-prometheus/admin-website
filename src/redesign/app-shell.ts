@@ -124,7 +124,7 @@ export class AppShell extends LitElement {
       grid-template-columns: 1fr;
     }
     @media (min-width: 768px) {
-      .body {
+      .body.has-nav {
         grid-template-columns: 15rem minmax(0, 1fr);
       }
     }
@@ -413,6 +413,9 @@ export class AppShell extends LitElement {
   /** Signed-in GitHub login, or undefined when signed out. */
   @state() private account?: string;
 
+  /** True once the initial session check has completed (gates first paint). */
+  @state() private authChecked = false;
+
   /** True while a login attempt is in flight. */
   @state() private loggingIn = false;
 
@@ -680,8 +683,14 @@ export class AppShell extends LitElement {
 
   /** Resolves an existing session on load (populates the account name). */
   private async resolveAccount(): Promise<void> {
-    const user = await currentUser();
-    this.account = user?.username;
+    try {
+      const user = await currentUser();
+      this.account = user?.username;
+    } finally {
+      // Gate the first paint until the session is known, so a logged-in reload
+      // does not flash the signed-out prompt before the app (a big layout shift).
+      this.authChecked = true;
+    }
   }
 
   /** Finishes a successful login: records the account, boots the engine, closes. */
@@ -780,18 +789,30 @@ export class AppShell extends LitElement {
           </button>
         </div>
       </header>
-      <div class="body">
-        ${this.account === undefined ? nothing : this.renderRailNav()}
+      <div class="body ${this.signedIn ? 'has-nav' : ''}">
+        ${this.signedIn ? this.renderRailNav() : nothing}
         <main tabindex="-1" aria-live="polite">
-          ${this.account === undefined
-            ? this.renderSignedOut()
-            : screen
-              ? screen.render()
-              : nothing}
+          ${!this.authChecked
+            ? this.renderChecking()
+            : this.signedIn
+              ? screen
+                ? screen.render()
+                : nothing
+              : this.renderSignedOut()}
         </main>
       </div>
-      ${this.account === undefined ? nothing : this.renderFabMenu()} ${this.renderAuthDialog()}
+      ${this.signedIn ? this.renderFabMenu() : nothing} ${this.renderAuthDialog()}
     `;
+  }
+
+  /** True only once the session is confirmed present. */
+  private get signedIn(): boolean {
+    return this.authChecked && this.account !== undefined;
+  }
+
+  /** Neutral placeholder shown while the session is being resolved (no flash). */
+  private renderChecking() {
+    return html`<p class="auth-hint" style="padding-top:var(--spacing-md)">Загрузка…</p>`;
   }
 
   /** Content-area placeholder shown until a session exists (no repo data leaks). */
