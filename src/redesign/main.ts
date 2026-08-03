@@ -10,6 +10,7 @@ import '../styles/theme.css';
 import './styles/base.css';
 import './styles/view-transition.css';
 import '@communist-prometheus/cp-components';
+import './editor/cp-markdown-editor.js';
 import './app-shell.js';
 import { bootEngineIfTokenPresent } from './engine/engine-boot.js';
 import { handleOAuthCallbackIfPresent } from './engine/oauth-callback.js';
