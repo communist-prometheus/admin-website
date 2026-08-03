@@ -44,7 +44,14 @@
     "deploy": "CLOUDFLARE_API_TOKEN=$VITE_CF_API_TOKEN npx wrangler deploy --config wrangler.jsonc"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.10.4",
+    "@codemirror/lang-markdown": "^6.5.1",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.7",
     "@isomorphic-git/lightning-fs": "^4.6.2",
+    "@lezer/highlight": "^1.2.3",
+    "@lezer/markdown": "^1.7.2",
     "@types/turndown": "^5.0.6",
     "buffer": "^6.0.3",
     "dompurify": "^3.4.9",
