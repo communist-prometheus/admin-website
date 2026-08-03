@@ -6,16 +6,25 @@
  * to sample data with an honest badge.
  */
 
+import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
+
 const OWNER = 'communist-prometheus';
 const API = 'https://api.github.com';
 
-const token = (): string | undefined => {
-  const t = import.meta.env.VITE_DEV_TOKEN;
-  return typeof t === 'string' && t.length > 0 ? t : undefined;
+/**
+ * The active GitHub token: the injected dev token locally, otherwise the
+ * signed-in user's session token (same one the engine pushes with). Using the
+ * session token is what makes members/tickets/pushes work on the deployed
+ * admin, not just in local `dev:token`.
+ */
+const token = async (): Promise<string | undefined> => {
+  const dev = import.meta.env.VITE_DEV_TOKEN;
+  if (typeof dev === 'string' && dev.length > 0) return dev;
+  return (await ensureFreshToken()) ?? undefined;
 };
 
 const get = async (path: string): Promise<unknown> => {
-  const t = token();
+  const t = await token();
   if (t === undefined) return undefined;
   try {
     const response = await fetch(`${API}${path}`, {
@@ -102,4 +111,43 @@ const toTicket = (x: unknown): Ticket | undefined => {
 export const listTickets = async (repo = 'admin-website'): Promise<readonly Ticket[]> => {
   const data = await get(`/repos/${OWNER}/${repo}/issues?state=all&per_page=50`);
   return Array.isArray(data) ? data.map(toTicket).filter((t): t is Ticket => t !== undefined) : [];
+};
+
+/** A recent push (commit) to the content repo, for the deploy board. */
+export interface Push {
+  readonly sha: string;
+  readonly title: string;
+  readonly author: string;
+  readonly date: string;
+  readonly url: string;
+}
+
+const toPush = (x: unknown): Push | undefined => {
+  const sha = field(x, 'sha');
+  if (typeof sha !== 'string') return undefined;
+  const commit = field(x, 'commit');
+  const message = field(commit, 'message');
+  const authorName = field(field(commit, 'author'), 'name');
+  const date = field(field(commit, 'author'), 'date');
+  const htmlUrl = field(x, 'html_url');
+  return {
+    sha: sha.slice(0, 7),
+    title: typeof message === 'string' ? (message.split('\n')[0] ?? sha) : sha,
+    author: typeof authorName === 'string' ? authorName : '—',
+    date: typeof date === 'string' ? date : '',
+    url: typeof htmlUrl === 'string' ? htmlUrl : '',
+  };
+};
+
+/**
+ * Recent commits (pushes) on a branch of the content repo — the real activity
+ * feed the deploy board shows. Branch defaults to the one the admin is wired to
+ * (build-time `VITE_GITHUB_BRANCH`), so prod and dev each show their own.
+ */
+export const listPushes = async (
+  branch = import.meta.env.VITE_GITHUB_BRANCH ?? 'develop',
+  repo = 'public-website-content',
+): Promise<readonly Push[]> => {
+  const data = await get(`/repos/${OWNER}/${repo}/commits?sha=${branch}&per_page=15`);
+  return Array.isArray(data) ? data.map(toPush).filter((p): p is Push => p !== undefined) : [];
 };
