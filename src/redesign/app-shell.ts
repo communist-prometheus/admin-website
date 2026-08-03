@@ -123,6 +123,9 @@ export class AppShell extends LitElement {
       display: grid;
       grid-template-columns: 1fr;
     }
+    /* The desktop rail column is reserved unconditionally so the main content
+       never shifts sideways when the nav appears after the session resolves —
+       the empty rail simply fills in. */
     @media (min-width: 768px) {
       .body {
         grid-template-columns: 15rem minmax(0, 1fr);
@@ -413,6 +416,9 @@ export class AppShell extends LitElement {
   /** Signed-in GitHub login, or undefined when signed out. */
   @state() private account?: string;
 
+  /** True once the initial session check has completed (gates first paint). */
+  @state() private authChecked = false;
+
   /** True while a login attempt is in flight. */
   @state() private loggingIn = false;
 
@@ -680,8 +686,14 @@ export class AppShell extends LitElement {
 
   /** Resolves an existing session on load (populates the account name). */
   private async resolveAccount(): Promise<void> {
-    const user = await currentUser();
-    this.account = user?.username;
+    try {
+      const user = await currentUser();
+      this.account = user?.username;
+    } finally {
+      // Gate the first paint until the session is known, so a logged-in reload
+      // does not flash the signed-out prompt before the app (a big layout shift).
+      this.authChecked = true;
+    }
   }
 
   /** Finishes a successful login: records the account, boots the engine, closes. */
@@ -763,14 +775,16 @@ export class AppShell extends LitElement {
         </a>
         <div class="header-right">
           <cp-status state=${this.sync.tone} label=${this.sync.label}></cp-status>
-          ${this.account
-            ? html`<span class="account">${this.account}</span>
-                <cp-button variant="ghost" size="sm" @cp-click=${() => this.handleLogout()}
-                  >Выйти</cp-button
-                >`
-            : html`<cp-button size="sm" @cp-click=${() => (this.authOpen = true)}
-                >Войти</cp-button
-              >`}
+          ${!this.authChecked
+            ? nothing
+            : this.account
+              ? html`<span class="account">${this.account}</span>
+                  <cp-button variant="ghost" size="sm" @cp-click=${() => this.handleLogout()}
+                    >Выйти</cp-button
+                  >`
+              : html`<cp-button size="sm" @cp-click=${() => (this.authOpen = true)}
+                  >Войти</cp-button
+                >`}
           <button
             class="icon-btn"
             aria-label="Переключить тему"
@@ -781,17 +795,29 @@ export class AppShell extends LitElement {
         </div>
       </header>
       <div class="body">
-        ${this.account === undefined ? nothing : this.renderRailNav()}
+        ${this.renderRailNav()}
         <main tabindex="-1" aria-live="polite">
-          ${this.account === undefined
-            ? this.renderSignedOut()
-            : screen
-              ? screen.render()
-              : nothing}
+          ${!this.authChecked
+            ? this.renderChecking()
+            : this.signedIn
+              ? screen
+                ? screen.render()
+                : nothing
+              : this.renderSignedOut()}
         </main>
       </div>
-      ${this.account === undefined ? nothing : this.renderFabMenu()} ${this.renderAuthDialog()}
+      ${this.signedIn ? this.renderFabMenu() : nothing} ${this.renderAuthDialog()}
     `;
+  }
+
+  /** True only once the session is confirmed present. */
+  private get signedIn(): boolean {
+    return this.authChecked && this.account !== undefined;
+  }
+
+  /** Neutral placeholder shown while the session is being resolved (no flash). */
+  private renderChecking() {
+    return html`<p class="auth-hint" style="padding-top:var(--spacing-md)">Загрузка…</p>`;
   }
 
   /** Content-area placeholder shown until a session exists (no repo data leaks). */

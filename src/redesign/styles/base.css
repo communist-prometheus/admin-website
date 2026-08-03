@@ -8,6 +8,10 @@
 html {
   background: var(--color-background);
   color-scheme: light dark;
+  /* Reserve the scrollbar gutter so it never appears mid-load: content growing
+     past the viewport used to summon a scrollbar, shrink the width ~15px and
+     shift the whole layout sideways (the CLS spike). */
+  scrollbar-gutter: stable;
   /* Fixed app header height — shared so sticky in-screen toolbars (the editor)
      can offset below the header instead of colliding with it. */
   --app-header-h: 3.75rem;
