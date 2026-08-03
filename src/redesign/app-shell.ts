@@ -123,8 +123,11 @@ export class AppShell extends LitElement {
       display: grid;
       grid-template-columns: 1fr;
     }
+    /* The desktop rail column is reserved unconditionally so the main content
+       never shifts sideways when the nav appears after the session resolves —
+       the empty rail simply fills in. */
     @media (min-width: 768px) {
-      .body.has-nav {
+      .body {
         grid-template-columns: 15rem minmax(0, 1fr);
       }
     }
@@ -772,14 +775,16 @@ export class AppShell extends LitElement {
         </a>
         <div class="header-right">
           <cp-status state=${this.sync.tone} label=${this.sync.label}></cp-status>
-          ${this.account
-            ? html`<span class="account">${this.account}</span>
-                <cp-button variant="ghost" size="sm" @cp-click=${() => this.handleLogout()}
-                  >Выйти</cp-button
-                >`
-            : html`<cp-button size="sm" @cp-click=${() => (this.authOpen = true)}
-                >Войти</cp-button
-              >`}
+          ${!this.authChecked
+            ? nothing
+            : this.account
+              ? html`<span class="account">${this.account}</span>
+                  <cp-button variant="ghost" size="sm" @cp-click=${() => this.handleLogout()}
+                    >Выйти</cp-button
+                  >`
+              : html`<cp-button size="sm" @cp-click=${() => (this.authOpen = true)}
+                  >Войти</cp-button
+                >`}
           <button
             class="icon-btn"
             aria-label="Переключить тему"
@@ -789,8 +794,8 @@ export class AppShell extends LitElement {
           </button>
         </div>
       </header>
-      <div class="body ${this.signedIn ? 'has-nav' : ''}">
-        ${this.signedIn ? this.renderRailNav() : nothing}
+      <div class="body">
+        ${this.renderRailNav()}
         <main tabindex="-1" aria-live="polite">
           ${!this.authChecked
             ? this.renderChecking()
