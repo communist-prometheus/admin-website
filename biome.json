@@ -11,6 +11,11 @@
       "!!**/dist",
       "!!.wrangler",
       "!!public/vendor",
+      "!!vendor",
+      "!!src/redesign",
+      "!!src/styles/theme.css",
+      "!!redesign.html",
+      "!!specs",
       "!!e2e-toolkit",
       "!!.claude",
       "!!.tmp"
@@ -97,6 +102,7 @@
       "includes": [
         "vite.config.ts",
         "vite.sw.config.ts",
+        "vite.redesign.config.ts",
         "vitest.config.ts",
         "playwright.config.ts",
         "playwright.config.prod.ts",

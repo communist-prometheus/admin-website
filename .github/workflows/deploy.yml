@@ -138,7 +138,7 @@ jobs:
       # every commit becomes `sha: mock` and nothing reaches the
       # content repo.
       - name: Rebuilding production bundle after e2e
-        run: bun run build:client && bun run build:sw
+        run: bun run build:client && bun run build:redesign && bun run build:sw
 
       # Deploy-gate smoke test: spin up the REAL CF worker locally via
       # wrangler dev so the /api/cors/github.com/* proxy is served by

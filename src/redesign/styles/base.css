@@ -1,0 +1,20 @@
+/*
+ * Base reset for the redesigned admin. The browser's default 8px body margin,
+ * combined with a transparent html/body background, leaked the white page
+ * backdrop as vertical strips down both sides of the dark app. Kill the margin
+ * and paint the themed background across the whole viewport so the shell reaches
+ * edge to edge in every theme.
+ */
+html {
+  background: var(--color-background);
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

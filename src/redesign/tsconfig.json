@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@/*": ["../*"],
+      "@communist-prometheus/cp-components": ["../../vendor/cp-components/dist/index.d.ts"],
+      "@communist-prometheus/cp-components/*": ["../../vendor/cp-components/dist/*"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["**/*.test.ts"]
+}
