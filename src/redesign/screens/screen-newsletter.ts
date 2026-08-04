@@ -2,7 +2,15 @@ import { LitElement, html, css, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
-import type { CpTab, CpTableColumn, CpTableRow, CpSelectOption } from '@communist-prometheus/cp-components';
+import type { CpTab, CpTableColumn, CpTableRow } from '@communist-prometheus/cp-components';
+import {
+  listSubscribers,
+  listRuns,
+  forceDispatch,
+  type Subscriber,
+  type SendRun,
+  type DispatchResult,
+} from '../engine/comms.js';
 
 /** The three sub-nav panels of the newsletter screen. */
 type TabId = 'schedule' | 'subscribers' | 'log';
@@ -13,82 +21,34 @@ const isTabId = (value: string): value is TabId =>
 
 /** Sub-nav segments, in display order (comms, design.md R5). */
 const TABS: readonly CpTab[] = [
-  { id: 'schedule', label: 'Расписание' },
+  { id: 'schedule', label: 'Отправка' },
   { id: 'subscribers', label: 'Подписчики' },
   { id: 'log', label: 'Журнал отправок' },
-];
-
-/** Number of active subscribers the "send now" confirmation warns about. */
-const ACTIVE_SUBSCRIBERS = 312;
-
-/** Timezone choices for the schedule panel's `cp-select`. */
-const TIMEZONES: readonly CpSelectOption[] = [
-  { value: 'Europe/Moscow', label: 'Europe/Moscow · МСК (UTC+3)' },
-  { value: 'UTC', label: 'UTC · Всемирное время' },
-  { value: 'Europe/Berlin', label: 'Europe/Berlin · ЦЕВ (UTC+1)' },
-  { value: 'Europe/Kyiv', label: 'Europe/Kyiv · (UTC+2)' },
-];
-
-/** Weekday choices for the send schedule. */
-const WEEKDAYS: readonly CpSelectOption[] = [
-  { value: 'sat', label: 'Каждую субботу' },
-  { value: 'sun', label: 'Каждое воскресенье' },
-  { value: 'mon', label: 'Каждый понедельник' },
-];
-
-/** What material is collected into an issue. */
-const CONTENTS: readonly CpSelectOption[] = [
-  { value: 'week', label: 'Материалы за 7 дней до отправки' },
-  { value: 'since', label: 'Всё, вышедшее после прошлого выпуска' },
-  { value: 'manual', label: 'Вручную отобранные материалы' },
-];
-
-/** One mailing-list subscriber (representative preview data). */
-interface Subscriber {
-  readonly email: string;
-  readonly state: 'success' | 'danger';
-  readonly label: string;
-  readonly since: string;
-}
-
-const SUBSCRIBERS: readonly Subscriber[] = [
-  { email: 'a.rosa@example.org', state: 'success', label: 'активен', since: 'ноя 2025' },
-  { email: 'k.zetkin@example.org', state: 'success', label: 'активен', since: 'янв 2026' },
-  { email: 'e.thalmann@example.org', state: 'danger', label: 'отписался', since: 'сен 2025' },
-  { email: 'a.bordiga@example.org', state: 'success', label: 'активен', since: 'мар 2026' },
-  { email: 'r.luxemburg@example.org', state: 'success', label: 'активен', since: 'апр 2026' },
 ];
 
 /** Column definitions for the subscribers table. */
 const SUBSCRIBER_COLUMNS: readonly CpTableColumn[] = [
   { key: 'email', label: 'Email' },
+  { key: 'langs', label: 'Языки' },
   { key: 'status', label: 'Статус' },
-  { key: 'since', label: 'Дата подписки' },
+  { key: 'since', label: 'Подписан' },
 ];
 
-/** One past send in the delivery log. */
-interface Send {
-  readonly issue: string;
-  readonly sentAt: string;
-  readonly recipients: number;
-  readonly outcome: 'success' | 'danger';
-  readonly outcomeLabel: string;
-}
-
-const SENDS: readonly Send[] = [
-  { issue: 'Выпуск №17', sentAt: '14 июня 2026, 10:00', recipients: 308, outcome: 'success', outcomeLabel: 'доставлено' },
-  { issue: 'Выпуск №16', sentAt: '7 июня 2026, 10:00', recipients: 305, outcome: 'danger', outcomeLabel: '4 адреса не приняли' },
-  { issue: 'Выпуск №15', sentAt: '31 мая 2026, 10:00', recipients: 301, outcome: 'success', outcomeLabel: 'доставлено' },
-  { issue: 'Выпуск №14', sentAt: '24 мая 2026, 10:00', recipients: 297, outcome: 'success', outcomeLabel: 'доставлено' },
-];
+/** Maps a subscriber status to a cp-status tone + label. */
+const STATUS_META: Readonly<Record<Subscriber['status'], { state: string; label: string }>> = {
+  active: { state: 'success', label: 'активен' },
+  unsubscribed: { state: 'danger', label: 'отписался' },
+  bounced: { state: 'warning', label: 'отскок' },
+  complained: { state: 'warning', label: 'жалоба' },
+};
 
 /**
- * Owner-only newsletter console (comms, design.md R5). A self-contained screen
- * element for the admin redesign: a gradient section heading with an owner-scope
- * `cp-tag`, a `cp-tabs` sub-nav that swaps three panels through local `@state`
- * (schedule / subscribers / delivery log), and a danger-tone `cp-dialog` guarding
- * the irreversible "send to every active subscriber" action. Composes design-system
- * primitives only; theme tokens inherit into this shadow root from `:root`.
+ * Owner-only newsletter console (comms, design.md R5), wired to the REAL
+ * comms-worker (`VITE_COMMS_BASE`): it lists the actual subscribers and send log
+ * and triggers the actual manual dispatch (`POST /api/dispatch?force=1`). There
+ * is deliberately no mock data and no "not connected" claim — the service is
+ * deployed and this screen drives it. Loads/failures are surfaced honestly so an
+ * empty list never reads as a broken integration.
  */
 @customElement('screen-newsletter')
 export class ScreenNewsletter extends LitElement {
@@ -138,8 +98,6 @@ export class ScreenNewsletter extends LitElement {
       overflow-x: auto;
     }
 
-    /* Wide tables scroll inside their own gutter instead of pushing the whole
-       screen past the viewport (the horizontal-overflow "вёрстка" bug). */
     .scroll-x {
       max-width: 100%;
       overflow-x: auto;
@@ -148,19 +106,6 @@ export class ScreenNewsletter extends LitElement {
     section {
       display: grid;
       gap: var(--spacing-md);
-    }
-
-    .field-grid {
-      display: grid;
-      gap: var(--spacing-md);
-      grid-template-columns: 1fr;
-      max-width: 34rem;
-    }
-
-    @media (min-width: 640px) {
-      .field-grid {
-        grid-template-columns: 1fr 1fr;
-      }
     }
 
     .hint {
@@ -195,13 +140,17 @@ export class ScreenNewsletter extends LitElement {
       gap: var(--spacing-sm);
     }
 
+    .muted {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
     .dialog-note {
       margin: 0;
       color: var(--color-text-secondary);
     }
 
-    /* Token-driven footer buttons for the confirm dialog. The danger action
-       resolves entirely through semantic tokens so it flips with the theme. */
     .btn {
       font: inherit;
       font-weight: 600;
@@ -229,9 +178,9 @@ export class ScreenNewsletter extends LitElement {
     }
 
     .btn.danger {
-      background: var(--danger);
+      background: var(--danger, var(--color-danger));
       color: var(--color-background);
-      border-color: var(--danger);
+      border-color: var(--danger, var(--color-danger));
     }
 
     .btn.danger:hover:not(:disabled) {
@@ -242,18 +191,48 @@ export class ScreenNewsletter extends LitElement {
   /** Active sub-nav panel. */
   @state() private tab: TabId = 'schedule';
 
-  /** Whether the "send now" confirmation dialog is open. */
+  /** Real subscribers from the comms worker; empty until loaded. */
+  @state() private subscribers: readonly Subscriber[] = [];
+
+  /** Real send-log rows from the comms worker; empty until loaded. */
+  @state() private runs: readonly SendRun[] = [];
+
+  /** Whether each read has completed, and whether it failed (vs empty). */
+  @state() private subsLoaded = false;
+  @state() private runsLoaded = false;
+  @state() private subsFailed = false;
+  @state() private runsFailed = false;
+
+  /** Confirmation dialog + dispatch state. */
   @state() private confirmOpen = false;
+  @state() private sending = false;
+  @state() private result?: DispatchResult;
 
-  /**
-   * Whether a send was attempted. There is no mail transport wired to this
-   * console yet, so a confirmed "send" does NOT dispatch anything — it flips
-   * this flag to surface an honest "not delivered" notice instead of faking a
-   * successful delivery (QA #9: the previous mock pretended to send).
-   */
-  @state() private sendAttempted = false;
+  override connectedCallback(): void {
+    super.connectedCallback();
+    void this.loadSubscribers();
+    void this.loadRuns();
+  }
 
-  /** Adopts the chosen tab from the `cp-tabs` change event. */
+  private async loadSubscribers(): Promise<void> {
+    const read = await listSubscribers();
+    this.subsFailed = !read.ok;
+    this.subscribers = read.ok ? read.data : [];
+    this.subsLoaded = true;
+  }
+
+  private async loadRuns(): Promise<void> {
+    const read = await listRuns();
+    this.runsFailed = !read.ok;
+    this.runs = read.ok ? read.data : [];
+    this.runsLoaded = true;
+  }
+
+  /** Number of active subscribers a dispatch would reach. */
+  private get activeCount(): number {
+    return this.subscribers.filter((s) => s.status === 'active').length;
+  }
+
   private readonly onTabChange = (event: Event): void => {
     if (event instanceof CustomEvent) {
       const id: unknown = event.detail?.id;
@@ -266,119 +245,156 @@ export class ScreenNewsletter extends LitElement {
   };
 
   private readonly cancelConfirm = (): void => {
-    this.confirmOpen = false;
+    if (!this.sending) this.confirmOpen = false;
   };
 
-  /**
-   * Confirms the "send" action. No email transport is connected, so this never
-   * dispatches a message: it records the attempt (surfacing a "not delivered"
-   * banner) and closes the dialog. It must not report success.
-   */
-  private readonly confirmSend = (): void => {
-    this.sendAttempted = true;
+  /** Fires the REAL manual dispatch, then reports the outcome. */
+  private readonly confirmSend = async (): Promise<void> => {
+    if (this.sending) return;
+    this.sending = true;
+    this.result = undefined;
+    const result = await forceDispatch();
+    this.sending = false;
     this.confirmOpen = false;
+    this.result = result;
+    if (result.ok) void this.loadRuns();
   };
 
-  private readonly renderSchedule = (): TemplateResult => html`
-    <section aria-label="Расписание рассылки">
-      <p class="hint">
-        Выпуск собирается автоматически и уходит по расписанию. В письмо попадают материалы,
-        опубликованные до момента отправки.
-      </p>
-      <div class="field-grid">
-        <cp-select label="День недели" value="sat" .options=${WEEKDAYS}></cp-select>
-        <cp-input label="Время отправки" type="time" value="10:00"></cp-input>
-        <cp-select label="Часовой пояс" value="Europe/Moscow" .options=${TIMEZONES}></cp-select>
-        <cp-select label="Что попадает в выпуск" value="week" .options=${CONTENTS}></cp-select>
-      </div>
-      <div class="actions">
-        <cp-button @cp-click=${this.openConfirm}>Отправить сейчас</cp-button>
-        <cp-button variant="secondary" disabled title="Появится после подключения почтового сервиса">
-          Тест на свою почту
-        </cp-button>
-      </div>
-    </section>
-  `;
+  private renderResultBanner(): TemplateResult | typeof nothing {
+    if (this.result === undefined) return nothing;
+    if (this.result.ok) {
+      const sent = this.result.sent ?? 0;
+      const failed = this.result.failed ?? 0;
+      return html`<cp-banner tone="success" title="Отправка запущена">
+        Разослано: ${sent}${failed > 0 ? html` · не доставлено: ${failed}` : nothing}. Подробности — во
+        вкладке «Журнал отправок».
+      </cp-banner>`;
+    }
+    return html`<cp-banner tone="danger" title="Не удалось отправить"
+      >${this.result.error ?? 'Отправка не выполнена.'}</cp-banner
+    >`;
+  }
 
-  private readonly renderSubscribers = (): TemplateResult => {
-    const rows: CpTableRow[] = SUBSCRIBERS.map((sub) => ({
-      id: sub.email,
-      email: sub.email,
-      status: html`<cp-status state=${sub.state} label=${sub.label}></cp-status>`,
-      since: sub.since,
-    }));
+  private renderSchedule(): TemplateResult {
+    return html`
+      <section aria-label="Отправка выпуска">
+        <p class="hint">
+          Выпуск собирается автоматически и уходит подписчикам по расписанию воркера-рассыльщика. В
+          письмо попадают материалы, опубликованные с прошлой отправки. Кнопка ниже запускает
+          отправку немедленно — всем ${this.activeCount} активным подписчикам.
+        </p>
+        <div class="actions">
+          <cp-button @cp-click=${this.openConfirm} ?disabled=${this.activeCount === 0}
+            >Отправить сейчас</cp-button
+          >
+        </div>
+        ${this.activeCount === 0
+          ? html`<p class="muted">Нет активных подписчиков — отправлять некому.</p>`
+          : nothing}
+      </section>
+    `;
+  }
+
+  private renderSubscribers(): TemplateResult {
+    if (!this.subsLoaded) return html`<p class="muted">Загружаем подписчиков…</p>`;
+    if (this.subsFailed) {
+      return html`
+        <section aria-label="Подписчики">
+          <p class="muted">Не удалось загрузить подписчиков из сервиса рассылки.</p>
+          <cp-button variant="secondary" @cp-click=${() => void this.loadSubscribers()}
+            >Повторить</cp-button
+          >
+        </section>
+      `;
+    }
+    const rows: CpTableRow[] = this.subscribers.map((sub) => {
+      const meta = STATUS_META[sub.status];
+      return {
+        id: String(sub.id),
+        email: sub.email,
+        langs: sub.langs.join(', ').toUpperCase(),
+        status: html`<cp-status state=${meta.state} label=${meta.label}></cp-status>`,
+        since: sub.createdAt.slice(0, 10),
+      };
+    });
+    const unsub = this.subscribers.filter((s) => s.status !== 'active').length;
     return html`
       <section aria-label="Подписчики">
         <div class="toolbar">
-          <span class="meta">${ACTIVE_SUBSCRIBERS} активных · 4 отписались за неделю</span>
-          <cp-button variant="ghost" size="sm" disabled title="Появится после подключения почтового сервиса">
-            <cp-icon name="plus" size="16"></cp-icon>
-            Добавить
-          </cp-button>
+          <span class="meta"
+            >${this.activeCount} активных${unsub > 0 ? html` · ${unsub} неактивных` : nothing}</span
+          >
         </div>
-        <div class="scroll-x">
-          <cp-table
-            caption="Список рассылки"
-            .columns=${SUBSCRIBER_COLUMNS}
-            .rows=${rows}
-          ></cp-table>
+        ${this.subscribers.length === 0
+          ? html`<p class="muted">Пока нет ни одного подписчика.</p>`
+          : html`<div class="scroll-x">
+              <cp-table caption="Список рассылки" .columns=${SUBSCRIBER_COLUMNS} .rows=${rows}></cp-table>
+            </div>`}
+      </section>
+    `;
+  }
+
+  private renderLog(): TemplateResult {
+    if (!this.runsLoaded) return html`<p class="muted">Загружаем журнал…</p>`;
+    if (this.runsFailed) {
+      return html`
+        <section aria-label="Журнал отправок">
+          <p class="muted">Не удалось загрузить журнал отправок.</p>
+          <cp-button variant="secondary" @cp-click=${() => void this.loadRuns()}>Повторить</cp-button>
+        </section>
+      `;
+    }
+    if (this.runs.length === 0) {
+      return html`<section aria-label="Журнал отправок">
+        <p class="muted">Отправок ещё не было.</p>
+      </section>`;
+    }
+    return html`
+      <section aria-label="Журнал отправок">
+        <div class="log">
+          ${this.runs.map(
+            (run) => html`
+              <cp-list-row
+                title="Отправка от ${run.tickAt.slice(0, 16).replace('T', ' ')}"
+                meta="${run.articleCount} материалов"
+              >
+                <cp-status
+                  slot="actions"
+                  state=${run.status === 'sent' ? 'success' : run.status === 'failed' ? 'danger' : 'warning'}
+                  label=${run.error ?? run.status}
+                ></cp-status>
+              </cp-list-row>
+            `,
+          )}
         </div>
       </section>
     `;
-  };
-
-  private readonly renderLog = (): TemplateResult => html`
-    <section aria-label="Журнал отправок">
-      <div class="log">
-        ${SENDS.map(
-          (send) => html`
-            <cp-list-row
-              title=${send.issue}
-              meta="${send.sentAt} · ${send.recipients} получателей"
-            >
-              <cp-status
-                slot="actions"
-                state=${send.outcome}
-                label=${send.outcomeLabel}
-              ></cp-status>
-              <cp-button slot="actions" variant="ghost" size="sm" disabled
-                >Подробно</cp-button
-              >
-            </cp-list-row>
-          `,
-        )}
-      </div>
-    </section>
-  `;
+  }
 
   private renderPanel(): TemplateResult {
-    const panels: Readonly<Record<TabId, () => TemplateResult>> = {
-      schedule: this.renderSchedule,
-      subscribers: this.renderSubscribers,
-      log: this.renderLog,
-    };
-    return panels[this.tab]();
+    if (this.tab === 'subscribers') return this.renderSubscribers();
+    if (this.tab === 'log') return this.renderLog();
+    return this.renderSchedule();
   }
 
   private renderConfirmDialog(): TemplateResult | typeof nothing {
-    if (!this.confirmOpen) {
-      return nothing;
-    }
+    if (!this.confirmOpen) return nothing;
     return html`
       <cp-dialog
         open
-        tone="warning"
-        heading="Отправить выпуск ${ACTIVE_SUBSCRIBERS} подписчикам?"
+        tone="danger"
+        heading="Отправить выпуск ${this.activeCount} подписчикам?"
+        ?busy=${this.sending}
         @cp-cancel=${this.cancelConfirm}
       >
         <p class="dialog-note">
-          Почтовый сервис ещё не подключён, поэтому письмо не будет отправлено —
-          рассылка появится в интерфейсе после интеграции доставки.
+          Письмо уйдёт всем активным подписчикам немедленно и необратимо через сервис рассылки.
         </p>
         <button
           slot="footer"
           class="btn secondary"
           type="button"
+          ?disabled=${this.sending}
           @click=${this.cancelConfirm}
         >
           Отмена
@@ -387,9 +403,10 @@ export class ScreenNewsletter extends LitElement {
           slot="footer"
           class="btn danger"
           type="button"
+          ?disabled=${this.sending}
           @click=${this.confirmSend}
         >
-          Понятно
+          ${this.sending ? 'Отправляется…' : 'Отправить всем'}
         </button>
       </cp-dialog>
     `;
@@ -402,23 +419,9 @@ export class ScreenNewsletter extends LitElement {
         <cp-tag tone="warning">только владелец</cp-tag>
       </header>
       <p class="eyebrow">Коммуникации · еженедельный дайджест для читателей</p>
-      <cp-banner
-        tone=${this.sendAttempted ? 'danger' : 'info'}
-        title=${this.sendAttempted
-          ? 'Письмо не отправлено'
-          : 'Рассылка ещё не подключена'}
-      >
-        ${this.sendAttempted
-          ? 'Почтовый сервис пока не интегрирован — ни одно письмо не ушло. Ниже демонстрационные данные.'
-          : 'Почтовый сервис ещё не интегрирован: расписание, список подписчиков и журнал ниже — демонстрационные, реальная отправка не выполняется.'}
-      </cp-banner>
-      <cp-tabs
-        .tabs=${TABS}
-        active=${this.tab}
-        @cp-tab-change=${this.onTabChange}
-      ></cp-tabs>
-      ${this.renderPanel()}
-      ${this.renderConfirmDialog()}
+      ${this.renderResultBanner()}
+      <cp-tabs .tabs=${TABS} active=${this.tab} @cp-tab-change=${this.onTabChange}></cp-tabs>
+      ${this.renderPanel()} ${this.renderConfirmDialog()}
     `;
   }
 }
