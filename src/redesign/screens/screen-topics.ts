@@ -3,6 +3,7 @@ import { customElement, state } from 'lit/decorators.js';
 import type { CpTab } from '@communist-prometheus/cp-components';
 import '@communist-prometheus/cp-components';
 import { readTopics, type Topic } from '../engine/content.js';
+import { onEngineReady } from '../engine/engine-ready.js';
 
 /**
  * The seven publication languages, expressed as the keys used inside a topic's
@@ -201,9 +202,19 @@ export class ScreenTopics extends LitElement {
   /** Currently edited language; drives which localised name the fields show. */
   @state() private activeLang: LangCode = 'ru';
 
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+    // Re-read when the engine finishes booting (first-load race, QA #12).
+    this.disposeReady = onEngineReady(() => void this.load());
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.disposeReady();
   }
 
   private async load(): Promise<void> {

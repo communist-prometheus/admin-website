@@ -8,6 +8,7 @@ import {
   createMagazineIssue,
   type ArticleSummary,
 } from '../engine/content.js';
+import { onEngineReady } from '../engine/engine-ready.js';
 
 /** One existing magazine issue discovered under `magazine/`. */
 interface IssueFolder {
@@ -171,9 +172,19 @@ export class ScreenMagazine extends LitElement {
   @state() private sha = '';
   @state() private error = '';
 
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+    // Re-read when the engine finishes booting (first-load race, QA #12).
+    this.disposeReady = onEngineReady(() => void this.load());
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.disposeReady();
   }
 
   private async load(): Promise<void> {

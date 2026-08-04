@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import { listArticles, type ArticleSummary } from '../engine/content.js';
+import { onEngineReady } from '../engine/engine-ready.js';
 
 /**
  * Articles screen (content-list spec). Lists the actual `blog/<slug>/index.<lang>.md`
@@ -72,9 +73,19 @@ export class ScreenArticles extends LitElement {
   /** Whether a read has completed (so we can distinguish loading from empty). */
   @state() private loaded = false;
 
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+    // The engine may still be cloning the repo (first load): re-read when ready.
+    this.disposeReady = onEngineReady(() => void this.load());
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.disposeReady();
   }
 
   private async load(): Promise<void> {

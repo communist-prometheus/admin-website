@@ -11,6 +11,7 @@ import {
   commitAndPush,
   upsertFrontmatterField,
 } from '../engine/content.js';
+import { onEngineReady } from '../engine/engine-ready.js';
 
 /** One editable article block: a stable id plus its raw markdown source line(s).
  *  The rendered typography is derived from the raw text on every render, so the
@@ -469,16 +470,26 @@ export class ScreenEditor extends LitElement {
   /** Slug currently loaded, to detect same-screen route changes. */
   private loadedSlug = '';
 
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
     this.loadedSlug = this.routeSlug();
     void this.load();
     globalThis.addEventListener('hashchange', this.onHashChange);
+    // First-load race (QA #12): if the engine was still cloning the repo, our
+    // first read found no article. Re-read when it is ready — but never clobber
+    // an intentional new draft or an already-loaded article.
+    this.disposeReady = onEngineReady(() => {
+      if (this.slug === '' && this.routeSlug() !== 'new') void this.load();
+    });
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     globalThis.removeEventListener('hashchange', this.onHashChange);
+    this.disposeReady();
   }
 
   // Re-load when the editor stays mounted but the requested slug changes
