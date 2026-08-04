@@ -311,7 +311,7 @@ export class ScreenNewsletter extends LitElement {
       <section aria-label="Подписчики">
         <div class="toolbar">
           <span class="meta">${ACTIVE_SUBSCRIBERS} активных · 4 отписались за неделю</span>
-          <cp-button variant="ghost" size="sm">
+          <cp-button variant="ghost" size="sm" disabled title="Появится после подключения почтового сервиса">
             <cp-icon name="plus" size="16"></cp-icon>
             Добавить
           </cp-button>
@@ -341,7 +341,9 @@ export class ScreenNewsletter extends LitElement {
                 state=${send.outcome}
                 label=${send.outcomeLabel}
               ></cp-status>
-              <cp-button slot="actions" variant="ghost" size="sm">Подробно</cp-button>
+              <cp-button slot="actions" variant="ghost" size="sm" disabled
+                >Подробно</cp-button
+              >
             </cp-list-row>
           `,
         )}
