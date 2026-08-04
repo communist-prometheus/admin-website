@@ -6,6 +6,7 @@ import {
   listArticles,
   readFile,
   createMagazineIssue,
+  validateMagazineSlug,
   type ArticleSummary,
 } from '../engine/content.js';
 import { onEngineReady } from '../engine/engine-ready.js';
@@ -96,6 +97,15 @@ export class ScreenMagazine extends LitElement {
       display: flex;
       flex-direction: column;
       gap: var(--spacing-md);
+    }
+    .slug-field {
+      display: grid;
+      gap: 0.25rem;
+    }
+    .field-error {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--color-danger, #c0392b);
     }
     .file label {
       display: block;
@@ -236,10 +246,15 @@ export class ScreenMagazine extends LitElement {
     this.fArticles = next;
   };
 
+  /** Slug validation error for the current input, or '' when the slug is fine. */
+  private get slugError(): string {
+    return validateMagazineSlug(this.fSlug, this.issues.map((i) => i.slug)) ?? '';
+  }
+
   private get canSubmit(): boolean {
     return (
       this.fTitle.trim() !== '' &&
-      this.fSlug.trim() !== '' &&
+      this.slugError === '' &&
       this.fDate.trim() !== '' &&
       this.pdf !== undefined &&
       this.phase !== 'running'
@@ -299,14 +314,20 @@ export class ScreenMagazine extends LitElement {
             @cp-input=${this.bind('fTitle')}
             @cp-change=${this.bind('fTitle')}
           ></cp-input>
-          <cp-input
-            label="Слаг (папка номера)"
-            required
-            placeholder="magazine-3-sentyabr-2026"
-            .value=${this.fSlug}
-            @cp-input=${this.bind('fSlug')}
-            @cp-change=${this.bind('fSlug')}
-          ></cp-input>
+          <div class="slug-field">
+            <cp-input
+              label="Слаг (папка номера)"
+              required
+              ?invalid=${this.fSlug.trim() !== '' && this.slugError !== ''}
+              placeholder="magazine-3-sentyabr-2026"
+              .value=${this.fSlug}
+              @cp-input=${this.bind('fSlug')}
+              @cp-change=${this.bind('fSlug')}
+            ></cp-input>
+            ${this.fSlug.trim() !== '' && this.slugError !== ''
+              ? html`<p class="field-error" role="alert">${this.slugError}</p>`
+              : nothing}
+          </div>
           <cp-select
             label="Язык"
             .value=${this.fLang}

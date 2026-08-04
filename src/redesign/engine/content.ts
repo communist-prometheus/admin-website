@@ -119,6 +119,32 @@ export const buildIssueIndexMarkdown = (i: IssueIndexInput): string => {
   );
 };
 
+/**
+ * A folder-safe issue slug: lowercase Latin letters, digits and single hyphens,
+ * with no leading, trailing or doubled hyphen (e.g. `nomer-3-2026`).
+ */
+const ISSUE_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * Validates a proposed magazine-issue slug against the folder-naming rules and
+ * the slugs that already exist, returning a human-readable Russian error, or
+ * `undefined` when the slug is acceptable. Pure — the screen calls it to gate
+ * the submit button and to surface an inline hint before `createMagazineIssue`
+ * would write a broken or colliding `magazine/<slug>/…` path (QA #17).
+ */
+export const validateMagazineSlug = (
+  slug: string,
+  existing: readonly string[],
+): string | undefined => {
+  const value = slug.trim();
+  if (value === '') return 'Укажите слаг номера.';
+  if (!ISSUE_SLUG_PATTERN.test(value)) {
+    return 'Слаг: только строчные латинские буквы, цифры и дефисы (например, nomer-3-2026).';
+  }
+  if (existing.includes(value)) return `Номер со слагом «${value}» уже существует.`;
+  return undefined;
+};
+
 /** Everything the UI collects to publish a new magazine issue. */
 export interface NewMagazineIssue {
   readonly slug: string;
