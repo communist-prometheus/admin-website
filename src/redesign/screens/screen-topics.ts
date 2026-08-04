@@ -138,16 +138,36 @@ export class ScreenTopics extends LitElement {
       color: var(--color-text-secondary);
     }
 
-    .grid {
+    .fields {
+      margin: 0;
       display: grid;
-      gap: var(--spacing-md);
+      gap: var(--spacing-sm);
     }
 
-    @media (min-width: 640px) {
-      .grid.two {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        align-items: end;
-      }
+    .field {
+      display: grid;
+      gap: 0.15rem;
+    }
+
+    .field dt {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .field dd {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .missing {
+      color: var(--color-text-secondary);
+      font-style: italic;
+    }
+
+    cp-banner {
+      display: block;
+      margin-bottom: var(--spacing-lg);
     }
 
     .preview {
@@ -200,28 +220,27 @@ export class ScreenTopics extends LitElement {
 
   private renderTopic(topic: Topic) {
     const lang = this.activeLang;
-    const name = topic.name[lang] ?? topic.key;
+    const name = topic.name[lang] ?? '';
+    const hasName = name !== '';
     return html`
       <article class="topic" style="--tc:${topic.color}">
         <div class="thead">
           <span class="swatch" aria-hidden="true"></span>
-          <h2 class="name">${name}</h2>
+          <h2 class="name">${hasName ? name : topic.key}</h2>
           <span class="key">${topic.key}</span>
-          <cp-button variant="ghost" size="sm" aria-label="Удалить тему «${name}»">
-            <cp-icon name="trash" size="18"></cp-icon>
-          </cp-button>
+          <span class="key" aria-hidden="true">${topic.color}</span>
         </div>
 
-        <div class="grid two">
-          <cp-input label="Название · ${lang}" .value=${name}></cp-input>
-          <cp-input label="Приписка · ${lang}" .value=${name}></cp-input>
-        </div>
-
-        <cp-textarea label="Описание · ${lang}" rows="3" .value=${name}></cp-textarea>
+        <dl class="fields">
+          <div class="field">
+            <dt>Название · ${lang}</dt>
+            <dd>${hasName ? name : html`<span class="missing">нет перевода</span>`}</dd>
+          </div>
+        </dl>
 
         <div class="preview">
           <span class="preview-label">Плашка на сайте:</span>
-          <cp-pill style="--tc:${topic.color}">${name}</cp-pill>
+          <cp-pill style="--tc:${topic.color}">${hasName ? name : topic.key}</cp-pill>
         </div>
       </article>
     `;
@@ -235,12 +254,17 @@ export class ScreenTopics extends LitElement {
         <h1 tabindex="-1">Темы</h1>
       </header>
       <p class="intro">
-        Темы группируют статьи цветной плашкой и припиской. Название, приписка и описание — для
-        каждого из 7 языков.
+        Темы группируют статьи цветной плашкой. Название задаётся для каждого из 7 языков в
+        settings/topics.json.
       </p>
 
       ${live
         ? html`
+            <cp-banner tone="info" title="Просмотр без редактирования">
+              Темы пока правятся в settings/topics.json. Здесь — что сейчас в репозитории:
+              ключ, цвет и название на выбранном языке.
+            </cp-banner>
+
             <div class="tabs-scroll">
               <cp-tabs
                 .tabs=${LANGUAGES}

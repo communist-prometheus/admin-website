@@ -127,6 +127,11 @@ export class ScreenNewsletter extends LitElement {
       color: var(--color-text-secondary);
     }
 
+    cp-banner {
+      display: block;
+      margin-bottom: var(--spacing-lg);
+    }
+
     cp-tabs {
       margin-bottom: var(--spacing-lg);
       max-width: 100%;
@@ -240,8 +245,13 @@ export class ScreenNewsletter extends LitElement {
   /** Whether the "send now" confirmation dialog is open. */
   @state() private confirmOpen = false;
 
-  /** Whether the issue is currently being sent (drives the dialog `busy` state). */
-  @state() private sending = false;
+  /**
+   * Whether a send was attempted. There is no mail transport wired to this
+   * console yet, so a confirmed "send" does NOT dispatch anything — it flips
+   * this flag to surface an honest "not delivered" notice instead of faking a
+   * successful delivery (QA #9: the previous mock pretended to send).
+   */
+  @state() private sendAttempted = false;
 
   /** Adopts the chosen tab from the `cp-tabs` change event. */
   private readonly onTabChange = (event: Event): void => {
@@ -256,24 +266,17 @@ export class ScreenNewsletter extends LitElement {
   };
 
   private readonly cancelConfirm = (): void => {
-    if (!this.sending) {
-      this.confirmOpen = false;
-    }
+    this.confirmOpen = false;
   };
 
   /**
-   * Simulates the irreversible send: flips the dialog into its `busy` state so
-   * dismissal is suppressed, then closes once the (mock) dispatch resolves.
+   * Confirms the "send" action. No email transport is connected, so this never
+   * dispatches a message: it records the attempt (surfacing a "not delivered"
+   * banner) and closes the dialog. It must not report success.
    */
   private readonly confirmSend = (): void => {
-    if (this.sending) {
-      return;
-    }
-    this.sending = true;
-    globalThis.setTimeout(() => {
-      this.sending = false;
-      this.confirmOpen = false;
-    }, 1600);
+    this.sendAttempted = true;
+    this.confirmOpen = false;
   };
 
   private readonly renderSchedule = (): TemplateResult => html`
@@ -290,7 +293,9 @@ export class ScreenNewsletter extends LitElement {
       </div>
       <div class="actions">
         <cp-button @cp-click=${this.openConfirm}>Отправить сейчас</cp-button>
-        <cp-button variant="secondary">Тест на свою почту</cp-button>
+        <cp-button variant="secondary" disabled title="Появится после подключения почтового сервиса">
+          Тест на свою почту
+        </cp-button>
       </div>
     </section>
   `;
@@ -360,20 +365,18 @@ export class ScreenNewsletter extends LitElement {
     return html`
       <cp-dialog
         open
-        tone="danger"
+        tone="warning"
         heading="Отправить выпуск ${ACTIVE_SUBSCRIBERS} подписчикам?"
-        ?busy=${this.sending}
         @cp-cancel=${this.cancelConfirm}
       >
         <p class="dialog-note">
-          Письмо уйдёт всем активным подписчикам немедленно и необратимо.
-          Рекомендуем сперва «Тест на свою почту».
+          Почтовый сервис ещё не подключён, поэтому письмо не будет отправлено —
+          рассылка появится в интерфейсе после интеграции доставки.
         </p>
         <button
           slot="footer"
           class="btn secondary"
           type="button"
-          ?disabled=${this.sending}
           @click=${this.cancelConfirm}
         >
           Отмена
@@ -382,10 +385,9 @@ export class ScreenNewsletter extends LitElement {
           slot="footer"
           class="btn danger"
           type="button"
-          ?disabled=${this.sending}
           @click=${this.confirmSend}
         >
-          ${this.sending ? 'Отправляется…' : '«Отправить всем»'}
+          Понятно
         </button>
       </cp-dialog>
     `;
@@ -398,6 +400,16 @@ export class ScreenNewsletter extends LitElement {
         <cp-tag tone="warning">только владелец</cp-tag>
       </header>
       <p class="eyebrow">Коммуникации · еженедельный дайджест для читателей</p>
+      <cp-banner
+        tone=${this.sendAttempted ? 'danger' : 'info'}
+        title=${this.sendAttempted
+          ? 'Письмо не отправлено'
+          : 'Рассылка ещё не подключена'}
+      >
+        ${this.sendAttempted
+          ? 'Почтовый сервис пока не интегрирован — ни одно письмо не ушло. Ниже демонстрационные данные.'
+          : 'Почтовый сервис ещё не интегрирован: расписание, список подписчиков и журнал ниже — демонстрационные, реальная отправка не выполняется.'}
+      </cp-banner>
       <cp-tabs
         .tabs=${TABS}
         active=${this.tab}
