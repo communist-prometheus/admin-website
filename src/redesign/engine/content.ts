@@ -2,8 +2,12 @@
  * Thin content client for the new UI (git-engine R4): reads the cloned repo
  * through the SW's fetch-intercepted content API (`/api/github/tree|file`). Pure
  * fetch + parse — no framework coupling. Returns `undefined` on any failure so
- * screens can fall back to a placeholder rather than throw.
+ * screens can fall back to a placeholder rather than throw. Every SW-engine call
+ * goes through {@link swFetch}, which re-inits the engine and retries once if the
+ * SW reports "not ready" — otherwise content silently reads empty after an SW
+ * eviction or a post-deploy SW version bump.
  */
+import { swFetch } from './sw-fetch.js';
 
 /** One entry in a repo directory listing. */
 export interface TreeEntry {
@@ -18,7 +22,7 @@ const isTreeEntry = (x: unknown): x is TreeEntry =>
 /** Lists a directory in the cloned content repo. */
 export const listTree = async (path = ''): Promise<readonly TreeEntry[]> => {
   try {
-    const response = await fetch(`/api/github/tree?path=${encodeURIComponent(path)}`);
+    const response = await swFetch(`/api/github/tree?path=${encodeURIComponent(path)}`);
     const data: unknown = await response.json();
     const tree = typeof data === 'object' && data !== null && 'tree' in data ? data.tree : undefined;
     return Array.isArray(tree) ? tree.filter(isTreeEntry) : [];
@@ -30,7 +34,7 @@ export const listTree = async (path = ''): Promise<readonly TreeEntry[]> => {
 /** Stages a file write in the local repo (no commit yet). Returns success. */
 export const stageFile = async (path: string, content: string): Promise<boolean> => {
   try {
-    const response = await fetch('/api/github/file/stage', {
+    const response = await swFetch('/api/github/file/stage', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ path, content }),
@@ -44,7 +48,7 @@ export const stageFile = async (path: string, content: string): Promise<boolean>
 /** Commits all staged changes and pushes to the remote. Returns the commit sha. */
 export const commitAndPush = async (message: string): Promise<{ ok: boolean; sha?: string; error?: string }> => {
   try {
-    const response = await fetch('/api/github/commit', {
+    const response = await swFetch('/api/github/commit', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ message }),
@@ -62,7 +66,7 @@ export const commitAndPush = async (message: string): Promise<{ ok: boolean; sha
 /** Stages a binary asset (base64-encoded) in the local repo (no commit yet). */
 export const stageAsset = async (path: string, base64: string): Promise<boolean> => {
   try {
-    const response = await fetch('/api/github/asset', {
+    const response = await swFetch('/api/github/asset', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ path, content: base64 }),
@@ -196,7 +200,7 @@ export const createMagazineIssue = async (
 /** Reads a file's text content from the cloned content repo. */
 export const readFile = async (path: string): Promise<string | undefined> => {
   try {
-    const response = await fetch(`/api/github/file?path=${encodeURIComponent(path)}`);
+    const response = await swFetch(`/api/github/file?path=${encodeURIComponent(path)}`);
     const data: unknown = await response.json();
     return typeof data === 'object' && data !== null && 'content' in data
       ? String(data.content)
