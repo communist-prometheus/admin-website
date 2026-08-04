@@ -133,6 +133,13 @@ export class ScreenNewsletter extends LitElement {
       overflow-x: auto;
     }
 
+    /* Wide tables scroll inside their own gutter instead of pushing the whole
+       screen past the viewport (the horizontal-overflow "вёрстка" bug). */
+    .scroll-x {
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
     section {
       display: grid;
       gap: var(--spacing-md);
@@ -304,11 +311,13 @@ export class ScreenNewsletter extends LitElement {
             Добавить
           </cp-button>
         </div>
-        <cp-table
-          caption="Список рассылки"
-          .columns=${SUBSCRIBER_COLUMNS}
-          .rows=${rows}
-        ></cp-table>
+        <div class="scroll-x">
+          <cp-table
+            caption="Список рассылки"
+            .columns=${SUBSCRIBER_COLUMNS}
+            .rows=${rows}
+          ></cp-table>
+        </div>
       </section>
     `;
   };

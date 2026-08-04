@@ -294,6 +294,13 @@ export class AppShell extends LitElement {
       padding: var(--spacing-lg) var(--spacing-md) var(--spacing-2xl);
       max-width: 60rem;
     }
+    /* main is focused programmatically on route change (for the aria-live
+       announcement); it must not paint the browser focus ring, which framed the
+       whole content area as a stray white border. */
+    main:focus,
+    main:focus-visible {
+      outline: none;
+    }
     header {
       min-width: 0;
     }
@@ -797,28 +804,36 @@ export class AppShell extends LitElement {
       <div class="body">
         ${this.renderRailNav()}
         <main tabindex="-1" aria-live="polite">
-          ${!this.authChecked
-            ? this.renderChecking()
-            : this.signedIn
-              ? screen
-                ? screen.render()
-                : nothing
-              : this.renderSignedOut()}
+          ${this.signedIn
+            ? screen
+              ? screen.render()
+              : nothing
+            : this.renderSignedOut()}
         </main>
       </div>
       ${this.signedIn ? this.renderFabMenu() : nothing} ${this.renderAuthDialog()}
     `;
   }
 
-  /** True only once the session is confirmed present. */
-  private get signedIn(): boolean {
-    return this.authChecked && this.account !== undefined;
+  /** A `gh_token` is persisted — used to render the signed-in shell optimistically. */
+  private get hasStoredToken(): boolean {
+    try {
+      return localStorage.getItem('gh_token') !== null;
+    } catch {
+      return false;
+    }
   }
 
-  /** Neutral placeholder shown while the session is being resolved (no flash). */
-  private renderChecking() {
-    return html`<p class="auth-hint" style="padding-top:var(--spacing-md)">Загрузка…</p>`;
+  /**
+   * Whether to render the signed-in shell. Once the session check has run, this
+   * is exact. Before it finishes, we render optimistically when a token is
+   * persisted — a reload of a logged-in page then paints the real layout
+   * immediately instead of flashing a "Загрузка…" placeholder and jumping.
+   */
+  private get signedIn(): boolean {
+    return this.account !== undefined || (!this.authChecked && this.hasStoredToken);
   }
+
 
   /** Content-area placeholder shown until a session exists (no repo data leaks). */
   private renderSignedOut() {
