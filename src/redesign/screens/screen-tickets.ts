@@ -185,7 +185,9 @@ export class ScreenTickets extends LitElement {
               </div>
             </div>
 
-            <cp-table caption="Тикеты и баг-репорты" .columns=${COLUMNS} .rows=${rows}></cp-table>
+            <div style="max-width:100%;overflow-x:auto">
+              <cp-table caption="Тикеты и баг-репорты" .columns=${COLUMNS} .rows=${rows}></cp-table>
+            </div>
           `
         : html`<p class="eyebrow">
             ${this.loaded
