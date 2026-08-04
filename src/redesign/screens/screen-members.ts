@@ -127,12 +127,14 @@ export class ScreenMembers extends LitElement {
         <cp-button variant="primary" arrow>Пригласить</cp-button>
       </div>
       ${live
-        ? html`<cp-table
-            rowKey="login"
-            caption="Участники репозитория"
-            .columns=${[...ScreenMembers.columns]}
-            .rows=${rows}
-          ></cp-table>`
+        ? html`<div style="max-width:100%;overflow-x:auto">
+            <cp-table
+              rowKey="login"
+              caption="Участники репозитория"
+              .columns=${[...ScreenMembers.columns]}
+              .rows=${rows}
+            ></cp-table>
+          </div>`
         : html`<p class="note">
             ${this.loaded
               ? 'Войдите через GitHub токеном с доступом к коллабораторам репозитория, чтобы увидеть участников.'
