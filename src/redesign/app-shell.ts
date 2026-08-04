@@ -466,7 +466,9 @@ export class AppShell extends LitElement {
   }
 
   private syncRoute = (): void => {
-    const id = window.location.hash.replace(/^#\/?/, '');
+    // Route id is the first hash segment; anything after it (e.g.
+    // #/editor/<slug>) is a screen-level parameter the screen reads itself.
+    const id = window.location.hash.replace(/^#\/?/, '').split('/')[0] ?? '';
     this.route = id in screens ? id : 'articles';
     this.fabOpen = false;
     this.updateComplete.then(() => this.focusScreen());

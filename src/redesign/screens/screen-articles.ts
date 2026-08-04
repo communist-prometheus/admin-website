@@ -83,13 +83,14 @@ export class ScreenArticles extends LitElement {
     this.loaded = true;
   }
 
-  private openEditor(): void {
-    location.hash = '/editor';
+  /** Opens the editor for a specific article slug, or a new blank document. */
+  private openEditor(slug?: string): void {
+    location.hash = slug === undefined ? '/editor/new' : `/editor/${slug}`;
   }
 
   private renderCard(article: ArticleSummary) {
     return html`
-      <cp-card hoverable @cp-card-click=${() => this.openEditor()}>
+      <cp-card hoverable @cp-card-click=${() => this.openEditor(article.slug)}>
         ${article.topic ? html`<cp-pill slot="pill">${article.topic}</cp-pill>` : nothing}
         <span slot="title">${article.title}</span>
         <span slot="summary">${article.languages.join(' · ')}</span>
