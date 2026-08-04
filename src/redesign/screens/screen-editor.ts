@@ -470,6 +470,14 @@ export class ScreenEditor extends LitElement {
   /** Slug currently loaded, to detect same-screen route changes. */
   private loadedSlug = '';
 
+  /**
+   * In-memory edits per language for the current article. Switching the language
+   * tab stashes the active language's edited markdown here so switching back
+   * restores unsaved work instead of reloading the on-disk version (QA #8).
+   * Cleared whenever a different article loads.
+   */
+  private readonly langBuffers = new Map<string, string>();
+
   /** Unsubscribes the engine-ready listener on disconnect. */
   private disposeReady: () => void = () => {};
 
@@ -508,6 +516,8 @@ export class ScreenEditor extends LitElement {
   }
 
   private async load(): Promise<void> {
+    // A fresh article invalidates any per-language edits from the previous one.
+    this.langBuffers.clear();
     const articles = await listArticles();
     // Open the article the route names — clicking a card must open THAT article,
     // not always the first one. `new` starts a blank document; a missing/unknown
@@ -597,12 +607,27 @@ export class ScreenEditor extends LitElement {
   private onLangChange = (event: Event): void => {
     if (event instanceof CustomEvent) {
       const id: unknown = event.detail?.id;
-      if (id === 'ru' || id === 'en' || id === 'it') {
+      if ((id === 'ru' || id === 'en' || id === 'it') && id !== this.activeLang) {
+        // Stash the outgoing language's edits before swapping the buffers in.
+        if (this.slug !== '') this.langBuffers.set(this.activeLang, this.editedMarkdown);
         this.activeLang = id;
-        if (this.live && this.slug !== '') void this.loadLang(id);
+        if (this.live && this.slug !== '') void this.switchLang(id);
       }
     }
   };
+
+  /**
+   * Shows the requested language: restores an in-memory edit if one exists,
+   * otherwise reads the on-disk version. Keeps unsaved work across tab switches.
+   */
+  private async switchLang(lang: string): Promise<void> {
+    const buffered = this.langBuffers.get(lang);
+    if (buffered !== undefined) {
+      this.applyMarkdown(buffered, `blog/${this.slug}/index.${lang}.md`, true);
+      return;
+    }
+    await this.loadLang(lang);
+  }
 
   private onTopicChange = (event: Event): void => {
     if (event instanceof CustomEvent) {

@@ -14,6 +14,18 @@ import { defineConfig } from 'vitest/config'
 const cp = resolve(__dirname, 'vendor/cp-components/dist')
 
 export default defineConfig({
+  // The redesign is authored for legacy decorators without class-field define
+  // semantics (see src/redesign/tsconfig.json). esbuild defaults to the opposite,
+  // which shadows Lit's reactive-property accessors and breaks @state in tests —
+  // pin the same semantics the app builds with.
+  esbuild: {
+    tsconfigRaw: {
+      compilerOptions: {
+        experimentalDecorators: true,
+        useDefineForClassFields: false,
+      },
+    },
+  },
   resolve: {
     alias: [
       { find: /^@communist-prometheus\/cp-components$/, replacement: `${cp}/index.js` },
