@@ -6,6 +6,7 @@ import { screens } from './screens/index.js';
 import { createGitStateStore, type GitStateStore, type SyncStatus } from './engine/git-state.js';
 import { login, loginWithToken, logout, currentUser } from './engine/auth.js';
 import { bootEngine } from './engine/engine-boot.js';
+import { getViewerRole, type ViewerRole } from './engine/github-api.js';
 
 /** One of the four viewport corners the draggable FAB can snap to. */
 type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -301,6 +302,25 @@ export class AppShell extends LitElement {
     main:focus-visible {
       outline: none;
     }
+    .denied {
+      display: grid;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-2xl) 0;
+      max-width: 40ch;
+    }
+    .denied h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 5vw, 2.2rem);
+    }
+    .denied h1:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 4px;
+    }
+    .denied p {
+      margin: 0;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
     header {
       min-width: 0;
     }
@@ -403,16 +423,20 @@ export class AppShell extends LitElement {
   private dragStartY = 0;
 
   /**
-   * The session as the nav gating consumes it, derived from the real login —
-   * `undefined` when signed out (so the menu is empty and screens are gated).
-   * Every signed-in maintainer currently gets the full admin/owner surface;
-   * finer role resolution is owned by the auth/RBAC spec.
+   * The session as the nav gating consumes it (QA #2). `undefined` when signed
+   * out. The role/ownership come from the viewer's REAL GitHub permission on the
+   * content repo ({@link viewerRole}); until that resolves we fall back to the
+   * least-privilege editor (no owner-only or admin surfaces) rather than assuming
+   * everyone is an owner — so a non-owner never briefly sees owner-only screens.
    */
   private get auth(): AuthState | undefined {
-    return this.account === undefined
-      ? undefined
-      : { role: 'admin', owner: true, login: this.account };
+    if (this.account === undefined) return undefined;
+    const resolved = this.viewerRole ?? { role: 'editor', owner: false };
+    return { role: resolved.role, owner: resolved.owner, login: this.account };
   }
+
+  /** Real GitHub role of the signed-in viewer; undefined until resolved. */
+  @state() private viewerRole?: ViewerRole;
 
   /** Live git-engine state store; drives the header sync-status affordance. */
   private store?: GitStateStore;
@@ -698,10 +722,26 @@ export class AppShell extends LitElement {
     try {
       const user = await currentUser();
       this.account = user?.username;
+      if (this.account !== undefined) void this.resolveRole();
     } finally {
       // Gate the first paint until the session is known, so a logged-in reload
       // does not flash the signed-out prompt before the app (a big layout shift).
       this.authChecked = true;
+    }
+  }
+
+  /**
+   * Resolves the viewer's real GitHub role so the nav + route guard reflect it.
+   * The guard is fail-closed, so a transient API hiccup would otherwise lock the
+   * real owner out of owner-only screens — retry a few times before giving up.
+   */
+  private async resolveRole(): Promise<void> {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const role = await getViewerRole();
+      if (role !== undefined) {
+        this.viewerRole = role;
+        return;
+      }
     }
   }
 
@@ -710,6 +750,7 @@ export class AppShell extends LitElement {
     this.account = username;
     this.authOpen = false;
     this.authError = undefined;
+    void this.resolveRole();
     await bootEngine(token);
   }
 
@@ -774,6 +815,36 @@ export class AppShell extends LitElement {
     `;
   }
 
+  /** Human label for the viewer's current role, for the access-denied notice. */
+  private get roleLabel(): string {
+    const role = this.auth?.role ?? 'viewer';
+    if (this.auth?.owner === true) return 'владелец';
+    return role === 'admin' ? 'администратор' : role === 'editor' ? 'редактор' : 'наблюдатель';
+  }
+
+  /**
+   * Renders the routed screen, or an access-denied notice when the current route
+   * is gated above the viewer's role (QA #2 route guard). Fail-closed: an
+   * owner/admin-only route is denied until the viewer's real role proves access,
+   * so a non-owner cannot reach an owner-only screen by typing its URL.
+   */
+  private renderRouted(screen: (typeof screens)[string] | undefined) {
+    const auth = this.auth;
+    const item = navItems.find((navItem) => navItem.id === this.route);
+    if (auth !== undefined && item !== undefined && !canSee(item, auth)) {
+      return html`
+        <section class="denied">
+          <h1 tabindex="-1">Нет доступа</h1>
+          <p>
+            Раздел «${item.label}» доступен с более высокими правами в репозитории. Ваша роль:
+            ${this.roleLabel}.
+          </p>
+        </section>
+      `;
+    }
+    return screen ? screen.render() : nothing;
+  }
+
   override render() {
     const screen = screens[this.route];
     return html`
@@ -806,11 +877,7 @@ export class AppShell extends LitElement {
       <div class="body">
         ${this.renderRailNav()}
         <main tabindex="-1" aria-live="polite">
-          ${this.signedIn
-            ? screen
-              ? screen.render()
-              : nothing
-            : this.renderSignedOut()}
+          ${this.signedIn ? this.renderRouted(screen) : this.renderSignedOut()}
         </main>
       </div>
       ${this.signedIn ? this.renderFabMenu() : nothing} ${this.renderAuthDialog()}
