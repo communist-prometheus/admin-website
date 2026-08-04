@@ -4,6 +4,7 @@ import type { CpTab } from '@communist-prometheus/cp-components';
 import '@communist-prometheus/cp-components';
 import { readTopics, type Topic } from '../engine/content.js';
 import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /**
  * The seven publication languages, expressed as the keys used inside a topic's
@@ -292,9 +293,11 @@ export class ScreenTopics extends LitElement {
             </p>
           `
         : html`<p class="note">
-            ${this.loaded
-              ? 'Войдите через GitHub, чтобы увидеть темы из settings/topics.json.'
-              : 'Загружаем темы…'}
+            ${classifyEmpty(this.loaded) === 'loading'
+              ? 'Загружаем темы…'
+              : classifyEmpty(this.loaded) === 'signed-out'
+                ? 'Войдите через GitHub, чтобы увидеть темы из settings/topics.json.'
+                : 'Тем пока нет или не удалось их загрузить.'}
           </p>`}
     `;
   }

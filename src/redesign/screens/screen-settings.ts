@@ -3,6 +3,7 @@ import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import { readLanguages, type SiteLanguage } from '../engine/content.js';
 import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /**
  * Settings screen (settings spec). When the real content engine is running
@@ -132,9 +133,11 @@ export class ScreenSettings extends LitElement {
           ? `Прочитано из settings/languages.json — ${this.languages.length} ${
               this.languages.length === 1 ? 'язык' : 'языков'
             } реального репозитория.`
-          : this.loaded
-            ? 'Войдите через GitHub, чтобы увидеть языки сайта из репозитория.'
-            : 'Загружаем настройки…'}
+          : classifyEmpty(this.loaded) === 'loading'
+            ? 'Загружаем настройки…'
+            : classifyEmpty(this.loaded) === 'signed-out'
+              ? 'Войдите через GitHub, чтобы увидеть языки сайта из репозитория.'
+              : 'Языки не найдены или не удалось их загрузить.'}
       </p>
     `;
   }

@@ -3,6 +3,7 @@ import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import { listArticles, type ArticleSummary } from '../engine/content.js';
 import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /**
  * Articles screen (content-list spec). Lists the actual `blog/<slug>/index.<lang>.md`
@@ -117,13 +118,21 @@ export class ScreenArticles extends LitElement {
   }
 
   private renderEmpty() {
+    const state = classifyEmpty(this.loaded);
+    if (state === 'loading') {
+      return html`<div class="empty"><p>Загружаем материалы…</p></div>`;
+    }
+    if (state === 'signed-out') {
+      return html`
+        <div class="empty">
+          <p>Здесь появятся материалы репозитория. Войдите через GitHub, чтобы загрузить их.</p>
+        </div>
+      `;
+    }
     return html`
       <div class="empty">
-        <p>
-          ${this.loaded
-            ? 'Здесь появятся материалы репозитория. Войдите через GitHub, чтобы загрузить их.'
-            : 'Загружаем материалы…'}
-        </p>
+        <p>Материалов пока нет или не удалось их загрузить.</p>
+        <cp-button variant="secondary" @cp-click=${() => void this.load()}>Обновить</cp-button>
       </div>
     `;
   }

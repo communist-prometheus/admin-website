@@ -10,6 +10,7 @@ import {
   type ArticleSummary,
 } from '../engine/content.js';
 import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /** One existing magazine issue discovered under `magazine/`. */
 interface IssueFolder {
@@ -436,9 +437,11 @@ export class ScreenMagazine extends LitElement {
             )}
           </div>`
         : html`<p class="empty">
-            ${this.loaded
-              ? 'Номеров пока нет. Нажмите «Новый номер», чтобы загрузить первый.'
-              : 'Загружаем номера…'}
+            ${classifyEmpty(this.loaded) === 'loading'
+              ? 'Загружаем номера…'
+              : classifyEmpty(this.loaded) === 'signed-out'
+                ? 'Войдите через GitHub, чтобы увидеть и публиковать номера.'
+                : 'Номеров пока нет. Нажмите «Новый номер», чтобы загрузить первый.'}
           </p>`}
       ${this.renderForm()}
     `;

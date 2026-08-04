@@ -4,6 +4,7 @@ import '@communist-prometheus/cp-components';
 import type { CpTableColumn, CpTableRow } from '@communist-prometheus/cp-components';
 import { listMembers, type Member } from '../engine/github-api.js';
 import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /** Semantic tag tones used for member roles (mirrors cp-tag's tone union). */
 type RoleTone = 'success' | 'info' | 'neutral';
@@ -149,9 +150,11 @@ export class ScreenMembers extends LitElement {
             ></cp-table>
           </div>`
         : html`<p class="note">
-            ${this.loaded
-              ? 'Войдите через GitHub токеном с доступом к коллабораторам репозитория, чтобы увидеть участников.'
-              : 'Загружаем участников…'}
+            ${classifyEmpty(this.loaded) === 'loading'
+              ? 'Загружаем участников…'
+              : classifyEmpty(this.loaded) === 'signed-out'
+                ? 'Войдите через GitHub токеном с доступом к коллабораторам репозитория, чтобы увидеть участников.'
+                : 'Участники не найдены: нужен токен с доступом к коллабораторам репозитория.'}
           </p>`}
     `;
   }

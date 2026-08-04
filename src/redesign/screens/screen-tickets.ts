@@ -4,6 +4,7 @@ import type { CpTab, CpTableColumn, CpTableRow } from '@communist-prometheus/cp-
 import '@communist-prometheus/cp-components';
 import { listTickets, type Ticket } from '../engine/github-api.js';
 import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /** The active list filter (`all` shows every ticket). */
 type TicketFilter = 'all' | 'bug' | 'story';
@@ -201,9 +202,11 @@ export class ScreenTickets extends LitElement {
             </div>
           `
         : html`<p class="eyebrow">
-            ${this.loaded
-              ? 'Войдите через GitHub, чтобы увидеть тикеты и баг-репорты репозитория.'
-              : 'Загружаем тикеты…'}
+            ${classifyEmpty(this.loaded) === 'loading'
+              ? 'Загружаем тикеты…'
+              : classifyEmpty(this.loaded) === 'signed-out'
+                ? 'Войдите через GitHub, чтобы увидеть тикеты и баг-репорты репозитория.'
+                : 'Тикеты не найдены или не удалось их загрузить.'}
           </p>`}
     `;
   }
