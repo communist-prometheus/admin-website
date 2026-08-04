@@ -2,6 +2,8 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import { listArticles, type ArticleSummary } from '../engine/content.js';
+import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /**
  * Articles screen (content-list spec). Lists the actual `blog/<slug>/index.<lang>.md`
@@ -72,9 +74,19 @@ export class ScreenArticles extends LitElement {
   /** Whether a read has completed (so we can distinguish loading from empty). */
   @state() private loaded = false;
 
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+    // The engine may still be cloning the repo (first load): re-read when ready.
+    this.disposeReady = onEngineReady(() => void this.load());
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.disposeReady();
   }
 
   private async load(): Promise<void> {
@@ -83,13 +95,14 @@ export class ScreenArticles extends LitElement {
     this.loaded = true;
   }
 
-  private openEditor(): void {
-    location.hash = '/editor';
+  /** Opens the editor for a specific article slug, or a new blank document. */
+  private openEditor(slug?: string): void {
+    location.hash = slug === undefined ? '/editor/new' : `/editor/${slug}`;
   }
 
   private renderCard(article: ArticleSummary) {
     return html`
-      <cp-card hoverable @cp-card-click=${() => this.openEditor()}>
+      <cp-card hoverable @cp-card-click=${() => this.openEditor(article.slug)}>
         ${article.topic ? html`<cp-pill slot="pill">${article.topic}</cp-pill>` : nothing}
         <span slot="title">${article.title}</span>
         <span slot="summary">${article.languages.join(' · ')}</span>
@@ -105,13 +118,21 @@ export class ScreenArticles extends LitElement {
   }
 
   private renderEmpty() {
+    const state = classifyEmpty(this.loaded);
+    if (state === 'loading') {
+      return html`<div class="empty"><p>Загружаем материалы…</p></div>`;
+    }
+    if (state === 'signed-out') {
+      return html`
+        <div class="empty">
+          <p>Здесь появятся материалы репозитория. Войдите через GitHub, чтобы загрузить их.</p>
+        </div>
+      `;
+    }
     return html`
       <div class="empty">
-        <p>
-          ${this.loaded
-            ? 'Здесь появятся материалы репозитория. Войдите через GitHub, чтобы загрузить их.'
-            : 'Загружаем материалы…'}
-        </p>
+        <p>Материалов пока нет или не удалось их загрузить.</p>
+        <cp-button variant="secondary" @cp-click=${() => void this.load()}>Обновить</cp-button>
       </div>
     `;
   }

@@ -4,7 +4,14 @@ import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import type { CpSelectOption, CpTab } from '@communist-prometheus/cp-components';
 import '../editor/cp-markdown-editor.js';
-import { listArticles, readFile, stageFile, commitAndPush } from '../engine/content.js';
+import {
+  listArticles,
+  readFile,
+  stageFile,
+  commitAndPush,
+  upsertFrontmatterField,
+} from '../engine/content.js';
+import { onEngineReady } from '../engine/engine-ready.js';
 
 /** One editable article block: a stable id plus its raw markdown source line(s).
  *  The rendered typography is derived from the raw text on every render, so the
@@ -460,21 +467,76 @@ export class ScreenEditor extends LitElement {
   /** Set when a user click should move focus into the freshly-rendered textarea. */
   private pendingFocus = false;
 
+  /** Slug currently loaded, to detect same-screen route changes. */
+  private loadedSlug = '';
+
+  /**
+   * In-memory edits per language for the current article. Switching the language
+   * tab stashes the active language's edited markdown here so switching back
+   * restores unsaved work instead of reloading the on-disk version (QA #8).
+   * Cleared whenever a different article loads.
+   */
+  private readonly langBuffers = new Map<string, string>();
+
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
+    this.loadedSlug = this.routeSlug();
     void this.load();
+    globalThis.addEventListener('hashchange', this.onHashChange);
+    // First-load race (QA #12): if the engine was still cloning the repo, our
+    // first read found no article. Re-read when it is ready — but never clobber
+    // an intentional new draft or an already-loaded article.
+    this.disposeReady = onEngineReady(() => {
+      if (this.slug === '' && this.routeSlug() !== 'new') void this.load();
+    });
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    globalThis.removeEventListener('hashchange', this.onHashChange);
+    this.disposeReady();
+  }
+
+  // Re-load when the editor stays mounted but the requested slug changes
+  // (back/forward, or opening another article without leaving the editor).
+  private onHashChange = (): void => {
+    const next = this.routeSlug();
+    if (next !== this.loadedSlug && window.location.hash.startsWith('#/editor')) {
+      this.loadedSlug = next;
+      void this.load();
+    }
+  };
+
+  /** Slug requested via the route (`#/editor/<slug>`), '' for the default. */
+  private routeSlug(): string {
+    return window.location.hash.split('/')[2] ?? '';
   }
 
   private async load(): Promise<void> {
+    // A fresh article invalidates any per-language edits from the previous one.
+    this.langBuffers.clear();
     const articles = await listArticles();
-    const first = articles.at(0);
-    if (first !== undefined) {
-      const lang = first.languages.includes('ru') ? 'ru' : first.languages.at(0) ?? 'ru';
-      const path = `blog/${first.slug}/index.${lang}.md`;
+    // Open the article the route names — clicking a card must open THAT article,
+    // not always the first one. `new` starts a blank document; a missing/unknown
+    // slug falls back to the first article.
+    const requested = this.routeSlug();
+    if (requested === 'new') {
+      this.startNewArticle();
+      this.loaded = true;
+      return;
+    }
+    const target =
+      (requested !== '' ? articles.find((a) => a.slug === requested) : undefined) ?? articles.at(0);
+    if (target !== undefined) {
+      const lang = target.languages.includes('ru') ? 'ru' : (target.languages.at(0) ?? 'ru');
+      const path = `blog/${target.slug}/index.${lang}.md`;
       const markdown = await readFile(path);
       if (markdown !== undefined && markdown.trim() !== '') {
-        this.slug = first.slug;
-        this.availableLangs = first.languages;
+        this.slug = target.slug;
+        this.availableLangs = target.languages;
         this.activeLang = lang === 'ru' || lang === 'en' || lang === 'it' ? lang : 'ru';
         this.applyMarkdown(markdown, path, true);
         this.loaded = true;
@@ -484,6 +546,14 @@ export class ScreenEditor extends LitElement {
     // No real article (signed out or empty repo): stay empty and prompt sign-in
     // rather than loading a fabricated demo document.
     this.loaded = true;
+  }
+
+  /** Seeds a blank new-article document (real save-to-new-file is a follow-up). */
+  private startNewArticle(): void {
+    this.slug = '';
+    this.availableLangs = ['ru'];
+    this.activeLang = 'ru';
+    this.applyMarkdown('---\ntitle: ""\nlang: ru\ncategory: \npublished: false\n---\n\n', '', true);
   }
 
   private async loadLang(lang: string): Promise<void> {
@@ -496,21 +566,37 @@ export class ScreenEditor extends LitElement {
 
   private applyMarkdown(markdown: string, path: string, live: boolean): void {
     const parsed = parseArticle(markdown);
-    this.frontmatter = parsed.frontmatter;
+    const fm = parsed.frontmatter;
+    this.frontmatter = fm;
     this.articleTitle = parsed.title;
     this.body = parsed.body;
     this.articlePath = path;
     this.live = live;
-    const date =
-      frontmatterValue(parsed.frontmatter, 'pubDate') ?? frontmatterValue(parsed.frontmatter, 'date');
+    // Seed the Свойства fields from the real frontmatter — "Тема" maps to the
+    // article's `category`. Without this seed the required-field check below
+    // always fired a false "заполните Тема" warning.
+    this.topic = frontmatterValue(fm, 'category') ?? frontmatterValue(fm, 'topic') ?? '';
+    const date = frontmatterValue(fm, 'pubDate') ?? frontmatterValue(fm, 'date');
     if (date !== undefined) this.pubDate = date;
-    this.published = frontmatterValue(parsed.frontmatter, 'draft') !== 'true';
+    const published = frontmatterValue(fm, 'published');
+    this.published =
+      published !== undefined ? published === 'true' : frontmatterValue(fm, 'draft') !== 'true';
   }
 
-  /** Reconstructs the full markdown document from the frontmatter + edited body. */
+  /**
+   * Reconstructs the full markdown from the frontmatter + edited body, writing
+   * the Свойства edits (category/pubDate/published) back into the frontmatter so
+   * a publish actually persists them instead of silently discarding them.
+   */
   private get editedMarkdown(): string {
+    let fm = this.frontmatter;
+    if (fm !== '') {
+      if (this.topic !== '') fm = upsertFrontmatterField(fm, 'category', this.topic);
+      if (this.pubDate !== '') fm = upsertFrontmatterField(fm, 'pubDate', this.pubDate);
+      fm = upsertFrontmatterField(fm, 'published', String(this.published));
+    }
     const body = this.body.trimEnd();
-    return this.frontmatter === '' ? `${body}\n` : `${this.frontmatter}\n\n${body}\n`;
+    return fm === '' ? `${body}\n` : `${fm}\n\n${body}\n`;
   }
 
   /** A required frontmatter field is empty. */
@@ -521,12 +607,27 @@ export class ScreenEditor extends LitElement {
   private onLangChange = (event: Event): void => {
     if (event instanceof CustomEvent) {
       const id: unknown = event.detail?.id;
-      if (id === 'ru' || id === 'en' || id === 'it') {
+      if ((id === 'ru' || id === 'en' || id === 'it') && id !== this.activeLang) {
+        // Stash the outgoing language's edits before swapping the buffers in.
+        if (this.slug !== '') this.langBuffers.set(this.activeLang, this.editedMarkdown);
         this.activeLang = id;
-        if (this.live && this.slug !== '') void this.loadLang(id);
+        if (this.live && this.slug !== '') void this.switchLang(id);
       }
     }
   };
+
+  /**
+   * Shows the requested language: restores an in-memory edit if one exists,
+   * otherwise reads the on-disk version. Keeps unsaved work across tab switches.
+   */
+  private async switchLang(lang: string): Promise<void> {
+    const buffered = this.langBuffers.get(lang);
+    if (buffered !== undefined) {
+      this.applyMarkdown(buffered, `blog/${this.slug}/index.${lang}.md`, true);
+      return;
+    }
+    await this.loadLang(lang);
+  }
 
   private onTopicChange = (event: Event): void => {
     if (event instanceof CustomEvent) {
@@ -576,6 +677,13 @@ export class ScreenEditor extends LitElement {
     this.publishOpen = true;
     this.publishSha = '';
     this.publishError = '';
+    if (this.articlePath === '') {
+      // New-article documents have no target file yet — saving to a new
+      // blog/<slug>/index.<lang>.md is a separate flow, not a silent no-op.
+      this.stageStates = ['failed', 'pending', 'pending'];
+      this.publishError = 'Новый материал: сохранение в новый файл пока в разработке.';
+      return;
+    }
     void this.runRealPublish();
   };
 

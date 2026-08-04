@@ -96,6 +96,9 @@ jobs:
       - name: Running unit tests
         run: bun run test:unit --run
 
+      - name: Running redesign unit tests
+        run: bun run test:unit:redesign
+
       - name: Building application (validate + type-check + lint + build)
         run: bun run build
 

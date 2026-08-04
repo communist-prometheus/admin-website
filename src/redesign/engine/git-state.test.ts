@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test';
+import { test, expect } from 'vitest';
 import { createGitStateStore, toSyncStatus, type ChannelIo } from './git-state.ts';
 import { SW_PUSH_STATE_CHANNEL } from '../../sw/protocol/push-state.ts';
 import { SW_CONNECTIVITY_CHANNEL } from '../../sw/protocol/connectivity.ts';

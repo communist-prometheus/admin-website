@@ -6,8 +6,11 @@ import {
   listArticles,
   readFile,
   createMagazineIssue,
+  validateMagazineSlug,
   type ArticleSummary,
 } from '../engine/content.js';
+import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /** One existing magazine issue discovered under `magazine/`. */
 interface IssueFolder {
@@ -96,6 +99,15 @@ export class ScreenMagazine extends LitElement {
       flex-direction: column;
       gap: var(--spacing-md);
     }
+    .slug-field {
+      display: grid;
+      gap: 0.25rem;
+    }
+    .field-error {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--color-danger, #c0392b);
+    }
     .file label {
       display: block;
       font-size: 0.85rem;
@@ -171,9 +183,19 @@ export class ScreenMagazine extends LitElement {
   @state() private sha = '';
   @state() private error = '';
 
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+    // Re-read when the engine finishes booting (first-load race, QA #12).
+    this.disposeReady = onEngineReady(() => void this.load());
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.disposeReady();
   }
 
   private async load(): Promise<void> {
@@ -225,10 +247,15 @@ export class ScreenMagazine extends LitElement {
     this.fArticles = next;
   };
 
+  /** Slug validation error for the current input, or '' when the slug is fine. */
+  private get slugError(): string {
+    return validateMagazineSlug(this.fSlug, this.issues.map((i) => i.slug)) ?? '';
+  }
+
   private get canSubmit(): boolean {
     return (
       this.fTitle.trim() !== '' &&
-      this.fSlug.trim() !== '' &&
+      this.slugError === '' &&
       this.fDate.trim() !== '' &&
       this.pdf !== undefined &&
       this.phase !== 'running'
@@ -288,14 +315,20 @@ export class ScreenMagazine extends LitElement {
             @cp-input=${this.bind('fTitle')}
             @cp-change=${this.bind('fTitle')}
           ></cp-input>
-          <cp-input
-            label="Слаг (папка номера)"
-            required
-            placeholder="magazine-3-sentyabr-2026"
-            .value=${this.fSlug}
-            @cp-input=${this.bind('fSlug')}
-            @cp-change=${this.bind('fSlug')}
-          ></cp-input>
+          <div class="slug-field">
+            <cp-input
+              label="Слаг (папка номера)"
+              required
+              ?invalid=${this.fSlug.trim() !== '' && this.slugError !== ''}
+              placeholder="magazine-3-sentyabr-2026"
+              .value=${this.fSlug}
+              @cp-input=${this.bind('fSlug')}
+              @cp-change=${this.bind('fSlug')}
+            ></cp-input>
+            ${this.fSlug.trim() !== '' && this.slugError !== ''
+              ? html`<p class="field-error" role="alert">${this.slugError}</p>`
+              : nothing}
+          </div>
           <cp-select
             label="Язык"
             .value=${this.fLang}
@@ -404,9 +437,11 @@ export class ScreenMagazine extends LitElement {
             )}
           </div>`
         : html`<p class="empty">
-            ${this.loaded
-              ? 'Номеров пока нет. Нажмите «Новый номер», чтобы загрузить первый.'
-              : 'Загружаем номера…'}
+            ${classifyEmpty(this.loaded) === 'loading'
+              ? 'Загружаем номера…'
+              : classifyEmpty(this.loaded) === 'signed-out'
+                ? 'Войдите через GitHub, чтобы увидеть и публиковать номера.'
+                : 'Номеров пока нет. Нажмите «Новый номер», чтобы загрузить первый.'}
           </p>`}
       ${this.renderForm()}
     `;

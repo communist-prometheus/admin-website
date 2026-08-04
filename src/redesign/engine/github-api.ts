@@ -64,6 +64,30 @@ const toMember = (x: unknown): Member | undefined => {
   };
 };
 
+/** The signed-in viewer's coarse role on the content repo. */
+export interface ViewerRole {
+  readonly role: 'viewer' | 'editor' | 'admin';
+  readonly owner: boolean;
+}
+
+/**
+ * Resolves the signed-in viewer's real role from GitHub instead of assuming
+ * everyone is an owner (QA #2). A repo object carries the authenticated user's
+ * own `permissions`, so `admin` → owner/admin, `push` → editor, otherwise a
+ * read-only viewer. Returns `undefined` when signed out or on any failure, so the
+ * caller can pick a conservative fallback rather than silently granting access.
+ */
+export const getViewerRole = async (
+  repo = 'public-website-content',
+): Promise<ViewerRole | undefined> => {
+  const data = await get(`/repos/${OWNER}/${repo}`);
+  if (data === undefined) return undefined;
+  const permissions = field(data, 'permissions');
+  if (field(permissions, 'admin') === true) return { role: 'admin', owner: true };
+  if (field(permissions, 'push') === true) return { role: 'editor', owner: false };
+  return { role: 'viewer', owner: false };
+};
+
 /** Lists collaborators of a repo (default: the content repo). */
 export const listMembers = async (repo = 'public-website-content'): Promise<readonly Member[]> => {
   const data = await get(`/repos/${OWNER}/${repo}/collaborators?per_page=100`);

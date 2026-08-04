@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import { listPushes, type Push } from '../engine/github-api.js';
+import { onEngineReady } from '../engine/engine-ready.js';
 
 /**
  * `screen-deploys` — a real activity board of recent pushes to the content repo
@@ -101,9 +102,19 @@ export class ScreenDeploys extends LitElement {
   /** Whether the real read has completed. */
   @state() private loaded = false;
 
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+    // Re-read once the engine finishes booting (first-load race, QA #12).
+    this.disposeReady = onEngineReady(() => void this.load());
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.disposeReady();
   }
 
   private async load(): Promise<void> {

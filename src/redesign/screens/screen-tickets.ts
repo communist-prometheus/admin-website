@@ -3,6 +3,8 @@ import { customElement, state } from 'lit/decorators.js';
 import type { CpTab, CpTableColumn, CpTableRow } from '@communist-prometheus/cp-components';
 import '@communist-prometheus/cp-components';
 import { listTickets, type Ticket } from '../engine/github-api.js';
+import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /** The active list filter (`all` shows every ticket). */
 type TicketFilter = 'all' | 'bug' | 'story';
@@ -136,9 +138,19 @@ export class ScreenTickets extends LitElement {
   /** Active ticket-kind filter; `all` shows every ticket. */
   @state() private filter: TicketFilter = 'all';
 
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+    // Re-read once the engine finishes booting (first-load race, QA #12).
+    this.disposeReady = onEngineReady(() => void this.load());
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.disposeReady();
   }
 
   private async load(): Promise<void> {
@@ -167,7 +179,7 @@ export class ScreenTickets extends LitElement {
       <header class="head">
         <p class="eyebrow">Задачи${live ? html` · ${visible.length} на экране` : nothing}</p>
         <h1 tabindex="-1">Тикеты</h1>
-        <cp-button>
+        <cp-button disabled title="Создание тикетов появится позже">
           <cp-icon name="plus" size="18"></cp-icon>
           Новый тикет
         </cp-button>
@@ -190,9 +202,11 @@ export class ScreenTickets extends LitElement {
             </div>
           `
         : html`<p class="eyebrow">
-            ${this.loaded
-              ? 'Войдите через GitHub, чтобы увидеть тикеты и баг-репорты репозитория.'
-              : 'Загружаем тикеты…'}
+            ${classifyEmpty(this.loaded) === 'loading'
+              ? 'Загружаем тикеты…'
+              : classifyEmpty(this.loaded) === 'signed-out'
+                ? 'Войдите через GitHub, чтобы увидеть тикеты и баг-репорты репозитория.'
+                : 'Тикеты не найдены или не удалось их загрузить.'}
           </p>`}
     `;
   }

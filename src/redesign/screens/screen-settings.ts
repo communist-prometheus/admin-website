@@ -2,6 +2,8 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import { readLanguages, type SiteLanguage } from '../engine/content.js';
+import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /**
  * Settings screen (settings spec). When the real content engine is running
@@ -37,6 +39,10 @@ export class ScreenSettings extends LitElement {
       margin: 0;
       font-size: 0.8rem;
       color: var(--color-text-secondary);
+    }
+    cp-banner {
+      display: block;
+      margin-bottom: var(--spacing-md);
     }
     .langs {
       display: grid;
@@ -75,9 +81,19 @@ export class ScreenSettings extends LitElement {
   /** Whether the real read has completed. */
   @state() private loaded = false;
 
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+    // Re-read once the engine finishes booting (first-load race, QA #12).
+    this.disposeReady = onEngineReady(() => void this.load());
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.disposeReady();
   }
 
   private async load(): Promise<void> {
@@ -93,35 +109,35 @@ export class ScreenSettings extends LitElement {
         <p class="eyebrow">Администрирование · языки сайта</p>
         <h1 tabindex="-1">Настройки</h1>
       </div>
-      <cp-tabs
-        active="languages"
-        .tabs=${[
-          { id: 'languages', label: 'Языки' },
-          { id: 'links', label: 'Ссылки' },
-          { id: 'themes', label: 'Темы' },
-        ]}
-      ></cp-tabs>
       ${live
-        ? html`<div class="langs">
-            ${this.languages.map(
-              (lang) => html`
-                <div class="lang">
-                  <b>${lang.label}</b>
-                  <span class="code">${lang.code}</span>
-                  <cp-switch checked></cp-switch>
-                </div>
-              `,
-            )}
-          </div>`
+        ? html`
+            <cp-banner tone="info" title="Просмотр без редактирования">
+              Языки сайта настраиваются в settings/languages.json. Здесь — какие сейчас
+              включены в репозитории.
+            </cp-banner>
+            <div class="langs">
+              ${this.languages.map(
+                (lang) => html`
+                  <div class="lang">
+                    <b>${lang.label}</b>
+                    <span class="code">${lang.code}</span>
+                    <cp-status state="success" label="включён"></cp-status>
+                  </div>
+                `,
+              )}
+            </div>
+          `
         : nothing}
       <p class="note">
         ${live
           ? `Прочитано из settings/languages.json — ${this.languages.length} ${
               this.languages.length === 1 ? 'язык' : 'языков'
             } реального репозитория.`
-          : this.loaded
-            ? 'Войдите через GitHub, чтобы увидеть языки сайта из репозитория.'
-            : 'Загружаем настройки…'}
+          : classifyEmpty(this.loaded) === 'loading'
+            ? 'Загружаем настройки…'
+            : classifyEmpty(this.loaded) === 'signed-out'
+              ? 'Войдите через GitHub, чтобы увидеть языки сайта из репозитория.'
+              : 'Языки не найдены или не удалось их загрузить.'}
       </p>
     `;
   }

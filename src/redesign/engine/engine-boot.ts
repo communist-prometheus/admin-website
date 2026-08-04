@@ -1,6 +1,7 @@
 import { getGitHubConfig } from '../../config/github.js';
 import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
 import { registerEngine } from './sw-client.js';
+import { markEngineReady } from './engine-ready.js';
 
 /**
  * Boots the real content engine for the new UI (git-engine R2/R4/R7): registers
@@ -41,6 +42,8 @@ export const bootEngine = async (token: string): Promise<void> => {
   });
   const result: { ok?: boolean; error?: string } = await response.json();
   if (result.ok !== true) throw new Error(`engine init failed: ${result.error ?? response.status}`);
+  // Repo is cloned/synced: let screens that mounted before this re-read now.
+  markEngineReady();
 };
 
 /**
