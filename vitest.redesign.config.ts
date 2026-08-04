@@ -28,8 +28,14 @@ export default defineConfig({
   },
   resolve: {
     alias: [
-      { find: /^@communist-prometheus\/cp-components$/, replacement: `${cp}/index.js` },
-      { find: /^@communist-prometheus\/cp-components\/(.*)$/, replacement: `${cp}/$1` },
+      {
+        find: /^@communist-prometheus\/cp-components$/,
+        replacement: `${cp}/index.js`,
+      },
+      {
+        find: /^@communist-prometheus\/cp-components\/(.*)$/,
+        replacement: `${cp}/$1`,
+      },
       { find: /^@\/(.*)$/, replacement: `${resolve(__dirname, 'src')}/$1` },
     ],
   },
