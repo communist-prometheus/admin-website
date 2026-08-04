@@ -229,39 +229,38 @@ export class ScreenTopics extends LitElement {
 
   override render() {
     const live = this.topics.length > 0;
-    const list = live ? this.topics : SAMPLE_TOPICS;
     return html`
       <header class="head">
         <p class="eyebrow">Настройки · оформление статей</p>
         <h1 tabindex="-1">Темы</h1>
-        ${live
-          ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
-          : this.loaded
-            ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
-            : nothing}
       </header>
       <p class="intro">
         Темы группируют статьи цветной плашкой и припиской. Название, приписка и описание — для
         каждого из 7 языков.
       </p>
 
-      <div class="tabs-scroll">
-        <cp-tabs
-          .tabs=${LANGUAGES}
-          active=${this.activeLang}
-          @cp-tab-change=${this.onLangChange}
-        ></cp-tabs>
-      </div>
+      ${live
+        ? html`
+            <div class="tabs-scroll">
+              <cp-tabs
+                .tabs=${LANGUAGES}
+                active=${this.activeLang}
+                @cp-tab-change=${this.onLangChange}
+              ></cp-tabs>
+            </div>
 
-      <div class="list">${list.map((topic) => this.renderTopic(topic))}</div>
+            <div class="list">${this.topics.map((topic) => this.renderTopic(topic))}</div>
 
-      <p class="note">
-        ${live
-          ? `Прочитано из settings/topics.json — ${list.length} ${
-              list.length === 1 ? 'тема' : 'тем'
-            } реального репозитория.`
-          : 'Запустите dev:token с токеном, чтобы увидеть реальные темы репозитория.'}
-      </p>
+            <p class="note">
+              Прочитано из settings/topics.json — ${this.topics.length}
+              ${this.topics.length === 1 ? 'тема' : 'тем'} реального репозитория.
+            </p>
+          `
+        : html`<p class="note">
+            ${this.loaded
+              ? 'Войдите через GitHub, чтобы увидеть темы из settings/topics.json.'
+              : 'Загружаем темы…'}
+          </p>`}
     `;
   }
 }

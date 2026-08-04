@@ -518,39 +518,6 @@ export class ScreenEditor extends LitElement {
     return this.topic === '';
   }
 
-  override updated(): void {
-    if (!this.pendingFocus) return;
-    this.pendingFocus = false;
-    const root = this.shadowRoot;
-    if (!root) return;
-    const textarea = root.querySelector('textarea.blk-edit');
-    if (textarea instanceof HTMLTextAreaElement) textarea.focus();
-  }
-
-  private onBlockReveal = (event: Event): void => {
-    const target = event.currentTarget;
-    if (target instanceof HTMLElement) {
-      const id = target.dataset.id;
-      if (id !== undefined) {
-        this.focusedBlock = id;
-        this.pendingFocus = true;
-      }
-    }
-  };
-
-  private onBlockInput = (event: Event): void => {
-    const target = event.target;
-    if (target instanceof HTMLTextAreaElement) {
-      const id = target.dataset.id;
-      if (id !== undefined) {
-        const value = target.value;
-        this.blocks = this.blocks.map((block) =>
-          block.id === id ? { id: block.id, raw: value } : block,
-        );
-      }
-    }
-  };
-
   private onLangChange = (event: Event): void => {
     if (event instanceof CustomEvent) {
       const id: unknown = event.detail?.id;
@@ -649,64 +616,6 @@ export class ScreenEditor extends LitElement {
       label,
       state: this.stageStates.at(index) ?? 'pending',
     }));
-  }
-
-  private renderBlock(block: EditorBlock, index: number): TemplateResult {
-    if (block.id === this.focusedBlock) {
-      const rows = Math.max(2, block.raw.split('\n').length + 1);
-      return html`<textarea
-        class="blk-edit"
-        data-id=${block.id}
-        rows=${rows}
-        aria-label="Разметка блока"
-        .value=${block.raw}
-        @input=${this.onBlockInput}
-      ></textarea>`;
-    }
-    const kind = blockKind(block.raw);
-    const body = renderInline(stripMarker(block.raw, kind));
-    switch (kind) {
-      case 'h1':
-        return html`<h2
-          class="blk h1"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </h2>`;
-      case 'h2':
-        return html`<h2
-          class="blk"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </h2>`;
-      case 'blockquote':
-        return html`<blockquote
-          class="blk"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </blockquote>`;
-      default:
-        return html`<p
-          class="blk ${index === 0 ? 'lede' : ''}"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </p>`;
-    }
   }
 
   private renderToolbar(): TemplateResult {
