@@ -113,10 +113,17 @@ export class ScreenMembers extends LitElement {
   }
 
   private loginCell(member: Member): TemplateResult {
-    return html`<span class="login">
+    // The cell renders inside cp-table's shadow root, so this component's
+    // `.login`/`.avatar` styles never reach it — a GitHub identicon then paints
+    // at full size (the giant green blocks). Size it with inline styles, which
+    // cross the shadow boundary.
+    const avatar =
+      'display:inline-block;width:1.5rem;height:1.5rem;border-radius:50%;object-fit:cover;vertical-align:middle;flex:none';
+    const wrap = 'display:inline-flex;align-items:center;gap:0.5rem';
+    return html`<span style=${wrap}>
       ${member.avatar === ''
         ? nothing
-        : html`<img class="avatar" src=${member.avatar} alt="" loading="lazy" />`}
+        : html`<img style=${avatar} src=${member.avatar} alt="" loading="lazy" />`}
       <b>${member.login}</b>
     </span>`;
   }
