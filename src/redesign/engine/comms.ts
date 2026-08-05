@@ -60,6 +60,50 @@ export const listSubscribers = (): Promise<CommsRead<readonly Subscriber[]>> =>
 export const listRuns = (): Promise<CommsRead<readonly SendRun[]>> =>
   readList<SendRun>('/api/runs', 'runs');
 
+/** Outcome of adding a subscriber, distinguishing the known failure modes. */
+export type AddResult =
+  | { readonly ok: true; readonly subscriber: Subscriber }
+  | { readonly ok: false; readonly reason: 'duplicate' | 'invalid' | 'error' };
+
+/** Adds a subscriber (`POST /api/subscribers`). Langs are the digest languages. */
+export const addSubscriber = async (
+  email: string,
+  langs: readonly string[],
+): Promise<AddResult> => {
+  try {
+    const response = await commsFetch('/api/subscribers', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: email.trim(), langs }),
+    });
+    if (response.status === 201) {
+      const subscriber: unknown = await response.json().catch(() => undefined);
+      return isSubscriber(subscriber)
+        ? { ok: true, subscriber }
+        : { ok: false, reason: 'error' };
+    }
+    if (response.status === 409) return { ok: false, reason: 'duplicate' };
+    if (response.status === 422) return { ok: false, reason: 'invalid' };
+    return { ok: false, reason: 'error' };
+  } catch {
+    return { ok: false, reason: 'error' };
+  }
+};
+
+/** Removes a subscriber (`DELETE /api/subscribers/:id`). Returns success. */
+export const removeSubscriber = async (id: number): Promise<boolean> => {
+  try {
+    const response = await commsFetch(`/api/subscribers/${id}`, { method: 'DELETE' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
+/** Narrows an unknown value to a {@link Subscriber}. */
+const isSubscriber = (x: unknown): x is Subscriber =>
+  typeof x === 'object' && x !== null && 'id' in x && 'email' in x;
+
 /**
  * Triggers the owner-only manual dispatch (`POST /api/dispatch?force=1`). This
  * really sends to every active subscriber, so the screen must confirm first.

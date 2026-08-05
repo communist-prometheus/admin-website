@@ -7,10 +7,15 @@ import {
   listSubscribers,
   listRuns,
   forceDispatch,
+  addSubscriber,
+  removeSubscriber,
   type Subscriber,
   type SendRun,
   type DispatchResult,
 } from '../engine/comms.js';
+
+/** The seven publication languages a subscriber can receive. */
+const LANGS: readonly string[] = ['ru', 'en', 'it', 'es', 'uk', 'pl', 'bl'];
 
 /** The three sub-nav panels of the newsletter screen. */
 type TabId = 'schedule' | 'subscribers' | 'log';
@@ -32,6 +37,7 @@ const SUBSCRIBER_COLUMNS: readonly CpTableColumn[] = [
   { key: 'langs', label: 'Языки' },
   { key: 'status', label: 'Статус' },
   { key: 'since', label: 'Подписан' },
+  { key: 'actions', label: '' },
 ];
 
 /** Maps a subscriber status to a cp-status tone + label. */
@@ -140,6 +146,90 @@ export class ScreenNewsletter extends LitElement {
       gap: var(--spacing-sm);
     }
 
+    .add-form {
+      display: grid;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-md);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      max-width: 32rem;
+    }
+
+    .langs {
+      border: 0;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .langs legend {
+      padding: 0;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .lang-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .chip.on {
+      background: var(--color-accent);
+      color: var(--color-on-accent, var(--color-background));
+      border-color: var(--color-accent);
+    }
+
+    .chip input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .field-error {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--color-danger, #c0392b);
+    }
+
+    .row-remove {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.25rem;
+      border: 0;
+      background: transparent;
+      color: var(--color-text-secondary);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+
+    .row-remove:hover:not(:disabled) {
+      color: var(--color-danger, #c0392b);
+      background: var(--color-danger-bg, rgba(192, 57, 43, 0.1));
+    }
+
+    .row-remove:disabled {
+      opacity: 0.5;
+      cursor: progress;
+    }
+
     .muted {
       color: var(--color-text-secondary);
       font-size: 0.9rem;
@@ -208,6 +298,15 @@ export class ScreenNewsletter extends LitElement {
   @state() private sending = false;
   @state() private result?: DispatchResult;
 
+  /** Add-subscriber form state. */
+  @state() private addEmail = '';
+  @state() private addLangs: ReadonlySet<string> = new Set(['ru']);
+  @state() private adding = false;
+  @state() private addError = '';
+
+  /** Id of the subscriber currently being removed (disables its row control). */
+  @state() private removingId?: number;
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.loadSubscribers();
@@ -258,6 +357,45 @@ export class ScreenNewsletter extends LitElement {
     this.confirmOpen = false;
     this.result = result;
     if (result.ok) void this.loadRuns();
+  };
+
+  private readonly toggleAddLang = (lang: string): void => {
+    const next = new Set(this.addLangs);
+    next.has(lang) ? next.delete(lang) : next.add(lang);
+    this.addLangs = next;
+  };
+
+  /** Whether the add form is ready to submit (valid email + at least one lang). */
+  private get canAdd(): boolean {
+    return !this.adding && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(this.addEmail.trim()) && this.addLangs.size > 0;
+  }
+
+  private readonly submitAdd = async (): Promise<void> => {
+    if (!this.canAdd) return;
+    this.adding = true;
+    this.addError = '';
+    const result = await addSubscriber(this.addEmail, [...this.addLangs]);
+    this.adding = false;
+    if (result.ok) {
+      this.addEmail = '';
+      this.addLangs = new Set(['ru']);
+      await this.loadSubscribers();
+    } else {
+      this.addError =
+        result.reason === 'duplicate'
+          ? 'Этот адрес уже подписан.'
+          : result.reason === 'invalid'
+            ? 'Проверьте адрес и языки.'
+            : 'Не удалось добавить подписчика.';
+    }
+  };
+
+  private readonly removeSub = async (id: number): Promise<void> => {
+    if (this.removingId !== undefined) return;
+    this.removingId = id;
+    const ok = await removeSubscriber(id);
+    this.removingId = undefined;
+    if (ok) await this.loadSubscribers();
   };
 
   private renderResultBanner(): TemplateResult | typeof nothing {
@@ -315,6 +453,16 @@ export class ScreenNewsletter extends LitElement {
         langs: sub.langs.join(', ').toUpperCase(),
         status: html`<cp-status state=${meta.state} label=${meta.label}></cp-status>`,
         since: sub.createdAt.slice(0, 10),
+        actions: html`<button
+          class="row-remove"
+          type="button"
+          ?disabled=${this.removingId === sub.id}
+          aria-label="Удалить ${sub.email}"
+          title="Удалить подписчика"
+          @click=${() => void this.removeSub(sub.id)}
+        >
+          <cp-icon name="trash" size="16"></cp-icon>
+        </button>`,
       };
     });
     const unsub = this.subscribers.filter((s) => s.status !== 'active').length;
@@ -325,12 +473,56 @@ export class ScreenNewsletter extends LitElement {
             >${this.activeCount} активных${unsub > 0 ? html` · ${unsub} неактивных` : nothing}</span
           >
         </div>
+        ${this.renderAddForm()}
         ${this.subscribers.length === 0
           ? html`<p class="muted">Пока нет ни одного подписчика.</p>`
           : html`<div class="scroll-x">
               <cp-table caption="Список рассылки" .columns=${SUBSCRIBER_COLUMNS} .rows=${rows}></cp-table>
             </div>`}
       </section>
+    `;
+  }
+
+  private renderAddForm(): TemplateResult {
+    return html`
+      <form
+        class="add-form"
+        @submit=${(e: Event) => {
+          e.preventDefault();
+          void this.submitAdd();
+        }}
+      >
+        <cp-input
+          label="Email нового подписчика"
+          type="email"
+          .value=${this.addEmail}
+          ?invalid=${this.addError !== ''}
+          @cp-input=${(e: CustomEvent<{ value: string }>) => {
+            this.addEmail = e.detail.value;
+            this.addError = '';
+          }}
+          @cp-change=${(e: CustomEvent<{ value: string }>) => (this.addEmail = e.detail.value)}
+        ></cp-input>
+        <fieldset class="langs">
+          <legend>Языки дайджеста</legend>
+          <div class="lang-chips">
+            ${LANGS.map(
+              (lang) => html`<label class="chip ${this.addLangs.has(lang) ? 'on' : ''}">
+                <input
+                  type="checkbox"
+                  .checked=${this.addLangs.has(lang)}
+                  @change=${() => this.toggleAddLang(lang)}
+                />
+                ${lang.toUpperCase()}
+              </label>`,
+            )}
+          </div>
+        </fieldset>
+        ${this.addError !== '' ? html`<p class="field-error" role="alert">${this.addError}</p>` : nothing}
+        <cp-button ?disabled=${!this.canAdd} @cp-click=${() => void this.submitAdd()}>
+          ${this.adding ? 'Добавляем…' : 'Добавить подписчика'}
+        </cp-button>
+      </form>
     `;
   }
 
