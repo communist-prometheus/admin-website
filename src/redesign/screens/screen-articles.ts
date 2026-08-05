@@ -4,6 +4,7 @@ import '@communist-prometheus/cp-components';
 import { listArticles, type ArticleSummary } from '../engine/content.js';
 import { onEngineReady } from '../engine/engine-ready.js';
 import { classifyEmpty } from '../engine/load-state.js';
+import '../components/engine-loading.js';
 
 /**
  * Articles screen (content-list spec). Lists the actual `blog/<slug>/index.<lang>.md`
@@ -120,7 +121,9 @@ export class ScreenArticles extends LitElement {
   private renderEmpty() {
     const state = classifyEmpty(this.loaded);
     if (state === 'loading') {
-      return html`<div class="empty"><p>Загружаем материалы…</p></div>`;
+      return html`<div class="empty">
+        <engine-loading label="Загружаем материалы…"></engine-loading>
+      </div>`;
     }
     if (state === 'signed-out') {
       return html`
