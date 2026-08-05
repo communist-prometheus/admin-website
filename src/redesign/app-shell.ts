@@ -505,10 +505,11 @@ export class AppShell extends LitElement {
    * the `aria-live` region announces.
    */
   private focusScreen(): void {
-    const target =
-      this.renderRoot.querySelector<HTMLElement>('main h1') ??
-      this.renderRoot.querySelector<HTMLElement>('main');
-    target?.focus();
+    // Focus <main> (tabindex=-1, aria-live, outline:none) rather than an <h1>:
+    // headings are focused only programmatically, so a visible focus ring on them
+    // after every navigation is noise. <main>'s aria-live still announces the
+    // route change to assistive tech.
+    this.renderRoot.querySelector<HTMLElement>('main')?.focus();
   }
 
   private navigate(id: string): void {
