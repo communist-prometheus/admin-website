@@ -1,7 +1,8 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
-import { listPushes, type Push } from '../engine/github-api.js';
+import { listPushes, listDeployRuns } from '../engine/github-api.js';
+import { correlateDeploys, type DeployedPush, type DeployPhase } from '../engine/deploy-status.js';
 import { onEngineReady } from '../engine/engine-ready.js';
 
 /**
@@ -54,50 +55,103 @@ export class ScreenDeploys extends LitElement {
       margin: 0;
       padding: 0;
       display: grid;
-      gap: var(--spacing-sm);
+      gap: var(--spacing-xs);
     }
-    li {
+    .row {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto;
-      align-items: baseline;
-      gap: var(--spacing-xs) var(--spacing-sm);
-      padding: var(--spacing-sm) 0;
+      align-items: start;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-md) 0;
       border-top: 1px solid var(--color-hairline);
     }
-    li:first-child {
+    .row:first-child {
       border-top: none;
     }
-    .sha {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--color-text-secondary);
+    .ri {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      flex: none;
     }
-    .title {
+    .ri.success {
+      color: var(--color-success, #2e9e5b);
+      background: var(--color-success-bg, rgba(46, 158, 91, 0.14));
+    }
+    .ri.info {
+      color: var(--color-info, var(--color-accent));
+      background: var(--color-info-bg, rgba(224, 108, 60, 0.14));
+    }
+    .ri.danger {
+      color: var(--color-danger, #c0392b);
+      background: var(--color-danger-bg, rgba(192, 57, 43, 0.14));
+    }
+    .ri.neutral {
+      color: var(--color-text-secondary);
+      background: var(--color-surface);
+    }
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .spin {
+        animation: none;
+      }
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(1turn);
+      }
+    }
+    .rc {
       min-width: 0;
-      overflow-wrap: anywhere;
-      font-weight: 600;
+      display: grid;
+      gap: 0.3rem;
     }
-    .meta {
-      grid-column: 2 / -1;
+    .rt {
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .rm {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
       font-size: 0.8rem;
       color: var(--color-text-secondary);
+    }
+    .rc cp-progress {
+      margin-top: 0.2rem;
     }
     a.gh {
-      justify-self: end;
-      font-size: 0.8rem;
       color: var(--color-accent);
       text-decoration: none;
     }
     a.gh:hover {
       text-decoration: underline;
     }
+    .ra {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.25rem;
+      text-align: right;
+    }
+    .dur {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
     .empty {
       color: var(--color-text-secondary);
     }
   `;
 
-  /** Recent pushes read from the content repo; empty until loaded. */
-  @state() private pushes: readonly Push[] = [];
+  /** Recent pushes enriched with their deploy status; empty until loaded. */
+  @state() private deploys: readonly DeployedPush[] = [];
 
   /** Whether the real read has completed. */
   @state() private loaded = false;
@@ -118,19 +172,70 @@ export class ScreenDeploys extends LitElement {
   }
 
   private async load(): Promise<void> {
-    this.pushes = await listPushes();
+    const [pushes, runs] = await Promise.all([listPushes(), listDeployRuns()]);
+    this.deploys = correlateDeploys(pushes, runs);
     this.loaded = true;
   }
 
-  private renderRow(push: Push): TemplateResult {
+  /** cp-status tone + icon + Russian label for a deploy phase. */
+  private phaseMeta(phase: DeployPhase): {
+    state: string;
+    icon: string;
+    label: string;
+    spin: boolean;
+  } {
+    if (phase === 'published') return { state: 'success', icon: 'check', label: 'опубликовано', spin: false };
+    if (phase === 'building') return { state: 'info', icon: 'refresh', label: 'сборка идёт', spin: true };
+    if (phase === 'queued') return { state: 'info', icon: 'refresh', label: 'в очереди', spin: false };
+    if (phase === 'failed') return { state: 'danger', icon: 'warning', label: 'не удалось', spin: false };
+    return { state: 'neutral', icon: 'more', label: 'нет данных', spin: false };
+  }
+
+  /** Relative Russian time-ago from an ISO timestamp. */
+  private ago(iso: string): string {
+    const t = Date.parse(iso);
+    if (Number.isNaN(t)) return '';
+    const sec = Math.max(0, Math.round((Date.now() - t) / 1000));
+    if (sec < 60) return 'только что';
+    const min = Math.round(sec / 60);
+    if (min < 60) return `${min} мин назад`;
+    const hr = Math.round(min / 60);
+    if (hr < 24) return `${hr} ч назад`;
+    return `${Math.round(hr / 24)} дн назад`;
+  }
+
+  private renderRow(item: DeployedPush): TemplateResult {
+    const meta = this.phaseMeta(item.phase);
+    const dur =
+      item.durationSec !== undefined
+        ? `${Math.floor(item.durationSec / 60)}м ${item.durationSec % 60}с`
+        : '';
+    const branch = import.meta.env.VITE_GITHUB_BRANCH ?? 'develop';
     return html`
-      <li>
-        <span class="sha">${push.sha}</span>
-        <span class="title">${push.title}</span>
-        ${push.url === ''
-          ? nothing
-          : html`<a class="gh" href=${push.url} target="_blank" rel="noopener">GitHub ↗</a>`}
-        <span class="meta">${push.author} · ${push.date.slice(0, 10)}</span>
+      <li class="row">
+        <span class="ri ${meta.state}">
+          <cp-icon name=${meta.icon} size="18" class=${meta.spin ? 'spin' : ''}></cp-icon>
+        </span>
+        <div class="rc">
+          <div class="rt">
+            <span class="branch">${branch}</span> · ${item.push.title}
+          </div>
+          <div class="rm">
+            <span>${item.push.author}</span><span aria-hidden="true">·</span>
+            <span>${this.ago(item.push.date)}</span>
+            ${item.runUrl === undefined
+              ? nothing
+              : html`<span aria-hidden="true">·</span
+                  ><a class="gh" href=${item.runUrl} target="_blank" rel="noopener">лог ↗</a>`}
+          </div>
+          ${item.phase === 'building' || item.phase === 'queued'
+            ? html`<cp-progress ?indeterminate=${true} value="0"></cp-progress>`
+            : nothing}
+        </div>
+        <div class="ra">
+          <cp-status state=${meta.state} label=${meta.label}></cp-status>
+          ${dur === '' ? nothing : html`<span class="dur">${dur}</span>`}
+        </div>
       </li>
     `;
   }
@@ -143,12 +248,12 @@ export class ScreenDeploys extends LitElement {
         <h1 tabindex="-1">Деплои</h1>
       </div>
       <p class="hint">
-        Недавние коммиты в контент-репозиторий (ветка <span class="branch">${branch}</span>). Каждый
-        пуш запускает сборку и деплой сайта. Публикация ≠ индекс: статья может быть на сайте, пока
-        поиск обновляется отдельно.
+        Недавние коммиты в контент-репозиторий (ветка <span class="branch">${branch}</span>) и статус
+        их публикации на сайте. Публикация ≠ индекс: статья может быть на сайте, пока поиск
+        обновляется отдельно.
       </p>
-      ${this.pushes.length > 0
-        ? html`<ul>${this.pushes.map((push) => this.renderRow(push))}</ul>`
+      ${this.deploys.length > 0
+        ? html`<ul>${this.deploys.map((item) => this.renderRow(item))}</ul>`
         : html`<p class="empty">
             ${this.loaded ? 'Пушей не найдено (или нет доступа по токену).' : 'Загружаем историю…'}
           </p>`}

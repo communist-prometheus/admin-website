@@ -163,6 +163,47 @@ const toPush = (x: unknown): Push | undefined => {
   };
 };
 
+/** A deploy workflow run on the public site, used to enrich the deploy board. */
+export interface DeployRun {
+  readonly status: 'queued' | 'in_progress' | 'completed';
+  readonly conclusion: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly url: string;
+}
+
+const toDeployRun = (x: unknown): DeployRun | undefined => {
+  const status = field(x, 'status');
+  if (status !== 'queued' && status !== 'in_progress' && status !== 'completed') return undefined;
+  const conclusion = field(x, 'conclusion');
+  const createdAt = field(x, 'created_at');
+  const updatedAt = field(x, 'updated_at');
+  const url = field(x, 'html_url');
+  return {
+    status,
+    conclusion: typeof conclusion === 'string' ? conclusion : '',
+    createdAt: typeof createdAt === 'string' ? createdAt : '',
+    updatedAt: typeof updatedAt === 'string' ? updatedAt : '',
+    url: typeof url === 'string' ? url : '',
+  };
+};
+
+/**
+ * Recent deploy runs of the public site, keyed by the branch the admin writes to.
+ * The site deploy is what actually publishes a content push, so these carry the
+ * real "building / published / failed" status the deploy board shows per push.
+ */
+export const listDeployRuns = async (
+  branch = import.meta.env.VITE_GITHUB_BRANCH ?? 'develop',
+  repo = 'public-website',
+): Promise<readonly DeployRun[]> => {
+  const data = await get(`/repos/${OWNER}/${repo}/actions/runs?branch=${branch}&per_page=30`);
+  const runs = field(data, 'workflow_runs');
+  return Array.isArray(runs)
+    ? runs.map(toDeployRun).filter((r): r is DeployRun => r !== undefined)
+    : [];
+};
+
 /**
  * Recent commits (pushes) on a branch of the content repo — the real activity
  * feed the deploy board shows. Branch defaults to the one the admin is wired to
