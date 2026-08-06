@@ -38,6 +38,25 @@
       "kv_namespaces": [
         { "binding": "ROLES_KV", "id": "7f41b8d0c2964092b49a127ee8bf08f3" }
       ]
+    },
+    // v2 environment — the redesigned admin (new UI), deployed from the
+    // `admin-v2` branch into its own CF Worker (admin-website-v2) bound to
+    // dev-admin-v2.comprom.org, so the old admin keeps serving dev/prod
+    // untouched. Dev-like: shares the develop OAuth app + roles KV and reads
+    // the develop content branch (the deploy workflow sets VITE_* accordingly).
+    // `custom_domain: true` makes wrangler provision the hostname + DNS on
+    // first deploy.
+    "v2": {
+      "name": "admin-website-v2",
+      "routes": [
+        { "pattern": "dev-admin-v2.comprom.org", "custom_domain": true }
+      ],
+      "vars": {
+        "GITHUB_CLIENT_ID": "Ov23liXRu1WNCvOCce7s"
+      },
+      "kv_namespaces": [
+        { "binding": "ROLES_KV", "id": "7f41b8d0c2964092b49a127ee8bf08f3" }
+      ]
     }
   }
 }

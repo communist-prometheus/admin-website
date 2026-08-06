@@ -2,7 +2,7 @@ name: Deploy admin to Cloudflare Workers
 
 on:
   push:
-    branches: [master, develop]
+    branches: [master, develop, admin-v2]
 
 # Serialise per branch — when a fresh master commit lands while an
 # older deploy is still building, cancel the in-flight one. Same on
@@ -46,7 +46,21 @@ jobs:
 
       - name: Resolve branch env
         run: |
-          if [ "$GITHUB_REF_NAME" = "develop" ]; then
+          if [ "$GITHUB_REF_NAME" = "admin-v2" ]; then
+            # admin-v2 = the redesign (new UI), hosted separately at
+            # dev-admin-v2.comprom.org so the old admin can serve dev/prod
+            # untouched. It is a dev-like environment: reads/writes the
+            # `develop` content branch and talks to the develop comms/auth
+            # workers, reusing the develop OAuth app (its callback for the v2
+            # host must be registered on the GitHub App for login to work).
+            echo "VITE_GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
+            echo "VITE_OAUTH_REDIRECT_URI=https://dev-admin-v2.comprom.org/auth/github/callback" >> "$GITHUB_ENV"
+            echo "VITE_GITHUB_CLIENT_ID=$VITE_GITHUB_CLIENT_ID_DEVELOP" >> "$GITHUB_ENV"
+            echo "VITE_COMMS_BASE=https://dev-lists.comprom.org" >> "$GITHUB_ENV"
+            echo "VITE_AUTH_BASE=https://dev-auth.comprom.org" >> "$GITHUB_ENV"
+            echo "GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
+            echo "WRANGLER_COMMAND=deploy --env v2" >> "$GITHUB_ENV"
+          elif [ "$GITHUB_REF_NAME" = "develop" ]; then
             echo "VITE_GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
             echo "VITE_OAUTH_REDIRECT_URI=$OAUTH_REDIRECT_URI_DEVELOP" >> "$GITHUB_ENV"
             echo "VITE_GITHUB_CLIENT_ID=$VITE_GITHUB_CLIENT_ID_DEVELOP" >> "$GITHUB_ENV"
