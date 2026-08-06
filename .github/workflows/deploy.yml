@@ -51,11 +51,12 @@ jobs:
             # dev-admin-v2.comprom.org so the old admin can serve dev/prod
             # untouched. It is a dev-like environment: reads/writes the
             # `develop` content branch and talks to the develop comms/auth
-            # workers, reusing the develop OAuth app (its callback for the v2
-            # host must be registered on the GitHub App for login to work).
+            # workers, with its OWN OAuth app (dev-2-comprom-oauth-app) since an
+            # OAuth app allows only one callback URL — the secret is set on the
+            # admin-website-v2 worker via `wrangler secret put GITHUB_CLIENT_SECRET`.
             echo "VITE_GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
             echo "VITE_OAUTH_REDIRECT_URI=https://dev-admin-v2.comprom.org/auth/github/callback" >> "$GITHUB_ENV"
-            echo "VITE_GITHUB_CLIENT_ID=$VITE_GITHUB_CLIENT_ID_DEVELOP" >> "$GITHUB_ENV"
+            echo "VITE_GITHUB_CLIENT_ID=Ov23liSvu5qVdCI01BmZ" >> "$GITHUB_ENV"
             echo "VITE_COMMS_BASE=https://dev-lists.comprom.org" >> "$GITHUB_ENV"
             echo "VITE_AUTH_BASE=https://dev-auth.comprom.org" >> "$GITHUB_ENV"
             echo "GITHUB_BRANCH=develop" >> "$GITHUB_ENV"

@@ -52,7 +52,7 @@
         { "pattern": "dev-admin-v2.comprom.org", "custom_domain": true }
       ],
       "vars": {
-        "GITHUB_CLIENT_ID": "Ov23liXRu1WNCvOCce7s"
+        "GITHUB_CLIENT_ID": "Ov23liSvu5qVdCI01BmZ"
       },
       "kv_namespaces": [
         { "binding": "ROLES_KV", "id": "7f41b8d0c2964092b49a127ee8bf08f3" }
