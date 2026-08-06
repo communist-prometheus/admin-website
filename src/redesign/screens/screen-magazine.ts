@@ -11,6 +11,7 @@ import {
 } from '../engine/content.js';
 import { onEngineReady } from '../engine/engine-ready.js';
 import { classifyEmpty } from '../engine/load-state.js';
+import '../components/engine-loading.js';
 
 /** One existing magazine issue discovered under `magazine/`. */
 interface IssueFolder {
@@ -436,13 +437,13 @@ export class ScreenMagazine extends LitElement {
               `,
             )}
           </div>`
-        : html`<p class="empty">
-            ${classifyEmpty(this.loaded) === 'loading'
-              ? 'Загружаем номера…'
-              : classifyEmpty(this.loaded) === 'signed-out'
+        : classifyEmpty(this.loaded) === 'loading'
+          ? html`<engine-loading label="Загружаем номера…"></engine-loading>`
+          : html`<p class="empty">
+              ${classifyEmpty(this.loaded) === 'signed-out'
                 ? 'Войдите через GitHub, чтобы увидеть и публиковать номера.'
                 : 'Номеров пока нет. Нажмите «Новый номер», чтобы загрузить первый.'}
-          </p>`}
+            </p>`}
       ${this.renderForm()}
     `;
   }
