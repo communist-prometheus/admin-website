@@ -4,10 +4,11 @@ import '@communist-prometheus/cp-components';
 import { listArticles, type ArticleSummary } from '../engine/content.js';
 
 /**
- * Articles screen (content-list spec). When the real content engine is running
- * (local dev:token), it groups `blog/<slug>/index.<lang>.md` from the cloned
- * repo and lists the actual articles — proving live data end-to-end; otherwise
- * it falls back to a representative sample so the preview still renders.
+ * Articles screen (content-list spec). Lists the actual `blog/<slug>/index.<lang>.md`
+ * groups from the cloned repo through the content engine — proving live data
+ * end-to-end. There is deliberately NO sample/demo fallback: when the engine is
+ * not running (signed out), the screen shows a sign-in prompt rather than
+ * fabricated articles, so the editor never sees data that is not really theirs.
  */
 @customElement('screen-articles')
 export class ScreenArticles extends LitElement {
@@ -51,12 +52,24 @@ export class ScreenArticles extends LitElement {
       font-size: 0.85rem;
       color: var(--color-text-secondary);
     }
+    .empty {
+      display: grid;
+      justify-items: start;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-2xl) 0;
+      color: var(--color-text-secondary);
+    }
+    .empty p {
+      margin: 0;
+      max-width: 34ch;
+      line-height: 1.5;
+    }
   `;
 
-  /** Articles read from the repo; empty until loaded (or if the engine is off). */
+  /** Articles read from the repo; empty until the engine has loaded them. */
   @state() private articles: readonly ArticleSummary[] = [];
 
-  /** Whether the real read has completed. */
+  /** Whether a read has completed (so we can distinguish loading from empty). */
   @state() private loaded = false;
 
   override connectedCallback(): void {
@@ -70,42 +83,13 @@ export class ScreenArticles extends LitElement {
     this.loaded = true;
   }
 
-  private sample(): readonly ArticleSummary[] {
-    return [
-      {
-        slug: 'crisis-of-overproduction',
-        title: 'Кризис перепроизводства и его пределы',
-        topic: 'Наш перевод',
-        date: '12 июня 2026',
-        published: true,
-        languages: ['ru', 'en'],
-      },
-      {
-        slug: 'new-wave-unions',
-        title: 'Профсоюзы новой волны: цифры и тенденции',
-        topic: 'Аналитика',
-        date: '3 июня 2026',
-        published: false,
-        languages: ['ru'],
-      },
-      {
-        slug: 'forgotten-commune',
-        title: 'Коммуна, которую забыли',
-        topic: 'История',
-        date: '28 мая 2026',
-        published: true,
-        languages: ['ru', 'en', 'it'],
-      },
-    ];
-  }
-
   private openEditor(): void {
     location.hash = '/editor';
   }
 
   private renderCard(article: ArticleSummary) {
     return html`
-      <cp-card interactive @cp-click=${() => this.openEditor()}>
+      <cp-card hoverable @cp-card-click=${() => this.openEditor()}>
         ${article.topic ? html`<cp-pill slot="pill">${article.topic}</cp-pill>` : nothing}
         <span slot="title">${article.title}</span>
         <span slot="summary">${article.languages.join(' · ')}</span>
@@ -116,28 +100,33 @@ export class ScreenArticles extends LitElement {
             label=${article.published ? 'опубликовано' : 'черновик'}
           ></cp-status>
         </div>
-        <cp-button slot="actions" variant="ghost" size="sm" aria-label="Действия">
-          <cp-icon name="more"></cp-icon>
-        </cp-button>
       </cp-card>
+    `;
+  }
+
+  private renderEmpty() {
+    return html`
+      <div class="empty">
+        <p>
+          ${this.loaded
+            ? 'Здесь появятся материалы репозитория. Войдите через GitHub, чтобы загрузить их.'
+            : 'Загружаем материалы…'}
+        </p>
+      </div>
     `;
   }
 
   override render() {
     const live = this.articles.length > 0;
-    const list = live ? this.articles : this.sample();
     return html`
       <div class="head">
-        <p class="eyebrow">Контент · ${list.length} материалов</p>
+        <p class="eyebrow">Контент${live ? html` · ${this.articles.length} материалов` : nothing}</p>
         <h1 tabindex="-1">Статьи</h1>
         <cp-button arrow @cp-click=${() => this.openEditor()}>Новая статья</cp-button>
-        ${live
-          ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
-          : this.loaded
-            ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
-            : nothing}
       </div>
-      <div class="grid">${list.map((article) => this.renderCard(article))}</div>
+      ${live
+        ? html`<div class="grid">${this.articles.map((article) => this.renderCard(article))}</div>`
+        : this.renderEmpty()}
     `;
   }
 }

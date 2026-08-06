@@ -29,39 +29,6 @@ const LANG_CODES: ReadonlySet<string> = new Set(LANGUAGES.map((tab) => tab.id));
 const isLangCode = (value: string): value is LangCode => LANG_CODES.has(value);
 
 /**
- * A small representative sample used only when the real content engine is off
- * (no `dev:token`), so the preview still renders instead of showing nothing.
- */
-const SAMPLE_TOPICS: readonly Topic[] = [
-  {
-    key: 'editorial',
-    color: '#b03a2e',
-    name: {
-      ru: 'От редакции',
-      en: 'Editorial',
-      it: 'Dalla redazione',
-      es: 'De la redacción',
-      bl: 'От редакцията',
-      pl: 'Od redakcji',
-      uk: 'Від редакції',
-    },
-  },
-  {
-    key: 'translation',
-    color: '#2563eb',
-    name: {
-      ru: 'Наш перевод',
-      en: 'Our translation',
-      it: 'La nostra traduzione',
-      es: 'Nuestra traducción',
-      bl: 'Наш превод',
-      pl: 'Nasze tłumaczenie',
-      uk: 'Наш переклад',
-    },
-  },
-];
-
-/**
  * Topics screen (settings spec: the "Темы" subpanel). When the real content
  * engine is running (local `dev:token`), it reads the repo's
  * `settings/topics.json` and lists the ACTUAL topics — colour, per-language name
@@ -141,7 +108,6 @@ export class ScreenTopics extends LitElement {
       border: 1px solid var(--color-hairline);
       border-inline-start: 4px solid var(--tc, var(--color-accent));
       border-radius: var(--radius-md);
-      box-shadow: var(--shadow-sm);
     }
 
     .thead {
@@ -263,39 +229,38 @@ export class ScreenTopics extends LitElement {
 
   override render() {
     const live = this.topics.length > 0;
-    const list = live ? this.topics : SAMPLE_TOPICS;
     return html`
       <header class="head">
         <p class="eyebrow">Настройки · оформление статей</p>
         <h1 tabindex="-1">Темы</h1>
-        ${live
-          ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
-          : this.loaded
-            ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
-            : nothing}
       </header>
       <p class="intro">
         Темы группируют статьи цветной плашкой и припиской. Название, приписка и описание — для
         каждого из 7 языков.
       </p>
 
-      <div class="tabs-scroll">
-        <cp-tabs
-          .tabs=${LANGUAGES}
-          active=${this.activeLang}
-          @cp-tab-change=${this.onLangChange}
-        ></cp-tabs>
-      </div>
+      ${live
+        ? html`
+            <div class="tabs-scroll">
+              <cp-tabs
+                .tabs=${LANGUAGES}
+                active=${this.activeLang}
+                @cp-tab-change=${this.onLangChange}
+              ></cp-tabs>
+            </div>
 
-      <div class="list">${list.map((topic) => this.renderTopic(topic))}</div>
+            <div class="list">${this.topics.map((topic) => this.renderTopic(topic))}</div>
 
-      <p class="note">
-        ${live
-          ? `Прочитано из settings/topics.json — ${list.length} ${
-              list.length === 1 ? 'тема' : 'тем'
-            } реального репозитория.`
-          : 'Запустите dev:token с токеном, чтобы увидеть реальные темы репозитория.'}
-      </p>
+            <p class="note">
+              Прочитано из settings/topics.json — ${this.topics.length}
+              ${this.topics.length === 1 ? 'тема' : 'тем'} реального репозитория.
+            </p>
+          `
+        : html`<p class="note">
+            ${this.loaded
+              ? 'Войдите через GitHub, чтобы увидеть темы из settings/topics.json.'
+              : 'Загружаем темы…'}
+          </p>`}
     `;
   }
 }

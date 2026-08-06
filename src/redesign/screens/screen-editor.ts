@@ -3,6 +3,7 @@ import type { TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import type { CpSelectOption, CpTab } from '@communist-prometheus/cp-components';
+import '../editor/cp-markdown-editor.js';
 import { listArticles, readFile, stageFile, commitAndPush } from '../engine/content.js';
 
 /** One editable article block: a stable id plus its raw markdown source line(s).
@@ -65,31 +66,6 @@ const RUBRIC_OPTIONS: readonly CpSelectOption[] = [
 
 /** The real publish pipeline stages, mapped to `stageFile` + `commitAndPush`. */
 const REAL_STAGES: readonly string[] = ['Стейдж', 'Коммит', 'Пуш'];
-
-/**
- * Demo article used when the git engine is off (no `dev:token`): a complete
- * markdown document (frontmatter + body) so the live-preview still renders and
- * the publish dialog can simulate the staged pipeline without any real call.
- */
-const DEMO_MARKDOWN = `---
-title: "Иллюзия социализма и реальность капитала в СССР"
-topic: theory
-pubDate: 2026-07-24
-draft: true
----
-
-Отношение к средствам производства определяет класс. Но на макроуровне динамика производства неизбежно ведёт к концентрации богатства и обнажает пределы «планового» хозяйства.
-
-Хотя уровень дохода — необходимый критерий классовой принадлежности **больших социальных групп**, его нельзя напрямую применять к отдельному индивиду: класс определяется местом в системе производства, а не размером зарплаты.
-
-## Государство как совокупный капиталист
-
-Национализация средств производства не отменяет капитала как отношения. Пока сохраняются наёмный труд, товарная форма продукта и накопление ради накопления, «общенародная собственность» остаётся коллективной собственностью бюрократии.
-
-> «Накопление богатства на одном полюсе есть в то же время накопление нищеты, муки труда и моральной деградации на противоположном полюсе».
-
-Именно поэтому мы публикуем этот перевод: он принадлежит к теоретическому наследию марксизма[^24], а не к его апологетическим подделкам.
-`;
 
 /** Reads a single frontmatter scalar (`key: value`) from a text block. */
 const frontmatterValue = (text: string, key: string): string | undefined => {
@@ -225,7 +201,8 @@ export class ScreenEditor extends LitElement {
 
     .toolbar {
       position: sticky;
-      top: 0;
+      /* Stick just below the app header instead of colliding with it. */
+      top: var(--app-header-h, 3.75rem);
       z-index: 5;
       display: flex;
       flex-wrap: wrap;
@@ -426,8 +403,8 @@ export class ScreenEditor extends LitElement {
   /** Frontmatter `title`, shown in the gradient H1. */
   @state() private articleTitle = '';
 
-  /** The article body as editable blocks — the in-memory source of truth. */
-  @state() private blocks: readonly EditorBlock[] = [];
+  /** The article body markdown — the in-memory source of truth for the editor. */
+  @state() private body = '';
 
   /** Id of the block currently revealing/editing its raw markdown; '' reveals none. */
   @state() private focusedBlock = '';
@@ -504,7 +481,8 @@ export class ScreenEditor extends LitElement {
         return;
       }
     }
-    this.applyMarkdown(DEMO_MARKDOWN, '', false);
+    // No real article (signed out or empty repo): stay empty and prompt sign-in
+    // rather than loading a fabricated demo document.
     this.loaded = true;
   }
 
@@ -520,19 +498,18 @@ export class ScreenEditor extends LitElement {
     const parsed = parseArticle(markdown);
     this.frontmatter = parsed.frontmatter;
     this.articleTitle = parsed.title;
-    this.blocks = splitBlocks(parsed.body).map((raw, index) => ({ id: `blk-${index}`, raw }));
+    this.body = parsed.body;
     this.articlePath = path;
     this.live = live;
-    this.focusedBlock = '';
     const date =
       frontmatterValue(parsed.frontmatter, 'pubDate') ?? frontmatterValue(parsed.frontmatter, 'date');
     if (date !== undefined) this.pubDate = date;
     this.published = frontmatterValue(parsed.frontmatter, 'draft') !== 'true';
   }
 
-  /** Reconstructs the full markdown document from the edited in-memory blocks. */
+  /** Reconstructs the full markdown document from the frontmatter + edited body. */
   private get editedMarkdown(): string {
-    const body = this.blocks.map((block) => block.raw).join('\n\n');
+    const body = this.body.trimEnd();
     return this.frontmatter === '' ? `${body}\n` : `${this.frontmatter}\n\n${body}\n`;
   }
 
@@ -540,39 +517,6 @@ export class ScreenEditor extends LitElement {
   private get incomplete(): boolean {
     return this.topic === '';
   }
-
-  override updated(): void {
-    if (!this.pendingFocus) return;
-    this.pendingFocus = false;
-    const root = this.shadowRoot;
-    if (!root) return;
-    const textarea = root.querySelector('textarea.blk-edit');
-    if (textarea instanceof HTMLTextAreaElement) textarea.focus();
-  }
-
-  private onBlockReveal = (event: Event): void => {
-    const target = event.currentTarget;
-    if (target instanceof HTMLElement) {
-      const id = target.dataset.id;
-      if (id !== undefined) {
-        this.focusedBlock = id;
-        this.pendingFocus = true;
-      }
-    }
-  };
-
-  private onBlockInput = (event: Event): void => {
-    const target = event.target;
-    if (target instanceof HTMLTextAreaElement) {
-      const id = target.dataset.id;
-      if (id !== undefined) {
-        const value = target.value;
-        this.blocks = this.blocks.map((block) =>
-          block.id === id ? { id: block.id, raw: value } : block,
-        );
-      }
-    }
-  };
 
   private onLangChange = (event: Event): void => {
     if (event instanceof CustomEvent) {
@@ -632,11 +576,7 @@ export class ScreenEditor extends LitElement {
     this.publishOpen = true;
     this.publishSha = '';
     this.publishError = '';
-    if (this.live && this.articlePath !== '') {
-      void this.runRealPublish();
-    } else {
-      this.runDemoPublish();
-    }
+    void this.runRealPublish();
   };
 
   /** Runs the REAL git cycle: stage the edited markdown, then commit + push. */
@@ -663,23 +603,6 @@ export class ScreenEditor extends LitElement {
     this.publishBusy = false;
   }
 
-  /** Demo mode: simulate the staged pipeline with no real calls. */
-  private runDemoPublish(): void {
-    this.publishBusy = true;
-    this.simulateStage(0);
-  }
-
-  private simulateStage = (index: number): void => {
-    this.stageStates = REAL_STAGES.map((_label, position) =>
-      position < index ? 'done' : position === index ? 'running' : 'pending',
-    );
-    if (index >= REAL_STAGES.length) {
-      this.publishBusy = false;
-      return;
-    }
-    globalThis.setTimeout(() => this.simulateStage(index + 1), 900);
-  };
-
   private closePublish = (): void => {
     if (this.publishBusy) return;
     this.publishOpen = false;
@@ -693,64 +616,6 @@ export class ScreenEditor extends LitElement {
       label,
       state: this.stageStates.at(index) ?? 'pending',
     }));
-  }
-
-  private renderBlock(block: EditorBlock, index: number): TemplateResult {
-    if (block.id === this.focusedBlock) {
-      const rows = Math.max(2, block.raw.split('\n').length + 1);
-      return html`<textarea
-        class="blk-edit"
-        data-id=${block.id}
-        rows=${rows}
-        aria-label="Разметка блока"
-        .value=${block.raw}
-        @input=${this.onBlockInput}
-      ></textarea>`;
-    }
-    const kind = blockKind(block.raw);
-    const body = renderInline(stripMarker(block.raw, kind));
-    switch (kind) {
-      case 'h1':
-        return html`<h2
-          class="blk h1"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </h2>`;
-      case 'h2':
-        return html`<h2
-          class="blk"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </h2>`;
-      case 'blockquote':
-        return html`<blockquote
-          class="blk"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </blockquote>`;
-      default:
-        return html`<p
-          class="blk ${index === 0 ? 'lede' : ''}"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </p>`;
-    }
   }
 
   private renderToolbar(): TemplateResult {
@@ -834,11 +699,7 @@ export class ScreenEditor extends LitElement {
       >`;
     }
     return html`<p class="dialog-note">
-      ${this.live
-        ? html`Файл <code>${this.articlePath}</code> будет застейджен, закоммичен и запушен через
-            git-движок.`
-        : html`Демо-режим: шаги имитируются без реальных вызовов. Запустите dev:token с токеном,
-            чтобы публиковать по-настоящему.`}
+      Файл <code>${this.articlePath}</code> будет застейджен, закоммичен и запушен через git-движок.
     </p>`;
   }
 
@@ -864,18 +725,29 @@ export class ScreenEditor extends LitElement {
   }
 
   override render(): TemplateResult {
+    if (!this.live) {
+      return html`
+        <article class="ed">
+          <div class="head">
+            <p class="eyebrow">Контент · редактор</p>
+            <h1 class="title" tabindex="-1">Редактор</h1>
+          </div>
+          <p class="hint">
+            ${this.loaded
+              ? 'Войдите через GitHub, чтобы открыть материалы репозитория для правки.'
+              : 'Загружаем материал…'}
+          </p>
+        </article>
+      `;
+    }
     return html`
       <article class="ed">
         <div class="head">
-          <p class="eyebrow">Контент · ${this.live ? this.slug : 'демо-материал'} · черновик</p>
+          <p class="eyebrow">Контент · ${this.slug} · черновик</p>
           <h1 class="title" tabindex="-1">
             ${this.articleTitle === '' ? 'Без названия' : this.articleTitle}
           </h1>
-          ${this.live
-            ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
-            : this.loaded
-              ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
-              : nothing}
+          <cp-tag tone="success">данные из репозитория</cp-tag>
         </div>
         <cp-tabs
           .tabs=${LANG_TABS}
@@ -883,21 +755,25 @@ export class ScreenEditor extends LitElement {
           @cp-tab-change=${this.onLangChange}
         ></cp-tabs>
         ${this.renderToolbar()}
-        <div class="live">${this.blocks.map((block, index) => this.renderBlock(block, index))}</div>
+        <cp-markdown-editor
+          class="live"
+          .value=${this.body}
+          placeholder="Текст статьи в Markdown…"
+          @cp-change=${(event: CustomEvent<{ value: string }>) =>
+            (this.body = event.detail.value)}
+        ></cp-markdown-editor>
         <p class="hint">
-          Кликни в абзац — раскроется только он и покажет разметку
+          Живой предпросмотр: форматирование отрендерено сразу, а разметку
           <span class="kbd">#</span> <span class="kbd">**</span>
-          <span class="kbd">&gt;</span> <span class="kbd">[^24]</span>. Остальное — вёрстка статьи.
+          <span class="kbd">&gt;</span> видно только на строке с курсором.
         </p>
         <p class="save-note">
           <cp-icon name="warning" size="16"></cp-icon>
           <span class="draft">несохранённые правки</span>
           <span aria-hidden="true">·</span>
           <span>${this.activeLang}</span>
-          ${this.live
-            ? html`<span aria-hidden="true">·</span>
-                <span class="path">${this.articlePath}</span>`
-            : nothing}
+          <span aria-hidden="true">·</span>
+          <span class="path">${this.articlePath}</span>
         </p>
       </article>
       ${this.renderProps()}${this.renderPublishDialog()}

@@ -1,159 +1,48 @@
-import { LitElement, html, css, nothing } from 'lit';
-import type { TemplateResult } from 'lit';
+import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
-import type { CpTab } from '@communist-prometheus/cp-components';
-import { listTree, type TreeEntry } from '../engine/content.js';
+import {
+  listTree,
+  listArticles,
+  readFile,
+  createMagazineIssue,
+  type ArticleSummary,
+} from '../engine/content.js';
 
-/** The languages a magazine issue can carry a source for. */
-type LangCode = 'ru' | 'en' | 'es' | 'it';
-
-/** Fixed render/tab order for the four supported languages. */
-const LANG_ORDER: readonly LangCode[] = ['ru', 'en', 'es', 'it'];
-
-/** Display names for each supported language. */
-const LANG_NAMES: Readonly<Record<LangCode, string>> = {
-  ru: 'Русский',
-  en: 'English',
-  es: 'Español',
-  it: 'Italiano',
-};
-
-/** The recognised roles a repo file plays for one language. */
-type FileKind = 'pdf' | 'fb2' | 'cover' | 'index' | 'other';
-
-/** Human labels for each file role, used in the source card list. */
-const KIND_LABELS: Readonly<Record<FileKind, string>> = {
-  pdf: 'PDF',
-  fb2: 'FB2',
-  cover: 'Обложка',
-  index: 'Описание',
-  other: 'Файл',
-};
-
-/** Readiness affix per tab — a SHAPE cue, never colour alone (NFR-5). */
-const READY_MARK = '✓';
-const PENDING_MARK = '—';
-
-/** One real repo file belonging to a language, with its parsed role. */
-interface SourceFile {
-  readonly name: string;
-  readonly path: string;
-  readonly kind: FileKind;
+/** One existing magazine issue discovered under `magazine/`. */
+interface IssueFolder {
+  readonly slug: string;
+  readonly title: string;
 }
 
-/** A language row: its code, display name, and its real repo files. */
-interface LangSources {
-  readonly code: LangCode;
-  readonly name: string;
-  readonly files: readonly SourceFile[];
-}
+/** The publish pipeline state surfaced in the result dialog. */
+type PublishPhase = 'idle' | 'running' | 'done' | 'failed';
 
-/** Narrows an `unknown` to one of the four known language codes. */
-const isLangCode = (value: unknown): value is LangCode =>
-  value === 'ru' || value === 'en' || value === 'es' || value === 'it';
+/** Reads a browser File as base64 (no `data:` prefix), for the asset API. */
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (): void => {
+      const result = String(reader.result);
+      resolve(result.slice(result.indexOf(',') + 1));
+    };
+    reader.onerror = (): void => reject(reader.error ?? new Error('read failed'));
+    reader.readAsDataURL(file);
+  });
 
-/** Maps a file extension to the role the file plays for its language. */
-const kindFromExt = (ext: string): FileKind => {
-  if (ext === 'pdf') return 'pdf';
-  if (ext === 'fb2') return 'fb2';
-  if (ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'webp') return 'cover';
-  if (ext === 'md') return 'index';
-  return 'other';
+/** First File from a file input change event, or undefined. */
+const firstFile = (event: Event): File | undefined => {
+  const input = event.target;
+  return input instanceof HTMLInputElement ? (input.files?.[0] ?? undefined) : undefined;
 };
 
 /**
- * Groups a `magazine/` directory listing into per-language file sets. A file is
- * attributed to a language by its `.<lang>.<ext>` suffix (e.g.
- * `magazine-1-mai-2026.ru.pdf`, `cover.ru.png`, `index.ru.md`); everything else
- * is ignored. The four supported languages are always returned in a stable
- * order, each with the real files that matched — or an empty list.
- */
-const parseTree = (entries: readonly TreeEntry[]): readonly LangSources[] => {
-  const byLang = new Map<LangCode, SourceFile[]>();
-  for (const entry of entries) {
-    if (entry.type !== 'file') continue;
-    const match = entry.name.match(/\.([a-z]{2})\.([a-z0-9]+)$/i);
-    if (match === null) continue;
-    const lang = match[1].toLowerCase();
-    if (!isLangCode(lang)) continue;
-    const list = byLang.get(lang) ?? [];
-    list.push({ name: entry.name, path: entry.path, kind: kindFromExt(match[2].toLowerCase()) });
-    byLang.set(lang, list);
-  }
-  return LANG_ORDER.map((code) => ({
-    code,
-    name: LANG_NAMES[code],
-    files: byLang.get(code) ?? [],
-  }));
-};
-
-/**
- * A language is "ready" when it carries a readable source document (a `.pdf`
- * OR a `.fb2`) AND an extracted cover image; otherwise it is still pending.
- */
-const isReady = (files: readonly SourceFile[]): boolean =>
-  files.some((file) => file.kind === 'pdf' || file.kind === 'fb2') &&
-  files.some((file) => file.kind === 'cover');
-
-/** Derives the issue slug from any source document's name across all languages. */
-const issueSlug = (langs: readonly LangSources[]): string | undefined => {
-  for (const lang of langs) {
-    const source = lang.files.find((file) => file.kind === 'pdf' || file.kind === 'fb2');
-    if (source !== undefined) {
-      return source.name.replace(/\.[a-z]{2}\.[a-z0-9]+$/i, '');
-    }
-  }
-  return undefined;
-};
-
-/** Pulls a `LangCode` out of a `cp-tab-change` detail without casting. */
-const readLangCode = (detail: unknown): LangCode | undefined => {
-  if (typeof detail !== 'object' || detail === null || !('id' in detail)) {
-    return undefined;
-  }
-  return isLangCode(detail.id) ? detail.id : undefined;
-};
-
-/** Representative seed content shown when the content engine is not running. */
-const SAMPLE_LANGUAGES: readonly LangSources[] = [
-  {
-    code: 'ru',
-    name: 'Русский',
-    files: [
-      { name: 'magazine-1-mai-2026.ru.pdf', path: 'magazine/magazine-1-mai-2026.ru.pdf', kind: 'pdf' },
-      { name: 'magazine-1-mai-2026.ru.fb2', path: 'magazine/magazine-1-mai-2026.ru.fb2', kind: 'fb2' },
-      { name: 'cover.ru.png', path: 'magazine/cover.ru.png', kind: 'cover' },
-      { name: 'index.ru.md', path: 'magazine/index.ru.md', kind: 'index' },
-    ],
-  },
-  {
-    code: 'en',
-    name: 'English',
-    files: [
-      { name: 'magazine-1-mai-2026.en.pdf', path: 'magazine/magazine-1-mai-2026.en.pdf', kind: 'pdf' },
-    ],
-  },
-  { code: 'es', name: 'Español', files: [] },
-  { code: 'it', name: 'Italiano', files: [] },
-];
-
-/**
- * The "Загрузка журнала" screen (content-editor (magazine), design.md R5),
- * driven by the REAL cloned content repo. On connect it lists `magazine/` via
- * the content engine and groups every `*.<lang>.<ext>` file into the four
- * supported languages ({@link parseTree}); a language's readiness is derived
- * from its actual files — it is ready only when it has a `.pdf`/`.fb2` source
- * AND an extracted cover ({@link isReady}).
- *
- * The header carries the issue title (from the real filename) and a live/demo
- * badge. A language strip (`cp-tabs`, tracked in {@link selected}) affixes a
- * ✓/— SHAPE cue per language and switches the source panel below it, which
- * shows the selected language's real files in a `cp-card` with a `cp-status`.
- * When the engine is off (empty listing) it falls back to a representative
- * {@link SAMPLE_LANGUAGES} sample so the preview still renders. All chrome
- * composes design-system primitives and inherited `:root` theme tokens — no
- * ad-hoc colours or sizes.
+ * Magazine screen (content-editor, magazine). Lists the issues already under
+ * `magazine/` and — the point of this screen — publishes a NEW issue entirely
+ * through the admin: a slide-over form collects the title, slug, language,
+ * publish date, the issue PDF, an optional cover image and the articles it
+ * contains, then {@link createMagazineIssue} stages the binaries + `index.md`,
+ * back-links every selected article and commits/pushes via the git engine.
  */
 @customElement('screen-magazine')
 export class ScreenMagazine extends LitElement {
@@ -161,7 +50,6 @@ export class ScreenMagazine extends LitElement {
     :host {
       display: block;
     }
-
     .head {
       display: flex;
       align-items: center;
@@ -177,6 +65,7 @@ export class ScreenMagazine extends LitElement {
     }
     h1 {
       margin: 0;
+      margin-right: auto;
       font-size: clamp(1.9rem, 7vw, 2.6rem);
       line-height: 1.15;
       font-weight: 700;
@@ -185,95 +74,102 @@ export class ScreenMagazine extends LitElement {
       background-clip: text;
       color: transparent;
     }
-    h1:focus-visible {
-      outline: 2px solid var(--color-accent);
-      outline-offset: 4px;
+    .issues {
+      display: grid;
+      gap: var(--spacing-md);
+      grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
     }
-
-    .section-label {
-      margin: var(--spacing-lg) 0 var(--spacing-sm);
-      font-size: 0.72rem;
+    .issue-title {
       font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+    }
+    .issue-slug {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
       color: var(--color-text-secondary);
     }
-
-    cp-tabs {
-      display: block;
-      margin-bottom: var(--spacing-md);
-      overflow-x: auto;
+    .empty,
+    .note {
+      color: var(--color-text-secondary);
     }
-
-    .file-name {
-      font-family: var(--font-mono);
-    }
-
-    .files {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      gap: 0.5rem;
-    }
-    .files li {
+    .form {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--spacing-sm);
-      padding: 0.55rem var(--spacing-md);
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+    .file label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    .file input[type='file'] {
+      width: 100%;
+      font: inherit;
+      color: var(--color-text-secondary);
+    }
+    .file .hint {
+      font-size: 0.78rem;
+      color: var(--color-text-secondary);
+      margin-top: 0.25rem;
+    }
+    .arts {
+      display: grid;
+      gap: 0.4rem;
+      max-height: 15rem;
+      overflow-y: auto;
+      padding: var(--spacing-sm);
       border: 1px solid var(--color-border);
       border-radius: var(--radius-md);
-      background: var(--color-surface);
     }
-    .files .name {
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      overflow-wrap: anywhere;
-    }
-    .files .kind {
-      flex: none;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--color-text-secondary);
-    }
-
-    .empty {
-      margin: 0;
-      font-size: 0.9rem;
-      color: var(--color-text-secondary);
-    }
-
-    .status-line {
-      margin: 0;
-      font-size: 0.85rem;
-      color: var(--color-text-secondary);
-    }
-
-    .actions {
+    .art {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
       gap: var(--spacing-sm);
-      margin-top: var(--spacing-lg);
-      padding-top: var(--spacing-md);
-      border-top: 1px solid var(--color-hairline);
+      font-size: 0.9rem;
     }
-    .actions .spacer {
-      flex: 1;
+    .art input {
+      accent-color: var(--color-accent);
+    }
+    .art .badge {
+      margin-left: auto;
+      font-size: 0.72rem;
+      color: var(--color-text-secondary);
+    }
+    .foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--spacing-sm);
+    }
+    cp-banner {
+      margin-top: var(--spacing-sm);
     }
   `;
 
-  /** Per-language file sets grouped from the real repo; empty until loaded. */
-  @state() private languages: readonly LangSources[] = [];
+  /** Existing issue folders under `magazine/`; empty until loaded. */
+  @state() private issues: readonly IssueFolder[] = [];
 
-  /** Whether the real listing has completed (drives the demo badge). */
+  /** Whether the initial listing has completed. */
   @state() private loaded = false;
 
-  /** The language whose source panel is currently shown. */
-  @state() private selected: LangCode = 'ru';
+  /** All repo articles, for the issue's table-of-contents multi-select. */
+  @state() private articles: readonly ArticleSummary[] = [];
+
+  /** Whether the new-issue slide-over is open. */
+  @state() private formOpen = false;
+
+  // --- New-issue form fields ---
+  @state() private fTitle = '';
+  @state() private fSlug = '';
+  @state() private fLang = 'ru';
+  @state() private fDate = '';
+  @state() private fArticles = new Set<string>();
+  private pdf?: File;
+  private cover?: File;
+
+  // --- Publish result ---
+  @state() private phase: PublishPhase = 'idle';
+  @state() private sha = '';
+  @state() private error = '';
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -281,116 +177,238 @@ export class ScreenMagazine extends LitElement {
   }
 
   private async load(): Promise<void> {
-    const parsed = parseTree(await listTree('magazine'));
-    this.languages = parsed.some((lang) => lang.files.length > 0) ? parsed : [];
+    // The tree API returns a flat, recursive file listing — derive the issue
+    // folders from the second path segment (`magazine/<slug>/…`).
+    const entries = await listTree('magazine');
+    const slugs = [...new Set(entries.map((e) => e.path.split('/')[1]).filter(Boolean))];
+    const issues = await Promise.all(
+      slugs.map(async (slug) => {
+        const md = (await readFile(`magazine/${slug}/index.ru.md`)) ?? '';
+        const title = md.match(/^title:\s*(.+)$/m)?.[1]?.replace(/^["']|["']$/g, '') ?? slug;
+        return { slug: slug as string, title };
+      }),
+    );
+    this.issues = issues;
+    this.articles = await listArticles();
     this.loaded = true;
   }
 
-  /** True when the panel reflects real repo files rather than the sample. */
-  private get live(): boolean {
-    return this.languages.length > 0;
-  }
-
-  /** The effective list: real repo data when live, otherwise the sample. */
-  private get list(): readonly LangSources[] {
-    return this.live ? this.languages : SAMPLE_LANGUAGES;
-  }
-
-  /** The currently selected language row (falls back to the first). */
-  private get current(): LangSources {
-    return this.list.find((lang) => lang.code === this.selected) ?? this.list[0];
-  }
-
-  /** Tab strip descriptors, each affixed with its readiness SHAPE cue. */
-  private get tabs(): readonly CpTab[] {
-    return this.list.map((lang) => ({
-      id: lang.code,
-      label: `${lang.code} ${isReady(lang.files) ? READY_MARK : PENDING_MARK}`,
-    }));
-  }
-
-  /** One-line summary of every language's readiness. */
-  private get statusLine(): string {
-    return this.list
-      .map((lang) => `${lang.name} ${isReady(lang.files) ? 'готов' : 'ожидает'}`)
-      .join(' · ');
-  }
-
-  private onTabChange = (event: Event): void => {
-    if (!(event instanceof CustomEvent)) {
-      return;
-    }
-    const code = readLangCode(event.detail);
-    code === undefined || (this.selected = code);
+  private openForm = (): void => {
+    this.fTitle = '';
+    this.fSlug = '';
+    this.fLang = 'ru';
+    this.fDate = '';
+    this.fArticles = new Set();
+    this.pdf = undefined;
+    this.cover = undefined;
+    this.phase = 'idle';
+    this.sha = '';
+    this.error = '';
+    this.formOpen = true;
   };
 
-  private renderFiles(lang: LangSources): TemplateResult {
-    return html`
-      <ul class="files">
-        ${lang.files.map(
-          (file) => html`
-            <li>
-              <span class="name">${file.name}</span>
-              <span class="kind">${KIND_LABELS[file.kind]}</span>
-            </li>
-          `,
-        )}
-      </ul>
-    `;
+  private closeForm = (): void => {
+    if (this.phase === 'running') return;
+    this.formOpen = false;
+  };
+
+  private bind =
+    (field: 'fTitle' | 'fSlug' | 'fLang' | 'fDate') =>
+    (event: Event): void => {
+      const value: unknown = (event as CustomEvent).detail?.value;
+      if (typeof value === 'string') this[field] = value;
+    };
+
+  private toggleArticle = (slug: string): void => {
+    const next = new Set(this.fArticles);
+    next.has(slug) ? next.delete(slug) : next.add(slug);
+    this.fArticles = next;
+  };
+
+  private get canSubmit(): boolean {
+    return (
+      this.fTitle.trim() !== '' &&
+      this.fSlug.trim() !== '' &&
+      this.fDate.trim() !== '' &&
+      this.pdf !== undefined &&
+      this.phase !== 'running'
+    );
   }
 
-  private renderSource(lang: LangSources): TemplateResult {
-    const ready = isReady(lang.files);
-    const count = lang.files.length;
+  private submit = async (): Promise<void> => {
+    if (!this.canSubmit || this.pdf === undefined) return;
+    this.phase = 'running';
+    this.error = '';
+    try {
+      const pdfBase64 = await fileToBase64(this.pdf);
+      const coverBase64 = this.cover ? await fileToBase64(this.cover) : undefined;
+      const result = await createMagazineIssue({
+        slug: this.fSlug.trim(),
+        lang: this.fLang,
+        title: this.fTitle.trim(),
+        publishDate: this.fDate.trim(),
+        articles: [...this.fArticles],
+        pdfBase64,
+        coverBase64,
+      });
+      if (result.ok && result.sha !== undefined) {
+        this.phase = 'done';
+        this.sha = result.sha;
+        await this.load();
+      } else {
+        this.phase = 'failed';
+        this.error = result.error ?? 'Публикация номера не удалась.';
+      }
+    } catch (e) {
+      this.phase = 'failed';
+      this.error = e instanceof Error ? e.message : String(e);
+    }
+  };
+
+  private renderResult(): TemplateResult | typeof nothing {
+    if (this.phase === 'done') {
+      return html`<cp-banner tone="success" title="Номер опубликован"
+        >Коммит <code>${this.sha}</code> запушен. Номер появится на сайте после сборки.</cp-banner
+      >`;
+    }
+    if (this.phase === 'failed') {
+      return html`<cp-banner tone="danger" title="Не удалось">${this.error}</cp-banner>`;
+    }
+    return nothing;
+  }
+
+  private renderForm(): TemplateResult {
     return html`
-      <cp-card>
-        <span slot="title" class="file-name">${issueSlug(this.list) ?? lang.name}</span>
-        <span slot="summary">
-          ${count === 0
-            ? `${lang.name} — файлы не загружены`
-            : `${lang.name} · ${count} ${count === 1 ? 'файл' : 'файлов'} в репозитории`}
-        </span>
-        <cp-status
-          slot="meta"
-          state=${ready ? 'success' : 'neutral'}
-          label=${ready ? 'Готово к публикации' : 'Ожидает источник и обложку'}
-        ></cp-status>
-        ${count === 0
-          ? html`<p class="empty">Загрузите PDF/FB2 выпуска и обложку для языка «${lang.name}».</p>`
-          : this.renderFiles(lang)}
-      </cp-card>
+      <cp-sheet ?open=${this.formOpen} heading="Новый номер журнала" @cp-close=${this.closeForm}>
+        <div class="form">
+          <cp-input
+            label="Заголовок"
+            required
+            .value=${this.fTitle}
+            @cp-input=${this.bind('fTitle')}
+            @cp-change=${this.bind('fTitle')}
+          ></cp-input>
+          <cp-input
+            label="Слаг (папка номера)"
+            required
+            placeholder="magazine-3-sentyabr-2026"
+            .value=${this.fSlug}
+            @cp-input=${this.bind('fSlug')}
+            @cp-change=${this.bind('fSlug')}
+          ></cp-input>
+          <cp-select
+            label="Язык"
+            .value=${this.fLang}
+            .options=${[
+              { value: 'ru', label: 'Русский' },
+              { value: 'en', label: 'English' },
+              { value: 'it', label: 'Italiano' },
+              { value: 'es', label: 'Español' },
+            ]}
+            @cp-change=${this.bind('fLang')}
+          ></cp-select>
+          <cp-date-input
+            label="Дата публикации"
+            type="date"
+            .value=${this.fDate}
+            @cp-change=${this.bind('fDate')}
+          ></cp-date-input>
+
+          <div class="file">
+            <label for="mag-pdf">PDF номера *</label>
+            <input
+              id="mag-pdf"
+              type="file"
+              accept="application/pdf,.pdf"
+              @change=${(e: Event) => {
+                this.pdf = firstFile(e);
+                this.requestUpdate();
+              }}
+            />
+            <p class="hint">${this.pdf ? this.pdf.name : 'Не выбран'}</p>
+          </div>
+
+          <div class="file">
+            <label for="mag-cover">Обложка (PNG/JPEG)</label>
+            <input
+              id="mag-cover"
+              type="file"
+              accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+              @change=${(e: Event) => {
+                this.cover = firstFile(e);
+                this.requestUpdate();
+              }}
+            />
+            <p class="hint">${this.cover ? this.cover.name : 'Не выбрана — можно без обложки'}</p>
+          </div>
+
+          <div>
+            <label class="issue-title">Статьи номера (${this.fArticles.size})</label>
+            <div class="arts">
+              ${this.articles.length === 0
+                ? html`<p class="note">Статьи не загружены.</p>`
+                : this.articles.map(
+                    (a) => html`
+                      <label class="art">
+                        <input
+                          type="checkbox"
+                          .checked=${this.fArticles.has(a.slug)}
+                          @change=${() => this.toggleArticle(a.slug)}
+                        />
+                        <span>${a.title}</span>
+                        <span class="badge">${a.published ? '' : 'черновик'}</span>
+                      </label>
+                    `,
+                  )}
+            </div>
+          </div>
+
+          ${this.renderResult()}
+
+          <div class="foot">
+            <cp-button variant="secondary" @cp-click=${this.closeForm}>
+              ${this.phase === 'done' ? 'Закрыть' : 'Отмена'}
+            </cp-button>
+            ${this.phase === 'done'
+              ? nothing
+              : html`<cp-button
+                  arrow
+                  ?disabled=${!this.canSubmit}
+                  @cp-click=${this.submit}
+                >
+                  ${this.phase === 'running' ? 'Публикуется…' : 'Опубликовать номер'}
+                </cp-button>`}
+          </div>
+        </div>
+      </cp-sheet>
     `;
   }
 
   override render(): TemplateResult {
-    const slug = issueSlug(this.list);
     return html`
       <header class="head">
-        <p class="eyebrow">magazine · ${slug ?? 'новый выпуск'}</p>
-        <h1 tabindex="-1">Загрузка журнала</h1>
-        ${this.live
-          ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
-          : this.loaded
-            ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
-            : nothing}
+        <p class="eyebrow">Контент · журнал</p>
+        <h1 tabindex="-1">Журнал</h1>
+        <cp-button arrow @cp-click=${this.openForm}>Новый номер</cp-button>
       </header>
 
-      <h2 class="section-label">Источники по языкам</h2>
-      <cp-tabs
-        .tabs=${this.tabs}
-        active=${this.selected}
-        aria-label="Язык источника"
-        @cp-tab-change=${this.onTabChange}
-      ></cp-tabs>
-
-      ${this.renderSource(this.current)}
-
-      <div class="actions">
-        <p class="status-line">${this.statusLine}</p>
-        <span class="spacer"></span>
-        <cp-button variant="secondary">Сохранить черновик</cp-button>
-        <cp-button arrow>Опубликовать готовые</cp-button>
-      </div>
+      ${this.issues.length > 0
+        ? html`<div class="issues">
+            ${this.issues.map(
+              (issue) => html`
+                <cp-card>
+                  <span slot="title" class="issue-title">${issue.title}</span>
+                  <span slot="summary" class="issue-slug">${issue.slug}</span>
+                </cp-card>
+              `,
+            )}
+          </div>`
+        : html`<p class="empty">
+            ${this.loaded
+              ? 'Номеров пока нет. Нажмите «Новый номер», чтобы загрузить первый.'
+              : 'Загружаем номера…'}
+          </p>`}
+      ${this.renderForm()}
     `;
   }
 }
