@@ -6,28 +6,28 @@ import {
 
 /**
  * Re-derive the caller's authorization (active org member, via their own
- * token) and, only on success, perform the pinned write with the service
- * token. The gate runs before the privileged write — a non-member never
- * reaches `doWrite`.
- * @param caller The caller's GitHub OAuth token (authorization only).
- * @param service The service token used for the write.
+ * token) and, only on success, write the attachment with the caller's own
+ * token. Role-holders receive `push` on the tickets repo at role
+ * assignment, so no service token is involved; a member without push is
+ * rejected by GitHub at the write. The gate runs before the write — a
+ * non-member never reaches `doWrite`.
+ * @param caller The caller's GitHub OAuth token (authorization + write).
  * @param body Validated attachment payload.
- * @returns The write response, or a 403 / 503.
+ * @returns The write response, or a 403 / 400.
  */
 export const authorizeAndWrite = async (
   caller: string,
-  service: string | undefined,
   body: Partial<AttachBody>
 ): Promise<Response> => {
   const denied = await requireOrgMember(caller)
   return (
     denied ??
-    (service && body.path && body.content !== undefined
-      ? doWrite(service, {
+    (body.path && body.content !== undefined
+      ? doWrite(caller, {
           path: body.path,
           content: body.content,
           message: body.message ?? '',
         })
-      : new Response('attachment service not configured', { status: 503 }))
+      : new Response('Bad attachment payload', { status: 400 }))
   )
 }

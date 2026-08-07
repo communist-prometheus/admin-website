@@ -67,12 +67,6 @@ describe('ticketsAttach gates', () => {
     expect(mockDoWrite).not.toHaveBeenCalled()
   })
 
-  it('returns 503 when the service token is absent', async () => {
-    const res = await ticketsAttach(makeCtx({ ...good, service: undefined }))
-    expect(res.status).toBe(503)
-    expect(mockDoWrite).not.toHaveBeenCalled()
-  })
-
   it('rejects a path outside attachments/ before any upstream call', async () => {
     const res = await ticketsAttach(
       makeCtx({
@@ -95,8 +89,8 @@ describe('ticketsAttach gates', () => {
     expect(mockDoWrite).not.toHaveBeenCalled()
   })
 
-  it('writes via the service token for an authorized member', async () => {
+  it("writes with the caller's own token for an authorized member", async () => {
     await ticketsAttach(makeCtx(good))
-    expect(mockDoWrite).toHaveBeenCalledWith('svc', validBody)
+    expect(mockDoWrite).toHaveBeenCalledWith('usertoken', validBody)
   })
 })
