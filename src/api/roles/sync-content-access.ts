@@ -19,17 +19,29 @@
  * from the same app path as editors do.
  */
 
-import { grantContentPush, revokeContentAccess } from './collaborator-api'
+import {
+  grantContentPush,
+  grantTicketsPush,
+  revokeContentAccess,
+  revokeTicketsAccess,
+} from './collaborator-api'
 import { requireDeleteCollab, requirePutCollab } from './collaborator-guards'
 import type { RoleAssignment } from './role-map'
 
 const grants = (role: RoleAssignment): boolean => role !== 'none'
 
-const applyGrant = async (token: string, login: string): Promise<void> =>
-  requirePutCollab(await grantContentPush(token, login))
+// Push on BOTH repos: the content repo (article edits push with the
+// caller's own token) and the tickets repo (ticket attachments upload
+// with the caller's own token — no service token needed).
+const applyGrant = async (token: string, login: string): Promise<void> => {
+  await requirePutCollab(await grantContentPush(token, login))
+  await requirePutCollab(await grantTicketsPush(token, login))
+}
 
-const applyRevoke = async (token: string, login: string): Promise<void> =>
-  requireDeleteCollab(await revokeContentAccess(token, login))
+const applyRevoke = async (token: string, login: string): Promise<void> => {
+  await requireDeleteCollab(await revokeContentAccess(token, login))
+  await requireDeleteCollab(await revokeTicketsAccess(token, login))
+}
 
 /**
  * Sync content-repo collaborator access to match a KV role assignment.
