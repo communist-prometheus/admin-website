@@ -131,7 +131,8 @@ const toTicket = (x: unknown): Ticket | undefined => {
   };
 };
 
-/** Lists issues of a repo (default: admin-website) as tickets. */
+/** Lists a repo's issues (default: the `tickets` repo) as tickets; PRs are
+ * excluded so a code repo's pull requests never masquerade as tickets. */
 export const listTickets = async (repo = 'tickets'): Promise<readonly Ticket[]> => {
   const data = await get(`/repos/${OWNER}/${repo}/issues?state=all&per_page=50`);
   return Array.isArray(data) ? data.map(toTicket).filter((t): t is Ticket => t !== undefined) : [];
