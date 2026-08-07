@@ -9,7 +9,9 @@ interface Call {
 
 const REPO =
   'https://api.github.com/repos/communist-prometheus/public-website-content'
+const TICKETS = 'https://api.github.com/repos/communist-prometheus/tickets'
 const COLLAB = (login: string) => `${REPO}/collaborators/${login}`
+const TICKETS_COLLAB = (login: string) => `${TICKETS}/collaborators/${login}`
 
 const stubFetch = (
   route: (call: Call) => Response
@@ -35,13 +37,18 @@ const forbidden = (): Response => new Response('forbidden', { status: 403 })
 describe('syncContentAccess', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('editor: PUT collaborator on the content repo with push permission', async () => {
+  it('editor: PUT push collaborator on BOTH the content and tickets repos', async () => {
     const { calls } = stubFetch(() => created())
     await syncContentAccess('tok', 'alice', 'editor')
-    expect(calls).toHaveLength(1)
-    expect(calls[0]?.method).toBe('PUT')
-    expect(calls[0]?.url).toBe(COLLAB('alice'))
-    expect(JSON.parse(calls[0]?.body ?? '{}')).toEqual({ permission: 'push' })
+    expect(calls).toHaveLength(2)
+    expect(calls.map(c => c.url)).toEqual([
+      COLLAB('alice'),
+      TICKETS_COLLAB('alice'),
+    ])
+    for (const c of calls) {
+      expect(c.method).toBe('PUT')
+      expect(JSON.parse(c.body ?? '{}')).toEqual({ permission: 'push' })
+    }
   })
 
   it('chief-editor: same PUT collaborator with push permission', async () => {
@@ -57,11 +64,15 @@ describe('syncContentAccess', () => {
     expect(calls[0]?.method).toBe('PUT')
   })
 
-  it('none: DELETE the collaborator record', async () => {
+  it('none: DELETE the collaborator record on BOTH repos', async () => {
     const { calls } = stubFetch(() => noContent())
     await syncContentAccess('tok', 'alice', 'none')
-    expect(calls[0]?.method).toBe('DELETE')
-    expect(calls[0]?.url).toBe(COLLAB('alice'))
+    expect(calls).toHaveLength(2)
+    expect(calls.map(c => c.method)).toEqual(['DELETE', 'DELETE'])
+    expect(calls.map(c => c.url)).toEqual([
+      COLLAB('alice'),
+      TICKETS_COLLAB('alice'),
+    ])
   })
 
   it('accepts DELETE 404 (login was not a collaborator)', async () => {
