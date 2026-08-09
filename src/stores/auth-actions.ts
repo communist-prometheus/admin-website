@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import { saveProfile } from '@/composables/useAuth/profile-cache'
 import { clearToken } from '@/composables/useAuth/token-storage'
+import { sendSWMessage } from '@/composables/useSWBridge/send-message'
 import { recordAction } from '@/features/action-history/recorder'
 import type { User } from '@/types/user'
 import { clearSsoRolesStorage } from './sso-roles-storage'
@@ -39,6 +40,10 @@ export const createLogout =
   () => {
     clearToken()
     clearSsoRolesStorage()
+    // Drop the SW's clone + persisted config so the next account starts
+    // clean — otherwise the previous user's token/identity linger in the
+    // worker and commits keep going out under the previous account.
+    void sendSWMessage({ type: 'SW_INVALIDATE' }).catch(() => undefined)
     user.value = null
     loading.value = false
     void recordAction({ kind: 'auth', action: 'logout' })

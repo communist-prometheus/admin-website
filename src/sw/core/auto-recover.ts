@@ -1,6 +1,7 @@
 import { Effect, Option } from 'effect'
 import { loadConfig } from '../git/repo/persist-config'
 import { checkRepoAndSync } from '../git/sync/sync-repo'
+import { withTokenIdentity } from '../git/token-identity'
 import { log } from '../logging/logger'
 import { workerState } from '../state/state'
 
@@ -28,8 +29,11 @@ const recoverEffect: Effect.Effect<boolean, never> = Effect.tryPromise(() =>
       onNone: () => Effect.succeed(false),
       onSome: config =>
         Effect.tryPromise(async () => {
-          workerState.config = config
-          await checkRepoAndSync(config)
+          // Re-derive the author from the persisted token so a resurrected
+          // config never commits under a previous account's name.
+          const withAuthor = await withTokenIdentity(config)
+          workerState.config = withAuthor
+          await checkRepoAndSync(withAuthor)
           log('info', 'lifecycle', 'Auto-recovered after SW restart')
           if (workerState.state === 'ready') void drainAfterRecover()
           return workerState.state === 'ready'
