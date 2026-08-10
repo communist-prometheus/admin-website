@@ -16,6 +16,7 @@ const fresh = async (): Promise<{
 describe('classifyEmpty (QA #14)', () => {
   beforeEach(() => {
     vi.resetModules();
+    localStorage.clear();
   });
 
   it('reports loading before the read completes', async () => {
@@ -23,9 +24,16 @@ describe('classifyEmpty (QA #14)', () => {
     expect(classifyEmpty(false)).toBe('loading');
   });
 
-  it('reports signed-out when loaded but the engine never booted', async () => {
+  it('reports signed-out when loaded, engine not booted, and no session', async () => {
     const { classifyEmpty } = await fresh();
     expect(classifyEmpty(true)).toBe('signed-out');
+  });
+
+  it('reports empty (reload, not sign-in) when a session exists but boot failed', async () => {
+    localStorage.setItem('gh_token', 'gho_x');
+    const { classifyEmpty } = await fresh();
+    // Engine never marked ready (boot failed) but the editor IS signed in.
+    expect(classifyEmpty(true)).toBe('empty');
   });
 
   it('reports empty (not signed-out) when the engine is ready', async () => {
