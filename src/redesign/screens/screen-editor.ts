@@ -1,9 +1,10 @@
 import { LitElement, html, css, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, query, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import type { CpSelectOption, CpTab } from '@communist-prometheus/cp-components';
 import '../editor/cp-markdown-editor.js';
+import type { CpMarkdownEditor } from '../editor/cp-markdown-editor.js';
 import {
   listArticles,
   readFile,
@@ -24,11 +25,15 @@ interface EditorBlock {
 /** The four block shapes the live-preview recognises from leading markers. */
 type ParsedKind = 'h1' | 'h2' | 'blockquote' | 'paragraph';
 
-/** A presentational formatting affordance in the editor toolbar. */
+/** A formatting affordance in the editor toolbar wired to a CodeMirror command. */
 interface FormatTool {
   readonly label: string;
   readonly glyph: string;
   readonly italic?: boolean;
+  /** Inline wrap markers (e.g. `**`/`**` for bold); mutually exclusive with prefix. */
+  readonly wrap?: readonly [string, string];
+  /** Line prefix (e.g. `## ` for a heading); mutually exclusive with wrap. */
+  readonly prefix?: string;
 }
 
 /** The lifecycle state of one publish stage surfaced in the dialog's `cp-steps`. */
@@ -49,11 +54,11 @@ const LANG_TABS: readonly CpTab[] = [
 
 /** Presentational toolbar affordances (block/inline formatting placeholders). */
 const FORMAT_TOOLS: readonly FormatTool[] = [
-  { label: 'Заголовок', glyph: 'H' },
-  { label: 'Жирный', glyph: 'B' },
-  { label: 'Курсив', glyph: 'I', italic: true },
-  { label: 'Цитата', glyph: '„' },
-  { label: 'Список', glyph: '•' },
+  { label: 'Заголовок', glyph: 'H', prefix: '## ' },
+  { label: 'Жирный', glyph: 'B', wrap: ['**', '**'] },
+  { label: 'Курсив', glyph: 'I', italic: true, wrap: ['_', '_'] },
+  { label: 'Цитата', glyph: '„', prefix: '> ' },
+  { label: 'Список', glyph: '•', prefix: '- ' },
 ];
 
 /** Frontmatter «Тема» options; the empty value keeps the field incomplete. */
@@ -726,6 +731,22 @@ export class ScreenEditor extends LitElement {
     }));
   }
 
+  /** The live markdown editor, so the toolbar can drive CodeMirror commands. */
+  @query('cp-markdown-editor') private bodyEditor?: CpMarkdownEditor;
+
+  /** Applies a toolbar tool (inline wrap or line prefix) to the editor selection. */
+  private applyFormat = (tool: FormatTool): void => {
+    const editor = this.bodyEditor;
+    if (editor === undefined) return;
+    if (tool.wrap !== undefined) editor.wrapSelection(tool.wrap[0], tool.wrap[1]);
+    else if (tool.prefix !== undefined) editor.prefixLines(tool.prefix);
+  };
+
+  /** Inserts a markdown image placeholder at the caret. */
+  private insertImage = (): void => {
+    this.bodyEditor?.insertText('![](/assets/image.png)');
+  };
+
   private renderToolbar(): TemplateResult {
     return html`
       <div class="toolbar" role="toolbar" aria-label="Форматирование материала">
@@ -736,13 +757,20 @@ export class ScreenEditor extends LitElement {
               type="button"
               title=${tool.label}
               aria-label=${tool.label}
+              @click=${() => this.applyFormat(tool)}
             >
               ${tool.glyph}
             </button>
           `,
         )}
         <span class="sep" aria-hidden="true"></span>
-        <button class="t" type="button" title="Изображение" aria-label="Вставить изображение">
+        <button
+          class="t"
+          type="button"
+          title="Изображение"
+          aria-label="Вставить изображение"
+          @click=${this.insertImage}
+        >
           <cp-icon name="upload" size="18"></cp-icon>
         </button>
         <span class="spacer"></span>

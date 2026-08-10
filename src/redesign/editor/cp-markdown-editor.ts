@@ -5,6 +5,7 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { livePreview } from './live-preview.js';
+import { insertTextSpec, prefixLinesSpec, wrapSelectionSpec } from './editor-commands.js';
 
 /**
  * `cp-markdown-editor` — a self-contained Obsidian-style live-preview markdown
@@ -121,6 +122,30 @@ export class CpMarkdownEditor extends LitElement {
   /** Focuses the editor (used when opening a document). */
   focus(): void {
     this.view?.focus();
+  }
+
+  /** Wraps the selection with `before`/`after` (bold, italic). */
+  wrapSelection(before: string, after: string): void {
+    const view = this.view;
+    if (view === undefined) return;
+    view.dispatch(wrapSelectionSpec(view.state, before, after));
+    view.focus();
+  }
+
+  /** Prepends `prefix` to every selected line (heading, quote, list). */
+  prefixLines(prefix: string): void {
+    const view = this.view;
+    if (view === undefined) return;
+    view.dispatch(prefixLinesSpec(view.state, prefix));
+    view.focus();
+  }
+
+  /** Inserts `text` at the caret, replacing any selection (image link). */
+  insertText(text: string): void {
+    const view = this.view;
+    if (view === undefined) return;
+    view.dispatch(insertTextSpec(view.state, text));
+    view.focus();
   }
 
   override render() {
