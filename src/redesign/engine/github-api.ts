@@ -198,7 +198,12 @@ export const listDeployRuns = async (
   branch = import.meta.env.VITE_GITHUB_BRANCH ?? 'develop',
   repo = 'public-website',
 ): Promise<readonly DeployRun[]> => {
-  const data = await get(`/repos/${OWNER}/${repo}/actions/runs?branch=${branch}&per_page=30`);
+  // Scope to the deploy workflow: since the monorepo migration the site repo
+  // also runs sync-content / sync-to-content, and an unscoped runs query would
+  // surface those as phantom "deploy" rows with the wrong status.
+  const data = await get(
+    `/repos/${OWNER}/${repo}/actions/workflows/deploy.yml/runs?branch=${branch}&per_page=30`,
+  );
   const runs = field(data, 'workflow_runs');
   return Array.isArray(runs)
     ? runs.map(toDeployRun).filter((r): r is DeployRun => r !== undefined)
