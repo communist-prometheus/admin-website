@@ -19,13 +19,56 @@ export interface TreeEntry {
 const isTreeEntry = (x: unknown): x is TreeEntry =>
   typeof x === 'object' && x !== null && 'name' in x && 'path' in x;
 
+/*
+ * Read cache: the tree + file reads are the same across every screen and a
+ * navigation re-mounts screens that each re-`load()`. Cache only SUCCESSFUL,
+ * non-empty reads keyed by path so a pre-engine-ready empty read never sticks
+ * (those aren't cached) and screens share results between navigations. Any
+ * write (stage/commit) clears the cache, so an edit is never served stale.
+ */
+const fileCache = new Map<string, string>();
+const treeCache = new Map<string, readonly TreeEntry[]>();
+
+/** Drops all cached reads — called on every write so edits are never stale. */
+export const clearContentCache = (): void => {
+  fileCache.clear();
+  treeCache.clear();
+};
+
+/**
+ * Maps `items` through `fn` with at most `limit` in flight — bounds the
+ * `readFile` fan-out (a repo with N articles otherwise opens N parallel reads).
+ * Preserves input order in the result.
+ */
+const mapPool = async <T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<readonly R[]> => {
+  const results = new Array<R>(items.length);
+  const queue = items.map((item, index) => ({ item, index }));
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const job = queue.shift();
+      if (job === undefined) return;
+      results[job.index] = await fn(job.item, job.index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+};
+
 /** Lists a directory in the cloned content repo. */
 export const listTree = async (path = ''): Promise<readonly TreeEntry[]> => {
+  const cached = treeCache.get(path);
+  if (cached !== undefined) return cached;
   try {
     const response = await swFetch(`/api/github/tree?path=${encodeURIComponent(path)}`);
     const data: unknown = await response.json();
     const tree = typeof data === 'object' && data !== null && 'tree' in data ? data.tree : undefined;
-    return Array.isArray(tree) ? tree.filter(isTreeEntry) : [];
+    const entries = Array.isArray(tree) ? tree.filter(isTreeEntry) : [];
+    if (entries.length > 0) treeCache.set(path, entries);
+    return entries;
   } catch {
     return [];
   }
@@ -33,6 +76,7 @@ export const listTree = async (path = ''): Promise<readonly TreeEntry[]> => {
 
 /** Stages a file write in the local repo (no commit yet). Returns success. */
 export const stageFile = async (path: string, content: string): Promise<boolean> => {
+  clearContentCache();
   try {
     const response = await swFetch('/api/github/file/stage', {
       method: 'PUT',
@@ -65,6 +109,7 @@ export const commitAndPush = async (message: string): Promise<{ ok: boolean; sha
 
 /** Stages a binary asset (base64-encoded) in the local repo (no commit yet). */
 export const stageAsset = async (path: string, base64: string): Promise<boolean> => {
+  clearContentCache();
   try {
     const response = await swFetch('/api/github/asset', {
       method: 'POST',
@@ -183,28 +228,38 @@ export const createMagazineIssue = async (
     imagePath = `./assets/cover.${issue.lang}.png`;
   }
 
-  const index = buildIssueIndexMarkdown({ ...issue, imagePath });
-  const indexOk = await stageFile(`${dir}/index.${issue.lang}.md`, index);
-  if (!indexOk) return { ok: false, error: 'Не удалось создать index номера (проверьте поля).' };
-
+  // Back-link only the articles that actually have this issue's language; an
+  // article missing the language can't be linked and must not appear in the TOC
+  // nor inflate the commit count (QA #17).
+  const linked: string[] = [];
   for (const slug of issue.articles) {
     const path = `blog/${slug}/index.${issue.lang}.md`;
     const md = await readFile(path);
     if (md === undefined || md === '') continue;
     await stageFile(path, upsertFrontmatterField(md, 'magazine', issue.slug));
+    linked.push(slug);
   }
 
-  return commitAndPush(`magazine: добавлен номер ${issue.slug} (${issue.articles.length} статей)`);
+  const index = buildIssueIndexMarkdown({ ...issue, articles: linked, imagePath });
+  const indexOk = await stageFile(`${dir}/index.${issue.lang}.md`, index);
+  if (!indexOk) return { ok: false, error: 'Не удалось создать index номера (проверьте поля).' };
+
+  return commitAndPush(`magazine: добавлен номер ${issue.slug} (${linked.length} статей)`);
 };
 
 /** Reads a file's text content from the cloned content repo. */
 export const readFile = async (path: string): Promise<string | undefined> => {
+  const cached = fileCache.get(path);
+  if (cached !== undefined) return cached;
   try {
     const response = await swFetch(`/api/github/file?path=${encodeURIComponent(path)}`);
     const data: unknown = await response.json();
-    return typeof data === 'object' && data !== null && 'content' in data
-      ? String(data.content)
-      : undefined;
+    const content =
+      typeof data === 'object' && data !== null && 'content' in data
+        ? String(data.content)
+        : undefined;
+    if (content !== undefined) fileCache.set(path, content);
+    return content;
   } catch {
     return undefined;
   }
@@ -286,10 +341,9 @@ export const listArticles = async (): Promise<readonly ArticleSummary[]> => {
       bySlug.set(slug, set);
     }
   }
-  const summaries = await Promise.all(
-    [...bySlug.entries()].map(([slug, langs]) => summariseArticle(slug, [...langs])),
+  return mapPool([...bySlug.entries()], 6, ([slug, langs]) =>
+    summariseArticle(slug, [...langs]),
   );
-  return summaries;
 };
 
 const preferredLang = (langs: readonly string[]): string =>
