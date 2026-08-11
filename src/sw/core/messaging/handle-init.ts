@@ -10,18 +10,6 @@ import { workerState } from '../../state/state'
  */
 let pending: Promise<void> | undefined
 
-/**
- * The per-session capability nonce, minted once per SW lifetime and returned
- * to every initiating client. Reused across re-inits so a self-healing client
- * keeps a valid nonce; regenerated only after the SW is evicted (state reset)
- * or a logout clears it.
- * @returns The current capability nonce
- */
-const ensureNonce = (): string => {
-  workerState.nonce ??= crypto.randomUUID()
-  return workerState.nonce
-}
-
 const startInit = (
   config: SWGitConfig,
   reply: (data: unknown) => void
@@ -30,7 +18,6 @@ const startInit = (
   // the account that pushes (see identity.ts) — even if the client passed
   // a stale authorName/authorEmail.
   workerState.config = config
-  const nonce = ensureNonce()
   log('info', 'auth', 'Config received', { owner: config.owner })
 
   if (!pending) {
@@ -42,7 +29,7 @@ const startInit = (
   }
 
   pending
-    .then(() => reply({ ok: true, state: 'ready', nonce }))
+    .then(() => reply({ ok: true, state: 'ready' }))
     .catch(err => {
       const msg = err instanceof Error ? err.message : String(err)
       log('error', 'git', `Init failed: ${msg}`)

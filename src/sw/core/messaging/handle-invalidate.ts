@@ -17,7 +17,5 @@ export const handleInvalidate = (reply: (data: unknown) => void): void => {
   workerState.lastSync = undefined
   workerState.commitSha = undefined
   workerState.config = undefined
-  // Drop the capability nonce so the next login mints a fresh one.
-  workerState.nonce = undefined
   void deleteGitDatabase().then(() => reply({ ok: true }))
 }

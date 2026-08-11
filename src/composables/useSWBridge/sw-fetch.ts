@@ -3,7 +3,6 @@ import { normalizeHeaders } from '@/validation/normalize-headers'
 import { serializeBody } from '@/validation/serialize-body'
 import { fetchWithReinit } from './fetch-with-reinit'
 import { getActiveWorker } from './get-active-worker'
-import { withNonce, withNonceHeaders } from './nonce-headers'
 import { postWithTimeout } from './post-with-timeout'
 import { swReady } from './sw-ready'
 
@@ -22,7 +21,7 @@ const viaMessage = async (
     type: 'SW_FETCH',
     url,
     method: init?.method,
-    headers: withNonceHeaders(normalizeHeaders(init?.headers)),
+    headers: normalizeHeaders(init?.headers),
     body: serializeBody(init?.body),
   })
   return new Response(d.body, {
@@ -43,7 +42,7 @@ const transport = (
   init?: RequestInit
 ): Promise<Response> =>
   navigator.serviceWorker.controller
-    ? fetch(input, withNonce(init))
+    ? fetch(input, init)
     : viaMessage(String(input), init)
 
 /**

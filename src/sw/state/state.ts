@@ -17,15 +17,6 @@ interface WorkerState {
    * set widens to whatever the content repo declares (uk/pl/bl/…).
    */
   supportedLangs: ReadonlySet<string>
-  /**
-   * Per-session capability nonce (confused-deputy guard). Issued at
-   * `/api/sw/init` and returned to the initiating client; every
-   * `/api/github/*` request (native fetch or SW_FETCH message) must echo it
-   * back in `X-SW-Nonce`, so an injected same-origin script that never saw the
-   * init response cannot borrow the ambient token to read the repo or push.
-   * Undefined until the first init; cleared on invalidate/logout.
-   */
-  nonce: string | undefined
 }
 
 const DEFAULT_LANGS: ReadonlySet<string> = new Set(['en', 'ru', 'it', 'es'])
@@ -40,5 +31,4 @@ export const workerState: WorkerState = {
   lastSync: undefined,
   commitSha: undefined,
   supportedLangs: DEFAULT_LANGS,
-  nonce: undefined,
 }
