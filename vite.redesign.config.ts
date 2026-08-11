@@ -30,6 +30,9 @@ export default defineConfig({
   build: {
     outDir: 'dist/client',
     emptyOutDir: false,
+    // Flag oversized chunks so a regression that pulls a heavy module (e.g. all
+    // of CodeMirror) back into the entry is visible in the build log.
+    chunkSizeWarningLimit: 400,
     rollupOptions: {
       input: resolve(__dirname, 'redesign.html'),
       output: {

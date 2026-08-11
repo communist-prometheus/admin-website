@@ -1,0 +1,42 @@
+/*
+ * Theme-toggle circular reveal — ported from the public site
+ * (public-website/src/styles/theme.css) so the admin's theme switch matches
+ * comprom.org exactly: a clip-path circle grows from the click point across
+ * the viewport. Driven by --x/--y/--r set on <html> by the toggle handler.
+ * Global (document-level) — view transitions can't live in Shadow DOM.
+ */
+html:active-view-transition-type(theme) {
+  view-transition-name: root;
+}
+
+html:active-view-transition-type(theme)::view-transition-group(root),
+html:active-view-transition-type(theme)::view-transition-image-pair(root) {
+  isolation: isolate;
+}
+
+html:active-view-transition-type(theme)::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  z-index: 1;
+}
+
+html:active-view-transition-type(theme)::view-transition-new(root) {
+  animation: reveal 0.5s ease-in-out forwards;
+  mix-blend-mode: normal;
+  z-index: 2;
+}
+
+@keyframes reveal {
+  from {
+    clip-path: circle(0 at var(--x, 50%) var(--y, 50%));
+  }
+  to {
+    clip-path: circle(var(--r, 100vmax) at var(--x, 50%) var(--y, 50%));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:active-view-transition-type(theme)::view-transition-new(root) {
+    animation: none;
+  }
+}

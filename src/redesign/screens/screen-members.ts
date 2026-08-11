@@ -3,6 +3,8 @@ import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import type { CpTableColumn, CpTableRow } from '@communist-prometheus/cp-components';
 import { listMembers, type Member } from '../engine/github-api.js';
+import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /** Semantic tag tones used for member roles (mirrors cp-tag's tone union). */
 type RoleTone = 'success' | 'info' | 'neutral';
@@ -77,23 +79,25 @@ export class ScreenMembers extends LitElement {
   /** Whether the real read has completed. */
   @state() private loaded = false;
 
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+    // Re-read once the engine finishes booting (first-load race, QA #12).
+    this.disposeReady = onEngineReady(() => void this.load());
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.disposeReady();
   }
 
   private async load(): Promise<void> {
     const members = await listMembers();
     this.members = members;
     this.loaded = true;
-  }
-
-  private sample(): readonly Member[] {
-    return [
-      { login: 'red-october', role: 'Владелец', avatar: '' },
-      { login: 'praxis-editor', role: 'Редактор', avatar: '' },
-      { login: 'observer-13', role: 'Наблюдатель', avatar: '' },
-    ];
   }
 
   private static readonly columns: readonly CpTableColumn[] = [
@@ -109,10 +113,17 @@ export class ScreenMembers extends LitElement {
   }
 
   private loginCell(member: Member): TemplateResult {
-    return html`<span class="login">
+    // The cell renders inside cp-table's shadow root, so this component's
+    // `.login`/`.avatar` styles never reach it — a GitHub identicon then paints
+    // at full size (the giant green blocks). Size it with inline styles, which
+    // cross the shadow boundary.
+    const avatar =
+      'display:inline-block;width:1.5rem;height:1.5rem;border-radius:50%;object-fit:cover;vertical-align:middle;flex:none';
+    const wrap = 'display:inline-flex;align-items:center;gap:0.5rem';
+    return html`<span style=${wrap}>
       ${member.avatar === ''
         ? nothing
-        : html`<img class="avatar" src=${member.avatar} alt="" loading="lazy" />`}
+        : html`<img style=${avatar} src=${member.avatar} alt="" loading="lazy" />`}
       <b>${member.login}</b>
     </span>`;
   }
@@ -127,32 +138,31 @@ export class ScreenMembers extends LitElement {
 
   override render() {
     const live = this.members.length > 0;
-    const list = live ? this.members : this.sample();
-    const rows = list.map((member) => this.toRow(member));
+    const rows = this.members.map((member) => this.toRow(member));
     return html`
       <div class="head">
         <p class="eyebrow">Сообщество · роли и доступ</p>
         <h1 tabindex="-1">Участники</h1>
-        <cp-button variant="primary" arrow>Пригласить</cp-button>
-        ${live
-          ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
-          : this.loaded
-            ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
-            : nothing}
+        <cp-button variant="primary" disabled title="Приглашение участников появится позже">
+          Пригласить
+        </cp-button>
       </div>
-      <cp-table
-        rowKey="login"
-        caption="Участники репозитория"
-        .columns=${[...ScreenMembers.columns]}
-        .rows=${rows}
-      ></cp-table>
-      <p class="note">
-        ${live
-          ? `Прочитано из GitHub — ${list.length} ${
-              list.length === 1 ? 'участник' : 'участников'
-            } реального репозитория.`
-          : 'Запустите dev:token с токеном, дающим доступ к коллабораторам, чтобы увидеть реальных участников.'}
-      </p>
+      ${live
+        ? html`<div style="max-width:100%;overflow-x:auto">
+            <cp-table
+              rowKey="login"
+              caption="Участники репозитория"
+              .columns=${[...ScreenMembers.columns]}
+              .rows=${rows}
+            ></cp-table>
+          </div>`
+        : html`<p class="note">
+            ${classifyEmpty(this.loaded) === 'loading'
+              ? 'Загружаем участников…'
+              : classifyEmpty(this.loaded) === 'signed-out'
+                ? 'Войдите через GitHub токеном с доступом к коллабораторам репозитория, чтобы увидеть участников.'
+                : 'Участники не найдены: нужен токен с доступом к коллабораторам репозитория.'}
+          </p>`}
     `;
   }
 }

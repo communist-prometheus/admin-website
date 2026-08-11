@@ -3,6 +3,8 @@ import { customElement, state } from 'lit/decorators.js';
 import type { CpTab, CpTableColumn, CpTableRow } from '@communist-prometheus/cp-components';
 import '@communist-prometheus/cp-components';
 import { listTickets, type Ticket } from '../engine/github-api.js';
+import { onEngineReady } from '../engine/engine-ready.js';
+import { classifyEmpty } from '../engine/load-state.js';
 
 /** The active list filter (`all` shows every ticket). */
 type TicketFilter = 'all' | 'bug' | 'story';
@@ -51,58 +53,6 @@ const toRow = (ticket: Ticket): CpTableRow => ({
   author: ticket.author,
   date: ticket.date,
 });
-
-/** Representative backlog for the local shell preview (no live issues). */
-const SAMPLE: readonly Ticket[] = [
-  {
-    number: 341,
-    title: 'Битые ссылки в архиве журнала за 2024 год',
-    state: 'open',
-    author: 'andswew',
-    date: '2026-07-29',
-    kind: 'bug',
-  },
-  {
-    number: 338,
-    title: 'Ошибка 500 при загрузке FB2 больше 10 МБ',
-    state: 'open',
-    author: 'undeadliner',
-    date: '2026-07-27',
-    kind: 'bug',
-  },
-  {
-    number: 335,
-    title: 'Планировщик отложенной публикации рассылки',
-    state: 'open',
-    author: 'undeadliner',
-    date: '2026-07-25',
-    kind: 'story',
-  },
-  {
-    number: 330,
-    title: 'Автосохранение черновиков каждые 30 секунд',
-    state: 'open',
-    author: 'newcomer',
-    date: '2026-07-18',
-    kind: 'story',
-  },
-  {
-    number: 322,
-    title: 'Тёмная тема: контраст плашек тем ниже AAA',
-    state: 'closed',
-    author: 'andswew',
-    date: '2026-07-21',
-    kind: 'bug',
-  },
-  {
-    number: 318,
-    title: 'Экспорт статьи в PDF для печати',
-    state: 'closed',
-    author: 'andswew',
-    date: '2026-07-10',
-    kind: 'other',
-  },
-];
 
 /**
  * Ticket tracker screen (tickets spec: tasks and bug-reports). When the dev
@@ -188,9 +138,19 @@ export class ScreenTickets extends LitElement {
   /** Active ticket-kind filter; `all` shows every ticket. */
   @state() private filter: TicketFilter = 'all';
 
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+    // Re-read once the engine finishes booting (first-load race, QA #12).
+    this.disposeReady = onEngineReady(() => void this.load());
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.disposeReady();
   }
 
   private async load(): Promise<void> {
@@ -213,39 +173,41 @@ export class ScreenTickets extends LitElement {
 
   override render() {
     const live = this.tickets.length > 0;
-    const source = live ? this.tickets : SAMPLE;
-    const visible = this.visible(source);
+    const visible = this.visible(this.tickets);
     const rows = visible.map(toRow);
     return html`
       <header class="head">
-        <p class="eyebrow">Задачи · ${visible.length} на экране</p>
+        <p class="eyebrow">Задачи${live ? html` · ${visible.length} на экране` : nothing}</p>
         <h1 tabindex="-1">Тикеты</h1>
-        <cp-button>
+        <cp-button disabled title="Создание тикетов появится позже">
           <cp-icon name="plus" size="18"></cp-icon>
           Новый тикет
         </cp-button>
-        ${live
-          ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
-          : this.loaded
-            ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
-            : nothing}
       </header>
 
-      <div class="toolbar">
-        <div class="tabs-scroll">
-          <cp-tabs
-            .tabs=${FILTERS}
-            active=${this.filter}
-            @cp-tab-change=${this.onFilterChange}
-          ></cp-tabs>
-        </div>
-      </div>
+      ${live
+        ? html`
+            <div class="toolbar">
+              <div class="tabs-scroll">
+                <cp-tabs
+                  .tabs=${FILTERS}
+                  active=${this.filter}
+                  @cp-tab-change=${this.onFilterChange}
+                ></cp-tabs>
+              </div>
+            </div>
 
-      <cp-table
-        caption="Тикеты и баг-репорты"
-        .columns=${COLUMNS}
-        .rows=${rows}
-      ></cp-table>
+            <div style="max-width:100%;overflow-x:auto">
+              <cp-table caption="Тикеты и баг-репорты" .columns=${COLUMNS} .rows=${rows}></cp-table>
+            </div>
+          `
+        : html`<p class="eyebrow">
+            ${classifyEmpty(this.loaded) === 'loading'
+              ? 'Загружаем тикеты…'
+              : classifyEmpty(this.loaded) === 'signed-out'
+                ? 'Войдите через GitHub, чтобы увидеть тикеты и баг-репорты репозитория.'
+                : 'Тикеты не найдены или не удалось их загрузить.'}
+          </p>`}
     `;
   }
 }

@@ -104,6 +104,7 @@
         "vite.sw.config.ts",
         "vite.redesign.config.ts",
         "vitest.config.ts",
+        "vitest.redesign.config.ts",
         "playwright.config.ts",
         "playwright.config.prod.ts",
         "playwright.config.realmode.ts",

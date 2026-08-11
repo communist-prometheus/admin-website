@@ -1,9 +1,17 @@
 import { LitElement, html, css, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, query, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import type { CpSelectOption, CpTab } from '@communist-prometheus/cp-components';
-import { listArticles, readFile, stageFile, commitAndPush } from '../engine/content.js';
+import type { CpMarkdownEditor } from '../editor/cp-markdown-editor.js';
+import {
+  listArticles,
+  readFile,
+  stageFile,
+  commitAndPush,
+  upsertFrontmatterField,
+} from '../engine/content.js';
+import { onEngineReady } from '../engine/engine-ready.js';
 
 /** One editable article block: a stable id plus its raw markdown source line(s).
  *  The rendered typography is derived from the raw text on every render, so the
@@ -16,11 +24,15 @@ interface EditorBlock {
 /** The four block shapes the live-preview recognises from leading markers. */
 type ParsedKind = 'h1' | 'h2' | 'blockquote' | 'paragraph';
 
-/** A presentational formatting affordance in the editor toolbar. */
+/** A formatting affordance in the editor toolbar wired to a CodeMirror command. */
 interface FormatTool {
   readonly label: string;
   readonly glyph: string;
   readonly italic?: boolean;
+  /** Inline wrap markers (e.g. `**`/`**` for bold); mutually exclusive with prefix. */
+  readonly wrap?: readonly [string, string];
+  /** Line prefix (e.g. `## ` for a heading); mutually exclusive with wrap. */
+  readonly prefix?: string;
 }
 
 /** The lifecycle state of one publish stage surfaced in the dialog's `cp-steps`. */
@@ -41,11 +53,11 @@ const LANG_TABS: readonly CpTab[] = [
 
 /** Presentational toolbar affordances (block/inline formatting placeholders). */
 const FORMAT_TOOLS: readonly FormatTool[] = [
-  { label: 'Заголовок', glyph: 'H' },
-  { label: 'Жирный', glyph: 'B' },
-  { label: 'Курсив', glyph: 'I', italic: true },
-  { label: 'Цитата', glyph: '„' },
-  { label: 'Список', glyph: '•' },
+  { label: 'Заголовок', glyph: 'H', prefix: '## ' },
+  { label: 'Жирный', glyph: 'B', wrap: ['**', '**'] },
+  { label: 'Курсив', glyph: 'I', italic: true, wrap: ['_', '_'] },
+  { label: 'Цитата', glyph: '„', prefix: '> ' },
+  { label: 'Список', glyph: '•', prefix: '- ' },
 ];
 
 /** Frontmatter «Тема» options; the empty value keeps the field incomplete. */
@@ -65,31 +77,6 @@ const RUBRIC_OPTIONS: readonly CpSelectOption[] = [
 
 /** The real publish pipeline stages, mapped to `stageFile` + `commitAndPush`. */
 const REAL_STAGES: readonly string[] = ['Стейдж', 'Коммит', 'Пуш'];
-
-/**
- * Demo article used when the git engine is off (no `dev:token`): a complete
- * markdown document (frontmatter + body) so the live-preview still renders and
- * the publish dialog can simulate the staged pipeline without any real call.
- */
-const DEMO_MARKDOWN = `---
-title: "Иллюзия социализма и реальность капитала в СССР"
-topic: theory
-pubDate: 2026-07-24
-draft: true
----
-
-Отношение к средствам производства определяет класс. Но на макроуровне динамика производства неизбежно ведёт к концентрации богатства и обнажает пределы «планового» хозяйства.
-
-Хотя уровень дохода — необходимый критерий классовой принадлежности **больших социальных групп**, его нельзя напрямую применять к отдельному индивиду: класс определяется местом в системе производства, а не размером зарплаты.
-
-## Государство как совокупный капиталист
-
-Национализация средств производства не отменяет капитала как отношения. Пока сохраняются наёмный труд, товарная форма продукта и накопление ради накопления, «общенародная собственность» остаётся коллективной собственностью бюрократии.
-
-> «Накопление богатства на одном полюсе есть в то же время накопление нищеты, муки труда и моральной деградации на противоположном полюсе».
-
-Именно поэтому мы публикуем этот перевод: он принадлежит к теоретическому наследию марксизма[^24], а не к его апологетическим подделкам.
-`;
 
 /** Reads a single frontmatter scalar (`key: value`) from a text block. */
 const frontmatterValue = (text: string, key: string): string | undefined => {
@@ -225,7 +212,8 @@ export class ScreenEditor extends LitElement {
 
     .toolbar {
       position: sticky;
-      top: 0;
+      /* Stick just below the app header instead of colliding with it. */
+      top: var(--app-header-h, 3.75rem);
       z-index: 5;
       display: flex;
       flex-wrap: wrap;
@@ -426,8 +414,8 @@ export class ScreenEditor extends LitElement {
   /** Frontmatter `title`, shown in the gradient H1. */
   @state() private articleTitle = '';
 
-  /** The article body as editable blocks — the in-memory source of truth. */
-  @state() private blocks: readonly EditorBlock[] = [];
+  /** The article body markdown — the in-memory source of truth for the editor. */
+  @state() private body = '';
 
   /** Id of the block currently revealing/editing its raw markdown; '' reveals none. */
   @state() private focusedBlock = '';
@@ -483,29 +471,97 @@ export class ScreenEditor extends LitElement {
   /** Set when a user click should move focus into the freshly-rendered textarea. */
   private pendingFocus = false;
 
+  /** Slug currently loaded, to detect same-screen route changes. */
+  private loadedSlug = '';
+
+  /**
+   * In-memory edits per language for the current article. Switching the language
+   * tab stashes the active language's edited markdown here so switching back
+   * restores unsaved work instead of reloading the on-disk version (QA #8).
+   * Cleared whenever a different article loads.
+   */
+  private readonly langBuffers = new Map<string, string>();
+
+  /** Unsubscribes the engine-ready listener on disconnect. */
+  private disposeReady: () => void = () => {};
+
   override connectedCallback(): void {
     super.connectedCallback();
+    // Lazy-load the CodeMirror editor only when the editor screen mounts, so all
+    // of CM6 stays out of the initial bundle. LitElement preserves the `.value`
+    // binding across the element's upgrade, so no ready-gate is needed.
+    void import('../editor/cp-markdown-editor.js');
+    this.loadedSlug = this.routeSlug();
     void this.load();
+    globalThis.addEventListener('hashchange', this.onHashChange);
+    // First-load race (QA #12): if the engine was still cloning the repo, our
+    // first read found no article. Re-read when it is ready — but never clobber
+    // an intentional new draft or an already-loaded article.
+    this.disposeReady = onEngineReady(() => {
+      if (this.slug === '' && this.routeSlug() !== 'new') void this.load();
+    });
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    globalThis.removeEventListener('hashchange', this.onHashChange);
+    this.disposeReady();
+  }
+
+  // Re-load when the editor stays mounted but the requested slug changes
+  // (back/forward, or opening another article without leaving the editor).
+  private onHashChange = (): void => {
+    const next = this.routeSlug();
+    if (next !== this.loadedSlug && window.location.hash.startsWith('#/editor')) {
+      this.loadedSlug = next;
+      void this.load();
+    }
+  };
+
+  /** Slug requested via the route (`#/editor/<slug>`), '' for the default. */
+  private routeSlug(): string {
+    return window.location.hash.split('/')[2] ?? '';
   }
 
   private async load(): Promise<void> {
+    // A fresh article invalidates any per-language edits from the previous one.
+    this.langBuffers.clear();
     const articles = await listArticles();
-    const first = articles.at(0);
-    if (first !== undefined) {
-      const lang = first.languages.includes('ru') ? 'ru' : first.languages.at(0) ?? 'ru';
-      const path = `blog/${first.slug}/index.${lang}.md`;
+    // Open the article the route names — clicking a card must open THAT article,
+    // not always the first one. `new` starts a blank document; a missing/unknown
+    // slug falls back to the first article.
+    const requested = this.routeSlug();
+    if (requested === 'new') {
+      this.startNewArticle();
+      this.loaded = true;
+      return;
+    }
+    const target =
+      (requested !== '' ? articles.find((a) => a.slug === requested) : undefined) ?? articles.at(0);
+    if (target !== undefined) {
+      const lang = target.languages.includes('ru') ? 'ru' : (target.languages.at(0) ?? 'ru');
+      const path = `blog/${target.slug}/index.${lang}.md`;
       const markdown = await readFile(path);
       if (markdown !== undefined && markdown.trim() !== '') {
-        this.slug = first.slug;
-        this.availableLangs = first.languages;
+        this.slug = target.slug;
+        this.availableLangs = target.languages;
         this.activeLang = lang === 'ru' || lang === 'en' || lang === 'it' ? lang : 'ru';
         this.applyMarkdown(markdown, path, true);
         this.loaded = true;
         return;
       }
     }
-    this.applyMarkdown(DEMO_MARKDOWN, '', false);
+    // No real article (signed out or empty repo): stay empty and prompt sign-in
+    // rather than loading a fabricated demo document.
     this.loaded = true;
+  }
+
+  /** Seeds a blank new-article document (real save-to-new-file is a follow-up). */
+  private startNewArticle(): void {
+    this.slug = '';
+    this.availableLangs = ['ru'];
+    this.activeLang = 'ru';
+    this.applyMarkdown('---\ntitle: ""\nlang: ru\ncategory: \npublished: false\n---\n\n', '', true);
   }
 
   private async loadLang(lang: string): Promise<void> {
@@ -518,22 +574,37 @@ export class ScreenEditor extends LitElement {
 
   private applyMarkdown(markdown: string, path: string, live: boolean): void {
     const parsed = parseArticle(markdown);
-    this.frontmatter = parsed.frontmatter;
+    const fm = parsed.frontmatter;
+    this.frontmatter = fm;
     this.articleTitle = parsed.title;
-    this.blocks = splitBlocks(parsed.body).map((raw, index) => ({ id: `blk-${index}`, raw }));
+    this.body = parsed.body;
     this.articlePath = path;
     this.live = live;
-    this.focusedBlock = '';
-    const date =
-      frontmatterValue(parsed.frontmatter, 'pubDate') ?? frontmatterValue(parsed.frontmatter, 'date');
+    // Seed the Свойства fields from the real frontmatter — "Тема" maps to the
+    // article's `category`. Without this seed the required-field check below
+    // always fired a false "заполните Тема" warning.
+    this.topic = frontmatterValue(fm, 'category') ?? frontmatterValue(fm, 'topic') ?? '';
+    const date = frontmatterValue(fm, 'pubDate') ?? frontmatterValue(fm, 'date');
     if (date !== undefined) this.pubDate = date;
-    this.published = frontmatterValue(parsed.frontmatter, 'draft') !== 'true';
+    const published = frontmatterValue(fm, 'published');
+    this.published =
+      published !== undefined ? published === 'true' : frontmatterValue(fm, 'draft') !== 'true';
   }
 
-  /** Reconstructs the full markdown document from the edited in-memory blocks. */
+  /**
+   * Reconstructs the full markdown from the frontmatter + edited body, writing
+   * the Свойства edits (category/pubDate/published) back into the frontmatter so
+   * a publish actually persists them instead of silently discarding them.
+   */
   private get editedMarkdown(): string {
-    const body = this.blocks.map((block) => block.raw).join('\n\n');
-    return this.frontmatter === '' ? `${body}\n` : `${this.frontmatter}\n\n${body}\n`;
+    let fm = this.frontmatter;
+    if (fm !== '') {
+      if (this.topic !== '') fm = upsertFrontmatterField(fm, 'category', this.topic);
+      if (this.pubDate !== '') fm = upsertFrontmatterField(fm, 'pubDate', this.pubDate);
+      fm = upsertFrontmatterField(fm, 'published', String(this.published));
+    }
+    const body = this.body.trimEnd();
+    return fm === '' ? `${body}\n` : `${fm}\n\n${body}\n`;
   }
 
   /** A required frontmatter field is empty. */
@@ -541,48 +612,30 @@ export class ScreenEditor extends LitElement {
     return this.topic === '';
   }
 
-  override updated(): void {
-    if (!this.pendingFocus) return;
-    this.pendingFocus = false;
-    const root = this.shadowRoot;
-    if (!root) return;
-    const textarea = root.querySelector('textarea.blk-edit');
-    if (textarea instanceof HTMLTextAreaElement) textarea.focus();
-  }
-
-  private onBlockReveal = (event: Event): void => {
-    const target = event.currentTarget;
-    if (target instanceof HTMLElement) {
-      const id = target.dataset.id;
-      if (id !== undefined) {
-        this.focusedBlock = id;
-        this.pendingFocus = true;
-      }
-    }
-  };
-
-  private onBlockInput = (event: Event): void => {
-    const target = event.target;
-    if (target instanceof HTMLTextAreaElement) {
-      const id = target.dataset.id;
-      if (id !== undefined) {
-        const value = target.value;
-        this.blocks = this.blocks.map((block) =>
-          block.id === id ? { id: block.id, raw: value } : block,
-        );
-      }
-    }
-  };
-
   private onLangChange = (event: Event): void => {
     if (event instanceof CustomEvent) {
       const id: unknown = event.detail?.id;
-      if (id === 'ru' || id === 'en' || id === 'it') {
+      if ((id === 'ru' || id === 'en' || id === 'it') && id !== this.activeLang) {
+        // Stash the outgoing language's edits before swapping the buffers in.
+        if (this.slug !== '') this.langBuffers.set(this.activeLang, this.editedMarkdown);
         this.activeLang = id;
-        if (this.live && this.slug !== '') void this.loadLang(id);
+        if (this.live && this.slug !== '') void this.switchLang(id);
       }
     }
   };
+
+  /**
+   * Shows the requested language: restores an in-memory edit if one exists,
+   * otherwise reads the on-disk version. Keeps unsaved work across tab switches.
+   */
+  private async switchLang(lang: string): Promise<void> {
+    const buffered = this.langBuffers.get(lang);
+    if (buffered !== undefined) {
+      this.applyMarkdown(buffered, `blog/${this.slug}/index.${lang}.md`, true);
+      return;
+    }
+    await this.loadLang(lang);
+  }
 
   private onTopicChange = (event: Event): void => {
     if (event instanceof CustomEvent) {
@@ -632,11 +685,14 @@ export class ScreenEditor extends LitElement {
     this.publishOpen = true;
     this.publishSha = '';
     this.publishError = '';
-    if (this.live && this.articlePath !== '') {
-      void this.runRealPublish();
-    } else {
-      this.runDemoPublish();
+    if (this.articlePath === '') {
+      // New-article documents have no target file yet — saving to a new
+      // blog/<slug>/index.<lang>.md is a separate flow, not a silent no-op.
+      this.stageStates = ['failed', 'pending', 'pending'];
+      this.publishError = 'Новый материал: сохранение в новый файл пока в разработке.';
+      return;
     }
+    void this.runRealPublish();
   };
 
   /** Runs the REAL git cycle: stage the edited markdown, then commit + push. */
@@ -663,23 +719,6 @@ export class ScreenEditor extends LitElement {
     this.publishBusy = false;
   }
 
-  /** Demo mode: simulate the staged pipeline with no real calls. */
-  private runDemoPublish(): void {
-    this.publishBusy = true;
-    this.simulateStage(0);
-  }
-
-  private simulateStage = (index: number): void => {
-    this.stageStates = REAL_STAGES.map((_label, position) =>
-      position < index ? 'done' : position === index ? 'running' : 'pending',
-    );
-    if (index >= REAL_STAGES.length) {
-      this.publishBusy = false;
-      return;
-    }
-    globalThis.setTimeout(() => this.simulateStage(index + 1), 900);
-  };
-
   private closePublish = (): void => {
     if (this.publishBusy) return;
     this.publishOpen = false;
@@ -695,63 +734,21 @@ export class ScreenEditor extends LitElement {
     }));
   }
 
-  private renderBlock(block: EditorBlock, index: number): TemplateResult {
-    if (block.id === this.focusedBlock) {
-      const rows = Math.max(2, block.raw.split('\n').length + 1);
-      return html`<textarea
-        class="blk-edit"
-        data-id=${block.id}
-        rows=${rows}
-        aria-label="Разметка блока"
-        .value=${block.raw}
-        @input=${this.onBlockInput}
-      ></textarea>`;
-    }
-    const kind = blockKind(block.raw);
-    const body = renderInline(stripMarker(block.raw, kind));
-    switch (kind) {
-      case 'h1':
-        return html`<h2
-          class="blk h1"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </h2>`;
-      case 'h2':
-        return html`<h2
-          class="blk"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </h2>`;
-      case 'blockquote':
-        return html`<blockquote
-          class="blk"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </blockquote>`;
-      default:
-        return html`<p
-          class="blk ${index === 0 ? 'lede' : ''}"
-          data-id=${block.id}
-          tabindex="0"
-          @focus=${this.onBlockReveal}
-          @click=${this.onBlockReveal}
-        >
-          ${body}
-        </p>`;
-    }
-  }
+  /** The live markdown editor, so the toolbar can drive CodeMirror commands. */
+  @query('cp-markdown-editor') private bodyEditor?: CpMarkdownEditor;
+
+  /** Applies a toolbar tool (inline wrap or line prefix) to the editor selection. */
+  private applyFormat = (tool: FormatTool): void => {
+    const editor = this.bodyEditor;
+    if (editor === undefined) return;
+    if (tool.wrap !== undefined) editor.wrapSelection(tool.wrap[0], tool.wrap[1]);
+    else if (tool.prefix !== undefined) editor.prefixLines(tool.prefix);
+  };
+
+  /** Inserts a markdown image placeholder at the caret. */
+  private insertImage = (): void => {
+    this.bodyEditor?.insertText('![](/assets/image.png)');
+  };
 
   private renderToolbar(): TemplateResult {
     return html`
@@ -763,13 +760,20 @@ export class ScreenEditor extends LitElement {
               type="button"
               title=${tool.label}
               aria-label=${tool.label}
+              @click=${() => this.applyFormat(tool)}
             >
               ${tool.glyph}
             </button>
           `,
         )}
         <span class="sep" aria-hidden="true"></span>
-        <button class="t" type="button" title="Изображение" aria-label="Вставить изображение">
+        <button
+          class="t"
+          type="button"
+          title="Изображение"
+          aria-label="Вставить изображение"
+          @click=${this.insertImage}
+        >
           <cp-icon name="upload" size="18"></cp-icon>
         </button>
         <span class="spacer"></span>
@@ -834,11 +838,7 @@ export class ScreenEditor extends LitElement {
       >`;
     }
     return html`<p class="dialog-note">
-      ${this.live
-        ? html`Файл <code>${this.articlePath}</code> будет застейджен, закоммичен и запушен через
-            git-движок.`
-        : html`Демо-режим: шаги имитируются без реальных вызовов. Запустите dev:token с токеном,
-            чтобы публиковать по-настоящему.`}
+      Файл <code>${this.articlePath}</code> будет застейджен, закоммичен и запушен через git-движок.
     </p>`;
   }
 
@@ -864,18 +864,29 @@ export class ScreenEditor extends LitElement {
   }
 
   override render(): TemplateResult {
+    if (!this.live) {
+      return html`
+        <article class="ed">
+          <div class="head">
+            <p class="eyebrow">Контент · редактор</p>
+            <h1 class="title" tabindex="-1">Редактор</h1>
+          </div>
+          <p class="hint">
+            ${this.loaded
+              ? 'Войдите через GitHub, чтобы открыть материалы репозитория для правки.'
+              : 'Загружаем материал…'}
+          </p>
+        </article>
+      `;
+    }
     return html`
       <article class="ed">
         <div class="head">
-          <p class="eyebrow">Контент · ${this.live ? this.slug : 'демо-материал'} · черновик</p>
+          <p class="eyebrow">Контент · ${this.slug} · черновик</p>
           <h1 class="title" tabindex="-1">
             ${this.articleTitle === '' ? 'Без названия' : this.articleTitle}
           </h1>
-          ${this.live
-            ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
-            : this.loaded
-              ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
-              : nothing}
+          <cp-tag tone="success">данные из репозитория</cp-tag>
         </div>
         <cp-tabs
           .tabs=${LANG_TABS}
@@ -883,21 +894,25 @@ export class ScreenEditor extends LitElement {
           @cp-tab-change=${this.onLangChange}
         ></cp-tabs>
         ${this.renderToolbar()}
-        <div class="live">${this.blocks.map((block, index) => this.renderBlock(block, index))}</div>
+        <cp-markdown-editor
+          class="live"
+          .value=${this.body}
+          placeholder="Текст статьи в Markdown…"
+          @cp-change=${(event: CustomEvent<{ value: string }>) =>
+            (this.body = event.detail.value)}
+        ></cp-markdown-editor>
         <p class="hint">
-          Кликни в абзац — раскроется только он и покажет разметку
+          Живой предпросмотр: форматирование отрендерено сразу, а разметку
           <span class="kbd">#</span> <span class="kbd">**</span>
-          <span class="kbd">&gt;</span> <span class="kbd">[^24]</span>. Остальное — вёрстка статьи.
+          <span class="kbd">&gt;</span> видно только на строке с курсором.
         </p>
         <p class="save-note">
           <cp-icon name="warning" size="16"></cp-icon>
           <span class="draft">несохранённые правки</span>
           <span aria-hidden="true">·</span>
           <span>${this.activeLang}</span>
-          ${this.live
-            ? html`<span aria-hidden="true">·</span>
-                <span class="path">${this.articlePath}</span>`
-            : nothing}
+          <span aria-hidden="true">·</span>
+          <span class="path">${this.articlePath}</span>
         </p>
       </article>
       ${this.renderProps()}${this.renderPublishDialog()}
