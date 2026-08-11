@@ -144,6 +144,54 @@ export const upsertFrontmatterField = (markdown: string, key: string, value: str
   return `---\n${lines.join('\n')}${markdown.slice(end)}`;
 };
 
+/**
+ * Reads a frontmatter field that may be a YAML block scalar. An inline value
+ * (`key: text`) returns the unquoted text; a folded (`>` / `>-`) or literal
+ * (`|` / `|-`) block returns its indented continuation lines joined — folded
+ * with spaces, literal with newlines. Returns undefined when the key is absent.
+ * Needed because descriptions are stored as folded blocks that a naive
+ * single-line read would mangle to just the `>-` indicator.
+ */
+export const readFrontmatterField = (markdown: string, key: string): string | undefined => {
+  if (!markdown.startsWith('---')) return undefined;
+  const end = markdown.indexOf('\n---', 3);
+  const lines = (end < 0 ? markdown.slice(4) : markdown.slice(4, end)).split('\n');
+  const at = lines.findIndex((l) => l.startsWith(`${key}:`));
+  if (at < 0) return undefined;
+  const inline = lines[at].slice(key.length + 1).trim();
+  const block = inline.match(/^([|>])[+-]?$/);
+  if (!block) return inline.replace(/^["']|["']$/g, '');
+  const cont: string[] = [];
+  for (let i = at + 1; i < lines.length && /^\s/.test(lines[i]); i += 1) {
+    cont.push(lines[i].replace(/^\s+/, ''));
+  }
+  return block[1] === '>' ? cont.join(' ') : cont.join('\n');
+};
+
+/**
+ * Inserts or replaces a frontmatter field as a literal block scalar (`key: |-`),
+ * removing any prior continuation lines so replacing a block never orphans the
+ * old text. Used for prose fields (description) where inline quoting is fragile;
+ * pairs with {@link readFrontmatterField}. Pure — safe to unit test.
+ */
+export const upsertFrontmatterBlock = (markdown: string, key: string, value: string): string => {
+  const field = [`${key}: |-`, ...value.split('\n').map((l) => `  ${l}`)];
+  if (!markdown.startsWith('---')) return `---\n${field.join('\n')}\n---\n\n${markdown}`;
+  const end = markdown.indexOf('\n---', 3);
+  if (end < 0) return markdown;
+  const lines = markdown.slice(4, end).split('\n');
+  const at = lines.findIndex((l) => l.startsWith(`${key}:`));
+  if (at >= 0) {
+    let removeCount = 1;
+    for (let i = at + 1; i < lines.length && /^\s/.test(lines[i]); i += 1) removeCount += 1;
+    lines.splice(at, removeCount, ...field);
+  } else {
+    const langAt = lines.findIndex((l) => l.startsWith('lang:'));
+    lines.splice(langAt >= 0 ? langAt + 1 : lines.length, 0, ...field);
+  }
+  return `---\n${lines.join('\n')}${markdown.slice(end)}`;
+};
+
 /** Fields needed to render a magazine issue's `index.<lang>.md`. */
 export interface IssueIndexInput {
   readonly title: string;
