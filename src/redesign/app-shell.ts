@@ -295,6 +295,9 @@ export class AppShell extends LitElement {
       min-width: 0;
       padding: var(--spacing-lg) var(--spacing-md) var(--spacing-2xl);
       max-width: 60rem;
+      /* Safety net: no screen may push the page horizontally and clip content off
+         the left edge on mobile. clip (not hidden) keeps sticky toolbars working. */
+      overflow-x: clip;
     }
     /* main is focused programmatically on route change (for the aria-live
        announcement); it must not paint the browser focus ring, which framed the
