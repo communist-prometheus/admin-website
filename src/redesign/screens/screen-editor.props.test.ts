@@ -19,6 +19,10 @@ import type { ScreenEditor } from './screen-editor.ts';
 const ARTICLE =
   '---\ntitle: "T"\ncategory: programme\npubDate: 2026-04-30\npublished: true\n---\n\nBody\n';
 
+/** An article whose description is a folded (`>-`) multi-line block scalar. */
+const ARTICLE_BLOCK_DESC =
+  '---\ntitle: "T"\ndescription: >-\n  First sentence of the summary.\n  Second sentence.\ncategory: programme\npubDate: 2026-04-30\npublished: true\nlang: ru\n---\n\nBody\n';
+
 interface EditorInternals {
   slug: string;
   live: boolean;
@@ -32,15 +36,17 @@ interface EditorInternals {
   applyMarkdown: (markdown: string, path: string, live: boolean) => void;
 }
 
-const seededEditor = (): EditorInternals => {
+const editorFrom = (markdown: string, lang = 'en'): EditorInternals => {
   const el = document.createElement('screen-editor') as ScreenEditor;
   const priv = el as unknown as EditorInternals;
   priv.slug = 'x';
   priv.live = true;
-  priv.activeLang = 'en';
-  priv.applyMarkdown(ARTICLE, 'blog/x/index.en.md', true);
+  priv.activeLang = lang;
+  priv.applyMarkdown(markdown, `blog/x/index.${lang}.md`, true);
   return priv;
 };
+
+const seededEditor = (): EditorInternals => editorFrom(ARTICLE);
 
 describe('screen-editor properties write-back (QA #4)', () => {
   beforeEach(() => {
@@ -66,10 +72,28 @@ describe('screen-editor properties write-back (QA #4)', () => {
     expect(el.editedMarkdown).toContain('pubDate: 2026-09-09');
   });
 
-  it('writes an edited description back into the published frontmatter', () => {
+  it('writes an edited description back as a literal block scalar', () => {
     const el = seededEditor();
     el.description = 'a new summary';
-    expect(el.editedMarkdown).toContain('description: a new summary');
+    expect(el.editedMarkdown).toContain('description: |-\n  a new summary');
+  });
+
+  it('leaves an untouched folded-block description byte-identical (no orphaning)', () => {
+    const el = editorFrom(ARTICLE_BLOCK_DESC, 'ru');
+    // The full folded text is seeded (not just the ">-" indicator)…
+    expect(el.description).toBe('First sentence of the summary. Second sentence.');
+    // …and, unedited, the frontmatter block survives verbatim on compose.
+    expect(el.editedMarkdown).toContain(
+      'description: >-\n  First sentence of the summary.\n  Second sentence.',
+    );
+  });
+
+  it('replaces a folded-block description without orphaning its old lines', () => {
+    const el = editorFrom(ARTICLE_BLOCK_DESC, 'ru');
+    el.description = 'brand new';
+    const out = el.editedMarkdown;
+    expect(out).toContain('description: |-\n  brand new');
+    expect(out).not.toContain('First sentence of the summary');
   });
 
   it('writes the published flag back into the published frontmatter', () => {

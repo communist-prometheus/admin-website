@@ -10,6 +10,8 @@ import {
   stageFile,
   commitAndPush,
   upsertFrontmatterField,
+  readFrontmatterField,
+  upsertFrontmatterBlock,
 } from '../engine/content.js';
 import { onEngineReady } from '../engine/engine-ready.js';
 
@@ -464,6 +466,9 @@ export class ScreenEditor extends LitElement {
   /** Article description frontmatter, seeded from the file + written back. */
   @state() private description = '';
 
+  /** The description as loaded, so writeback only fires when the user changed it. */
+  private descriptionSeed = '';
+
   /** Selected «Рубрика». */
   @state() private rubric = 'theory';
 
@@ -606,7 +611,11 @@ export class ScreenEditor extends LitElement {
     // article's `category`. Without this seed the required-field check below
     // always fired a false "заполните Тема" warning.
     this.topic = frontmatterValue(fm, 'category') ?? frontmatterValue(fm, 'topic') ?? '';
-    this.description = frontmatterValue(fm, 'description') ?? '';
+    // Block-scalar aware: descriptions are stored as folded (`>-`) blocks, so a
+    // naive single-line read would seed just ">-" and a publish would overwrite
+    // the real text. Seed the full text and remember it to only write on change.
+    this.description = readFrontmatterField(fm, 'description') ?? '';
+    this.descriptionSeed = this.description;
     const date = frontmatterValue(fm, 'pubDate') ?? frontmatterValue(fm, 'date');
     if (date !== undefined) this.pubDate = date;
     const published = frontmatterValue(fm, 'published');
@@ -623,8 +632,11 @@ export class ScreenEditor extends LitElement {
     let fm = this.frontmatter;
     if (fm !== '') {
       if (this.topic !== '') fm = upsertFrontmatterField(fm, 'category', this.topic);
-      if (this.description !== '')
-        fm = upsertFrontmatterField(fm, 'description', this.description);
+      // Only rewrite the description when the user actually edited it, so an
+      // untouched folded-block description is left byte-identical (no orphaned
+      // continuation lines); a real edit is re-emitted as a clean literal block.
+      if (this.description !== this.descriptionSeed)
+        fm = upsertFrontmatterBlock(fm, 'description', this.description);
       if (this.pubDate !== '') fm = upsertFrontmatterField(fm, 'pubDate', this.pubDate);
       fm = upsertFrontmatterField(fm, 'published', String(this.published));
     }

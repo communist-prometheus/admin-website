@@ -18,7 +18,10 @@ describe('deployPhase', () => {
     expect(deployPhase(run({ status: 'in_progress' }))).toBe('building');
     expect(deployPhase(run({ status: 'completed', conclusion: 'success' }))).toBe('published');
     expect(deployPhase(run({ status: 'completed', conclusion: 'failure' }))).toBe('failed');
-    expect(deployPhase(run({ status: 'completed', conclusion: 'cancelled' }))).toBe('unknown');
+    // A concurrency-cancelled run was superseded by a newer deploy, not "no data".
+    expect(deployPhase(run({ status: 'completed', conclusion: 'cancelled' }))).toBe('superseded');
+    expect(deployPhase(run({ status: 'completed', conclusion: 'skipped' }))).toBe('superseded');
+    expect(deployPhase(run({ status: 'completed', conclusion: 'neutral' }))).toBe('unknown');
   });
 });
 
