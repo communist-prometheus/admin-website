@@ -189,6 +189,10 @@ export class ScreenEditor extends LitElement {
     .ed {
       max-width: 44rem;
       margin-inline: auto;
+      /* Never let a wide child (e.g. the 5-language tab strip) push the page
+         sideways and clip content off the left edge on mobile. */
+      min-width: 0;
+      overflow-x: clip;
     }
 
     .head {
@@ -216,9 +220,15 @@ export class ScreenEditor extends LitElement {
       color: transparent;
     }
 
+    /* The language tabs can be wider than a phone (5 native names); let them
+       scroll horizontally inside their own strip instead of widening the page. */
+    .tabs-scroll {
+      max-width: 100%;
+      overflow-x: auto;
+      margin-bottom: var(--spacing-md);
+    }
     cp-tabs {
       display: block;
-      margin-bottom: var(--spacing-md);
     }
 
     .toolbar {
@@ -390,6 +400,8 @@ export class ScreenEditor extends LitElement {
     .save-note .path {
       font-family: var(--font-mono);
       font-size: 0.82rem;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .sheet-form {
@@ -966,11 +978,13 @@ export class ScreenEditor extends LitElement {
           </h1>
           <cp-tag tone="success">данные из репозитория</cp-tag>
         </div>
-        <cp-tabs
-          .tabs=${langTabs(this.availableLangs)}
-          active=${this.activeLang}
-          @cp-tab-change=${this.onLangChange}
-        ></cp-tabs>
+        <div class="tabs-scroll">
+          <cp-tabs
+            .tabs=${langTabs(this.availableLangs)}
+            active=${this.activeLang}
+            @cp-tab-change=${this.onLangChange}
+          ></cp-tabs>
+        </div>
         ${this.renderToolbar()}
         <cp-markdown-editor
           class="live"
