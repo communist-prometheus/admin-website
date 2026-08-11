@@ -525,7 +525,10 @@ export const readFileViaApi = async (path: string): Promise<string | undefined> 
   const t = await freshGhToken();
   if (t === undefined) return undefined;
   try {
+    // `no-store`: the same URL is fetched with a different Accept for the blob
+    // sha at publish time; a cache that ignores Accept must not cross the wires.
     const res = await fetch(`${REPO_BASE}/contents/${path}?ref=${contentBranch()}`, {
+      cache: 'no-store',
       headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github.raw' },
     });
     return res.ok ? await res.text() : undefined;
@@ -540,6 +543,7 @@ export const articleLangsViaApi = async (slug: string): Promise<readonly string[
   if (t === undefined) return [];
   try {
     const res = await fetch(`${REPO_BASE}/contents/blog/${slug}?ref=${contentBranch()}`, {
+      cache: 'no-store',
       headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github+json' },
     });
     if (!res.ok) return [];
@@ -574,6 +578,7 @@ export const publishFileViaApi = async (
   try {
     let sha: string | undefined;
     const cur = await fetch(`${REPO_BASE}/contents/${path}?ref=${branch}`, {
+      cache: 'no-store',
       headers: { ...auth, accept: 'application/vnd.github+json' },
     });
     if (cur.ok) {
