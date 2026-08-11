@@ -1,4 +1,4 @@
-import { test, expect } from 'vitest';
+import { test, expect } from 'bun:test';
 import { createSwClient, type SwTransport } from './sw-client.ts';
 import type { SWRequest } from '../../sw/protocol/request-types.ts';
 

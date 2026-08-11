@@ -6,25 +6,16 @@
  * to sample data with an honest badge.
  */
 
-import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
-
 const OWNER = 'communist-prometheus';
 const API = 'https://api.github.com';
 
-/**
- * The active GitHub token: the injected dev token locally, otherwise the
- * signed-in user's session token (same one the engine pushes with). Using the
- * session token is what makes members/tickets/pushes work on the deployed
- * admin, not just in local `dev:token`.
- */
-const token = async (): Promise<string | undefined> => {
-  const dev = import.meta.env.VITE_DEV_TOKEN;
-  if (typeof dev === 'string' && dev.length > 0) return dev;
-  return (await ensureFreshToken()) ?? undefined;
+const token = (): string | undefined => {
+  const t = import.meta.env.VITE_DEV_TOKEN;
+  return typeof t === 'string' && t.length > 0 ? t : undefined;
 };
 
 const get = async (path: string): Promise<unknown> => {
-  const t = await token();
+  const t = token();
   if (t === undefined) return undefined;
   try {
     const response = await fetch(`${API}${path}`, {
@@ -62,30 +53,6 @@ const toMember = (x: unknown): Member | undefined => {
     role: roleOf(field(x, 'permissions')),
     avatar: typeof avatar === 'string' ? avatar : '',
   };
-};
-
-/** The signed-in viewer's coarse role on the content repo. */
-export interface ViewerRole {
-  readonly role: 'viewer' | 'editor' | 'admin';
-  readonly owner: boolean;
-}
-
-/**
- * Resolves the signed-in viewer's real role from GitHub instead of assuming
- * everyone is an owner (QA #2). A repo object carries the authenticated user's
- * own `permissions`, so `admin` → owner/admin, `push` → editor, otherwise a
- * read-only viewer. Returns `undefined` when signed out or on any failure, so the
- * caller can pick a conservative fallback rather than silently granting access.
- */
-export const getViewerRole = async (
-  repo = 'public-website-content',
-): Promise<ViewerRole | undefined> => {
-  const data = await get(`/repos/${OWNER}/${repo}`);
-  if (data === undefined) return undefined;
-  const permissions = field(data, 'permissions');
-  if (field(permissions, 'admin') === true) return { role: 'admin', owner: true };
-  if (field(permissions, 'push') === true) return { role: 'editor', owner: false };
-  return { role: 'viewer', owner: false };
 };
 
 /** Lists collaborators of a repo (default: the content repo). */
@@ -131,94 +98,8 @@ const toTicket = (x: unknown): Ticket | undefined => {
   };
 };
 
-/** Lists a repo's issues (default: the `tickets` repo) as tickets; PRs are
- * excluded so a code repo's pull requests never masquerade as tickets. */
-export const listTickets = async (repo = 'tickets'): Promise<readonly Ticket[]> => {
+/** Lists issues of a repo (default: admin-website) as tickets. */
+export const listTickets = async (repo = 'admin-website'): Promise<readonly Ticket[]> => {
   const data = await get(`/repos/${OWNER}/${repo}/issues?state=all&per_page=50`);
   return Array.isArray(data) ? data.map(toTicket).filter((t): t is Ticket => t !== undefined) : [];
-};
-
-/** A recent push (commit) to the content repo, for the deploy board. */
-export interface Push {
-  readonly sha: string;
-  readonly title: string;
-  readonly author: string;
-  readonly date: string;
-  readonly url: string;
-}
-
-const toPush = (x: unknown): Push | undefined => {
-  const sha = field(x, 'sha');
-  if (typeof sha !== 'string') return undefined;
-  const commit = field(x, 'commit');
-  const message = field(commit, 'message');
-  const authorName = field(field(commit, 'author'), 'name');
-  const date = field(field(commit, 'author'), 'date');
-  const htmlUrl = field(x, 'html_url');
-  return {
-    sha: sha.slice(0, 7),
-    title: typeof message === 'string' ? (message.split('\n')[0] ?? sha) : sha,
-    author: typeof authorName === 'string' ? authorName : '—',
-    date: typeof date === 'string' ? date : '',
-    url: typeof htmlUrl === 'string' ? htmlUrl : '',
-  };
-};
-
-/** A deploy workflow run on the public site, used to enrich the deploy board. */
-export interface DeployRun {
-  readonly status: 'queued' | 'in_progress' | 'completed';
-  readonly conclusion: string;
-  readonly createdAt: string;
-  readonly updatedAt: string;
-  readonly url: string;
-}
-
-const toDeployRun = (x: unknown): DeployRun | undefined => {
-  const status = field(x, 'status');
-  if (status !== 'queued' && status !== 'in_progress' && status !== 'completed') return undefined;
-  const conclusion = field(x, 'conclusion');
-  const createdAt = field(x, 'created_at');
-  const updatedAt = field(x, 'updated_at');
-  const url = field(x, 'html_url');
-  return {
-    status,
-    conclusion: typeof conclusion === 'string' ? conclusion : '',
-    createdAt: typeof createdAt === 'string' ? createdAt : '',
-    updatedAt: typeof updatedAt === 'string' ? updatedAt : '',
-    url: typeof url === 'string' ? url : '',
-  };
-};
-
-/**
- * Recent deploy runs of the public site, keyed by the branch the admin writes to.
- * The site deploy is what actually publishes a content push, so these carry the
- * real "building / published / failed" status the deploy board shows per push.
- */
-export const listDeployRuns = async (
-  branch = import.meta.env.VITE_GITHUB_BRANCH ?? 'develop',
-  repo = 'public-website',
-): Promise<readonly DeployRun[]> => {
-  // Scope to the deploy workflow: since the monorepo migration the site repo
-  // also runs sync-content / sync-to-content, and an unscoped runs query would
-  // surface those as phantom "deploy" rows with the wrong status.
-  const data = await get(
-    `/repos/${OWNER}/${repo}/actions/workflows/deploy.yml/runs?branch=${branch}&per_page=30`,
-  );
-  const runs = field(data, 'workflow_runs');
-  return Array.isArray(runs)
-    ? runs.map(toDeployRun).filter((r): r is DeployRun => r !== undefined)
-    : [];
-};
-
-/**
- * Recent commits (pushes) on a branch of the content repo — the real activity
- * feed the deploy board shows. Branch defaults to the one the admin is wired to
- * (build-time `VITE_GITHUB_BRANCH`), so prod and dev each show their own.
- */
-export const listPushes = async (
-  branch = import.meta.env.VITE_GITHUB_BRANCH ?? 'develop',
-  repo = 'public-website-content',
-): Promise<readonly Push[]> => {
-  const data = await get(`/repos/${OWNER}/${repo}/commits?sha=${branch}&per_page=15`);
-  return Array.isArray(data) ? data.map(toPush).filter((p): p is Push => p !== undefined) : [];
 };

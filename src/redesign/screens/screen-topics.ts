@@ -3,8 +3,6 @@ import { customElement, state } from 'lit/decorators.js';
 import type { CpTab } from '@communist-prometheus/cp-components';
 import '@communist-prometheus/cp-components';
 import { readTopics, type Topic } from '../engine/content.js';
-import { onEngineReady } from '../engine/engine-ready.js';
-import { classifyEmpty } from '../engine/load-state.js';
 
 /**
  * The seven publication languages, expressed as the keys used inside a topic's
@@ -29,6 +27,39 @@ const LANG_CODES: ReadonlySet<string> = new Set(LANGUAGES.map((tab) => tab.id));
 
 /** Narrows an arbitrary tab id to a known {@link LangCode}. */
 const isLangCode = (value: string): value is LangCode => LANG_CODES.has(value);
+
+/**
+ * A small representative sample used only when the real content engine is off
+ * (no `dev:token`), so the preview still renders instead of showing nothing.
+ */
+const SAMPLE_TOPICS: readonly Topic[] = [
+  {
+    key: 'editorial',
+    color: '#b03a2e',
+    name: {
+      ru: 'От редакции',
+      en: 'Editorial',
+      it: 'Dalla redazione',
+      es: 'De la redacción',
+      bl: 'От редакцията',
+      pl: 'Od redakcji',
+      uk: 'Від редакції',
+    },
+  },
+  {
+    key: 'translation',
+    color: '#2563eb',
+    name: {
+      ru: 'Наш перевод',
+      en: 'Our translation',
+      it: 'La nostra traduzione',
+      es: 'Nuestra traducción',
+      bl: 'Наш превод',
+      pl: 'Nasze tłumaczenie',
+      uk: 'Наш переклад',
+    },
+  },
+];
 
 /**
  * Topics screen (settings spec: the "Темы" subpanel). When the real content
@@ -110,6 +141,7 @@ export class ScreenTopics extends LitElement {
       border: 1px solid var(--color-hairline);
       border-inline-start: 4px solid var(--tc, var(--color-accent));
       border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
     }
 
     .thead {
@@ -140,36 +172,16 @@ export class ScreenTopics extends LitElement {
       color: var(--color-text-secondary);
     }
 
-    .fields {
-      margin: 0;
+    .grid {
       display: grid;
-      gap: var(--spacing-sm);
+      gap: var(--spacing-md);
     }
 
-    .field {
-      display: grid;
-      gap: 0.15rem;
-    }
-
-    .field dt {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--color-text-secondary);
-    }
-
-    .field dd {
-      margin: 0;
-      font-size: 1rem;
-    }
-
-    .missing {
-      color: var(--color-text-secondary);
-      font-style: italic;
-    }
-
-    cp-banner {
-      display: block;
-      margin-bottom: var(--spacing-lg);
+    @media (min-width: 640px) {
+      .grid.two {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: end;
+      }
     }
 
     .preview {
@@ -203,19 +215,9 @@ export class ScreenTopics extends LitElement {
   /** Currently edited language; drives which localised name the fields show. */
   @state() private activeLang: LangCode = 'ru';
 
-  /** Unsubscribes the engine-ready listener on disconnect. */
-  private disposeReady: () => void = () => {};
-
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
-    // Re-read when the engine finishes booting (first-load race, QA #12).
-    this.disposeReady = onEngineReady(() => void this.load());
-  }
-
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this.disposeReady();
   }
 
   private async load(): Promise<void> {
@@ -232,27 +234,28 @@ export class ScreenTopics extends LitElement {
 
   private renderTopic(topic: Topic) {
     const lang = this.activeLang;
-    const name = topic.name[lang] ?? '';
-    const hasName = name !== '';
+    const name = topic.name[lang] ?? topic.key;
     return html`
       <article class="topic" style="--tc:${topic.color}">
         <div class="thead">
           <span class="swatch" aria-hidden="true"></span>
-          <h2 class="name">${hasName ? name : topic.key}</h2>
+          <h2 class="name">${name}</h2>
           <span class="key">${topic.key}</span>
-          <span class="key" aria-hidden="true">${topic.color}</span>
+          <cp-button variant="ghost" size="sm" aria-label="Удалить тему «${name}»">
+            <cp-icon name="trash" size="18"></cp-icon>
+          </cp-button>
         </div>
 
-        <dl class="fields">
-          <div class="field">
-            <dt>Название · ${lang}</dt>
-            <dd>${hasName ? name : html`<span class="missing">нет перевода</span>`}</dd>
-          </div>
-        </dl>
+        <div class="grid two">
+          <cp-input label="Название · ${lang}" .value=${name}></cp-input>
+          <cp-input label="Приписка · ${lang}" .value=${name}></cp-input>
+        </div>
+
+        <cp-textarea label="Описание · ${lang}" rows="3" .value=${name}></cp-textarea>
 
         <div class="preview">
           <span class="preview-label">Плашка на сайте:</span>
-          <cp-pill style="--tc:${topic.color}">${hasName ? name : topic.key}</cp-pill>
+          <cp-pill style="--tc:${topic.color}">${name}</cp-pill>
         </div>
       </article>
     `;
@@ -260,45 +263,39 @@ export class ScreenTopics extends LitElement {
 
   override render() {
     const live = this.topics.length > 0;
+    const list = live ? this.topics : SAMPLE_TOPICS;
     return html`
       <header class="head">
         <p class="eyebrow">Настройки · оформление статей</p>
         <h1 tabindex="-1">Темы</h1>
+        ${live
+          ? html`<cp-tag tone="success">данные из репозитория</cp-tag>`
+          : this.loaded
+            ? html`<cp-tag tone="neutral">демо-данные</cp-tag>`
+            : nothing}
       </header>
       <p class="intro">
-        Темы группируют статьи цветной плашкой. Название задаётся для каждого из 7 языков в
-        settings/topics.json.
+        Темы группируют статьи цветной плашкой и припиской. Название, приписка и описание — для
+        каждого из 7 языков.
       </p>
 
-      ${live
-        ? html`
-            <cp-banner tone="info" title="Просмотр без редактирования">
-              Темы пока правятся в settings/topics.json. Здесь — что сейчас в репозитории:
-              ключ, цвет и название на выбранном языке.
-            </cp-banner>
+      <div class="tabs-scroll">
+        <cp-tabs
+          .tabs=${LANGUAGES}
+          active=${this.activeLang}
+          @cp-tab-change=${this.onLangChange}
+        ></cp-tabs>
+      </div>
 
-            <div class="tabs-scroll">
-              <cp-tabs
-                .tabs=${LANGUAGES}
-                active=${this.activeLang}
-                @cp-tab-change=${this.onLangChange}
-              ></cp-tabs>
-            </div>
+      <div class="list">${list.map((topic) => this.renderTopic(topic))}</div>
 
-            <div class="list">${this.topics.map((topic) => this.renderTopic(topic))}</div>
-
-            <p class="note">
-              Прочитано из settings/topics.json — ${this.topics.length}
-              ${this.topics.length === 1 ? 'тема' : 'тем'} реального репозитория.
-            </p>
-          `
-        : html`<p class="note">
-            ${classifyEmpty(this.loaded) === 'loading'
-              ? 'Загружаем темы…'
-              : classifyEmpty(this.loaded) === 'signed-out'
-                ? 'Войдите через GitHub, чтобы увидеть темы из settings/topics.json.'
-                : 'Тем пока нет или не удалось их загрузить.'}
-          </p>`}
+      <p class="note">
+        ${live
+          ? `Прочитано из settings/topics.json — ${list.length} ${
+              list.length === 1 ? 'тема' : 'тем'
+            } реального репозитория.`
+          : 'Запустите dev:token с токеном, чтобы увидеть реальные темы репозитория.'}
+      </p>
     `;
   }
 }
