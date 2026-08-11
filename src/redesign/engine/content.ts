@@ -504,6 +504,102 @@ export const listArticlesViaApi = async (
   }
 };
 
+/** Repo REST base + branch shared by the direct-API editor reads/writes. */
+const REPO_BASE = 'https://api.github.com/repos/communist-prometheus/public-website-content';
+const contentBranch = (): string => import.meta.env.VITE_GITHUB_BRANCH ?? 'develop';
+
+/** UTF-8 → base64 (btoa is latin1-only; article bodies are Cyrillic). */
+const toBase64 = (text: string): string => {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+};
+
+/**
+ * Reads ONE file straight from the GitHub API (raw body) — no Service-Worker
+ * clone. This is how the editor opens the single article the user asked for
+ * instead of waiting on the whole-repo clone to finish.
+ */
+export const readFileViaApi = async (path: string): Promise<string | undefined> => {
+  const t = await freshGhToken();
+  if (t === undefined) return undefined;
+  try {
+    const res = await fetch(`${REPO_BASE}/contents/${path}?ref=${contentBranch()}`, {
+      headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github.raw' },
+    });
+    return res.ok ? await res.text() : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/** The languages one article exists in (its `index.<lang>.md` files), via API. */
+export const articleLangsViaApi = async (slug: string): Promise<readonly string[]> => {
+  const t = await freshGhToken();
+  if (t === undefined) return [];
+  try {
+    const res = await fetch(`${REPO_BASE}/contents/blog/${slug}?ref=${contentBranch()}`, {
+      headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github+json' },
+    });
+    if (!res.ok) return [];
+    const data: unknown = await res.json();
+    const names = Array.isArray(data)
+      ? data.map((e) => (typeof e === 'object' && e && 'name' in e ? String(Reflect.get(e, 'name')) : ''))
+      : [];
+    return names
+      .map((n) => n.match(/^index\.([a-z]{2,3})\.md$/)?.[1])
+      .filter((l): l is string => l !== undefined)
+      .sort();
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Commits ONE edited file via the GitHub Contents API — a single-file commit,
+ * no clone and no whole-repo push. Fetches the file's current blob sha (an
+ * update needs it), then PUTs the new content. Returns the commit sha or the
+ * real error. This is the "push only what was opened" path.
+ */
+export const publishFileViaApi = async (
+  path: string,
+  content: string,
+  message: string,
+): Promise<{ ok: boolean; sha?: string; error?: string }> => {
+  const t = await freshGhToken();
+  if (t === undefined) return { ok: false, error: 'signed-out' };
+  const auth = { authorization: `Bearer ${t}` };
+  const branch = contentBranch();
+  try {
+    let sha: string | undefined;
+    const cur = await fetch(`${REPO_BASE}/contents/${path}?ref=${branch}`, {
+      headers: { ...auth, accept: 'application/vnd.github+json' },
+    });
+    if (cur.ok) {
+      const d: unknown = await cur.json();
+      sha = typeof d === 'object' && d && 'sha' in d ? String(Reflect.get(d, 'sha')) : undefined;
+    }
+    const put = await fetch(`${REPO_BASE}/contents/${path}`, {
+      method: 'PUT',
+      headers: { ...auth, 'content-type': 'application/json' },
+      body: JSON.stringify({ message, content: toBase64(content), branch, ...(sha ? { sha } : {}) }),
+    });
+    if (!put.ok) {
+      const e: unknown = await put.json().catch(() => undefined);
+      const msg = typeof e === 'object' && e && 'message' in e ? String(Reflect.get(e, 'message')) : undefined;
+      return { ok: false, error: msg ?? `Публикация не удалась (${put.status}).` };
+    }
+    const d: unknown = await put.json();
+    const commit = typeof d === 'object' && d && 'commit' in d ? Reflect.get(d, 'commit') : undefined;
+    const commitSha =
+      typeof commit === 'object' && commit && 'sha' in commit ? String(Reflect.get(commit, 'sha')) : undefined;
+    return { ok: true, sha: commitSha };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+};
+
 const preferredLang = (langs: readonly string[]): string =>
   langs.find((l) => l === 'ru') ?? langs.find((l) => l === 'en') ?? (langs[0] as string);
 

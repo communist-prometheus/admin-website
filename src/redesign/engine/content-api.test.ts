@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
-import { listArticlesViaApi } from './content.ts';
+import {
+  listArticlesViaApi,
+  readFileViaApi,
+  articleLangsViaApi,
+  publishFileViaApi,
+} from './content.ts';
 
 vi.mock('@/composables/useAuth/ensure-fresh-token', () => ({ ensureFreshToken: vi.fn() }));
 
@@ -82,5 +87,60 @@ describe('listArticlesViaApi (API-first article list)', () => {
     await listArticlesViaApi((done, total) => seen.push(`${done}/${total}`));
     expect(seen[0]).toBe('0/2');
     expect(seen.at(-1)).toBe('2/2');
+  });
+});
+
+describe('editor single-file API (read / langs / publish, no clone)', () => {
+  const decode = (b64: string): string =>
+    new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+
+  it('readFileViaApi returns the raw file body', async () => {
+    vi.stubGlobal('fetch', async () => new Response('# Заголовок', { status: 200 }));
+    expect(await readFileViaApi('blog/x/index.ru.md')).toBe('# Заголовок');
+  });
+
+  it('articleLangsViaApi lists only index.<lang>.md languages, sorted', async () => {
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response(
+          JSON.stringify([{ name: 'index.ru.md' }, { name: 'index.en.md' }, { name: 'cover.jpg' }]),
+          { status: 200 },
+        ),
+    );
+    expect(await articleLangsViaApi('x')).toEqual(['en', 'ru']);
+  });
+
+  it('publishFileViaApi commits ONE file (UTF-8 base64) and returns the commit sha', async () => {
+    const calls: Array<{ method?: string; body?: Record<string, string> }> = [];
+    vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {
+      calls.push({
+        method: init?.method,
+        body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined,
+      });
+      if (init?.method === 'PUT') {
+        return new Response(JSON.stringify({ commit: { sha: 'commit1' } }), { status: 201 });
+      }
+      return new Response(JSON.stringify({ sha: 'blob1' }), { status: 200 });
+    });
+    const r = await publishFileViaApi('blog/x/index.ru.md', 'Привет, мир', 'msg');
+    expect(r).toEqual({ ok: true, sha: 'commit1' });
+    const put = calls.find((c) => c.method === 'PUT');
+    expect(put?.body?.sha).toBe('blob1'); // updates against the current blob
+    expect(put?.body?.message).toBe('msg');
+    expect(decode(String(put?.body?.content))).toBe('Привет, мир'); // Cyrillic survives
+  });
+
+  it('publishFileViaApi surfaces the GitHub error message on failure', async () => {
+    vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) =>
+      init?.method === 'PUT'
+        ? new Response(JSON.stringify({ message: 'Resource not accessible by integration' }), {
+            status: 403,
+          })
+        : new Response(JSON.stringify({ sha: 'b' }), { status: 200 }),
+    );
+    const r = await publishFileViaApi('p', 'c', 'm');
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain('Resource not accessible');
   });
 });
