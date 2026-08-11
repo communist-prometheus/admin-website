@@ -1,8 +1,8 @@
 import type { SWGitConfig } from '@/sw/protocol'
 import { getActiveWorker } from './get-active-worker'
 import { postWithTimeout } from './post-with-timeout'
-import { setSwNonce } from './sw-nonce'
 import { log } from './sw-log'
+import { setSwNonce } from './sw-nonce'
 
 /**
  * Init SW via MessageChannel (works without controller).

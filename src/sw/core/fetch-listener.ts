@@ -16,7 +16,8 @@ declare const self: ServiceWorkerGlobalScope
  * @returns undefined when the nonce is valid, otherwise a 403 response
  */
 const nonceRejection = (request: Request): Response | undefined =>
-  request.headers.get('X-SW-Nonce') === workerState.nonce && workerState.nonce !== undefined
+  request.headers.get('X-SW-Nonce') === workerState.nonce &&
+  workerState.nonce !== undefined
     ? undefined
     : errorResponse('SW nonce required', 403)
 

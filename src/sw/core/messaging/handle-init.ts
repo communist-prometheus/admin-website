@@ -15,6 +15,7 @@ let pending: Promise<void> | undefined
  * to every initiating client. Reused across re-inits so a self-healing client
  * keeps a valid nonce; regenerated only after the SW is evicted (state reset)
  * or a logout clears it.
+ * @returns The current capability nonce
  */
 const ensureNonce = (): string => {
   workerState.nonce ??= crypto.randomUUID()

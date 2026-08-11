@@ -6,10 +6,16 @@
  */
 let nonce: string | undefined
 
-/** Records the nonce returned by an init reply, or clears it on logout. */
+/**
+ * Records the nonce returned by an init reply, or clears it on logout.
+ * @param value - The capability nonce, or undefined to clear it
+ */
 export const setSwNonce = (value: string | undefined): void => {
   nonce = value
 }
 
-/** The current nonce, or undefined before the first successful init. */
+/**
+ * The current nonce, or undefined before the first successful init.
+ * @returns The capability nonce, or undefined
+ */
 export const getSwNonce = (): string | undefined => nonce

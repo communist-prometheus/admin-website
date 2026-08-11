@@ -1,23 +1,9 @@
 import { routeRequest } from '../../handlers/route'
 import { log } from '../../logging/logger'
 import type { SWFetchRequest, SWFetchResponse } from '../../protocol'
-import { workerState } from '../../state/state'
+import { nonceOk, nonceRejection } from './fetch-nonce-guard'
 
 type Reply = (data: unknown) => void
-
-/**
- * The MessageChannel transport bypasses the fetch listener, so it needs the
- * same confused-deputy nonce check: a `/api/github/*` proxy must echo the
- * per-session nonce issued at init.
- */
-const nonceOk = (request: Request): boolean =>
-  request.headers.get('X-SW-Nonce') === workerState.nonce && workerState.nonce !== undefined
-
-const nonceRejection: SWFetchResponse = {
-  status: 403,
-  body: JSON.stringify({ error: 'SW nonce required' }),
-  headers: { 'content-type': 'application/json' },
-}
 
 /**
  * Build a Request from the SW_FETCH message payload.
@@ -62,9 +48,27 @@ const errorResponse = (err: unknown): SWFetchResponse => ({
 })
 
 /**
- * Handle SW_FETCH — proxy a fetch via MessageChannel.
+ * Route a proxied SW_FETCH request and reply with the serialized response.
+ * @param request - The reconstructed request
+ * @param reply - Callback to send the response via MessagePort
+ * @returns void
+ */
+const routeAndReply = (request: Request, reply: Reply): void => {
+  void routeRequest(request)
+    .then(serializeResponse)
+    .then(reply)
+    .catch(err => {
+      log('error', 'cache', `SW_FETCH error: ${err}`)
+      reply(errorResponse(err))
+    })
+}
+
+/**
+ * Handle SW_FETCH — proxy a fetch via MessageChannel. A `/api/github/*` proxy
+ * that lacks the per-session nonce is rejected with 403 (confused-deputy guard).
  * @param msg - Fetch request details
  * @param reply - Callback to send response via MessagePort
+ * @returns void
  */
 export const handleFetchMessage = (
   msg: SWFetchRequest,
@@ -72,15 +76,9 @@ export const handleFetchMessage = (
 ): void => {
   const request = buildRequest(msg)
   const { pathname } = new URL(request.url)
-  if (pathname.startsWith('/api/github/') && !nonceOk(request)) {
-    reply(nonceRejection)
-    return
-  }
-  routeRequest(request)
-    .then(serializeResponse)
-    .then(reply)
-    .catch(err => {
-      log('error', 'cache', `SW_FETCH error: ${err}`)
-      reply(errorResponse(err))
-    })
+  const rejected = pathname.startsWith('/api/github/') && !nonceOk(request)
+  const respond = rejected
+    ? (): void => reply(nonceRejection)
+    : (): void => routeAndReply(request, reply)
+  respond()
 }

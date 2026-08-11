@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../../handlers/route', () => ({
   routeRequest: vi.fn(async () => new Response('ok', { status: 200 })),
@@ -8,16 +8,21 @@ import { routeRequest } from '../../handlers/route'
 import { workerState } from '../../state/state'
 import { handleFetchMessage } from './handle-fetch-message'
 
-/** Collects the reply payloads for one handleFetchMessage call. */
+/**
+ * Collects the reply payloads for one handleFetchMessage call.
+ * @param headers - Request headers to send in the SW_FETCH message
+ * @param url - The proxied request URL
+ * @returns The reply payloads pushed during the call
+ */
 const call = async (
   headers: Record<string, string>,
   url = 'https://admin.test/api/github/tree'
 ): Promise<{ status?: number }[]> => {
   const replies: { status?: number }[] = []
-  handleFetchMessage({ type: 'SW_FETCH', url, method: 'GET', headers }, (d) =>
+  handleFetchMessage({ type: 'SW_FETCH', url, method: 'GET', headers }, d =>
     replies.push(d as { status?: number })
   )
-  await new Promise((r) => setTimeout(r, 0))
+  await new Promise(r => setTimeout(r, 0))
   return replies
 }
 

@@ -41,15 +41,26 @@ const retryOnce = async (
  * @returns True when a reinit should be attempted
  */
 const needsReinit = async (res: Response): Promise<boolean> => {
-  if (res.status === 503) return true
-  if (res.status !== 403) return false
-  const body = await res
-    .clone()
-    .text()
-    .catch(() => '')
-  return body.includes('SW nonce')
+  const body =
+    res.status === 403
+      ? await res
+          .clone()
+          .text()
+          .catch(() => '')
+      : ''
+  return res.status === 503 || body.includes('SW nonce')
 }
 
+/**
+ * Run a SW fetch; when the worker reports it is not ready (503) or rejects a
+ * confused-deputy nonce (403), re-send the stored token to re-init it and retry
+ * the request exactly once. This unblocks saves after the worker is evicted,
+ * was never initialised on this origin, or minted a new nonce.
+ * @param fetcher - Underlying SW fetch
+ * @param input - Request URL
+ * @param init - Request init
+ * @returns The response, after at most one reinit + retry
+ */
 export const fetchWithReinit = async (
   fetcher: SWFetcher,
   input: string | URL,
