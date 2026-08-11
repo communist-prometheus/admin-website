@@ -187,6 +187,7 @@ export class ScreenDeploys extends LitElement {
     if (phase === 'published') return { state: 'success', icon: 'check', label: 'опубликовано', spin: false };
     if (phase === 'building') return { state: 'info', icon: 'refresh', label: 'сборка идёт', spin: true };
     if (phase === 'queued') return { state: 'info', icon: 'refresh', label: 'в очереди', spin: false };
+    if (phase === 'pending') return { state: 'info', icon: 'refresh', label: 'ожидание деплоя', spin: true };
     if (phase === 'failed') return { state: 'danger', icon: 'warning', label: 'не удалось', spin: false };
     return { state: 'neutral', icon: 'more', label: 'нет данных', spin: false };
   }
@@ -228,7 +229,7 @@ export class ScreenDeploys extends LitElement {
               : html`<span aria-hidden="true">·</span
                   ><a class="gh" href=${item.runUrl} target="_blank" rel="noopener">лог ↗</a>`}
           </div>
-          ${item.phase === 'building' || item.phase === 'queued'
+          ${item.phase === 'building' || item.phase === 'queued' || item.phase === 'pending'
             ? html`<cp-progress ?indeterminate=${true} value="0"></cp-progress>`
             : nothing}
         </div>

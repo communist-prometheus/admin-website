@@ -25,6 +25,7 @@ interface EditorInternals {
   slug: string;
   live: boolean;
   activeLang: string;
+  availableLangs: readonly string[];
   body: string;
   applyMarkdown: (markdown: string, path: string, live: boolean) => void;
   onLangChange: (event: Event) => void;
@@ -38,6 +39,9 @@ const seededEditor = (): EditorInternals => {
   priv.slug = 'x';
   priv.live = true;
   priv.activeLang = 'ru';
+  // `load()` populates this from the article's real languages; the tests drive
+  // applyMarkdown directly, so seed it so a switch to 'en' is accepted.
+  priv.availableLangs = ['ru', 'en'];
   priv.applyMarkdown(RU, 'blog/x/index.ru.md', true);
   return priv;
 };

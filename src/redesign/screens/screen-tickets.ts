@@ -1,10 +1,33 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import type { CpTab, CpTableColumn, CpTableRow } from '@communist-prometheus/cp-components';
+import type {
+  CpTab,
+  CpTableColumn,
+  CpTableRow,
+  CpSelectOption,
+} from '@communist-prometheus/cp-components';
 import '@communist-prometheus/cp-components';
-import { listTickets, type Ticket } from '../engine/github-api.js';
+import { listTickets, createTicket, type Ticket } from '../engine/github-api.js';
 import { onEngineReady } from '../engine/engine-ready.js';
 import { classifyEmpty } from '../engine/load-state.js';
+
+/** Lifecycle of the create-ticket form. */
+type CreatePhase = 'idle' | 'running' | 'done' | 'failed';
+
+/** Kind options for the create form; values match the labels {@link kindOf} reads. */
+const KIND_OPTIONS: readonly CpSelectOption[] = [
+  { value: 'bug', label: 'Баг' },
+  { value: 'story', label: 'История' },
+  { value: 'other', label: 'Задача' },
+];
+
+/** Reads `event.detail.value` off a `cp-*` change event without a cast. */
+const detailValue = (event: Event): unknown => {
+  const detail = 'detail' in event ? Reflect.get(event, 'detail') : undefined;
+  return typeof detail === 'object' && detail && 'value' in detail
+    ? Reflect.get(detail, 'value')
+    : undefined;
+};
 
 /** The active list filter (`all` shows every ticket). */
 type TicketFilter = 'all' | 'bug' | 'story';
@@ -127,6 +150,23 @@ export class ScreenTickets extends LitElement {
       overflow: hidden;
       background: var(--color-surface);
     }
+
+    .form {
+      display: grid;
+      gap: var(--spacing-md);
+    }
+
+    .foot {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-sm);
+    }
+
+    a.gh {
+      color: var(--color-accent);
+    }
   `;
 
   /** Tickets read from GitHub; empty until loaded (or if the token is absent). */
@@ -137,6 +177,19 @@ export class ScreenTickets extends LitElement {
 
   /** Active ticket-kind filter; `all` shows every ticket. */
   @state() private filter: TicketFilter = 'all';
+
+  /** Whether the create-ticket sheet is open. */
+  @state() private formOpen = false;
+
+  /** Create-form fields. */
+  @state() private fTitle = '';
+  @state() private fKind: Ticket['kind'] = 'bug';
+  @state() private fBody = '';
+
+  /** Create-form lifecycle + result. */
+  @state() private phase: CreatePhase = 'idle';
+  @state() private createdNumber?: number;
+  @state() private createdUrl?: string;
 
   /** Unsubscribes the engine-ready listener on disconnect. */
   private disposeReady: () => void = () => {};
@@ -165,10 +218,119 @@ export class ScreenTickets extends LitElement {
     }
   };
 
+  private readonly openForm = (): void => {
+    this.formOpen = true;
+    this.phase = 'idle';
+    this.fTitle = '';
+    this.fKind = 'bug';
+    this.fBody = '';
+    this.createdNumber = undefined;
+    this.createdUrl = undefined;
+  };
+
+  private readonly closeForm = (): void => {
+    this.formOpen = false;
+  };
+
+  /** Reads a `cp-input`/`cp-select`/`cp-textarea` value into a string field. */
+  private readonly bindText =
+    (field: 'fTitle' | 'fBody') =>
+    (event: Event): void => {
+      const value = detailValue(event);
+      if (typeof value === 'string') this[field] = value;
+    };
+
+  private readonly onKindChange = (event: Event): void => {
+    const value = detailValue(event);
+    if (value === 'bug' || value === 'story' || value === 'other') this.fKind = value;
+  };
+
+  /** True once the title carries content — the only required field. */
+  private get canSubmit(): boolean {
+    return this.fTitle.trim() !== '' && this.phase !== 'running';
+  }
+
+  private readonly submit = async (): Promise<void> => {
+    if (!this.canSubmit) return;
+    this.phase = 'running';
+    const result = await createTicket({
+      title: this.fTitle.trim(),
+      body: this.fBody,
+      kind: this.fKind,
+    });
+    if (result.ok) {
+      this.phase = 'done';
+      this.createdNumber = result.number;
+      this.createdUrl = result.url;
+      await this.load();
+    } else {
+      this.phase = 'failed';
+    }
+  };
+
   private visible(source: readonly Ticket[]): readonly Ticket[] {
     return this.filter === 'all'
       ? source
       : source.filter((ticket) => ticket.kind === this.filter);
+  }
+
+  private renderCreateResult(): TemplateResult | typeof nothing {
+    if (this.phase === 'done') {
+      const ref = this.createdNumber !== undefined ? `#${this.createdNumber}` : 'тикет';
+      return html`<cp-banner tone="success" title="Тикет создан">
+        Создан ${ref}.${this.createdUrl !== undefined
+          ? html` <a class="gh" href=${this.createdUrl} target="_blank" rel="noopener">Открыть ↗</a>`
+          : nothing}
+      </cp-banner>`;
+    }
+    if (this.phase === 'failed') {
+      return html`<cp-banner tone="danger" title="Не удалось создать тикет"
+        >Проверьте вход через GitHub и доступ к репозиторию.</cp-banner
+      >`;
+    }
+    return nothing;
+  }
+
+  private renderForm(): TemplateResult {
+    return html`
+      <cp-sheet ?open=${this.formOpen} heading="Новый тикет" @cp-close=${this.closeForm}>
+        <div class="form">
+          <cp-input
+            label="Заголовок"
+            required
+            .value=${this.fTitle}
+            @cp-input=${this.bindText('fTitle')}
+            @cp-change=${this.bindText('fTitle')}
+          ></cp-input>
+          <cp-select
+            label="Тип"
+            .value=${this.fKind}
+            .options=${KIND_OPTIONS}
+            @cp-change=${this.onKindChange}
+          ></cp-select>
+          <cp-textarea
+            label="Описание"
+            rows="6"
+            .value=${this.fBody}
+            @cp-input=${this.bindText('fBody')}
+            @cp-change=${this.bindText('fBody')}
+          ></cp-textarea>
+
+          ${this.renderCreateResult()}
+
+          <div class="foot">
+            <cp-button variant="secondary" @cp-click=${this.closeForm}>
+              ${this.phase === 'done' ? 'Закрыть' : 'Отмена'}
+            </cp-button>
+            ${this.phase === 'done'
+              ? nothing
+              : html`<cp-button arrow ?disabled=${!this.canSubmit} @cp-click=${this.submit}>
+                  ${this.phase === 'running' ? 'Создаётся…' : 'Создать тикет'}
+                </cp-button>`}
+          </div>
+        </div>
+      </cp-sheet>
+    `;
   }
 
   override render() {
@@ -179,11 +341,13 @@ export class ScreenTickets extends LitElement {
       <header class="head">
         <p class="eyebrow">Задачи${live ? html` · ${visible.length} на экране` : nothing}</p>
         <h1 tabindex="-1">Тикеты</h1>
-        <cp-button disabled title="Создание тикетов появится позже">
+        <cp-button @cp-click=${this.openForm}>
           <cp-icon name="plus" size="18"></cp-icon>
           Новый тикет
         </cp-button>
       </header>
+
+      ${this.renderForm()}
 
       ${live
         ? html`

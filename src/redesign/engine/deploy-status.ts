@@ -6,7 +6,7 @@ import type { Push, DeployRun } from './github-api.js';
  * per-step breakdown, so the board shows real states rather than invented
  * "step 3 of 5" numbers.
  */
-export type DeployPhase = 'queued' | 'building' | 'published' | 'failed' | 'unknown';
+export type DeployPhase = 'pending' | 'queued' | 'building' | 'published' | 'failed' | 'unknown';
 
 /** A push enriched with its deploy outcome for the board. */
 export interface DeployedPush {
@@ -56,17 +56,39 @@ export const matchRun = (
   return best;
 };
 
+/** The most recent run's creation time, or -Infinity when the list is empty. */
+const newestRunTime = (runs: readonly DeployRun[]): number =>
+  runs.reduce((max, run) => {
+    const created = Date.parse(run.createdAt);
+    return Number.isNaN(created) ? max : Math.max(max, created);
+  }, Number.NEGATIVE_INFINITY);
+
+/**
+ * Phase of a push with no matched run. A push newer than every known run has
+ * simply not triggered its deploy yet — that is "awaiting deploy", not missing
+ * data. Only a push that predates the newest run (so its run has aged out of the
+ * fetched window) is genuinely unknown.
+ */
+const unmatchedPhase = (pushDate: string, newestRun: number): DeployPhase => {
+  const pushed = Date.parse(pushDate);
+  // No runs at all (fetch failure / no history) — can't tell pending from data.
+  if (Number.isNaN(pushed) || !Number.isFinite(newestRun)) return 'unknown';
+  return pushed >= newestRun - SKEW_MS ? 'pending' : 'unknown';
+};
+
 /** Enriches each push with the deploy status of the run it triggered. */
 export const correlateDeploys = (
   pushes: readonly Push[],
   runs: readonly DeployRun[],
-): readonly DeployedPush[] =>
-  pushes.map((push) => {
+): readonly DeployedPush[] => {
+  const newest = newestRunTime(runs);
+  return pushes.map((push) => {
     const run = matchRun(push.date, runs);
-    const phase = deployPhase(run);
+    const phase = run === undefined ? unmatchedPhase(push.date, newest) : deployPhase(run);
     const durationSec =
       run !== undefined && phase === 'published'
         ? Math.max(0, Math.round((Date.parse(run.updatedAt) - Date.parse(run.createdAt)) / 1000))
         : undefined;
     return { push, phase, durationSec, runUrl: run?.url };
   });
+};

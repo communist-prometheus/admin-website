@@ -100,6 +100,19 @@ describe('listArticles fan-out', () => {
     expect(list).toHaveLength(20);
     expect(maxInFlight).toBeLessThanOrEqual(6);
   });
+
+  it('returns articles oldest → newest by pubDate, undated last (QA sort)', async () => {
+    tree['blog'] = [
+      { type: 'dir', name: 'index.ru.md', path: 'blog/newer/index.ru.md' },
+      { type: 'dir', name: 'index.ru.md', path: 'blog/older/index.ru.md' },
+      { type: 'dir', name: 'index.ru.md', path: 'blog/undated/index.ru.md' },
+    ];
+    files['blog/newer/index.ru.md'] = '---\ntitle: N\npubDate: 2026-05-01\n---\n';
+    files['blog/older/index.ru.md'] = '---\ntitle: O\npubDate: 2026-01-01\n---\n';
+    files['blog/undated/index.ru.md'] = '---\ntitle: U\n---\n';
+    const order = (await listArticles()).map((a) => a.slug);
+    expect(order).toEqual(['older', 'newer', 'undated']);
+  });
 });
 
 describe('createMagazineIssue count (QA #17)', () => {

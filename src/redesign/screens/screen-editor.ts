@@ -44,12 +44,21 @@ interface PublishStage {
   readonly state: StageState;
 }
 
-/** Language variants, surfaced as `cp-tabs`. */
-const LANG_TABS: readonly CpTab[] = [
-  { id: 'ru', label: 'Русский' },
-  { id: 'en', label: 'English' },
-  { id: 'it', label: 'Italiano' },
-];
+/** Display labels for known language codes; any other code falls back to its
+ * uppercased code, so an article in es/uk/pl/… still gets a usable tab. */
+const LANG_LABELS: Readonly<Record<string, string>> = {
+  ru: 'Русский',
+  en: 'English',
+  it: 'Italiano',
+  es: 'Español',
+  uk: 'Українська',
+  pl: 'Polski',
+  bl: 'Беларуская',
+};
+
+/** Builds the language tabs from the codes an article actually has. */
+const langTabs = (codes: readonly string[]): readonly CpTab[] =>
+  codes.map((code) => ({ id: code, label: LANG_LABELS[code] ?? code.toUpperCase() }));
 
 /** Presentational toolbar affordances (block/inline formatting placeholders). */
 const FORMAT_TOOLS: readonly FormatTool[] = [
@@ -394,6 +403,14 @@ export class ScreenEditor extends LitElement {
     }
     cp-banner {
       margin-top: var(--spacing-md);
+      max-width: 100%;
+    }
+    /* A commit sha / long path in a monospace code span can't line-break and
+       would push the dialog past a phone's viewport — force it to wrap. */
+    cp-banner code,
+    .dialog-note code {
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .dialog-foot {
       display: flex;
@@ -443,6 +460,9 @@ export class ScreenEditor extends LitElement {
 
   /** Selected «Тема»; empty keeps the material incomplete. */
   @state() private topic = '';
+
+  /** Article description frontmatter, seeded from the file + written back. */
+  @state() private description = '';
 
   /** Selected «Рубрика». */
   @state() private rubric = 'theory';
@@ -545,7 +565,9 @@ export class ScreenEditor extends LitElement {
       if (markdown !== undefined && markdown.trim() !== '') {
         this.slug = target.slug;
         this.availableLangs = target.languages;
-        this.activeLang = lang === 'ru' || lang === 'en' || lang === 'it' ? lang : 'ru';
+        // `lang` is already one of the article's real languages (line above),
+        // so use it directly instead of collapsing anything non-ru/en/it to ru.
+        this.activeLang = lang;
         this.applyMarkdown(markdown, path, true);
         this.loaded = true;
         return;
@@ -584,6 +606,7 @@ export class ScreenEditor extends LitElement {
     // article's `category`. Without this seed the required-field check below
     // always fired a false "заполните Тема" warning.
     this.topic = frontmatterValue(fm, 'category') ?? frontmatterValue(fm, 'topic') ?? '';
+    this.description = frontmatterValue(fm, 'description') ?? '';
     const date = frontmatterValue(fm, 'pubDate') ?? frontmatterValue(fm, 'date');
     if (date !== undefined) this.pubDate = date;
     const published = frontmatterValue(fm, 'published');
@@ -600,6 +623,8 @@ export class ScreenEditor extends LitElement {
     let fm = this.frontmatter;
     if (fm !== '') {
       if (this.topic !== '') fm = upsertFrontmatterField(fm, 'category', this.topic);
+      if (this.description !== '')
+        fm = upsertFrontmatterField(fm, 'description', this.description);
       if (this.pubDate !== '') fm = upsertFrontmatterField(fm, 'pubDate', this.pubDate);
       fm = upsertFrontmatterField(fm, 'published', String(this.published));
     }
@@ -615,7 +640,7 @@ export class ScreenEditor extends LitElement {
   private onLangChange = (event: Event): void => {
     if (event instanceof CustomEvent) {
       const id: unknown = event.detail?.id;
-      if ((id === 'ru' || id === 'en' || id === 'it') && id !== this.activeLang) {
+      if (typeof id === 'string' && this.availableLangs.includes(id) && id !== this.activeLang) {
         // Stash the outgoing language's edits before swapping the buffers in.
         if (this.slug !== '') this.langBuffers.set(this.activeLang, this.editedMarkdown);
         this.activeLang = id;
@@ -660,6 +685,15 @@ export class ScreenEditor extends LitElement {
       const value: unknown = event.detail?.value;
       if (typeof value === 'string') {
         this.pubDate = value;
+      }
+    }
+  };
+
+  private onDescriptionChange = (event: Event): void => {
+    if (event instanceof CustomEvent) {
+      const value: unknown = event.detail?.value;
+      if (typeof value === 'string') {
+        this.description = value;
       }
     }
   };
@@ -804,6 +838,12 @@ export class ScreenEditor extends LitElement {
             .options=${TOPIC_OPTIONS}
             @cp-change=${this.onTopicChange}
           ></cp-select>
+          <cp-textarea
+            label="Описание"
+            rows="3"
+            .value=${this.description}
+            @cp-change=${this.onDescriptionChange}
+          ></cp-textarea>
           <cp-select
             label="Рубрика"
             .value=${this.rubric}
@@ -834,7 +874,8 @@ export class ScreenEditor extends LitElement {
     }
     if (this.publishSha !== '') {
       return html`<cp-banner tone="success" title="Отправлено в репозиторий"
-        >Коммит <code>${this.publishSha}</code> запушен в контент-репозиторий.</cp-banner
+        >Коммит <code>${this.publishSha.slice(0, 7)}</code> запушен в
+        контент-репозиторий.</cp-banner
       >`;
     }
     return html`<p class="dialog-note">
@@ -889,7 +930,7 @@ export class ScreenEditor extends LitElement {
           <cp-tag tone="success">данные из репозитория</cp-tag>
         </div>
         <cp-tabs
-          .tabs=${LANG_TABS}
+          .tabs=${langTabs(this.availableLangs)}
           active=${this.activeLang}
           @cp-tab-change=${this.onLangChange}
         ></cp-tabs>

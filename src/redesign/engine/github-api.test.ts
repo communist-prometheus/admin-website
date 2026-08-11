@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
-import { listMembers, listPushes, listTickets } from './github-api.ts';
+import { listMembers, listPushes, listTickets, createTicket } from './github-api.ts';
 
 vi.mock('@/composables/useAuth/ensure-fresh-token', () => ({
   ensureFreshToken: vi.fn(),
@@ -84,5 +84,49 @@ describe('list* repo targeting (regression: each list reads its own repo)', () =
     expect(urls[0]).toContain(
       '/repos/communist-prometheus/public-website-content/commits'
     );
+  });
+});
+
+describe('createTicket (QA #9)', () => {
+  interface Call {
+    readonly url: string;
+    readonly method?: string;
+    readonly body: unknown;
+  }
+
+  const stubCreate = (payload: unknown, status = 201): Call[] => {
+    const calls: Call[] = [];
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      calls.push({
+        url,
+        method: init?.method,
+        body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined,
+      });
+      return new Response(JSON.stringify(payload), { status });
+    });
+    return calls;
+  };
+
+  it('POSTs a new issue to the tickets repo with the kind label', async () => {
+    const calls = stubCreate({ number: 42, html_url: 'https://gh/tickets/42' });
+    const result = await createTicket({ title: 'broken', body: 'steps', kind: 'bug' });
+
+    expect(calls[0]?.method).toBe('POST');
+    expect(calls[0]?.url).toContain('/repos/communist-prometheus/tickets/issues');
+    expect(calls[0]?.body).toEqual({ title: 'broken', body: 'steps', labels: ['bug'] });
+    expect(result).toEqual({ ok: true, number: 42, url: 'https://gh/tickets/42' });
+  });
+
+  it('sends no label for an "other" ticket', async () => {
+    const calls = stubCreate({ number: 7, html_url: 'u' });
+    await createTicket({ title: 't', body: '', kind: 'other' });
+    expect(calls[0]?.body).toMatchObject({ labels: [] });
+  });
+
+  it('reports failure (no throw) when GitHub rejects the create', async () => {
+    stubCreate({ message: 'Forbidden' }, 403);
+    const result = await createTicket({ title: 't', body: '', kind: 'story' });
+    expect(result.ok).toBe(false);
+    expect(result.number).toBeUndefined();
   });
 });

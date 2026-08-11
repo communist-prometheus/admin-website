@@ -37,14 +37,14 @@ export const groups: ReadonlyArray<readonly [NavItem['group'], string]> = [
 
 /** The admin's primary navigation (roles per the inventory; refined in auth). */
 export const navItems: readonly NavItem[] = [
-  { id: 'articles', label: 'Статьи', icon: 'check', group: 'content', role: 'editor' },
-  { id: 'magazine', label: 'Журнал', icon: 'upload', group: 'content', role: 'editor' },
-  { id: 'topics', label: 'Темы', icon: 'more', group: 'content', role: 'editor' },
-  { id: 'members', label: 'Участники', icon: 'plus', group: 'community', role: 'admin' },
-  { id: 'tickets', label: 'Тикеты', icon: 'warning', group: 'community', role: 'editor' },
-  { id: 'newsletter', label: 'Рассылка', icon: 'chevron-right', group: 'distribution', ownerOnly: true },
-  { id: 'deploys', label: 'Деплои', icon: 'refresh', group: 'distribution', role: 'editor' },
-  { id: 'settings', label: 'Настройки', icon: 'more', group: 'admin', role: 'admin' },
+  { id: 'articles', label: 'Статьи', icon: 'file-text', group: 'content', role: 'editor' },
+  { id: 'magazine', label: 'Журнал', icon: 'book', group: 'content', role: 'editor' },
+  { id: 'topics', label: 'Темы', icon: 'hash', group: 'content', role: 'editor' },
+  { id: 'members', label: 'Участники', icon: 'users', group: 'community', role: 'admin' },
+  { id: 'tickets', label: 'Тикеты', icon: 'ticket', group: 'community', role: 'editor' },
+  { id: 'newsletter', label: 'Рассылка', icon: 'mail', group: 'distribution', ownerOnly: true },
+  { id: 'deploys', label: 'Деплои', icon: 'rocket', group: 'distribution', role: 'editor' },
+  { id: 'settings', label: 'Настройки', icon: 'settings', group: 'admin', role: 'admin' },
 ];
 
 const rank: Record<Role, number> = { viewer: 0, editor: 1, admin: 2 };

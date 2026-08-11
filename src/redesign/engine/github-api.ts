@@ -138,6 +138,72 @@ export const listTickets = async (repo = 'tickets'): Promise<readonly Ticket[]> 
   return Array.isArray(data) ? data.map(toTicket).filter((t): t is Ticket => t !== undefined) : [];
 };
 
+/** POST with the active token; returns ok + parsed body (undefined on failure). */
+const post = async (path: string, body: unknown): Promise<{ ok: boolean; data: unknown }> => {
+  const t = await token();
+  if (t === undefined) return { ok: false, data: undefined };
+  try {
+    const response = await fetch(`${API}${path}`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${t}`,
+        accept: 'application/vnd.github+json',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    return { ok: response.ok, data: response.ok ? await response.json() : undefined };
+  } catch {
+    return { ok: false, data: undefined };
+  }
+};
+
+/** Fields a new ticket carries; `kind` maps to a GitHub label {@link kindOf} reads back. */
+export interface NewTicket {
+  readonly title: string;
+  readonly body: string;
+  readonly kind: Ticket['kind'];
+}
+
+/** The outcome of a create attempt — number/url on success, message on failure. */
+export interface CreateResult {
+  readonly ok: boolean;
+  readonly number?: number;
+  readonly url?: string;
+}
+
+/** Labels applied per kind so the created issue reads back as the same kind. */
+const LABELS_OF: Readonly<Record<Ticket['kind'], readonly string[]>> = {
+  bug: ['bug'],
+  story: ['story'],
+  other: [],
+};
+
+/**
+ * Opens a new issue in the `tickets` repo as the signed-in member. Every org
+ * member has at least read on that repo, and GitHub's read role already permits
+ * opening issues, so any member can file a ticket with their own token — the
+ * author is the real person, not a bot.
+ */
+export const createTicket = async (
+  ticket: NewTicket,
+  repo = 'tickets',
+): Promise<CreateResult> => {
+  const { ok, data } = await post(`/repos/${OWNER}/${repo}/issues`, {
+    title: ticket.title,
+    body: ticket.body,
+    labels: LABELS_OF[ticket.kind],
+  });
+  if (!ok) return { ok: false };
+  const number = field(data, 'number');
+  const url = field(data, 'html_url');
+  return {
+    ok: true,
+    number: typeof number === 'number' ? number : undefined,
+    url: typeof url === 'string' ? url : undefined,
+  };
+};
+
 /** A recent push (commit) to the content repo, for the deploy board. */
 export interface Push {
   readonly sha: string;

@@ -63,9 +63,20 @@ describe('correlateDeploys', () => {
     expect(d.runUrl).toBe('r1');
   });
 
-  it('reports unknown when no run matches', () => {
+  it('reports unknown when there are no runs at all', () => {
     const [d] = correlateDeploys([push({ date: '2020-01-01T00:00:00Z' })], []);
     expect(d.phase).toBe('unknown');
     expect(d.durationSec).toBeUndefined();
+  });
+
+  it('reports pending for a fresh push newer than every known run', () => {
+    // The just-committed push has not triggered its deploy yet: awaiting, not
+    // missing data (QA #10 — no more grey no-data dot right after a commit).
+    const [d] = correlateDeploys(
+      [push({ date: '2026-08-04T12:00:00Z' })],
+      [run({ createdAt: '2026-08-04T09:20:35Z', url: 'r-old' })],
+    );
+    expect(d.phase).toBe('pending');
+    expect(d.runUrl).toBeUndefined();
   });
 });
