@@ -8,6 +8,16 @@
  * eviction or a post-deploy SW version bump.
  */
 import { swFetch } from './sw-fetch.js';
+import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
+
+/** The active GitHub token for direct REST reads: the injected dev token, else
+ * the signed-in session token. Mirrors github-api.ts so the API-first article
+ * list works both in local dev:token and on the deployed admin. */
+const freshGhToken = async (): Promise<string | undefined> => {
+  const dev = import.meta.env.VITE_DEV_TOKEN;
+  if (typeof dev === 'string' && dev.length > 0) return dev;
+  return (await ensureFreshToken()) ?? undefined;
+};
 
 /** One entry in a repo directory listing. */
 export interface TreeEntry {
@@ -417,15 +427,109 @@ export const listArticles = async (): Promise<readonly ArticleSummary[]> => {
   const summaries = await mapPool([...bySlug.entries()], 6, ([slug, langs]) =>
     summariseArticle(slug, [...langs]),
   );
-  // Chronological, oldest → newest (ISO YYYY-MM-DD sorts lexicographically);
-  // undated articles sort last. Matches every content list's ordering.
-  return [...summaries].sort((a, b) =>
-    (a.date ?? '9999').localeCompare(b.date ?? '9999'),
-  );
+  return [...summaries].sort(byDateAsc);
+};
+
+/** Groups `blog/<slug>/index.<lang>.md` paths into slug → sorted langs. */
+const groupArticlePaths = (paths: readonly string[]): Map<string, string[]> => {
+  const bySlug = new Map<string, string[]>();
+  for (const p of paths) {
+    const m = p.match(/^blog\/([^/]+)\/index\.([a-z]{2,3})\.md$/);
+    if (m) {
+      const slug = m[1] as string;
+      const langs = bySlug.get(slug) ?? [];
+      langs.push(m[2] as string);
+      bySlug.set(slug, langs);
+    }
+  }
+  return bySlug;
+};
+
+/** Outcome of the API-first article load: the list plus an optional real error. */
+export interface ArticleListResult {
+  readonly articles: readonly ArticleSummary[];
+  readonly error?: string;
+}
+
+/**
+ * Lists articles straight from the GitHub REST API — the flat git tree in one
+ * request for the slugs + languages, then each preferred-language file's raw
+ * body (parallel, capped) for the title/date. This is the fast, reliable path
+ * the list uses: it does NOT wait for the Service-Worker git clone (that heavy
+ * clone is only needed to *edit*), so the list appears in seconds and surfaces
+ * a real error instead of hanging on "compressing objects". `onProgress`
+ * reports title-fetch progress so the UI shows "N of M", not an opaque spinner.
+ */
+export const listArticlesViaApi = async (
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<ArticleListResult> => {
+  const branch = import.meta.env.VITE_GITHUB_BRANCH ?? 'develop';
+  const base = `https://api.github.com/repos/communist-prometheus/public-website-content`;
+  const t = await freshGhToken();
+  if (t === undefined) return { articles: [], error: 'signed-out' };
+  const auth = { authorization: `Bearer ${t}` };
+  try {
+    const treeRes = await fetch(`${base}/git/trees/${branch}?recursive=1`, {
+      headers: { ...auth, accept: 'application/vnd.github+json' },
+    });
+    if (!treeRes.ok) {
+      return { articles: [], error: `Не удалось получить список файлов из репозитория (${treeRes.status}).` };
+    }
+    const data: unknown = await treeRes.json();
+    const tree = typeof data === 'object' && data && 'tree' in data ? Reflect.get(data, 'tree') : undefined;
+    const paths = Array.isArray(tree)
+      ? tree.map((e) => (typeof e === 'object' && e && 'path' in e ? String(Reflect.get(e, 'path')) : '')).filter(Boolean)
+      : [];
+    const slugs = [...groupArticlePaths(paths).entries()];
+    onProgress?.(0, slugs.length);
+    let done = 0;
+    const summaries = await mapPool(slugs, 6, async ([slug, langs]) => {
+      const lang = preferredLang(langs);
+      let md = '';
+      try {
+        const fileRes = await fetch(`${base}/contents/blog/${slug}/index.${lang}.md?ref=${branch}`, {
+          headers: { ...auth, accept: 'application/vnd.github.raw' },
+        });
+        if (fileRes.ok) md = await fileRes.text();
+      } catch {
+        /* a single title failing must not sink the whole list */
+      }
+      done += 1;
+      onProgress?.(done, slugs.length);
+      return summariseFromMarkdown(slug, langs, md);
+    });
+    return { articles: [...summaries].sort(byDateAsc) };
+  } catch (e) {
+    return { articles: [], error: e instanceof Error ? e.message : String(e) };
+  }
 };
 
 const preferredLang = (langs: readonly string[]): string =>
   langs.find((l) => l === 'ru') ?? langs.find((l) => l === 'en') ?? (langs[0] as string);
+
+/** Builds an article summary from an already-fetched markdown body (pure). */
+const summariseFromMarkdown = (
+  slug: string,
+  langs: readonly string[],
+  markdown: string,
+): ArticleSummary => ({
+  slug,
+  title: frontmatterValue(markdown, 'title') ?? slug.replace(/-/g, ' '),
+  topic: frontmatterValue(markdown, 'topic'),
+  // Articles are inconsistent: `pubDate`, `publishDate` (magazine-era) or
+  // `date`. Read all three so every article has a real date to sort by,
+  // otherwise the `publishDate` ones fall to '9999' and clump at the end.
+  date:
+    frontmatterValue(markdown, 'pubDate') ??
+    frontmatterValue(markdown, 'publishDate') ??
+    frontmatterValue(markdown, 'date'),
+  published: frontmatterValue(markdown, 'draft') !== 'true',
+  languages: [...langs].sort(),
+});
+
+/** Chronological, oldest → newest; undated last. Matches every content list. */
+const byDateAsc = (a: ArticleSummary, b: ArticleSummary): number =>
+  (a.date ?? '9999').localeCompare(b.date ?? '9999');
 
 const summariseArticle = async (
   slug: string,
@@ -433,18 +537,5 @@ const summariseArticle = async (
 ): Promise<ArticleSummary> => {
   const lang = preferredLang(langs);
   const markdown = (await readFile(`blog/${slug}/index.${lang}.md`)) ?? '';
-  return {
-    slug,
-    title: frontmatterValue(markdown, 'title') ?? slug.replace(/-/g, ' '),
-    topic: frontmatterValue(markdown, 'topic'),
-    // Articles are inconsistent: `pubDate`, `publishDate` (magazine-era) or
-    // `date`. Read all three so every article has a real date to sort by,
-    // otherwise the `publishDate` ones fall to '9999' and clump at the end.
-    date:
-      frontmatterValue(markdown, 'pubDate') ??
-      frontmatterValue(markdown, 'publishDate') ??
-      frontmatterValue(markdown, 'date'),
-    published: frontmatterValue(markdown, 'draft') !== 'true',
-    languages: [...langs].sort(),
-  };
+  return summariseFromMarkdown(slug, langs, markdown);
 };

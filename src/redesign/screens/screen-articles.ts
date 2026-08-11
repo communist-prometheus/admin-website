@@ -1,10 +1,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
-import { listArticles, type ArticleSummary } from '../engine/content.js';
-import { onEngineReady } from '../engine/engine-ready.js';
-import { classifyEmpty } from '../engine/load-state.js';
-import '../components/engine-loading.js';
+import { listArticlesViaApi, type ArticleSummary } from '../engine/content.js';
 
 /**
  * Articles screen (content-list spec). Lists the actual `blog/<slug>/index.<lang>.md`
@@ -69,30 +66,39 @@ export class ScreenArticles extends LitElement {
     }
   `;
 
-  /** Articles read from the repo; empty until the engine has loaded them. */
+  /** Articles read straight from the GitHub API; empty until loaded. */
   @state() private articles: readonly ArticleSummary[] = [];
 
   /** Whether a read has completed (so we can distinguish loading from empty). */
   @state() private loaded = false;
 
-  /** Unsubscribes the engine-ready listener on disconnect. */
-  private disposeReady: () => void = () => {};
+  /** Whether a load is in flight (drives the progress indicator). */
+  @state() private loading = false;
+
+  /** Title-fetch progress: how many of how many articles have their title. */
+  @state() private progress: { readonly done: number; readonly total: number } = {
+    done: 0,
+    total: 0,
+  };
+
+  /** The real load error, when the tree/title fetch failed (empty otherwise). */
+  @state() private error = '';
 
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
-    // The engine may still be cloning the repo (first load): re-read when ready.
-    this.disposeReady = onEngineReady(() => void this.load());
-  }
-
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this.disposeReady();
   }
 
   private async load(): Promise<void> {
-    const articles = await listArticles();
-    this.articles = articles;
+    this.loading = true;
+    this.error = '';
+    this.progress = { done: 0, total: 0 };
+    const result = await listArticlesViaApi((done, total) => {
+      this.progress = { done, total };
+    });
+    this.articles = result.articles;
+    this.error = result.error ?? '';
+    this.loading = false;
     this.loaded = true;
   }
 
@@ -119,13 +125,19 @@ export class ScreenArticles extends LitElement {
   }
 
   private renderEmpty() {
-    const state = classifyEmpty(this.loaded);
-    if (state === 'loading') {
+    if (this.loading) {
+      const { done, total } = this.progress;
+      const label =
+        total > 0 ? `Загружаем заголовки: ${done} из ${total}` : 'Получаем список статей…';
       return html`<div class="empty">
-        <engine-loading label="Загружаем материалы…"></engine-loading>
+        <cp-progress
+          ?indeterminate=${total === 0}
+          value=${total > 0 ? done / total : 0}
+        ></cp-progress>
+        <p>${label}</p>
       </div>`;
     }
-    if (state === 'signed-out') {
+    if (this.error === 'signed-out') {
       return html`
         <div class="empty">
           <p>Здесь появятся материалы репозитория. Войдите через GitHub, чтобы загрузить их.</p>
@@ -134,7 +146,7 @@ export class ScreenArticles extends LitElement {
     }
     return html`
       <div class="empty">
-        <p>Материалов пока нет или не удалось их загрузить.</p>
+        <p>${this.error !== '' ? `Не удалось загрузить статьи: ${this.error}` : 'Материалов пока нет.'}</p>
         <cp-button variant="secondary" @cp-click=${() => void this.load()}>Обновить</cp-button>
       </div>
     `;
