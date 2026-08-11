@@ -113,6 +113,19 @@ describe('listArticles fan-out', () => {
     const order = (await listArticles()).map((a) => a.slug);
     expect(order).toEqual(['older', 'newer', 'undated']);
   });
+
+  it('sorts articles dated with `publishDate` too, not just `pubDate` (QA sort)', async () => {
+    tree['blog'] = [
+      { type: 'dir', name: 'index.ru.md', path: 'blog/a-pubdate/index.ru.md' },
+      { type: 'dir', name: 'index.ru.md', path: 'blog/b-publishdate/index.ru.md' },
+    ];
+    // The `publishDate` article is older; it must sort FIRST, not clump last as
+    // undated (the bug: half the real articles use `publishDate`).
+    files['blog/a-pubdate/index.ru.md'] = '---\ntitle: A\npubDate: 2026-06-01\n---\n';
+    files['blog/b-publishdate/index.ru.md'] = '---\ntitle: B\npublishDate: 2026-02-01\n---\n';
+    const order = (await listArticles()).map((a) => a.slug);
+    expect(order).toEqual(['b-publishdate', 'a-pubdate']);
+  });
 });
 
 describe('createMagazineIssue count (QA #17)', () => {

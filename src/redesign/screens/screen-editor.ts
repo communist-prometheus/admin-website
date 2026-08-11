@@ -454,6 +454,9 @@ export class ScreenEditor extends LitElement {
   /** Whether the initial read has completed (gates the demo `cp-tag`). */
   @state() private loaded = false;
 
+  /** True once the user edits the body or a property; drives the save note. */
+  @state() private dirty = false;
+
   /** Active language variant driving the `cp-tabs`. */
   @state() private activeLang = 'ru';
 
@@ -616,11 +619,20 @@ export class ScreenEditor extends LitElement {
     // the real text. Seed the full text and remember it to only write on change.
     this.description = readFrontmatterField(fm, 'description') ?? '';
     this.descriptionSeed = this.description;
-    const date = frontmatterValue(fm, 'pubDate') ?? frontmatterValue(fm, 'date');
+    // Content is inconsistent: some articles use `pubDate`, some `publishDate`
+    // (magazine-era), some `date`. Read all three so every article carries a real
+    // date (else half the list has no date and clumps at the end when sorted).
+    const date =
+      frontmatterValue(fm, 'pubDate') ??
+      frontmatterValue(fm, 'publishDate') ??
+      frontmatterValue(fm, 'date');
     if (date !== undefined) this.pubDate = date;
     const published = frontmatterValue(fm, 'published');
     this.published =
       published !== undefined ? published === 'true' : frontmatterValue(fm, 'draft') !== 'true';
+    // Freshly loaded content is not "unsaved" — clear the dirty flag the save
+    // note reads (it used to be hardcoded on, flagging every article).
+    this.dirty = false;
   }
 
   /**
@@ -674,11 +686,19 @@ export class ScreenEditor extends LitElement {
     await this.loadLang(lang);
   }
 
+  // The editor's cp-change only fires for real user edits (the component
+  // suppresses the programmatic value sync), so marking dirty here is safe.
+  private onBodyChange = (event: CustomEvent<{ value: string }>): void => {
+    this.body = event.detail.value;
+    this.dirty = true;
+  };
+
   private onTopicChange = (event: Event): void => {
     if (event instanceof CustomEvent) {
       const value: unknown = event.detail?.value;
       if (typeof value === 'string') {
         this.topic = value;
+        this.dirty = true;
       }
     }
   };
@@ -688,6 +708,7 @@ export class ScreenEditor extends LitElement {
       const value: unknown = event.detail?.value;
       if (typeof value === 'string') {
         this.rubric = value;
+        this.dirty = true;
       }
     }
   };
@@ -697,6 +718,7 @@ export class ScreenEditor extends LitElement {
       const value: unknown = event.detail?.value;
       if (typeof value === 'string') {
         this.pubDate = value;
+        this.dirty = true;
       }
     }
   };
@@ -706,6 +728,7 @@ export class ScreenEditor extends LitElement {
       const value: unknown = event.detail?.value;
       if (typeof value === 'string') {
         this.description = value;
+        this.dirty = true;
       }
     }
   };
@@ -715,6 +738,7 @@ export class ScreenEditor extends LitElement {
       const checked: unknown = event.detail?.checked;
       if (typeof checked === 'boolean') {
         this.published = checked;
+        this.dirty = true;
       }
     }
   };
@@ -758,6 +782,7 @@ export class ScreenEditor extends LitElement {
     if (result.ok && result.sha !== undefined) {
       this.stageStates = ['done', 'done', 'done'];
       this.publishSha = result.sha;
+      this.dirty = false;
     } else {
       this.stageStates = ['done', 'failed', 'failed'];
       this.publishError = result.error ?? 'Коммит или пуш не удался.';
@@ -951,8 +976,7 @@ export class ScreenEditor extends LitElement {
           class="live"
           .value=${this.body}
           placeholder="Текст статьи в Markdown…"
-          @cp-change=${(event: CustomEvent<{ value: string }>) =>
-            (this.body = event.detail.value)}
+          @cp-change=${this.onBodyChange}
         ></cp-markdown-editor>
         <p class="hint">
           Живой предпросмотр: форматирование отрендерено сразу, а разметку
@@ -960,9 +984,11 @@ export class ScreenEditor extends LitElement {
           <span class="kbd">&gt;</span> видно только на строке с курсором.
         </p>
         <p class="save-note">
-          <cp-icon name="warning" size="16"></cp-icon>
-          <span class="draft">несохранённые правки</span>
-          <span aria-hidden="true">·</span>
+          ${this.dirty
+            ? html`<cp-icon name="warning" size="16"></cp-icon>
+                <span class="draft">несохранённые правки</span>
+                <span aria-hidden="true">·</span>`
+            : nothing}
           <span>${this.activeLang}</span>
           <span aria-hidden="true">·</span>
           <span class="path">${this.articlePath}</span>

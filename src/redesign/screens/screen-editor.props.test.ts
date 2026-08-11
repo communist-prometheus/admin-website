@@ -31,6 +31,8 @@ interface EditorInternals {
   description: string;
   pubDate: string;
   published: boolean;
+  dirty: boolean;
+  onDescriptionChange: (event: Event) => void;
   readonly editedMarkdown: string;
   readonly incomplete: boolean;
   applyMarkdown: (markdown: string, path: string, live: boolean) => void;
@@ -70,6 +72,27 @@ describe('screen-editor properties write-back (QA #4)', () => {
     const el = seededEditor();
     el.pubDate = '2026-09-09';
     expect(el.editedMarkdown).toContain('pubDate: 2026-09-09');
+  });
+
+  it('seeds pubDate from a `publishDate` article (magazine-era field)', () => {
+    const el = editorFrom(
+      '---\ntitle: "T"\npublishDate: 2026-07-06\npublished: true\nlang: it\n---\n\nBody\n',
+      'it',
+    );
+    expect(el.pubDate).toBe('2026-07-06');
+  });
+
+  it('is not dirty right after loading (save note stays hidden)', () => {
+    // Regression: the save note was hardcoded on, so every opened article read
+    // as having "unsaved changes".
+    const el = seededEditor();
+    expect(el.dirty).toBe(false);
+  });
+
+  it('becomes dirty once a property is edited', () => {
+    const el = seededEditor();
+    el.onDescriptionChange(new CustomEvent('cp-change', { detail: { value: 'edited' } }));
+    expect(el.dirty).toBe(true);
   });
 
   it('writes an edited description back as a literal block scalar', () => {
