@@ -3,7 +3,6 @@ import type { TemplateResult } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import type { CpSelectOption, CpTab } from '@communist-prometheus/cp-components';
-import '../editor/cp-markdown-editor.js';
 import type { CpMarkdownEditor } from '../editor/cp-markdown-editor.js';
 import {
   listArticles,
@@ -488,6 +487,10 @@ export class ScreenEditor extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
+    // Lazy-load the CodeMirror editor only when the editor screen mounts, so all
+    // of CM6 stays out of the initial bundle. LitElement preserves the `.value`
+    // binding across the element's upgrade, so no ready-gate is needed.
+    void import('../editor/cp-markdown-editor.js');
     this.loadedSlug = this.routeSlug();
     void this.load();
     globalThis.addEventListener('hashchange', this.onHashChange);
