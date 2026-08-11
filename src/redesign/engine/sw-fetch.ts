@@ -22,15 +22,38 @@ const isEngineNotReady = async (response: Response): Promise<boolean> => {
  * token exactly once (deduped across concurrent callers) and retries the
  * request; any other outcome passes through untouched.
  */
+/**
+ * fetch with an optional abort timeout. A hung SW handler (e.g. a git stage that
+ * never resolves) must not freeze the caller forever — with a timeout the fetch
+ * rejects so the publish flow can surface an error instead of an infinite
+ * "publishing…" spinner. Without a timeout it behaves exactly like native fetch
+ * (reads during a slow first clone stay untimed).
+ */
+const fetchWithTimeout = async (
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  timeoutMs: number | undefined,
+): Promise<Response> => {
+  if (timeoutMs === undefined) return fetch(input, init);
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+};
+
 export const swFetch = async (
   input: RequestInfo | URL,
   init?: RequestInit,
+  timeoutMs?: number,
 ): Promise<Response> => {
-  const response = await fetch(input, init);
+  const response = await fetchWithTimeout(input, init, timeoutMs);
   if (!(await isEngineNotReady(response))) return response;
   healing ??= reinitEngine().finally(() => {
     healing = undefined;
   });
   const healed = await healing;
-  return healed ? fetch(input, init) : response;
+  return healed ? fetchWithTimeout(input, init, timeoutMs) : response;
 };

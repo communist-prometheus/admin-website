@@ -189,10 +189,9 @@ export class ScreenEditor extends LitElement {
     .ed {
       max-width: 44rem;
       margin-inline: auto;
-      /* Never let a wide child (e.g. the 5-language tab strip) push the page
-         sideways and clip content off the left edge on mobile. */
+      /* Wide children (the language tabs) must adapt inside their own scroll
+         strip, not push the column — so no clipping is needed here. */
       min-width: 0;
-      overflow-x: clip;
     }
 
     .head {
@@ -782,9 +781,10 @@ export class ScreenEditor extends LitElement {
     this.publishBusy = true;
     this.stageStates = ['running', 'pending', 'pending'];
     const staged = await stageFile(this.articlePath, this.editedMarkdown);
-    if (!staged) {
+    if (!staged.ok) {
       this.stageStates = ['failed', 'pending', 'pending'];
-      this.publishError = `Не удалось подготовить «${this.articlePath}» к коммиту.`;
+      this.publishError =
+        staged.error ?? `Не удалось подготовить «${this.articlePath}» к коммиту.`;
       this.publishBusy = false;
       return;
     }
@@ -803,7 +803,10 @@ export class ScreenEditor extends LitElement {
   }
 
   private closePublish = (): void => {
-    if (this.publishBusy) return;
+    // Always allow closing — a hung publish must never trap the user in the
+    // dialog. Abandoning it clears the busy flag; the timed-out SW op resolves
+    // to a no-op (the file is already staged locally, so a re-publish is safe).
+    this.publishBusy = false;
     this.publishOpen = false;
     this.stageStates = [];
     this.publishSha = '';
