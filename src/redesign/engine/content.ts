@@ -75,28 +75,53 @@ export const listTree = async (path = ''): Promise<readonly TreeEntry[]> => {
 };
 
 /** Stages a file write in the local repo (no commit yet). Returns success. */
-export const stageFile = async (path: string, content: string): Promise<boolean> => {
+/** A local stage is fast; a network push is slower. Bound both so a hung SW git
+ * op fails gracefully instead of freezing the publish dialog forever. */
+const STAGE_TIMEOUT_MS = 30_000;
+const PUSH_TIMEOUT_MS = 90_000;
+
+export const stageFile = async (
+  path: string,
+  content: string,
+): Promise<{ ok: boolean; error?: string }> => {
   clearContentCache();
   try {
-    const response = await swFetch('/api/github/file/stage', {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ path, content }),
-    });
-    return response.ok;
-  } catch {
-    return false;
+    const response = await swFetch(
+      '/api/github/file/stage',
+      {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ path, content }),
+      },
+      STAGE_TIMEOUT_MS,
+    );
+    if (response.ok) return { ok: true };
+    // Surface the SW's real reason (e.g. an unsupported lang or a schema
+    // rejection) instead of a generic "could not prepare" so a failed publish
+    // is diagnosable rather than opaque.
+    const data: unknown = await response.json().catch(() => undefined);
+    const error =
+      typeof data === 'object' && data && 'error' in data
+        ? String(Reflect.get(data, 'error'))
+        : `stage failed (${response.status})`;
+    return { ok: false, error };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 };
 
 /** Commits all staged changes and pushes to the remote. Returns the commit sha. */
 export const commitAndPush = async (message: string): Promise<{ ok: boolean; sha?: string; error?: string }> => {
   try {
-    const response = await swFetch('/api/github/commit', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ message }),
-    });
+    const response = await swFetch(
+      '/api/github/commit',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ message }),
+      },
+      PUSH_TIMEOUT_MS,
+    );
     const data: unknown = await response.json();
     const sha = typeof data === 'object' && data !== null && 'sha' in data ? String(data.sha) : undefined;
     const error =
