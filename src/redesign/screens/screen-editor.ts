@@ -5,15 +5,13 @@ import '@communist-prometheus/cp-components';
 import type { CpSelectOption, CpTab } from '@communist-prometheus/cp-components';
 import type { CpMarkdownEditor } from '../editor/cp-markdown-editor.js';
 import {
-  listArticles,
-  readFile,
-  stageFile,
-  commitAndPush,
+  readFileViaApi,
+  articleLangsViaApi,
+  publishFileViaApi,
   upsertFrontmatterField,
   readFrontmatterField,
   upsertFrontmatterBlock,
 } from '../engine/content.js';
-import { onEngineReady } from '../engine/engine-ready.js';
 
 /** One editable article block: a stable id plus its raw markdown source line(s).
  *  The rendered typography is derived from the raw text on every render, so the
@@ -86,8 +84,8 @@ const RUBRIC_OPTIONS: readonly CpSelectOption[] = [
   { value: 'critique', label: 'Критика' },
 ];
 
-/** The real publish pipeline stages, mapped to `stageFile` + `commitAndPush`. */
-const REAL_STAGES: readonly string[] = ['Стейдж', 'Коммит', 'Пуш'];
+/** Publish is now a single GitHub API commit of the one edited file. */
+const REAL_STAGES: readonly string[] = ['Публикация'];
 
 /** Reads a single frontmatter scalar (`key: value`) from a text block. */
 const frontmatterValue = (text: string, key: string): string | undefined => {
@@ -507,6 +505,9 @@ export class ScreenEditor extends LitElement {
   /** Error surfaced by a failed real push ('' otherwise); never swallowed. */
   @state() private publishError = '';
 
+  /** Set when the single-article API load fails (shown instead of a spinner). */
+  @state() private loadError = '';
+
   /** Set when a user click should move focus into the freshly-rendered textarea. */
   private pendingFocus = false;
 
@@ -521,9 +522,6 @@ export class ScreenEditor extends LitElement {
    */
   private readonly langBuffers = new Map<string, string>();
 
-  /** Unsubscribes the engine-ready listener on disconnect. */
-  private disposeReady: () => void = () => {};
-
   override connectedCallback(): void {
     super.connectedCallback();
     // Lazy-load the CodeMirror editor only when the editor screen mounts, so all
@@ -533,18 +531,13 @@ export class ScreenEditor extends LitElement {
     this.loadedSlug = this.routeSlug();
     void this.load();
     globalThis.addEventListener('hashchange', this.onHashChange);
-    // First-load race (QA #12): if the engine was still cloning the repo, our
-    // first read found no article. Re-read when it is ready — but never clobber
-    // an intentional new draft or an already-loaded article.
-    this.disposeReady = onEngineReady(() => {
-      if (this.slug === '' && this.routeSlug() !== 'new') void this.load();
-    });
+    // The article is read directly from the GitHub API, so there is no engine
+    // clone to wait on — no ready-gate re-read needed.
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     globalThis.removeEventListener('hashchange', this.onHashChange);
-    this.disposeReady();
   }
 
   // Re-load when the editor stays mounted but the requested slug changes
@@ -565,35 +558,37 @@ export class ScreenEditor extends LitElement {
   private async load(): Promise<void> {
     // A fresh article invalidates any per-language edits from the previous one.
     this.langBuffers.clear();
-    const articles = await listArticles();
-    // Open the article the route names — clicking a card must open THAT article,
-    // not always the first one. `new` starts a blank document; a missing/unknown
-    // slug falls back to the first article.
     const requested = this.routeSlug();
     if (requested === 'new') {
       this.startNewArticle();
       this.loaded = true;
       return;
     }
-    const target =
-      (requested !== '' ? articles.find((a) => a.slug === requested) : undefined) ?? articles.at(0);
-    if (target !== undefined) {
-      const lang = target.languages.includes('ru') ? 'ru' : (target.languages.at(0) ?? 'ru');
-      const path = `blog/${target.slug}/index.${lang}.md`;
-      const markdown = await readFile(path);
-      if (markdown !== undefined && markdown.trim() !== '') {
-        this.slug = target.slug;
-        this.availableLangs = target.languages;
-        // `lang` is already one of the article's real languages (line above),
-        // so use it directly instead of collapsing anything non-ru/en/it to ru.
-        this.activeLang = lang;
-        this.applyMarkdown(markdown, path, true);
-        this.loaded = true;
-        return;
-      }
+    if (requested === '') {
+      this.loaded = true;
+      return;
     }
-    // No real article (signed out or empty repo): stay empty and prompt sign-in
-    // rather than loading a fabricated demo document.
+    // Fetch ONLY the opened article via the GitHub API — its languages (one dir
+    // listing) then the preferred file — instead of cloning the whole repo. This
+    // is what the article-loading spinner used to wait on forever.
+    this.loadError = '';
+    const langs = await articleLangsViaApi(requested);
+    if (langs.length === 0) {
+      this.loadError = 'Не удалось загрузить статью (нет доступа или её нет в репозитории).';
+      this.loaded = true;
+      return;
+    }
+    const lang = langs.includes('ru') ? 'ru' : (langs[0] ?? 'ru');
+    const path = `blog/${requested}/index.${lang}.md`;
+    const markdown = await readFileViaApi(path);
+    if (markdown !== undefined && markdown.trim() !== '') {
+      this.slug = requested;
+      this.availableLangs = langs;
+      this.activeLang = lang;
+      this.applyMarkdown(markdown, path, true);
+    } else {
+      this.loadError = `Не удалось загрузить «${path}».`;
+    }
     this.loaded = true;
   }
 
@@ -607,7 +602,7 @@ export class ScreenEditor extends LitElement {
 
   private async loadLang(lang: string): Promise<void> {
     const path = `blog/${this.slug}/index.${lang}.md`;
-    const markdown = await readFile(path);
+    const markdown = await readFileViaApi(path);
     if (markdown !== undefined && markdown.trim() !== '') {
       this.applyMarkdown(markdown, path, true);
     }
@@ -776,28 +771,20 @@ export class ScreenEditor extends LitElement {
     void this.runRealPublish();
   };
 
-  /** Runs the REAL git cycle: stage the edited markdown, then commit + push. */
+  /** Publishes the ONE edited file via the GitHub API — a single-file commit,
+   *  no clone and no whole-repo push. */
   private async runRealPublish(): Promise<void> {
     this.publishBusy = true;
-    this.stageStates = ['running', 'pending', 'pending'];
-    const staged = await stageFile(this.articlePath, this.editedMarkdown);
-    if (!staged.ok) {
-      this.stageStates = ['failed', 'pending', 'pending'];
-      this.publishError =
-        staged.error ?? `Не удалось подготовить «${this.articlePath}» к коммиту.`;
-      this.publishBusy = false;
-      return;
-    }
-    this.stageStates = ['done', 'running', 'pending'];
+    this.stageStates = ['running'];
     const message = `${this.articleTitle === '' ? 'Материал' : this.articleTitle}: правка из редактора`;
-    const result = await commitAndPush(message);
-    if (result.ok && result.sha !== undefined) {
-      this.stageStates = ['done', 'done', 'done'];
-      this.publishSha = result.sha;
+    const result = await publishFileViaApi(this.articlePath, this.editedMarkdown, message);
+    if (result.ok) {
+      this.stageStates = ['done'];
+      this.publishSha = result.sha ?? 'ok';
       this.dirty = false;
     } else {
-      this.stageStates = ['done', 'failed', 'failed'];
-      this.publishError = result.error ?? 'Коммит или пуш не удался.';
+      this.stageStates = ['failed'];
+      this.publishError = result.error ?? 'Публикация не удалась.';
     }
     this.publishBusy = false;
   }
@@ -965,10 +952,17 @@ export class ScreenEditor extends LitElement {
             <h1 class="title" tabindex="-1">Редактор</h1>
           </div>
           <p class="hint">
-            ${this.loaded
-              ? 'Войдите через GitHub, чтобы открыть материалы репозитория для правки.'
-              : 'Загружаем материал…'}
+            ${!this.loaded
+              ? 'Загружаем материал…'
+              : this.loadError !== ''
+                ? this.loadError
+                : 'Войдите через GitHub, чтобы открыть материалы репозитория для правки.'}
           </p>
+          ${this.loaded && this.loadError !== ''
+            ? html`<cp-button variant="secondary" @cp-click=${() => void this.load()}
+                >Обновить</cp-button
+              >`
+            : nothing}
         </article>
       `;
     }

@@ -786,6 +786,20 @@ export class AppShell extends LitElement {
 
   /** Renders the login dialog (token bypass + GitHub OAuth). */
   private renderAuthDialog() {
+    // Machine-only auth in production: GitHub OAuth, no manual token entry. The
+    // PAT field survives ONLY in the local dev build (import.meta.env.DEV) for
+    // `dev:token` — it is compiled out of the deployed bundle entirely.
+    const devToken = import.meta.env.DEV
+      ? html`
+          <cp-input
+            label="GitHub-токен (PAT) — только локальная разработка"
+            type="password"
+            .value=${this.authToken}
+            @cp-input=${(event: CustomEvent<{ value: string }>) =>
+              (this.authToken = event.detail.value)}
+          ></cp-input>
+        `
+      : nothing;
     return html`
       <cp-dialog
         ?open=${this.authOpen}
@@ -794,24 +808,20 @@ export class AppShell extends LitElement {
         @cp-cancel=${() => (this.authOpen = false)}
       >
         <p class="auth-hint">
-          Вставьте GitHub-токен (fine-grained PAT с доступом Contents к репозиторию контента) —
-          самый стабильный способ. Или войдите через GitHub.
+          Войдите через GitHub — авторизация полностью машинная, вручную вводить токен не нужно.
         </p>
-        <cp-input
-          label="GitHub-токен (PAT)"
-          type="password"
-          .value=${this.authToken}
-          @cp-input=${(event: CustomEvent<{ value: string }>) =>
-            (this.authToken = event.detail.value)}
-        ></cp-input>
+        ${devToken}
         ${this.authError ? html`<p class="auth-error">${this.authError}</p>` : nothing}
         <div slot="footer" class="auth-actions">
-          <cp-button variant="secondary" @cp-click=${() => this.handleLogin()}
-            >Войти через GitHub</cp-button
-          >
-          <cp-button arrow ?loading=${this.loggingIn} @cp-click=${() => this.handleTokenLogin(this.authToken)}
-            >Войти по токену</cp-button
-          >
+          ${import.meta.env.DEV
+            ? html`<cp-button
+                variant="secondary"
+                ?loading=${this.loggingIn}
+                @cp-click=${() => this.handleTokenLogin(this.authToken)}
+                >Войти по токену (dev)</cp-button
+              >`
+            : nothing}
+          <cp-button arrow @cp-click=${() => this.handleLogin()}>Войти через GitHub</cp-button>
         </div>
       </cp-dialog>
     `;

@@ -13,7 +13,7 @@ vi.mock('../engine/content.js', async (importOriginal) => {
     'blog/x/index.ru.md': '---\ntitle: "RU"\ncategory: t\npublished: true\n---\n\nRU body\n',
     'blog/x/index.en.md': '---\ntitle: "EN"\ncategory: t\npublished: true\n---\n\nEN body\n',
   };
-  return { ...actual, readFile: async (path: string) => docs[path] };
+  return { ...actual, readFileViaApi: async (path: string) => docs[path] };
 });
 
 const RU = '---\ntitle: "RU"\ncategory: t\npublished: true\n---\n\nRU body\n';
