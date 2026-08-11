@@ -6,7 +6,14 @@ import type { Push, DeployRun } from './github-api.js';
  * per-step breakdown, so the board shows real states rather than invented
  * "step 3 of 5" numbers.
  */
-export type DeployPhase = 'pending' | 'queued' | 'building' | 'published' | 'failed' | 'unknown';
+export type DeployPhase =
+  | 'pending'
+  | 'queued'
+  | 'building'
+  | 'published'
+  | 'superseded'
+  | 'failed'
+  | 'unknown';
 
 /** A push enriched with its deploy outcome for the board. */
 export interface DeployedPush {
@@ -25,6 +32,10 @@ export const deployPhase = (run: DeployRun | undefined): DeployPhase => {
   if (run.status === 'in_progress') return 'building';
   if (run.conclusion === 'success') return 'published';
   if (run.conclusion === 'failure' || run.conclusion === 'timed_out') return 'failed';
+  // A content save fires overlapping deploys (develop + master); deploy.yml's
+  // per-branch concurrency cancels the older one, so a cancelled/skipped run
+  // was superseded by a newer deploy — not "no data".
+  if (run.conclusion === 'cancelled' || run.conclusion === 'skipped') return 'superseded';
   return 'unknown';
 };
 

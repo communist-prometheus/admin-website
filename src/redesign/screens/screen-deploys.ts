@@ -188,6 +188,8 @@ export class ScreenDeploys extends LitElement {
     if (phase === 'building') return { state: 'info', icon: 'refresh', label: 'сборка идёт', spin: true };
     if (phase === 'queued') return { state: 'info', icon: 'refresh', label: 'в очереди', spin: false };
     if (phase === 'pending') return { state: 'info', icon: 'refresh', label: 'ожидание деплоя', spin: true };
+    if (phase === 'superseded')
+      return { state: 'info', icon: 'refresh', label: 'перекрыт новым деплоем', spin: false };
     if (phase === 'failed') return { state: 'danger', icon: 'warning', label: 'не удалось', spin: false };
     return { state: 'neutral', icon: 'more', label: 'нет данных', spin: false };
   }
