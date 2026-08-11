@@ -36,7 +36,12 @@ export class CpMarkdownEditor extends LitElement {
     }
     .cm-content {
       padding: 0;
-      caret-color: var(--color-accent);
+      /* CodeMirror's baseTheme forces the native caret black via
+         '.cm-light .cm-content' (specificity 0,2,0). Override with !important so
+         the caret is the accent colour on the dark ground — cheaper and, unlike
+         an '&light' theme rule, valid (that selector throws in EditorView.theme
+         and killed the whole editor init). */
+      caret-color: var(--color-accent) !important;
     }
     .cm-line {
       padding: 0;
@@ -72,7 +77,11 @@ export class CpMarkdownEditor extends LitElement {
           placeholder(this.placeholder),
           this.appTheme(),
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) this.emit();
+            // Emit only for user edits, never for the programmatic `value` sync in
+            // updated(): after a sync the doc equals `this.value`; a user edit
+            // leaves the doc diverged from the (stale) prop. Emitting on the sync
+            // made the host mark every freshly-opened article as dirty.
+            if (update.docChanged && update.state.doc.toString() !== this.value) this.emit();
           }),
         ],
       }),
@@ -107,14 +116,10 @@ export class CpMarkdownEditor extends LitElement {
       '.cm-selectionBackground, ::selection': {
         backgroundColor: 'var(--accent-bg) !important',
       },
-      // CodeMirror's baseTheme forces the native caret black via
-      // `.cm-light .cm-content` (the view always carries `cm-light` since the
-      // theme is built without {dark:true}), which is invisible on the dark
-      // ground. Match that specificity from this user theme so the caret is the
-      // accent colour in both app themes.
-      '&light .cm-content, &dark .cm-content': {
-        caretColor: 'var(--color-accent)',
-      },
+      // NB: the caret colour is handled by the static `.cm-content` rule with
+      // `!important` (see styles above). Do NOT add an `&light`/`&dark` selector
+      // here — those are only valid in `baseTheme`; in `theme()` they throw
+      // "Unsupported selector" and abort editor initialisation entirely.
       '.cm-activeLine': { backgroundColor: 'transparent' },
       '.cm-placeholder': { color: 'var(--color-text-secondary)' },
     });

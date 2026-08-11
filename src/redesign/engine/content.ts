@@ -412,7 +412,13 @@ const summariseArticle = async (
     slug,
     title: frontmatterValue(markdown, 'title') ?? slug.replace(/-/g, ' '),
     topic: frontmatterValue(markdown, 'topic'),
-    date: frontmatterValue(markdown, 'pubDate') ?? frontmatterValue(markdown, 'date'),
+    // Articles are inconsistent: `pubDate`, `publishDate` (magazine-era) or
+    // `date`. Read all three so every article has a real date to sort by,
+    // otherwise the `publishDate` ones fall to '9999' and clump at the end.
+    date:
+      frontmatterValue(markdown, 'pubDate') ??
+      frontmatterValue(markdown, 'publishDate') ??
+      frontmatterValue(markdown, 'date'),
     published: frontmatterValue(markdown, 'draft') !== 'true',
     languages: [...langs].sort(),
   };
