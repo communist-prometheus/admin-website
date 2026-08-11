@@ -1,6 +1,7 @@
 import type { SWGitConfig } from '@/sw/protocol'
 import { getActiveWorker } from './get-active-worker'
 import { postWithTimeout } from './post-with-timeout'
+import { setSwNonce } from './sw-nonce'
 import { log } from './sw-log'
 
 /**
@@ -9,9 +10,12 @@ import { log } from './sw-log'
  */
 export const initViaMessage = async (config: SWGitConfig): Promise<void> => {
   const w = await getActiveWorker()
-  const d = await postWithTimeout<{ ok: boolean }>(w, {
+  const d = await postWithTimeout<{ ok: boolean; nonce?: string }>(w, {
     type: 'SW_INIT',
     config,
   })
-  if (d.ok) log('info', 'SW init via message')
+  if (d.ok) {
+    setSwNonce(d.nonce)
+    log('info', 'SW init via message')
+  }
 }

@@ -1,8 +1,23 @@
 import { routeRequest } from '../../handlers/route'
 import { log } from '../../logging/logger'
 import type { SWFetchRequest, SWFetchResponse } from '../../protocol'
+import { workerState } from '../../state/state'
 
 type Reply = (data: unknown) => void
+
+/**
+ * The MessageChannel transport bypasses the fetch listener, so it needs the
+ * same confused-deputy nonce check: a `/api/github/*` proxy must echo the
+ * per-session nonce issued at init.
+ */
+const nonceOk = (request: Request): boolean =>
+  request.headers.get('X-SW-Nonce') === workerState.nonce && workerState.nonce !== undefined
+
+const nonceRejection: SWFetchResponse = {
+  status: 403,
+  body: JSON.stringify({ error: 'SW nonce required' }),
+  headers: { 'content-type': 'application/json' },
+}
 
 /**
  * Build a Request from the SW_FETCH message payload.
@@ -55,7 +70,13 @@ export const handleFetchMessage = (
   msg: SWFetchRequest,
   reply: Reply
 ): void => {
-  routeRequest(buildRequest(msg))
+  const request = buildRequest(msg)
+  const { pathname } = new URL(request.url)
+  if (pathname.startsWith('/api/github/') && !nonceOk(request)) {
+    reply(nonceRejection)
+    return
+  }
+  routeRequest(request)
     .then(serializeResponse)
     .then(reply)
     .catch(err => {

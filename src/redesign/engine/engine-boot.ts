@@ -2,6 +2,7 @@ import { getGitHubConfig } from '../../config/github.js';
 import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
 import { registerEngine } from './sw-client.js';
 import { markEngineReady } from './engine-ready.js';
+import { setSwNonce } from './sw-fetch.js';
 
 /**
  * Boots the real content engine for the new UI (git-engine R2/R4/R7): registers
@@ -62,8 +63,9 @@ export const bootEngine = async (token: string): Promise<void> => {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ ...config, token }),
   });
-  const result: { ok?: boolean; error?: string } = await response.json();
+  const result: { ok?: boolean; error?: string; nonce?: string } = await response.json();
   if (result.ok !== true) throw new Error(`engine init failed: ${result.error ?? response.status}`);
+  setSwNonce(result.nonce);
   // Repo is cloned/synced: let screens that mounted before this re-read now.
   markEngineReady();
 };
@@ -95,8 +97,9 @@ export const reinitEngine = async (): Promise<boolean> => {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ ...config, token }),
   });
-  const result: { ok?: boolean } = await response.json().catch(() => ({}));
+  const result: { ok?: boolean; nonce?: string } = await response.json().catch(() => ({}));
   if (result.ok === true) {
+    setSwNonce(result.nonce);
     markEngineReady();
     return true;
   }

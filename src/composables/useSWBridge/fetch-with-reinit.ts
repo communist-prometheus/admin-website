@@ -34,11 +34,27 @@ const retryOnce = async (
  * @param init - Request init
  * @returns The response, after at most one reinit + retry
  */
+/**
+ * Whether a response should trigger a re-init + retry: the "not ready" 503, or
+ * a confused-deputy nonce 403 (a fresh init issues a new nonce the retry echoes).
+ * @param res - The response to inspect
+ * @returns True when a reinit should be attempted
+ */
+const needsReinit = async (res: Response): Promise<boolean> => {
+  if (res.status === 503) return true
+  if (res.status !== 403) return false
+  const body = await res
+    .clone()
+    .text()
+    .catch(() => '')
+  return body.includes('SW nonce')
+}
+
 export const fetchWithReinit = async (
   fetcher: SWFetcher,
   input: string | URL,
   init?: RequestInit
 ): Promise<Response> => {
   const res = await fetcher(input, init)
-  return res.status === 503 ? retryOnce(fetcher, input, init, res) : res
+  return (await needsReinit(res)) ? retryOnce(fetcher, input, init, res) : res
 }

@@ -4,7 +4,25 @@ import { serializeBody } from '@/validation/serialize-body'
 import { fetchWithReinit } from './fetch-with-reinit'
 import { getActiveWorker } from './get-active-worker'
 import { postWithTimeout } from './post-with-timeout'
+import { getSwNonce } from './sw-nonce'
 import { swReady } from './sw-ready'
+
+/** Adds the `X-SW-Nonce` header to a header map, if a nonce is known. */
+const withNonceHeaders = (
+  headers: Record<string, string>
+): Record<string, string> => {
+  const nonce = getSwNonce()
+  return nonce === undefined ? headers : { ...headers, 'X-SW-Nonce': nonce }
+}
+
+/** Adds the `X-SW-Nonce` header to a fetch init, without mutating the input. */
+const withNonce = (init?: RequestInit): RequestInit | undefined => {
+  const nonce = getSwNonce()
+  if (nonce === undefined) return init
+  const headers = new Headers(init?.headers)
+  headers.set('X-SW-Nonce', nonce)
+  return { ...init, headers }
+}
 
 /**
  * Fetch via MessageChannel (bypasses fetch event).
@@ -21,7 +39,7 @@ const viaMessage = async (
     type: 'SW_FETCH',
     url,
     method: init?.method,
-    headers: normalizeHeaders(init?.headers),
+    headers: withNonceHeaders(normalizeHeaders(init?.headers)),
     body: serializeBody(init?.body),
   })
   return new Response(d.body, {
@@ -42,7 +60,7 @@ const transport = (
   init?: RequestInit
 ): Promise<Response> =>
   navigator.serviceWorker.controller
-    ? fetch(input, init)
+    ? fetch(input, withNonce(init))
     : viaMessage(String(input), init)
 
 /**

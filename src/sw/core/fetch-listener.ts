@@ -8,16 +8,24 @@ import { handleInitRequest } from './messaging/handle-init-request'
 declare const self: ServiceWorkerGlobalScope
 
 /**
- * Auto-recover from SW restart, then route the request.
- * Returns a JSON `{ error }` payload on failure so the client decoder
- * can surface a readable message.
- * @param request - The intercepted fetch request
- * @returns Routed response or JSON error
+ * Confused-deputy guard: a `/api/github/*` caller must echo the per-session
+ * nonce issued at init. A same-origin script that never saw the init response
+ * (an injected/XSS payload) cannot borrow the ambient token. Returns a JSON
+ * 403 on mismatch so the client's swFetch can re-init and retry once.
+ * @param request - The intercepted github request
+ * @returns undefined when the nonce is valid, otherwise a 403 response
  */
-const recoverAndRoute = async (request: Request): Promise<Response> => {
-  const ok = await autoRecover()
-  if (ok) return routeRequest(request)
-  return errorResponse('SW not ready', 503)
+const nonceRejection = (request: Request): Response | undefined =>
+  request.headers.get('X-SW-Nonce') === workerState.nonce && workerState.nonce !== undefined
+    ? undefined
+    : errorResponse('SW nonce required', 403)
+
+const guardAndRoute = async (request: Request): Promise<Response> => {
+  if (workerState.state !== 'ready') {
+    const ok = await autoRecover()
+    if (!ok) return errorResponse('SW not ready', 503)
+  }
+  return nonceRejection(request) ?? routeRequest(request)
 }
 
 /**
@@ -36,12 +44,7 @@ export const registerFetchListener = (): void => {
 
     if (!pathname.startsWith('/api/github/')) return
 
-    if (workerState.state !== 'ready') {
-      event.respondWith(recoverAndRoute(event.request))
-      return
-    }
-
     log('debug', 'cache', `intercept ${event.request.method} ${pathname}`)
-    event.respondWith(routeRequest(event.request))
+    event.respondWith(guardAndRoute(event.request))
   })
 }
