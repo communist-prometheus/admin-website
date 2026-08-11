@@ -107,6 +107,14 @@ export class CpMarkdownEditor extends LitElement {
       '.cm-selectionBackground, ::selection': {
         backgroundColor: 'var(--accent-bg) !important',
       },
+      // CodeMirror's baseTheme forces the native caret black via
+      // `.cm-light .cm-content` (the view always carries `cm-light` since the
+      // theme is built without {dark:true}), which is invisible on the dark
+      // ground. Match that specificity from this user theme so the caret is the
+      // accent colour in both app themes.
+      '&light .cm-content, &dark .cm-content': {
+        caretColor: 'var(--color-accent)',
+      },
       '.cm-activeLine': { backgroundColor: 'transparent' },
       '.cm-placeholder': { color: 'var(--color-text-secondary)' },
     });

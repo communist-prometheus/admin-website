@@ -100,7 +100,8 @@ export class AppShell extends LitElement {
     }
     .account {
       font-size: 0.9rem;
-      color: var(--color-text-secondary);
+      color: var(--color-text-primary);
+      font-weight: 500;
     }
     .auth-hint {
       margin: 0 0 var(--spacing-md);
@@ -132,10 +133,10 @@ export class AppShell extends LitElement {
         grid-template-columns: 15rem minmax(0, 1fr);
       }
     }
-    /* Compact header on mobile: keep the sync dot, drop the long label + login. */
+    /* Compact header on mobile: drop the long sync-status label, but keep the
+       logged-in username visible (it was hidden before, leaving a lone Logout). */
     @media (max-width: 767px) {
-      .header-right cp-status,
-      .account {
+      .header-right cp-status {
         display: none;
       }
     }

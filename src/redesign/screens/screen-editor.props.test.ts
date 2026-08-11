@@ -24,6 +24,7 @@ interface EditorInternals {
   live: boolean;
   activeLang: string;
   topic: string;
+  description: string;
   pubDate: string;
   published: boolean;
   readonly editedMarkdown: string;
@@ -63,6 +64,12 @@ describe('screen-editor properties write-back (QA #4)', () => {
     const el = seededEditor();
     el.pubDate = '2026-09-09';
     expect(el.editedMarkdown).toContain('pubDate: 2026-09-09');
+  });
+
+  it('writes an edited description back into the published frontmatter', () => {
+    const el = seededEditor();
+    el.description = 'a new summary';
+    expect(el.editedMarkdown).toContain('description: a new summary');
   });
 
   it('writes the published flag back into the published frontmatter', () => {

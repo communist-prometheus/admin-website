@@ -16,11 +16,18 @@ export class EngineLoading extends LitElement {
   static override styles = css`
     :host {
       display: block;
+      /* Fill the cell even when a parent grid uses justify-items:start, so the
+         centred .wrap below is centred against the full width (mobile included). */
+      justify-self: stretch;
     }
     .wrap {
       display: grid;
       gap: var(--spacing-sm);
       max-width: 30rem;
+      width: 100%;
+      margin-inline: auto;
+      justify-items: center;
+      text-align: center;
       padding: var(--spacing-md) 0;
     }
     .label {

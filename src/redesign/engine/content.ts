@@ -341,8 +341,13 @@ export const listArticles = async (): Promise<readonly ArticleSummary[]> => {
       bySlug.set(slug, set);
     }
   }
-  return mapPool([...bySlug.entries()], 6, ([slug, langs]) =>
+  const summaries = await mapPool([...bySlug.entries()], 6, ([slug, langs]) =>
     summariseArticle(slug, [...langs]),
+  );
+  // Chronological, oldest → newest (ISO YYYY-MM-DD sorts lexicographically);
+  // undated articles sort last. Matches every content list's ordering.
+  return [...summaries].sort((a, b) =>
+    (a.date ?? '9999').localeCompare(b.date ?? '9999'),
   );
 };
 
