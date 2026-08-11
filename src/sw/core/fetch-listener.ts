@@ -8,16 +8,19 @@ import { handleInitRequest } from './messaging/handle-init-request'
 declare const self: ServiceWorkerGlobalScope
 
 /**
- * Confused-deputy guard: a `/api/github/*` caller must echo the per-session
- * nonce issued at init. A same-origin script that never saw the init response
- * (an injected/XSS payload) cannot borrow the ambient token. Returns a JSON
- * 403 on mismatch so the client's swFetch can re-init and retry once.
+ * Confused-deputy guard: a `/api/github/*` WRITE (stage/commit/asset) must echo
+ * the per-session nonce issued at init, so a same-origin script that never saw
+ * the init response (an injected/XSS payload) cannot borrow the ambient token to
+ * push commits. Reads (GET) are left open — the content repo is website content
+ * bound for publication, and legitimate tooling reads it with a raw fetch.
+ * Returns a JSON 403 on mismatch so the client's swFetch can re-init and retry.
  * @param request - The intercepted github request
- * @returns undefined when the nonce is valid, otherwise a 403 response
+ * @returns undefined when allowed, otherwise a 403 response
  */
 const nonceRejection = (request: Request): Response | undefined =>
-  request.headers.get('X-SW-Nonce') === workerState.nonce &&
-  workerState.nonce !== undefined
+  request.method === 'GET' ||
+  (request.headers.get('X-SW-Nonce') === workerState.nonce &&
+    workerState.nonce !== undefined)
     ? undefined
     : errorResponse('SW nonce required', 403)
 

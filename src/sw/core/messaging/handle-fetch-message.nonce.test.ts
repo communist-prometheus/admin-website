@@ -11,15 +11,17 @@ import { handleFetchMessage } from './handle-fetch-message'
 /**
  * Collects the reply payloads for one handleFetchMessage call.
  * @param headers - Request headers to send in the SW_FETCH message
+ * @param method - HTTP method (writes are guarded, GET reads are open)
  * @param url - The proxied request URL
  * @returns The reply payloads pushed during the call
  */
 const call = async (
   headers: Record<string, string>,
-  url = 'https://admin.test/api/github/tree'
+  method = 'POST',
+  url = 'https://admin.test/api/github/commit'
 ): Promise<{ status?: number }[]> => {
   const replies: { status?: number }[] = []
-  handleFetchMessage({ type: 'SW_FETCH', url, method: 'GET', headers }, d =>
+  handleFetchMessage({ type: 'SW_FETCH', url, method, headers }, d =>
     replies.push(d as { status?: number })
   )
   await new Promise(r => setTimeout(r, 0))
@@ -32,27 +34,32 @@ describe('SW_FETCH confused-deputy nonce guard', () => {
     vi.mocked(routeRequest).mockClear()
   })
 
-  it('rejects a /api/github request with no nonce', async () => {
+  it('rejects a github WRITE with no nonce', async () => {
     const replies = await call({})
     expect(replies[0]?.status).toBe(403)
     expect(routeRequest).not.toHaveBeenCalled()
   })
 
-  it('rejects a /api/github request with a wrong nonce', async () => {
+  it('rejects a github WRITE with a wrong nonce', async () => {
     const replies = await call({ 'X-SW-Nonce': 'wrong' })
     expect(replies[0]?.status).toBe(403)
     expect(routeRequest).not.toHaveBeenCalled()
   })
 
-  it('routes a /api/github request that echoes the matching nonce', async () => {
+  it('routes a github WRITE that echoes the matching nonce', async () => {
     await call({ 'X-SW-Nonce': 'secret-nonce' })
     expect(routeRequest).toHaveBeenCalledTimes(1)
   })
 
-  it('rejects even a matching nonce when the SW has none yet (pre-init)', async () => {
+  it('rejects a WRITE with a matching nonce when the SW has none yet', async () => {
     workerState.nonce = undefined
     const replies = await call({ 'X-SW-Nonce': 'anything' })
     expect(replies[0]?.status).toBe(403)
     expect(routeRequest).not.toHaveBeenCalled()
+  })
+
+  it('leaves a github READ (GET) open without a nonce', async () => {
+    await call({}, 'GET', 'https://admin.test/api/github/file?path=x')
+    expect(routeRequest).toHaveBeenCalledTimes(1)
   })
 })
