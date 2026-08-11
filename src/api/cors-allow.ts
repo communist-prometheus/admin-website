@@ -1,6 +1,7 @@
 const ALLOWED_ORIGINS: ReadonlySet<string> = new Set([
   'https://admin.comprom.org',
   'https://dev-admin.comprom.org',
+  'https://dev-admin-v2.comprom.org',
 ])
 
 const LOCAL_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/

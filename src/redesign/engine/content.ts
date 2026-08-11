@@ -2,8 +2,12 @@
  * Thin content client for the new UI (git-engine R4): reads the cloned repo
  * through the SW's fetch-intercepted content API (`/api/github/tree|file`). Pure
  * fetch + parse — no framework coupling. Returns `undefined` on any failure so
- * screens can fall back to a placeholder rather than throw.
+ * screens can fall back to a placeholder rather than throw. Every SW-engine call
+ * goes through {@link swFetch}, which re-inits the engine and retries once if the
+ * SW reports "not ready" — otherwise content silently reads empty after an SW
+ * eviction or a post-deploy SW version bump.
  */
+import { swFetch } from './sw-fetch.js';
 
 /** One entry in a repo directory listing. */
 export interface TreeEntry {
@@ -15,13 +19,56 @@ export interface TreeEntry {
 const isTreeEntry = (x: unknown): x is TreeEntry =>
   typeof x === 'object' && x !== null && 'name' in x && 'path' in x;
 
+/*
+ * Read cache: the tree + file reads are the same across every screen and a
+ * navigation re-mounts screens that each re-`load()`. Cache only SUCCESSFUL,
+ * non-empty reads keyed by path so a pre-engine-ready empty read never sticks
+ * (those aren't cached) and screens share results between navigations. Any
+ * write (stage/commit) clears the cache, so an edit is never served stale.
+ */
+const fileCache = new Map<string, string>();
+const treeCache = new Map<string, readonly TreeEntry[]>();
+
+/** Drops all cached reads — called on every write so edits are never stale. */
+export const clearContentCache = (): void => {
+  fileCache.clear();
+  treeCache.clear();
+};
+
+/**
+ * Maps `items` through `fn` with at most `limit` in flight — bounds the
+ * `readFile` fan-out (a repo with N articles otherwise opens N parallel reads).
+ * Preserves input order in the result.
+ */
+const mapPool = async <T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<readonly R[]> => {
+  const results = new Array<R>(items.length);
+  const queue = items.map((item, index) => ({ item, index }));
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const job = queue.shift();
+      if (job === undefined) return;
+      results[job.index] = await fn(job.item, job.index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+};
+
 /** Lists a directory in the cloned content repo. */
 export const listTree = async (path = ''): Promise<readonly TreeEntry[]> => {
+  const cached = treeCache.get(path);
+  if (cached !== undefined) return cached;
   try {
-    const response = await fetch(`/api/github/tree?path=${encodeURIComponent(path)}`);
+    const response = await swFetch(`/api/github/tree?path=${encodeURIComponent(path)}`);
     const data: unknown = await response.json();
     const tree = typeof data === 'object' && data !== null && 'tree' in data ? data.tree : undefined;
-    return Array.isArray(tree) ? tree.filter(isTreeEntry) : [];
+    const entries = Array.isArray(tree) ? tree.filter(isTreeEntry) : [];
+    if (entries.length > 0) treeCache.set(path, entries);
+    return entries;
   } catch {
     return [];
   }
@@ -29,8 +76,9 @@ export const listTree = async (path = ''): Promise<readonly TreeEntry[]> => {
 
 /** Stages a file write in the local repo (no commit yet). Returns success. */
 export const stageFile = async (path: string, content: string): Promise<boolean> => {
+  clearContentCache();
   try {
-    const response = await fetch('/api/github/file/stage', {
+    const response = await swFetch('/api/github/file/stage', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ path, content }),
@@ -44,7 +92,7 @@ export const stageFile = async (path: string, content: string): Promise<boolean>
 /** Commits all staged changes and pushes to the remote. Returns the commit sha. */
 export const commitAndPush = async (message: string): Promise<{ ok: boolean; sha?: string; error?: string }> => {
   try {
-    const response = await fetch('/api/github/commit', {
+    const response = await swFetch('/api/github/commit', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ message }),
@@ -59,14 +107,159 @@ export const commitAndPush = async (message: string): Promise<{ ok: boolean; sha
   }
 };
 
+/** Stages a binary asset (base64-encoded) in the local repo (no commit yet). */
+export const stageAsset = async (path: string, base64: string): Promise<boolean> => {
+  clearContentCache();
+  try {
+    const response = await swFetch('/api/github/asset', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path, content: base64 }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Inserts or replaces a scalar `key: value` inside a markdown file's YAML
+ * frontmatter, leaving the body untouched. A new key is placed right after
+ * `lang:` (or at the end of the block); an existing key's line is replaced.
+ * Pure — safe to unit test.
+ */
+export const upsertFrontmatterField = (markdown: string, key: string, value: string): string => {
+  const line = `${key}: ${value}`;
+  if (!markdown.startsWith('---')) return `---\n${line}\n---\n\n${markdown}`;
+  const end = markdown.indexOf('\n---', 3);
+  if (end < 0) return markdown;
+  const prefix = `${key}:`;
+  const lines = markdown.slice(4, end).split('\n');
+  const at = lines.findIndex((l) => l.startsWith(prefix));
+  if (at >= 0) lines[at] = line;
+  else {
+    const langAt = lines.findIndex((l) => l.startsWith('lang:'));
+    lines.splice(langAt >= 0 ? langAt + 1 : lines.length, 0, line);
+  }
+  return `---\n${lines.join('\n')}${markdown.slice(end)}`;
+};
+
+/** Fields needed to render a magazine issue's `index.<lang>.md`. */
+export interface IssueIndexInput {
+  readonly title: string;
+  readonly lang: string;
+  readonly publishDate: string;
+  readonly articles: readonly string[];
+  readonly imagePath?: string;
+}
+
+/** Builds a magazine issue `index.<lang>.md` matching the shipped issue format. */
+export const buildIssueIndexMarkdown = (i: IssueIndexInput): string => {
+  const arts = i.articles.map((a) => `  - ${a}`).join('\n');
+  const image = i.imagePath !== undefined && i.imagePath !== '' ? `\nimage: ${i.imagePath}` : '';
+  return (
+    `---\n` +
+    `title: ${JSON.stringify(i.title)}\n` +
+    `lang: ${i.lang}\n` +
+    `published: true\n` +
+    `publishDate: ${i.publishDate}\n` +
+    `articles:\n${arts}${image}\n` +
+    `---\n`
+  );
+};
+
+/**
+ * A folder-safe issue slug: lowercase Latin letters, digits and single hyphens,
+ * with no leading, trailing or doubled hyphen (e.g. `nomer-3-2026`).
+ */
+const ISSUE_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * Validates a proposed magazine-issue slug against the folder-naming rules and
+ * the slugs that already exist, returning a human-readable Russian error, or
+ * `undefined` when the slug is acceptable. Pure — the screen calls it to gate
+ * the submit button and to surface an inline hint before `createMagazineIssue`
+ * would write a broken or colliding `magazine/<slug>/…` path (QA #17).
+ */
+export const validateMagazineSlug = (
+  slug: string,
+  existing: readonly string[],
+): string | undefined => {
+  const value = slug.trim();
+  if (value === '') return 'Укажите слаг номера.';
+  if (!ISSUE_SLUG_PATTERN.test(value)) {
+    return 'Слаг: только строчные латинские буквы, цифры и дефисы (например, nomer-3-2026).';
+  }
+  if (existing.includes(value)) return `Номер со слагом «${value}» уже существует.`;
+  return undefined;
+};
+
+/** Everything the UI collects to publish a new magazine issue. */
+export interface NewMagazineIssue {
+  readonly slug: string;
+  readonly lang: string;
+  readonly title: string;
+  readonly publishDate: string;
+  readonly articles: readonly string[];
+  /** The issue PDF, base64-encoded. */
+  readonly pdfBase64: string;
+  /** Optional cover image (PNG/JPEG), base64-encoded. */
+  readonly coverBase64?: string;
+}
+
+/**
+ * Publishes a new magazine issue end-to-end through the git engine: stages the
+ * PDF and cover under `magazine/<slug>/assets/`, writes `index.<lang>.md` with
+ * the table of contents, back-links every selected article to the issue via its
+ * `magazine:` frontmatter, then commits and pushes. Returns the commit result.
+ */
+export const createMagazineIssue = async (
+  issue: NewMagazineIssue,
+): Promise<{ ok: boolean; sha?: string; error?: string }> => {
+  const dir = `magazine/${issue.slug}`;
+  const pdfOk = await stageAsset(`${dir}/assets/${issue.slug}.${issue.lang}.pdf`, issue.pdfBase64);
+  if (!pdfOk) return { ok: false, error: 'Не удалось загрузить PDF номера.' };
+
+  let imagePath = '';
+  if (issue.coverBase64 !== undefined && issue.coverBase64 !== '') {
+    const langCover = await stageAsset(`${dir}/assets/cover.${issue.lang}.png`, issue.coverBase64);
+    const defCover = await stageAsset(`${dir}/assets/cover.png`, issue.coverBase64);
+    if (!langCover || !defCover) return { ok: false, error: 'Не удалось загрузить обложку.' };
+    imagePath = `./assets/cover.${issue.lang}.png`;
+  }
+
+  // Back-link only the articles that actually have this issue's language; an
+  // article missing the language can't be linked and must not appear in the TOC
+  // nor inflate the commit count (QA #17).
+  const linked: string[] = [];
+  for (const slug of issue.articles) {
+    const path = `blog/${slug}/index.${issue.lang}.md`;
+    const md = await readFile(path);
+    if (md === undefined || md === '') continue;
+    await stageFile(path, upsertFrontmatterField(md, 'magazine', issue.slug));
+    linked.push(slug);
+  }
+
+  const index = buildIssueIndexMarkdown({ ...issue, articles: linked, imagePath });
+  const indexOk = await stageFile(`${dir}/index.${issue.lang}.md`, index);
+  if (!indexOk) return { ok: false, error: 'Не удалось создать index номера (проверьте поля).' };
+
+  return commitAndPush(`magazine: добавлен номер ${issue.slug} (${linked.length} статей)`);
+};
+
 /** Reads a file's text content from the cloned content repo. */
 export const readFile = async (path: string): Promise<string | undefined> => {
+  const cached = fileCache.get(path);
+  if (cached !== undefined) return cached;
   try {
-    const response = await fetch(`/api/github/file?path=${encodeURIComponent(path)}`);
+    const response = await swFetch(`/api/github/file?path=${encodeURIComponent(path)}`);
     const data: unknown = await response.json();
-    return typeof data === 'object' && data !== null && 'content' in data
-      ? String(data.content)
-      : undefined;
+    const content =
+      typeof data === 'object' && data !== null && 'content' in data
+        ? String(data.content)
+        : undefined;
+    if (content !== undefined) fileCache.set(path, content);
+    return content;
   } catch {
     return undefined;
   }
@@ -148,10 +341,9 @@ export const listArticles = async (): Promise<readonly ArticleSummary[]> => {
       bySlug.set(slug, set);
     }
   }
-  const summaries = await Promise.all(
-    [...bySlug.entries()].map(([slug, langs]) => summariseArticle(slug, [...langs])),
+  return mapPool([...bySlug.entries()], 6, ([slug, langs]) =>
+    summariseArticle(slug, [...langs]),
   );
-  return summaries;
 };
 
 const preferredLang = (langs: readonly string[]): string =>

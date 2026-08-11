@@ -2,7 +2,7 @@ name: Deploy admin to Cloudflare Workers
 
 on:
   push:
-    branches: [master, develop]
+    branches: [master, develop, admin-v2]
 
 # Serialise per branch — when a fresh master commit lands while an
 # older deploy is still building, cancel the in-flight one. Same on
@@ -46,7 +46,22 @@ jobs:
 
       - name: Resolve branch env
         run: |
-          if [ "$GITHUB_REF_NAME" = "develop" ]; then
+          if [ "$GITHUB_REF_NAME" = "admin-v2" ]; then
+            # admin-v2 = the redesign (new UI), hosted separately at
+            # dev-admin-v2.comprom.org so the old admin can serve dev/prod
+            # untouched. It is a dev-like environment: reads/writes the
+            # `develop` content branch and talks to the develop comms/auth
+            # workers, with its OWN OAuth app (dev-2-comprom-oauth-app) since an
+            # OAuth app allows only one callback URL — the secret is set on the
+            # admin-website-v2 worker via `wrangler secret put GITHUB_CLIENT_SECRET`.
+            echo "VITE_GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
+            echo "VITE_OAUTH_REDIRECT_URI=https://dev-admin-v2.comprom.org/auth/github/callback" >> "$GITHUB_ENV"
+            echo "VITE_GITHUB_CLIENT_ID=Ov23liSvu5qVdCI01BmZ" >> "$GITHUB_ENV"
+            echo "VITE_COMMS_BASE=https://dev-lists.comprom.org" >> "$GITHUB_ENV"
+            echo "VITE_AUTH_BASE=https://dev-auth.comprom.org" >> "$GITHUB_ENV"
+            echo "GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
+            echo "WRANGLER_COMMAND=deploy --env v2" >> "$GITHUB_ENV"
+          elif [ "$GITHUB_REF_NAME" = "develop" ]; then
             echo "VITE_GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
             echo "VITE_OAUTH_REDIRECT_URI=$OAUTH_REDIRECT_URI_DEVELOP" >> "$GITHUB_ENV"
             echo "VITE_GITHUB_CLIENT_ID=$VITE_GITHUB_CLIENT_ID_DEVELOP" >> "$GITHUB_ENV"
@@ -59,17 +74,15 @@ jobs:
             echo "GITHUB_BRANCH=develop" >> "$GITHUB_ENV"
             echo "WRANGLER_COMMAND=deploy --env develop" >> "$GITHUB_ENV"
           else
-            # Prod admin reads AND writes the content `master` branch
-            # directly. The develop→master auto-merge that used to promote
-            # editor saves to production was removed (it caused duplicate
-            # deploys), so routing prod through `develop` left the prod
-            # site (master) stale and showed dev content in the admin.
-            # Writing `master` keeps prod self-consistent. `master`
-            # protection has enforce_admins:false, so admin-role editors
-            # push directly; the only required check (`guard`) runs on PRs,
-            # not pushes. Non-admin editors still hit GH006 on direct
-            # pushes — if they must publish, drop `guard` from master's
-            # required status checks.
+            # Prod admin reads AND writes `master` directly (chosen model):
+            # the develop→master auto-merge that used to promote saves was
+            # removed, so routing prod through develop left the prod site
+            # (master) stale and showed dev data in the admin. Writing master
+            # keeps prod self-consistent. `master` protection has
+            # enforce_admins:false, so admin-role editors push directly; the
+            # only required check (`guard`) runs on PRs, not pushes. Non-admin
+            # editors still hit GH006 on direct pushes — if they must publish,
+            # drop `guard` from master's required status checks.
             echo "VITE_GITHUB_BRANCH=master" >> "$GITHUB_ENV"
             echo "VITE_OAUTH_REDIRECT_URI=$OAUTH_REDIRECT_URI_MASTER" >> "$GITHUB_ENV"
             echo "VITE_GITHUB_CLIENT_ID=$VITE_GITHUB_CLIENT_ID_MASTER" >> "$GITHUB_ENV"
@@ -97,6 +110,9 @@ jobs:
 
       - name: Running unit tests
         run: bun run test:unit --run
+
+      - name: Running redesign unit tests
+        run: bun run test:unit:redesign
 
       - name: Building application (validate + type-check + lint + build)
         run: bun run build
