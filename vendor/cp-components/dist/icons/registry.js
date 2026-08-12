@@ -31,5 +31,7 @@ export const icons = {
     mail: '<rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3.5 7l8.5 6 8.5-6" />',
     rocket: '<path d="M12 2.5c2.4 2 3.8 4.8 3.8 7.7v3.3l-1.8 1.8h-4l-1.8-1.8V10.2C8.2 7.3 9.6 4.5 12 2.5z" /><circle cx="12" cy="9" r="1.3" /><path d="M8.2 15.3l-2.2 3.7 3.7-2.2M15.8 15.3l2.2 3.7-3.7-2.2" />',
     settings: '<path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h13M21 17h-1" /><circle cx="15" cy="7" r="2.2" /><circle cx="9" cy="12" r="2.2" /><circle cx="19" cy="17" r="2.2" />',
+    image: '<rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.6" /><path d="M21 15l-5-5L5 21" />',
+    'file-generic': '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" />',
 };
 //# sourceMappingURL=registry.js.map
