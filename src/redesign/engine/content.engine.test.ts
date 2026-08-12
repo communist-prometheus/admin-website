@@ -50,6 +50,9 @@ import {
   stageFile,
   clearContentCache,
   createMagazineIssue,
+  removeFrontmatterField,
+  readSequenceField,
+  upsertSequenceField,
 } from './content.ts';
 
 beforeEach(() => {
@@ -125,6 +128,49 @@ describe('listArticles fan-out', () => {
     files['blog/b-publishdate/index.ru.md'] = '---\ntitle: B\npublishDate: 2026-02-01\n---\n';
     const order = (await listArticles()).map((a) => a.slug);
     expect(order).toEqual(['a-pubdate', 'b-publishdate']);
+  });
+});
+
+describe('frontmatter sequence helpers (issue TOC ↔ article back-links)', () => {
+  const ISSUE = '---\ntitle: "N3"\nlang: ru\npublished: true\narticles:\n  - a\n  - b\n---\n\nBody\n';
+
+  it('reads a block sequence as an array', () => {
+    expect(readSequenceField(ISSUE, 'articles')).toEqual(['a', 'b']);
+  });
+
+  it('reads [] when the sequence key is absent', () => {
+    expect(readSequenceField('---\ntitle: X\n---\n', 'articles')).toEqual([]);
+  });
+
+  it('stops at the next key, not swallowing later fields', () => {
+    const md = '---\narticles:\n  - a\nimage: ./c.png\n---\n';
+    expect(readSequenceField(md, 'articles')).toEqual(['a']);
+  });
+
+  it('rewrites the sequence to a new set without orphaning old items', () => {
+    const next = upsertSequenceField(ISSUE, 'articles', ['b', 'c', 'd']);
+    expect(readSequenceField(next, 'articles')).toEqual(['b', 'c', 'd']);
+    expect(next).toContain('title: "N3"'); // other fields untouched
+    expect(next).toContain('Body'); // body untouched
+  });
+
+  it('inserts a new sequence after lang: when absent', () => {
+    const md = '---\ntitle: X\nlang: ru\n---\n\nB\n';
+    const next = upsertSequenceField(md, 'articles', ['a']);
+    expect(next).toBe('---\ntitle: X\nlang: ru\narticles:\n  - a\n---\n\nB\n');
+  });
+
+  it('removes a scalar back-link line, leaving the body intact', () => {
+    const md = '---\ntitle: X\nlang: ru\nmagazine: n3\n---\n\nBody\n';
+    const next = removeFrontmatterField(md, 'magazine');
+    expect(next).not.toContain('magazine:');
+    expect(next).toContain('title: X');
+    expect(next).toContain('Body');
+  });
+
+  it('is a no-op when the field to remove is absent', () => {
+    const md = '---\ntitle: X\n---\n';
+    expect(removeFrontmatterField(md, 'magazine')).toBe(md);
   });
 });
 
