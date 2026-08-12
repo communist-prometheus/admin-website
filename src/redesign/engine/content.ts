@@ -609,6 +609,110 @@ export const publishFileViaApi = async (
   }
 };
 
+/** One file in a repo directory (a magazine issue's asset, etc.). */
+export interface RepoFile {
+  readonly name: string;
+  readonly path: string;
+  readonly size: number;
+  readonly sha: string;
+}
+
+/** Lists the files in a repo directory via the API (e.g. an issue's assets). */
+export const listDirViaApi = async (dir: string): Promise<readonly RepoFile[]> => {
+  const t = await freshGhToken();
+  if (t === undefined) return [];
+  try {
+    const res = await fetch(`${REPO_BASE}/contents/${dir}?ref=${contentBranch()}`, {
+      cache: 'no-store',
+      headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github+json' },
+    });
+    if (!res.ok) return [];
+    const data: unknown = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter((e) => typeof e === 'object' && e && Reflect.get(e, 'type') === 'file')
+      .map((e) => ({
+        name: String(Reflect.get(e, 'name')),
+        path: String(Reflect.get(e, 'path')),
+        size: typeof Reflect.get(e, 'size') === 'number' ? Number(Reflect.get(e, 'size')) : 0,
+        sha: String(Reflect.get(e, 'sha')),
+      }));
+  } catch {
+    return [];
+  }
+};
+
+/** The current blob sha of a file, or undefined when it does not exist. */
+const blobShaViaApi = async (
+  path: string,
+  auth: Record<string, string>,
+  branch: string,
+): Promise<string | undefined> => {
+  const res = await fetch(`${REPO_BASE}/contents/${path}?ref=${branch}`, {
+    cache: 'no-store',
+    headers: { ...auth, accept: 'application/vnd.github+json' },
+  });
+  if (!res.ok) return undefined;
+  const d: unknown = await res.json();
+  return typeof d === 'object' && d && 'sha' in d ? String(Reflect.get(d, 'sha')) : undefined;
+};
+
+const apiError = async (res: Response, fallback: string): Promise<string> => {
+  const e: unknown = await res.json().catch(() => undefined);
+  return typeof e === 'object' && e && 'message' in e ? String(Reflect.get(e, 'message')) : fallback;
+};
+
+/** Uploads a file (already base64-encoded) via the Contents API — ANY type,
+ *  including fb2/doc/pdf. Overwrites in place when the path already exists. */
+export const uploadBinaryViaApi = async (
+  path: string,
+  base64: string,
+  message: string,
+): Promise<{ ok: boolean; error?: string }> => {
+  const t = await freshGhToken();
+  if (t === undefined) return { ok: false, error: 'signed-out' };
+  const auth = { authorization: `Bearer ${t}` };
+  const branch = contentBranch();
+  try {
+    const sha = await blobShaViaApi(path, auth, branch);
+    const put = await fetch(`${REPO_BASE}/contents/${path}`, {
+      method: 'PUT',
+      headers: { ...auth, 'content-type': 'application/json' },
+      body: JSON.stringify({ message, content: base64, branch, ...(sha ? { sha } : {}) }),
+    });
+    return put.ok
+      ? { ok: true }
+      : { ok: false, error: await apiError(put, `Загрузка не удалась (${put.status}).`) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+};
+
+/** Deletes a file via the Contents API (needs its current blob sha). */
+export const deleteFileViaApi = async (
+  path: string,
+  message: string,
+): Promise<{ ok: boolean; error?: string }> => {
+  const t = await freshGhToken();
+  if (t === undefined) return { ok: false, error: 'signed-out' };
+  const auth = { authorization: `Bearer ${t}` };
+  const branch = contentBranch();
+  try {
+    const sha = await blobShaViaApi(path, auth, branch);
+    if (sha === undefined) return { ok: false, error: 'Файл не найден.' };
+    const res = await fetch(`${REPO_BASE}/contents/${path}`, {
+      method: 'DELETE',
+      headers: { ...auth, 'content-type': 'application/json' },
+      body: JSON.stringify({ message, sha, branch }),
+    });
+    return res.ok
+      ? { ok: true }
+      : { ok: false, error: await apiError(res, `Удаление не удалось (${res.status}).`) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+};
+
 const preferredLang = (langs: readonly string[]): string =>
   langs.find((l) => l === 'ru') ?? langs.find((l) => l === 'en') ?? (langs[0] as string);
 

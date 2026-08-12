@@ -5,6 +5,9 @@ import {
   readFileViaApi,
   articleLangsViaApi,
   publishFileViaApi,
+  listDirViaApi,
+  uploadBinaryViaApi,
+  deleteFileViaApi,
 } from './content.ts';
 
 vi.mock('@/composables/useAuth/ensure-fresh-token', () => ({ ensureFreshToken: vi.fn() }));
@@ -139,6 +142,55 @@ describe('editor single-file API (read / langs / publish, no clone)', () => {
     expect(put?.body?.sha).toBe('blob1'); // updates against the current blob
     expect(put?.body?.message).toBe('msg');
     expect(decode(String(put?.body?.content))).toBe('Привет, мир'); // Cyrillic survives
+  });
+
+  it('listDirViaApi returns only files (not sub-dirs), with size and sha', async () => {
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response(
+          JSON.stringify([
+            { type: 'file', name: 'issue.ru.pdf', path: 'magazine/x/assets/issue.ru.pdf', size: 2048, sha: 'a' },
+            { type: 'file', name: 'book.fb2', path: 'magazine/x/assets/book.fb2', size: 500, sha: 'b' },
+            { type: 'dir', name: 'nested', path: 'magazine/x/assets/nested', size: 0, sha: 'c' },
+          ]),
+          { status: 200 },
+        ),
+    );
+    const files = await listDirViaApi('magazine/x/assets');
+    expect(files.map((f) => f.name)).toEqual(['issue.ru.pdf', 'book.fb2']);
+    expect(files[1]).toMatchObject({ path: 'magazine/x/assets/book.fb2', size: 500, sha: 'b' });
+  });
+
+  it('uploadBinaryViaApi PUTs base64 content, overwriting via the current sha', async () => {
+    const calls: Array<{ method?: string; body?: Record<string, string> }> = [];
+    vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {
+      calls.push({
+        method: init?.method,
+        body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined,
+      });
+      if (init?.method === 'PUT') return new Response('{}', { status: 200 });
+      return new Response(JSON.stringify({ sha: 'existing' }), { status: 200 });
+    });
+    const r = await uploadBinaryViaApi('magazine/x/assets/book.fb2', 'QkFTRTY0', 'add fb2');
+    expect(r.ok).toBe(true);
+    const put = calls.find((c) => c.method === 'PUT');
+    expect(put?.body).toMatchObject({ content: 'QkFTRTY0', sha: 'existing', message: 'add fb2' });
+  });
+
+  it('deleteFileViaApi DELETEs with the file sha', async () => {
+    const calls: Array<{ method?: string; body?: Record<string, string> }> = [];
+    vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {
+      calls.push({
+        method: init?.method,
+        body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined,
+      });
+      if (init?.method === 'DELETE') return new Response('{}', { status: 200 });
+      return new Response(JSON.stringify({ sha: 'todelete' }), { status: 200 });
+    });
+    const r = await deleteFileViaApi('magazine/x/assets/old.pdf', 'remove');
+    expect(r.ok).toBe(true);
+    expect(calls.find((c) => c.method === 'DELETE')?.body).toMatchObject({ sha: 'todelete' });
   });
 
   it('publishFileViaApi surfaces the GitHub error message on failure', async () => {
