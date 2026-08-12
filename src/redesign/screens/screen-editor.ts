@@ -514,6 +514,9 @@ export class ScreenEditor extends LitElement {
   /** Slug currently loaded, to detect same-screen route changes. */
   private loadedSlug = '';
 
+  /** Repo folder of the loaded item: `blog` (article) or `magazine` (issue). */
+  private collection = 'blog';
+
   /**
    * In-memory edits per language for the current article. Switching the language
    * tab stashes the active language's edited markdown here so switching back
@@ -550,15 +553,27 @@ export class ScreenEditor extends LitElement {
     }
   };
 
-  /** Slug requested via the route (`#/editor/<slug>`), '' for the default. */
+  /**
+   * The item the route names: `#/editor/<slug>` (a blog article, the default) or
+   * `#/editor/magazine/<slug>` (a journal issue). The collection selects the repo
+   * folder so the same editor edits both.
+   */
+  private routeTarget(): { collection: string; slug: string } {
+    const parts = window.location.hash.split('/');
+    if (parts[2] === 'magazine') return { collection: 'magazine', slug: parts[3] ?? '' };
+    return { collection: 'blog', slug: parts[2] ?? '' };
+  }
+
+  /** Slug requested via the route ('' for the default, 'new' for a blank doc). */
   private routeSlug(): string {
-    return window.location.hash.split('/')[2] ?? '';
+    return this.routeTarget().slug;
   }
 
   private async load(): Promise<void> {
     // A fresh article invalidates any per-language edits from the previous one.
     this.langBuffers.clear();
-    const requested = this.routeSlug();
+    const { collection, slug: requested } = this.routeTarget();
+    this.collection = collection;
     if (requested === 'new') {
       this.startNewArticle();
       this.loaded = true;
@@ -568,18 +583,19 @@ export class ScreenEditor extends LitElement {
       this.loaded = true;
       return;
     }
-    // Fetch ONLY the opened article via the GitHub API — its languages (one dir
+    // Fetch ONLY the opened item via the GitHub API — its languages (one dir
     // listing) then the preferred file — instead of cloning the whole repo. This
-    // is what the article-loading spinner used to wait on forever.
+    // is what the loading spinner used to wait on forever. Works for a blog
+    // article or a magazine issue via the collection folder.
     this.loadError = '';
-    const langs = await articleLangsViaApi(requested);
+    const langs = await articleLangsViaApi(requested, collection);
     if (langs.length === 0) {
-      this.loadError = 'Не удалось загрузить статью (нет доступа или её нет в репозитории).';
+      this.loadError = 'Не удалось загрузить материал (нет доступа или его нет в репозитории).';
       this.loaded = true;
       return;
     }
     const lang = langs.includes('ru') ? 'ru' : (langs[0] ?? 'ru');
-    const path = `blog/${requested}/index.${lang}.md`;
+    const path = `${collection}/${requested}/index.${lang}.md`;
     const markdown = await readFileViaApi(path);
     if (markdown !== undefined && markdown.trim() !== '') {
       this.slug = requested;
@@ -601,7 +617,7 @@ export class ScreenEditor extends LitElement {
   }
 
   private async loadLang(lang: string): Promise<void> {
-    const path = `blog/${this.slug}/index.${lang}.md`;
+    const path = `${this.collection}/${this.slug}/index.${lang}.md`;
     const markdown = await readFileViaApi(path);
     if (markdown !== undefined && markdown.trim() !== '') {
       this.applyMarkdown(markdown, path, true);
