@@ -1035,7 +1035,11 @@ export class ScreenEditor extends LitElement {
         </p>
         ${this.collection === 'magazine' && this.slug !== ''
           ? html`<div class="issue-files">
-              <issue-files .dir=${`magazine/${this.slug}/assets`}></issue-files>
+              <issue-files
+                .dir=${`magazine/${this.slug}/assets`}
+                .lang=${this.activeLang}
+                .langs=${this.availableLangs}
+              ></issue-files>
             </div>`
           : nothing}
       </article>

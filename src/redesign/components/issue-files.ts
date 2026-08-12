@@ -28,6 +28,26 @@ const humanSize = (bytes: number): string =>
       ? `${(bytes / 1024).toFixed(0)} КБ`
       : `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
 
+const IMAGE_EXT = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'avif']);
+
+/** A type pictogram for a filename by its extension. */
+export const iconFor = (name: string): string => {
+  const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  if (IMAGE_EXT.has(ext)) return 'image';
+  if (ext === 'fb2' || ext === 'epub') return 'book';
+  if (ext === 'pdf') return 'file-text';
+  return 'file-generic';
+};
+
+/** The language a file belongs to (`cover.ru.png` → `ru`), or undefined when it
+ *  carries no known-language suffix (`cover.png` is shared across languages). */
+export const fileLang = (name: string, langs: ReadonlySet<string>): string | undefined => {
+  const parts = name.split('.');
+  if (parts.length < 3) return undefined;
+  const candidate = parts[parts.length - 2];
+  return langs.has(candidate) ? candidate : undefined;
+};
+
 /**
  * Files of one content directory (a magazine issue's `assets/`), managed
  * entirely through the GitHub Contents API — no clone. Lists what is uploaded,
@@ -40,9 +60,29 @@ export class IssueFiles extends LitElement {
     :host {
       display: block;
     }
+    .fhead {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.5rem var(--spacing-md);
+      margin: 0 0 var(--spacing-sm);
+    }
     h2 {
       font-size: 1.1rem;
-      margin: 0 0 var(--spacing-sm);
+      margin: 0;
+    }
+    .link {
+      border: none;
+      background: transparent;
+      color: var(--color-accent);
+      font: inherit;
+      font-size: 0.82rem;
+      cursor: pointer;
+      padding: 0;
+    }
+    .ficon {
+      flex: none;
+      color: var(--color-text-secondary);
     }
     ul {
       list-style: none;
@@ -113,6 +153,15 @@ export class IssueFiles extends LitElement {
   /** The repo directory whose files are managed, e.g. `magazine/<slug>/assets`. */
   @property() dir = '';
 
+  /** The language currently open in the editor — filters the list to it. */
+  @property() lang = '';
+
+  /** All languages the item exists in — used to detect a file's language suffix. */
+  @property({ attribute: false }) langs: readonly string[] = [];
+
+  /** When true, show files of every language, not just the open one. */
+  @state() private showAll = false;
+
   @state() private files: readonly RepoFile[] = [];
   @state() private loading = false;
   @state() private busy = false;
@@ -172,10 +221,21 @@ export class IssueFiles extends LitElement {
     }
   };
 
+  /** Files shown for the open language plus the shared (no-suffix) ones. */
+  private get visibleFiles(): readonly RepoFile[] {
+    if (this.showAll || this.lang === '') return this.files;
+    const set = new Set(this.langs);
+    return this.files.filter((f) => {
+      const fl = fileLang(f.name, set);
+      return fl === undefined || fl === this.lang;
+    });
+  }
+
   private renderFile(file: RepoFile): TemplateResult {
     const confirming = this.confirmingPath === file.path;
     return html`
       <li>
+        <cp-icon class="ficon" name=${iconFor(file.name)} size="18"></cp-icon>
         <span class="name">${file.name}</span>
         <span class="size">${humanSize(file.size)}</span>
         <span class="spacer"></span>
@@ -201,14 +261,31 @@ export class IssueFiles extends LitElement {
   }
 
   override render(): TemplateResult {
+    const visible = this.visibleFiles;
+    const hidden = this.files.length - visible.length;
     return html`
-      <h2>Файлы номера</h2>
+      <div class="fhead">
+        <h2>Файлы номера</h2>
+        ${!this.showAll && hidden > 0
+          ? html`<button class="link" @click=${() => (this.showAll = true)}>
+              показать все языки (+${hidden})
+            </button>`
+          : this.showAll && this.lang !== ''
+            ? html`<button class="link" @click=${() => (this.showAll = false)}>
+                только «${this.lang}»
+              </button>`
+            : nothing}
+      </div>
       ${this.loading
         ? html`<p class="msg">Загружаем список файлов…</p>`
-        : this.files.length === 0
-          ? html`<p class="empty">Файлов пока нет.</p>`
+        : visible.length === 0
+          ? html`<p class="empty">
+              ${this.files.length === 0
+                ? 'Файлов пока нет.'
+                : `Для языка «${this.lang}» файлов нет (есть у других языков).`}
+            </p>`
           : html`<ul>
-              ${this.files.map((f) => this.renderFile(f))}
+              ${visible.map((f) => this.renderFile(f))}
             </ul>`}
       ${this.error !== '' ? html`<p class="msg error">${this.error}</p>` : nothing}
       ${this.message !== '' ? html`<p class="msg">${this.message}</p>` : nothing}
