@@ -537,12 +537,16 @@ export const readFileViaApi = async (path: string): Promise<string | undefined> 
   }
 };
 
-/** The languages one article exists in (its `index.<lang>.md` files), via API. */
-export const articleLangsViaApi = async (slug: string): Promise<readonly string[]> => {
+/** The languages one item exists in (its `index.<lang>.md` files), via API. The
+ *  collection is `blog` for articles, `magazine` for journal issues. */
+export const articleLangsViaApi = async (
+  slug: string,
+  collection = 'blog',
+): Promise<readonly string[]> => {
   const t = await freshGhToken();
   if (t === undefined) return [];
   try {
-    const res = await fetch(`${REPO_BASE}/contents/blog/${slug}?ref=${contentBranch()}`, {
+    const res = await fetch(`${REPO_BASE}/contents/${collection}/${slug}?ref=${contentBranch()}`, {
       cache: 'no-store',
       headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github+json' },
     });

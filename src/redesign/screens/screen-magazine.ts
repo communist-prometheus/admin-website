@@ -430,7 +430,10 @@ export class ScreenMagazine extends LitElement {
         ? html`<div class="issues">
             ${this.issues.map(
               (issue) => html`
-                <cp-card>
+                <cp-card
+                  hoverable
+                  @cp-card-click=${() => (location.hash = `/editor/magazine/${issue.slug}`)}
+                >
                   <span slot="title" class="issue-title">${issue.title}</span>
                   <span slot="summary" class="issue-slug">${issue.slug}</span>
                 </cp-card>

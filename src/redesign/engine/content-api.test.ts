@@ -111,6 +111,16 @@ describe('editor single-file API (read / langs / publish, no clone)', () => {
     expect(await articleLangsViaApi('x')).toEqual(['en', 'ru']);
   });
 
+  it('articleLangsViaApi reads the given collection folder (magazine issues too)', async () => {
+    let seen = '';
+    vi.stubGlobal('fetch', async (url: string) => {
+      seen = url;
+      return new Response(JSON.stringify([{ name: 'index.ru.md' }]), { status: 200 });
+    });
+    await articleLangsViaApi('nomer-1', 'magazine');
+    expect(seen).toContain('/contents/magazine/nomer-1');
+  });
+
   it('publishFileViaApi commits ONE file (UTF-8 base64) and returns the commit sha', async () => {
     const calls: Array<{ method?: string; body?: Record<string, string> }> = [];
     vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {
