@@ -12,6 +12,7 @@ import {
   readFrontmatterField,
   upsertFrontmatterBlock,
 } from '../engine/content.js';
+import '../components/issue-files.js';
 
 /** One editable article block: a stable id plus its raw markdown source line(s).
  *  The rendered typography is derived from the raw text on every render, so the
@@ -399,6 +400,11 @@ export class ScreenEditor extends LitElement {
       font-size: 0.82rem;
       min-width: 0;
       overflow-wrap: anywhere;
+    }
+    .issue-files {
+      margin-top: var(--spacing-xl);
+      padding-top: var(--spacing-lg);
+      border-top: 1px solid var(--color-hairline);
     }
 
     .sheet-form {
@@ -876,6 +882,9 @@ export class ScreenEditor extends LitElement {
   }
 
   private renderProps(): TemplateResult {
+    // Topic/rubric are blog-article taxonomy; a journal issue has neither, so
+    // those fields (and the required-topic gate) are hidden when editing one.
+    const isArticle = this.collection !== 'magazine';
     return html`
       <cp-sheet
         ?open=${this.propsOpen}
@@ -883,28 +892,32 @@ export class ScreenEditor extends LitElement {
         @cp-close=${this.closeProps}
       >
         <div class="sheet-form">
-          ${this.incomplete
+          ${isArticle && this.incomplete
             ? html`<cp-tag tone="warning">заполните обязательное поле «Тема»</cp-tag>`
             : nothing}
-          <cp-select
-            label="Тема"
-            required
-            .value=${this.topic}
-            .options=${TOPIC_OPTIONS}
-            @cp-change=${this.onTopicChange}
-          ></cp-select>
+          ${isArticle
+            ? html`<cp-select
+                label="Тема"
+                required
+                .value=${this.topic}
+                .options=${TOPIC_OPTIONS}
+                @cp-change=${this.onTopicChange}
+              ></cp-select>`
+            : nothing}
           <cp-textarea
             label="Описание"
             rows="3"
             .value=${this.description}
             @cp-change=${this.onDescriptionChange}
           ></cp-textarea>
-          <cp-select
-            label="Рубрика"
-            .value=${this.rubric}
-            .options=${RUBRIC_OPTIONS}
-            @cp-change=${this.onRubricChange}
-          ></cp-select>
+          ${isArticle
+            ? html`<cp-select
+                label="Рубрика"
+                .value=${this.rubric}
+                .options=${RUBRIC_OPTIONS}
+                @cp-change=${this.onRubricChange}
+              ></cp-select>`
+            : nothing}
           <cp-date-input
             label="Дата публикации"
             type="date"
@@ -1020,6 +1033,11 @@ export class ScreenEditor extends LitElement {
           <span aria-hidden="true">·</span>
           <span class="path">${this.articlePath}</span>
         </p>
+        ${this.collection === 'magazine' && this.slug !== ''
+          ? html`<div class="issue-files">
+              <issue-files .dir=${`magazine/${this.slug}/assets`}></issue-files>
+            </div>`
+          : nothing}
       </article>
       ${this.renderProps()}${this.renderPublishDialog()}
     `;
