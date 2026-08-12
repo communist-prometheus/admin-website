@@ -49,14 +49,14 @@ afterEach(() => {
 });
 
 describe('listArticlesViaApi (API-first article list)', () => {
-  it('lists articles from the flat tree, titles from raw files, oldest → newest', async () => {
+  it('lists articles from the flat tree, titles from raw files, newest → oldest', async () => {
     stub();
     const { articles, error } = await listArticlesViaApi();
     expect(error).toBeUndefined();
-    expect(articles.map((a) => a.slug)).toEqual(['older', 'newer']); // by date asc
-    expect(articles[0].title).toBe('Старее');
-    expect(articles[0].languages).toEqual(['en', 'ru']);
-    expect(articles[1].date).toBe('2026-05-01'); // publishDate read too
+    expect(articles.map((a) => a.slug)).toEqual(['newer', 'older']); // newest first
+    expect(articles[0].title).toBe('Новее');
+    expect(articles[0].date).toBe('2026-05-01'); // publishDate read too
+    expect(articles[1].languages).toEqual(['en', 'ru']);
   });
 
   it('reports the tree fetch error instead of a silent empty (throttling/failure)', async () => {

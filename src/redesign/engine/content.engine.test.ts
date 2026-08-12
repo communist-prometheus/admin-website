@@ -101,7 +101,7 @@ describe('listArticles fan-out', () => {
     expect(maxInFlight).toBeLessThanOrEqual(6);
   });
 
-  it('returns articles oldest → newest by pubDate, undated last (QA sort)', async () => {
+  it('returns articles newest → oldest by pubDate, undated last (QA sort)', async () => {
     tree['blog'] = [
       { type: 'dir', name: 'index.ru.md', path: 'blog/newer/index.ru.md' },
       { type: 'dir', name: 'index.ru.md', path: 'blog/older/index.ru.md' },
@@ -111,7 +111,7 @@ describe('listArticles fan-out', () => {
     files['blog/older/index.ru.md'] = '---\ntitle: O\npubDate: 2026-01-01\n---\n';
     files['blog/undated/index.ru.md'] = '---\ntitle: U\n---\n';
     const order = (await listArticles()).map((a) => a.slug);
-    expect(order).toEqual(['older', 'newer', 'undated']);
+    expect(order).toEqual(['newer', 'older', 'undated']);
   });
 
   it('sorts articles dated with `publishDate` too, not just `pubDate` (QA sort)', async () => {
@@ -119,12 +119,12 @@ describe('listArticles fan-out', () => {
       { type: 'dir', name: 'index.ru.md', path: 'blog/a-pubdate/index.ru.md' },
       { type: 'dir', name: 'index.ru.md', path: 'blog/b-publishdate/index.ru.md' },
     ];
-    // The `publishDate` article is older; it must sort FIRST, not clump last as
-    // undated (the bug: half the real articles use `publishDate`).
+    // The `publishDate` article (older) must still be dated and placed by date,
+    // not clumped last as undated — newest first, so the newer `pubDate` leads.
     files['blog/a-pubdate/index.ru.md'] = '---\ntitle: A\npubDate: 2026-06-01\n---\n';
     files['blog/b-publishdate/index.ru.md'] = '---\ntitle: B\npublishDate: 2026-02-01\n---\n';
     const order = (await listArticles()).map((a) => a.slug);
-    expect(order).toEqual(['b-publishdate', 'a-pubdate']);
+    expect(order).toEqual(['a-pubdate', 'b-publishdate']);
   });
 });
 
