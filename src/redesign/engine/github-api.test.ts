@@ -33,6 +33,13 @@ describe('listTickets', () => {
     expect(urls[0]).not.toContain('admin-website');
   });
 
+  it('requests tickets newest-first (sort=created desc)', async () => {
+    const urls = stubFetch([]);
+    await listTickets();
+    expect(urls[0]).toContain('sort=created');
+    expect(urls[0]).toContain('direction=desc');
+  });
+
   it('surfaces real issues but excludes pull requests', async () => {
     stubFetch([
       {

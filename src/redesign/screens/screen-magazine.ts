@@ -17,6 +17,7 @@ import '../components/engine-loading.js';
 interface IssueFolder {
   readonly slug: string;
   readonly title: string;
+  readonly date: string;
 }
 
 /** The publish pipeline state surfaced in the result dialog. */
@@ -207,11 +208,15 @@ export class ScreenMagazine extends LitElement {
     const issues = await Promise.all(
       slugs.map(async (slug) => {
         const md = (await readFile(`magazine/${slug}/index.ru.md`)) ?? '';
-        const title = md.match(/^title:\s*(.+)$/m)?.[1]?.replace(/^["']|["']$/g, '') ?? slug;
-        return { slug: slug as string, title };
+        const fm = (key: string): string =>
+          md.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'))?.[1]?.replace(/^["']|["']$/g, '') ?? '';
+        const title = fm('title') || slug;
+        const date = fm('publishDate') || fm('pubDate') || fm('date');
+        return { slug: slug as string, title, date };
       }),
     );
-    this.issues = issues;
+    // Newest issue first (undated last), like every other content list.
+    this.issues = [...issues].sort((a, b) => (b.date || '0000').localeCompare(a.date || '0000'));
     this.articles = await listArticles();
     this.loaded = true;
   }

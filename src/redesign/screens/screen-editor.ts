@@ -686,7 +686,9 @@ export class ScreenEditor extends LitElement {
 
   /** A required frontmatter field is empty. */
   private get incomplete(): boolean {
-    return this.topic === '';
+    // A journal issue has no topic, so it is never "incomplete" for that reason
+    // (this was still flagging the warning icon on the props button for issues).
+    return this.collection !== 'magazine' && this.topic === '';
   }
 
   private onLangChange = (event: Event): void => {
