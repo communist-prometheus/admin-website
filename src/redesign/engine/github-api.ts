@@ -134,7 +134,10 @@ const toTicket = (x: unknown): Ticket | undefined => {
 /** Lists a repo's issues (default: the `tickets` repo) as tickets; PRs are
  * excluded so a code repo's pull requests never masquerade as tickets. */
 export const listTickets = async (repo = 'tickets'): Promise<readonly Ticket[]> => {
-  const data = await get(`/repos/${OWNER}/${repo}/issues?state=all&per_page=50`);
+  // Newest first, explicitly (not relying on the API default), like every list.
+  const data = await get(
+    `/repos/${OWNER}/${repo}/issues?state=all&sort=created&direction=desc&per_page=50`,
+  );
   return Array.isArray(data) ? data.map(toTicket).filter((t): t is Ticket => t !== undefined) : [];
 };
 
