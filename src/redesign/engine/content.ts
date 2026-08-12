@@ -427,7 +427,7 @@ export const listArticles = async (): Promise<readonly ArticleSummary[]> => {
   const summaries = await mapPool([...bySlug.entries()], 6, ([slug, langs]) =>
     summariseArticle(slug, [...langs]),
   );
-  return [...summaries].sort(byDateAsc);
+  return [...summaries].sort(byDateDesc);
 };
 
 /** Groups `blog/<slug>/index.<lang>.md` paths into slug → sorted langs. */
@@ -498,7 +498,7 @@ export const listArticlesViaApi = async (
       onProgress?.(done, slugs.length);
       return summariseFromMarkdown(slug, langs, md);
     });
-    return { articles: [...summaries].sort(byDateAsc) };
+    return { articles: [...summaries].sort(byDateDesc) };
   } catch (e) {
     return { articles: [], error: e instanceof Error ? e.message : String(e) };
   }
@@ -628,9 +628,9 @@ const summariseFromMarkdown = (
   languages: [...langs].sort(),
 });
 
-/** Chronological, oldest → newest; undated last. Matches every content list. */
-const byDateAsc = (a: ArticleSummary, b: ArticleSummary): number =>
-  (a.date ?? '9999').localeCompare(b.date ?? '9999');
+/** Reverse-chronological, newest → oldest; undated last. */
+const byDateDesc = (a: ArticleSummary, b: ArticleSummary): number =>
+  (b.date ?? '0000').localeCompare(a.date ?? '0000');
 
 const summariseArticle = async (
   slug: string,

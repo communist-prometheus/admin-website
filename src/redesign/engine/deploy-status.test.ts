@@ -35,14 +35,23 @@ describe('matchRun', () => {
     expect(matchRun('2026-08-04T09:20:00Z', runs)?.url).toBe('r1');
   });
 
-  it('ignores runs long before the push (beyond skew)', () => {
-    // push is after r1 by an hour, before r2 → r2 is the nearest at/after
-    expect(matchRun('2026-08-04T11:00:00Z', runs)?.url).toBe('r2');
+  it('does not attribute a run started long after the push (outside the window)', () => {
+    // push at 11:00; the only later run (r2) is ~23h out — not this push's deploy.
+    expect(matchRun('2026-08-04T11:00:00Z', runs)).toBeUndefined();
   });
 
   it('returns undefined for an unparseable date or no candidate', () => {
     expect(matchRun('not-a-date', runs)).toBeUndefined();
     expect(matchRun('2026-08-06T00:00:00Z', runs)).toBeUndefined();
+  });
+
+  it('prefers the successful run over the concurrency-cancelled duplicate', () => {
+    const push = '2026-08-04T09:20:00Z';
+    const overlapping = [
+      run({ createdAt: '2026-08-04T09:20:10Z', conclusion: 'cancelled', url: 'cancelled' }),
+      run({ createdAt: '2026-08-04T09:21:40Z', conclusion: 'success', url: 'success' }),
+    ];
+    expect(matchRun(push, overlapping)?.url).toBe('success');
   });
 });
 

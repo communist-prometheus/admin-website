@@ -232,6 +232,7 @@ const toPush = (x: unknown): Push | undefined => {
 
 /** A deploy workflow run on the public site, used to enrich the deploy board. */
 export interface DeployRun {
+  readonly id: number;
   readonly status: 'queued' | 'in_progress' | 'completed';
   readonly conclusion: string;
   readonly createdAt: string;
@@ -242,17 +243,56 @@ export interface DeployRun {
 const toDeployRun = (x: unknown): DeployRun | undefined => {
   const status = field(x, 'status');
   if (status !== 'queued' && status !== 'in_progress' && status !== 'completed') return undefined;
+  const id = field(x, 'id');
   const conclusion = field(x, 'conclusion');
   const createdAt = field(x, 'created_at');
   const updatedAt = field(x, 'updated_at');
   const url = field(x, 'html_url');
   return {
+    id: typeof id === 'number' ? id : 0,
     status,
     conclusion: typeof conclusion === 'string' ? conclusion : '',
     createdAt: typeof createdAt === 'string' ? createdAt : '',
     updatedAt: typeof updatedAt === 'string' ? updatedAt : '',
     url: typeof url === 'string' ? url : '',
   };
+};
+
+/** One step of a deploy run's job, for the expandable per-row detail. */
+export interface DeployStep {
+  readonly name: string;
+  readonly state: 'success' | 'failure' | 'running' | 'pending' | 'skipped';
+}
+
+const stepState = (status: unknown, conclusion: unknown): DeployStep['state'] => {
+  if (status !== 'completed') return status === 'in_progress' ? 'running' : 'pending';
+  if (conclusion === 'success') return 'success';
+  if (conclusion === 'failure' || conclusion === 'timed_out') return 'failure';
+  return 'skipped';
+};
+
+/** The CI steps of a deploy run (all jobs, in order) — the real deploy detail. */
+export const listDeployRunSteps = async (
+  runId: number,
+  repo = 'public-website',
+): Promise<readonly DeployStep[]> => {
+  const data = await get(`/repos/${OWNER}/${repo}/actions/runs/${runId}/jobs`);
+  const jobs = field(data, 'jobs');
+  if (!Array.isArray(jobs)) return [];
+  const steps: DeployStep[] = [];
+  for (const job of jobs) {
+    const jobSteps = field(job, 'steps');
+    if (Array.isArray(jobSteps)) {
+      for (const s of jobSteps) {
+        const name = field(s, 'name');
+        steps.push({
+          name: typeof name === 'string' ? name : '—',
+          state: stepState(field(s, 'status'), field(s, 'conclusion')),
+        });
+      }
+    }
+  }
+  return steps;
 };
 
 /**

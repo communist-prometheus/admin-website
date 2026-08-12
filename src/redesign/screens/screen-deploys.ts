@@ -1,9 +1,13 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
-import { listPushes, listDeployRuns } from '../engine/github-api.js';
+import {
+  listPushes,
+  listDeployRuns,
+  listDeployRunSteps,
+  type DeployStep,
+} from '../engine/github-api.js';
 import { correlateDeploys, type DeployedPush, type DeployPhase } from '../engine/deploy-status.js';
-import { onEngineReady } from '../engine/engine-ready.js';
 
 /**
  * `screen-deploys` — a real activity board of recent pushes to the content repo
@@ -57,18 +61,30 @@ export class ScreenDeploys extends LitElement {
       display: grid;
       gap: var(--spacing-xs);
     }
+    /* Mobile-first: the status wraps to its own line UNDER the title so the
+       title always gets the full width (it used to be crushed into a 5-char
+       column next to a long status label). Widens to a proper 3-column row on
+       tablets and up. */
     .row {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas: 'icon content' '. status';
       align-items: start;
-      gap: var(--spacing-sm);
+      gap: 0.4rem var(--spacing-sm);
       padding: var(--spacing-md) 0;
       border-top: 1px solid var(--color-hairline);
+    }
+    @media (min-width: 640px) {
+      .row {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas: 'icon content status';
+      }
     }
     .row:first-child {
       border-top: none;
     }
     .ri {
+      grid-area: icon;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -107,6 +123,7 @@ export class ScreenDeploys extends LitElement {
       }
     }
     .rc {
+      grid-area: content;
       min-width: 0;
       display: grid;
       gap: 0.3rem;
@@ -134,11 +151,20 @@ export class ScreenDeploys extends LitElement {
       text-decoration: underline;
     }
     .ra {
+      grid-area: status;
       display: inline-flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 0.25rem;
-      text-align: right;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.5rem;
+      text-align: left;
+    }
+    @media (min-width: 640px) {
+      .ra {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.25rem;
+        text-align: right;
+      }
     }
     .dur {
       font-size: 0.75rem;
@@ -148,6 +174,61 @@ export class ScreenDeploys extends LitElement {
     .empty {
       color: var(--color-text-secondary);
     }
+    .steps-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.35rem;
+      padding: 0.15rem 0;
+      border: none;
+      background: transparent;
+      color: var(--color-accent);
+      font: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .steps-hint {
+      margin: 0.3rem 0 0;
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+    }
+    .steps {
+      list-style: none;
+      margin: 0.4rem 0 0;
+      padding: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--color-text-secondary);
+    }
+    .step-dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 999px;
+      flex: none;
+      background: var(--color-border);
+    }
+    .step.success .step-dot {
+      background: var(--color-success, #2e9e5b);
+    }
+    .step.failure .step-dot {
+      background: var(--color-danger, #c0392b);
+    }
+    .step.running .step-dot {
+      background: var(--color-accent);
+      animation: spin 1s linear infinite;
+    }
+    .step.running .step-name {
+      color: var(--color-text-primary);
+    }
+    .step-name {
+      overflow-wrap: anywhere;
+    }
   `;
 
   /** Recent pushes enriched with their deploy status; empty until loaded. */
@@ -156,25 +237,61 @@ export class ScreenDeploys extends LitElement {
   /** Whether the real read has completed. */
   @state() private loaded = false;
 
-  /** Unsubscribes the engine-ready listener on disconnect. */
-  private disposeReady: () => void = () => {};
+  /** Run ids whose steps are expanded in the UI. */
+  @state() private expanded: ReadonlySet<number> = new Set();
+
+  /** Fetched steps per run id (`'loading'` while in flight). */
+  @state() private stepsByRun: ReadonlyMap<number, readonly DeployStep[] | 'loading'> = new Map();
+
+  /** The auto-refresh timer while any deploy is still in flight. */
+  private refreshTimer: ReturnType<typeof setTimeout> | undefined;
 
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
-    // Re-read once the engine finishes booting (first-load race, QA #12).
-    this.disposeReady = onEngineReady(() => void this.load());
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.disposeReady();
+    if (this.refreshTimer !== undefined) clearTimeout(this.refreshTimer);
+    this.refreshTimer = undefined;
   }
 
   private async load(): Promise<void> {
     const [pushes, runs] = await Promise.all([listPushes(), listDeployRuns()]);
     this.deploys = correlateDeploys(pushes, runs);
     this.loaded = true;
+    this.scheduleRefresh();
+  }
+
+  /** Polls again while any deploy is building/queued/pending, so a status moves
+   *  from building to published/failed without a manual reload. */
+  private scheduleRefresh(): void {
+    if (this.refreshTimer !== undefined) clearTimeout(this.refreshTimer);
+    this.refreshTimer = undefined;
+    const inFlight = this.deploys.some(
+      (d) => d.phase === 'building' || d.phase === 'queued' || d.phase === 'pending',
+    );
+    if (inFlight && this.isConnected) {
+      this.refreshTimer = setTimeout(() => void this.load(), 15_000);
+    }
+  }
+
+  /** Toggles the per-run steps panel, fetching the run's steps on first open. */
+  private async toggleSteps(runId: number): Promise<void> {
+    const next = new Set(this.expanded);
+    if (next.has(runId)) {
+      next.delete(runId);
+      this.expanded = next;
+      return;
+    }
+    next.add(runId);
+    this.expanded = next;
+    if (!this.stepsByRun.has(runId)) {
+      this.stepsByRun = new Map(this.stepsByRun).set(runId, 'loading');
+      const steps = await listDeployRunSteps(runId);
+      this.stepsByRun = new Map(this.stepsByRun).set(runId, steps);
+    }
   }
 
   /** cp-status tone + icon + Russian label for a deploy phase. */
@@ -234,13 +351,39 @@ export class ScreenDeploys extends LitElement {
           ${item.phase === 'building' || item.phase === 'queued' || item.phase === 'pending'
             ? html`<cp-progress ?indeterminate=${true} value="0"></cp-progress>`
             : nothing}
+          ${item.runId === undefined || item.runId === 0
+            ? nothing
+            : this.renderSteps(item.runId)}
         </div>
         <div class="ra">
           <cp-status state=${meta.state} label=${meta.label}></cp-status>
           ${dur === '' ? nothing : html`<span class="dur">${dur}</span>`}
         </div>
-      </li>
-    `;
+      </li>`;
+  }
+
+  /** The expandable deploy-steps panel for a matched run. */
+  private renderSteps(runId: number): TemplateResult {
+    const open = this.expanded.has(runId);
+    const steps = this.stepsByRun.get(runId);
+    return html`
+      <button class="steps-toggle" aria-expanded=${open} @click=${() => void this.toggleSteps(runId)}>
+        <cp-icon name=${open ? 'chevron-down' : 'chevron-right'} size="14"></cp-icon>
+        шаги деплоя
+      </button>
+      ${!open
+        ? nothing
+        : steps === 'loading' || steps === undefined
+          ? html`<p class="steps-hint">Загружаем шаги…</p>`
+          : steps.length === 0
+            ? html`<p class="steps-hint">Шаги недоступны.</p>`
+            : html`<ol class="steps">
+                ${steps.map(
+                  (s) => html`<li class="step ${s.state}">
+                    <span class="step-dot"></span><span class="step-name">${s.name}</span>
+                  </li>`,
+                )}
+              </ol>`}`;
   }
 
   override render(): TemplateResult {

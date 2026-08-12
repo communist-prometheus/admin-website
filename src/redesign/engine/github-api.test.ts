@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
-import { listMembers, listPushes, listTickets, createTicket } from './github-api.ts';
+import { listMembers, listPushes, listTickets, createTicket, listDeployRunSteps } from './github-api.ts';
 
 vi.mock('@/composables/useAuth/ensure-fresh-token', () => ({
   ensureFreshToken: vi.fn(),
@@ -128,5 +128,34 @@ describe('createTicket (QA #9)', () => {
     const result = await createTicket({ title: 't', body: '', kind: 'story' });
     expect(result.ok).toBe(false);
     expect(result.number).toBeUndefined();
+  });
+});
+
+describe('listDeployRunSteps (deploy board steps)', () => {
+  it('flattens a run’s jobs into ordered steps with mapped state', async () => {
+    stubFetch({
+      jobs: [
+        {
+          steps: [
+            { name: 'Checkout', status: 'completed', conclusion: 'success' },
+            { name: 'Build', status: 'completed', conclusion: 'failure' },
+            { name: 'Deploy', status: 'in_progress' },
+            { name: 'Skipped', status: 'completed', conclusion: 'skipped' },
+          ],
+        },
+      ],
+    });
+    const steps = await listDeployRunSteps(123);
+    expect(steps.map((s) => `${s.name}:${s.state}`)).toEqual([
+      'Checkout:success',
+      'Build:failure',
+      'Deploy:running',
+      'Skipped:skipped',
+    ]);
+  });
+
+  it('returns [] when the run has no jobs', async () => {
+    stubFetch({ jobs: [] });
+    expect(await listDeployRunSteps(1)).toEqual([]);
   });
 });
