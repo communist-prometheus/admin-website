@@ -435,10 +435,8 @@ export class ScreenEditor extends LitElement {
       min-width: 0;
       overflow-wrap: anywhere;
     }
-    .issue-files {
-      margin-top: var(--spacing-xl);
-      padding-top: var(--spacing-lg);
-      border-top: 1px solid var(--color-hairline);
+    .issue-panel {
+      margin-top: var(--spacing-lg);
       display: grid;
       gap: var(--spacing-xl);
     }
@@ -1012,6 +1010,28 @@ export class ScreenEditor extends LitElement {
     `;
   }
 
+  /**
+   * The primary body of a magazine issue: the structured, typed assets panel
+   * (cover + newspaper file + derived fb2) and the article-linking panel. A
+   * journal issue's `index.<lang>.md` carries no prose body, so it shows no
+   * markdown editor — the issue is assembled from its file, cover and articles.
+   */
+  private renderMagazineBody(): TemplateResult {
+    return html`
+      <div class="issue-panel">
+        <issue-files
+          .dir=${`magazine/${this.slug}/assets`}
+          .slug=${this.slug}
+          .title=${this.articleTitle}
+          .desc=${this.description}
+          .lang=${this.activeLang}
+          .langs=${this.availableLangs}
+        ></issue-files>
+        <issue-articles .issueSlug=${this.slug} .lang=${this.activeLang}></issue-articles>
+      </div>
+    `;
+  }
+
   private renderProps(): TemplateResult {
     // Topic/rubric are blog-article taxonomy; a journal issue has neither, so
     // those fields (and the required-topic gate) are hidden when editing one.
@@ -1153,18 +1173,22 @@ export class ScreenEditor extends LitElement {
             : nothing}
         </div>
         ${this.renderAddLangDialog()}
-        ${this.renderToolbar()}
-        <cp-markdown-editor
-          class="live"
-          .value=${this.body}
-          placeholder="Текст статьи в Markdown…"
-          @cp-change=${this.onBodyChange}
-        ></cp-markdown-editor>
-        <p class="hint">
-          Живой предпросмотр: форматирование отрендерено сразу, а разметку
-          <span class="kbd">#</span> <span class="kbd">**</span>
-          <span class="kbd">&gt;</span> видно только на строке с курсором.
-        </p>
+        ${this.collection === 'magazine'
+          ? this.renderMagazineBody()
+          : html`
+              ${this.renderToolbar()}
+              <cp-markdown-editor
+                class="live"
+                .value=${this.body}
+                placeholder="Текст статьи в Markdown…"
+                @cp-change=${this.onBodyChange}
+              ></cp-markdown-editor>
+              <p class="hint">
+                Живой предпросмотр: форматирование отрендерено сразу, а разметку
+                <span class="kbd">#</span> <span class="kbd">**</span>
+                <span class="kbd">&gt;</span> видно только на строке с курсором.
+              </p>
+            `}
         <p class="save-note">
           ${this.dirty
             ? html`<cp-icon name="warning" size="16"></cp-icon>
@@ -1175,22 +1199,6 @@ export class ScreenEditor extends LitElement {
           <span aria-hidden="true">·</span>
           <span class="path">${this.articlePath}</span>
         </p>
-        ${this.collection === 'magazine' && this.slug !== ''
-          ? html`<div class="issue-files">
-              <issue-files
-                .dir=${`magazine/${this.slug}/assets`}
-                .slug=${this.slug}
-                .title=${this.articleTitle}
-                .desc=${this.description}
-                .lang=${this.activeLang}
-                .langs=${this.availableLangs}
-              ></issue-files>
-              <issue-articles
-                .issueSlug=${this.slug}
-                .lang=${this.activeLang}
-              ></issue-articles>
-            </div>`
-          : nothing}
       </article>
       ${this.renderProps()}${this.renderPublishDialog()}
     `;
