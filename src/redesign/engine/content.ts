@@ -227,6 +227,67 @@ export const upsertFrontmatterBlock = (markdown: string, key: string, value: str
   return `---\n${lines.join('\n')}${markdown.slice(end)}`;
 };
 
+/**
+ * Removes a scalar frontmatter field (its whole line) if present, leaving the
+ * body untouched. Used to UNLINK an article from an issue — dropping its
+ * `magazine:` back-link. Pure — safe to unit test.
+ */
+export const removeFrontmatterField = (markdown: string, key: string): string => {
+  if (!markdown.startsWith('---')) return markdown;
+  const end = markdown.indexOf('\n---', 3);
+  if (end < 0) return markdown;
+  const lines = markdown.slice(4, end).split('\n').filter((l) => !l.startsWith(`${key}:`));
+  return `---\n${lines.join('\n')}${markdown.slice(end)}`;
+};
+
+/**
+ * Reads a YAML block sequence (`key:` followed by `  - item` lines) as a plain
+ * array — the issue index's `articles:` table of contents. Returns [] when the
+ * key is absent. Pure — safe to unit test.
+ */
+export const readSequenceField = (markdown: string, key: string): readonly string[] => {
+  if (!markdown.startsWith('---')) return [];
+  const end = markdown.indexOf('\n---', 3);
+  const block = end < 0 ? markdown.slice(4) : markdown.slice(4, end);
+  const lines = block.split('\n');
+  const at = lines.findIndex((l) => l.startsWith(`${key}:`));
+  if (at < 0) return [];
+  const items: string[] = [];
+  for (let i = at + 1; i < lines.length; i += 1) {
+    const m = lines[i].match(/^\s+-\s+(.+?)\s*$/);
+    if (m) items.push(m[1].replace(/^["']|["']$/g, ''));
+    else if (lines[i].trim() !== '') break; // next key ends the sequence
+  }
+  return items;
+};
+
+/**
+ * Inserts or replaces a YAML block sequence field (`key:` + `  - item` lines),
+ * dropping the previous items so a rewrite never orphans stale entries. Placed
+ * after `lang:` (or at the block end) when new. Pure — safe to unit test.
+ */
+export const upsertSequenceField = (
+  markdown: string,
+  key: string,
+  items: readonly string[],
+): string => {
+  const field = [`${key}:`, ...items.map((it) => `  - ${it}`)];
+  if (!markdown.startsWith('---')) return `---\n${field.join('\n')}\n---\n\n${markdown}`;
+  const end = markdown.indexOf('\n---', 3);
+  if (end < 0) return markdown;
+  const lines = markdown.slice(4, end).split('\n');
+  const at = lines.findIndex((l) => l.startsWith(`${key}:`));
+  if (at >= 0) {
+    let removeCount = 1;
+    for (let i = at + 1; i < lines.length && /^\s+-\s+/.test(lines[i]); i += 1) removeCount += 1;
+    lines.splice(at, removeCount, ...field);
+  } else {
+    const langAt = lines.findIndex((l) => l.startsWith('lang:'));
+    lines.splice(langAt >= 0 ? langAt + 1 : lines.length, 0, ...field);
+  }
+  return `---\n${lines.join('\n')}${markdown.slice(end)}`;
+};
+
 /** Fields needed to render a magazine issue's `index.<lang>.md`. */
 export interface IssueIndexInput {
   readonly title: string;
@@ -431,10 +492,11 @@ export const listArticles = async (): Promise<readonly ArticleSummary[]> => {
 };
 
 /** Groups `blog/<slug>/index.<lang>.md` paths into slug → sorted langs. */
-const groupArticlePaths = (paths: readonly string[]): Map<string, string[]> => {
+const groupArticlePaths = (paths: readonly string[], collection = 'blog'): Map<string, string[]> => {
   const bySlug = new Map<string, string[]>();
+  const pattern = new RegExp(`^${collection}/([^/]+)/index\\.([a-z]{2,3})\\.md$`);
   for (const p of paths) {
-    const m = p.match(/^blog\/([^/]+)\/index\.([a-z]{2,3})\.md$/);
+    const m = p.match(pattern);
     if (m) {
       const slug = m[1] as string;
       const langs = bySlug.get(slug) ?? [];
@@ -462,6 +524,7 @@ export interface ArticleListResult {
  */
 export const listArticlesViaApi = async (
   onProgress?: (loaded: number, total: number) => void,
+  collection = 'blog',
 ): Promise<ArticleListResult> => {
   const branch = import.meta.env.VITE_GITHUB_BRANCH ?? 'develop';
   const base = `https://api.github.com/repos/communist-prometheus/public-website-content`;
@@ -480,14 +543,14 @@ export const listArticlesViaApi = async (
     const paths = Array.isArray(tree)
       ? tree.map((e) => (typeof e === 'object' && e && 'path' in e ? String(Reflect.get(e, 'path')) : '')).filter(Boolean)
       : [];
-    const slugs = [...groupArticlePaths(paths).entries()];
+    const slugs = [...groupArticlePaths(paths, collection).entries()];
     onProgress?.(0, slugs.length);
     let done = 0;
     const summaries = await mapPool(slugs, 6, async ([slug, langs]) => {
       const lang = preferredLang(langs);
       let md = '';
       try {
-        const fileRes = await fetch(`${base}/contents/blog/${slug}/index.${lang}.md?ref=${branch}`, {
+        const fileRes = await fetch(`${base}/contents/${collection}/${slug}/index.${lang}.md?ref=${branch}`, {
           headers: { ...auth, accept: 'application/vnd.github.raw' },
         });
         if (fileRes.ok) md = await fileRes.text();
@@ -607,6 +670,75 @@ export const publishFileViaApi = async (
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
+};
+
+/** The outcome of re-linking an issue's articles: what changed, or an error. */
+export interface LinkResult {
+  readonly ok: boolean;
+  readonly linked: number;
+  readonly unlinked: number;
+  readonly error?: string;
+}
+
+/**
+ * Reconciles a magazine issue's linked articles for one language, entirely via
+ * the Contents API (no clone). Given the desired set of article slugs it:
+ *  - reads the issue's current `articles:` table of contents,
+ *  - adds a `magazine: <slug>` back-link to every newly-selected article,
+ *  - removes that back-link from every de-selected article,
+ *  - rewrites the issue index's `articles:` list to the new set.
+ * Each write is its own single-file commit — the same "push only what changed"
+ * model the editor uses. Articles missing the issue language are skipped (they
+ * cannot carry a language-specific back-link) and excluded from the TOC.
+ */
+export const linkIssueArticlesViaApi = async (
+  issueSlug: string,
+  lang: string,
+  selected: readonly string[],
+): Promise<LinkResult> => {
+  const indexPath = `magazine/${issueSlug}/index.${lang}.md`;
+  const indexMd = await readFileViaApi(indexPath);
+  if (indexMd === undefined) {
+    return { ok: false, linked: 0, unlinked: 0, error: `Не найден index номера (${lang}).` };
+  }
+  const current = new Set(readSequenceField(indexMd, 'articles'));
+  const want = new Set(selected);
+  const toLink = selected.filter((s) => !current.has(s));
+  const toUnlink = [...current].filter((s) => !want.has(s));
+
+  // Add the back-link to newly-selected articles; skip any without this language.
+  const linked: string[] = [];
+  for (const slug of selected) {
+    const path = `blog/${slug}/index.${lang}.md`;
+    const md = await readFileViaApi(path);
+    if (md === undefined || md === '') continue;
+    linked.push(slug);
+    if (toLink.includes(slug)) {
+      const next = upsertFrontmatterField(md, 'magazine', issueSlug);
+      const r = await publishFileViaApi(path, next, `magazine: ссылка ${slug} → ${issueSlug}`);
+      if (!r.ok) return { ok: false, linked: 0, unlinked: 0, error: r.error };
+    }
+  }
+
+  // Drop the back-link from de-selected articles.
+  let unlinked = 0;
+  for (const slug of toUnlink) {
+    const path = `blog/${slug}/index.${lang}.md`;
+    const md = await readFileViaApi(path);
+    if (md === undefined || md === '') continue;
+    const next = removeFrontmatterField(md, 'magazine');
+    const r = await publishFileViaApi(path, next, `magazine: отвязка ${slug} от ${issueSlug}`);
+    if (!r.ok) return { ok: false, linked: 0, unlinked: 0, error: r.error };
+    unlinked += 1;
+  }
+
+  // Rewrite the issue TOC to exactly the linked set.
+  const nextIndex = upsertSequenceField(indexMd, 'articles', linked);
+  if (nextIndex !== indexMd) {
+    const r = await publishFileViaApi(indexPath, nextIndex, `magazine: оглавление ${issueSlug} (${linked.length})`);
+    if (!r.ok) return { ok: false, linked: 0, unlinked: 0, error: r.error };
+  }
+  return { ok: true, linked: toLink.length, unlinked };
 };
 
 /** One file in a repo directory (a magazine issue's asset, etc.). */

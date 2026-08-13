@@ -39,6 +39,8 @@ export const groups: ReadonlyArray<readonly [NavItem['group'], string]> = [
 export const navItems: readonly NavItem[] = [
   { id: 'articles', label: 'Статьи', icon: 'file-text', group: 'content', role: 'editor' },
   { id: 'magazine', label: 'Журнал', icon: 'book', group: 'content', role: 'editor' },
+  { id: 'pages', label: 'Страницы', icon: 'file-text', group: 'content', role: 'editor' },
+  { id: 'archive', label: 'Архив', icon: 'book', group: 'content', role: 'editor' },
   { id: 'topics', label: 'Темы', icon: 'hash', group: 'content', role: 'editor' },
   { id: 'members', label: 'Участники', icon: 'users', group: 'community', role: 'admin' },
   { id: 'tickets', label: 'Тикеты', icon: 'ticket', group: 'community', role: 'editor' },

@@ -8,6 +8,7 @@ import {
   listDirViaApi,
   uploadBinaryViaApi,
   deleteFileViaApi,
+  linkIssueArticlesViaApi,
 } from './content.ts';
 
 vi.mock('@/composables/useAuth/ensure-fresh-token', () => ({ ensureFreshToken: vi.fn() }));
@@ -20,12 +21,14 @@ const TREE = {
     { path: 'blog/newer/index.ru.md' },
     { path: 'README.md' },
     { path: 'blog/older/cover.jpg' },
+    { path: 'pages/home/index.ru.md' },
   ],
 };
 
 const FILES: Record<string, string> = {
   'blog/older/index.ru.md': '---\ntitle: Старее\npubDate: 2026-01-01\n---\n\nBody\n',
   'blog/newer/index.ru.md': '---\ntitle: Новее\npublishDate: 2026-05-01\n---\n\nBody\n',
+  'pages/home/index.ru.md': '---\ntitle: Главная\n---\n\nBody\n',
 };
 
 /** Stubs global fetch: tree endpoint returns TREE, contents return raw md. */
@@ -34,12 +37,25 @@ const stub = (opts: { treeStatus?: number; failFile?: string } = {}): void => {
     if (url.includes('/git/trees/')) {
       return new Response(JSON.stringify(TREE), { status: opts.treeStatus ?? 200 });
     }
-    const m = url.match(/contents\/(blog\/[^?]+)/);
+    const m = url.match(/contents\/([^?]+)/);
     const path = m ? decodeURIComponent(m[1]) : '';
     if (opts.failFile !== undefined && path === opts.failFile) throw new Error('throttled');
     return new Response(FILES[path] ?? '', { status: FILES[path] ? 200 : 404 });
   });
 };
+
+/** The `accept` header of a fetch init, without casting an opaque HeadersInit. */
+const acceptOf = (init?: RequestInit): string => {
+  const h = init?.headers;
+  return typeof h === 'object' && 'accept' in h ? String(Reflect.get(h, 'accept')) : '';
+};
+
+/** Parses a stored issue index's `articles:` block for assertions. */
+const readSeq = (md: string): string[] =>
+  md
+    .split('\n')
+    .map((l) => l.match(/^\s+-\s+(.+?)\s*$/)?.[1])
+    .filter((v): v is string => v !== undefined);
 
 beforeEach(() => {
   vi.stubEnv('VITE_DEV_TOKEN', '');
@@ -60,6 +76,14 @@ describe('listArticlesViaApi (API-first article list)', () => {
     expect(articles[0].title).toBe('Новее');
     expect(articles[0].date).toBe('2026-05-01'); // publishDate read too
     expect(articles[1].languages).toEqual(['en', 'ru']);
+  });
+
+  it('lists a non-blog collection (pages) when asked, ignoring blog entries', async () => {
+    stub();
+    const { articles, error } = await listArticlesViaApi(undefined, 'pages');
+    expect(error).toBeUndefined();
+    expect(articles.map((a) => a.slug)).toEqual(['home']);
+    expect(articles[0].title).toBe('Главная');
   });
 
   it('reports the tree fetch error instead of a silent empty (throttling/failure)', async () => {
@@ -191,6 +215,60 @@ describe('editor single-file API (read / langs / publish, no clone)', () => {
     const r = await deleteFileViaApi('magazine/x/assets/old.pdf', 'remove');
     expect(r.ok).toBe(true);
     expect(calls.find((c) => c.method === 'DELETE')?.body).toMatchObject({ sha: 'todelete' });
+  });
+
+  it('linkIssueArticlesViaApi back-links new articles and rewrites the TOC', async () => {
+    const repo: Record<string, string> = {
+      'magazine/n3/index.ru.md': '---\ntitle: N3\nlang: ru\narticles:\n  - a\n---\n\nB\n',
+      'blog/a/index.ru.md': '---\ntitle: A\nlang: ru\nmagazine: n3\n---\n\nB\n',
+      'blog/b/index.ru.md': '---\ntitle: B\nlang: ru\n---\n\nB\n',
+    };
+    const puts: Array<{ path: string; content: string }> = [];
+    const decode = (b64: string): string =>
+      new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      const path = decodeURIComponent(url.match(/contents\/([^?]+)/)?.[1] ?? '');
+      if (init?.method === 'PUT') {
+        const body = JSON.parse(String(init.body));
+        repo[path] = decode(body.content);
+        puts.push({ path, content: repo[path] });
+        return new Response(JSON.stringify({ commit: { sha: 'c' } }), { status: 201 });
+      }
+      if (acceptOf(init).includes('raw')) return new Response(repo[path] ?? '', { status: repo[path] ? 200 : 404 });
+      return new Response(JSON.stringify({ sha: 'blob' }), { status: 200 });
+    });
+
+    const r = await linkIssueArticlesViaApi('n3', 'ru', ['a', 'b']);
+    expect(r).toMatchObject({ ok: true, linked: 1, unlinked: 0 });
+    // b gained the back-link; a kept its; TOC now lists both.
+    expect(repo['blog/b/index.ru.md']).toContain('magazine: n3');
+    expect(readSeq(repo['magazine/n3/index.ru.md'])).toEqual(['a', 'b']);
+    // a was already linked and already in the TOC → not re-committed pointlessly.
+    expect(puts.some((p) => p.path === 'blog/a/index.ru.md')).toBe(false);
+  });
+
+  it('linkIssueArticlesViaApi drops the back-link from de-selected articles', async () => {
+    const repo: Record<string, string> = {
+      'magazine/n3/index.ru.md': '---\ntitle: N3\nlang: ru\narticles:\n  - a\n  - b\n---\n\nB\n',
+      'blog/a/index.ru.md': '---\ntitle: A\nlang: ru\nmagazine: n3\n---\n\nB\n',
+      'blog/b/index.ru.md': '---\ntitle: B\nlang: ru\nmagazine: n3\n---\n\nB\n',
+    };
+    const decode = (b64: string): string =>
+      new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      const path = decodeURIComponent(url.match(/contents\/([^?]+)/)?.[1] ?? '');
+      if (init?.method === 'PUT') {
+        repo[path] = decode(JSON.parse(String(init.body)).content);
+        return new Response(JSON.stringify({ commit: { sha: 'c' } }), { status: 201 });
+      }
+      if (acceptOf(init).includes('raw')) return new Response(repo[path] ?? '', { status: repo[path] ? 200 : 404 });
+      return new Response(JSON.stringify({ sha: 'blob' }), { status: 200 });
+    });
+
+    const r = await linkIssueArticlesViaApi('n3', 'ru', ['a']);
+    expect(r).toMatchObject({ ok: true, linked: 0, unlinked: 1 });
+    expect(repo['blog/b/index.ru.md']).not.toContain('magazine:');
+    expect(readSeq(repo['magazine/n3/index.ru.md'])).toEqual(['a']);
   });
 
   it('publishFileViaApi surfaces the GitHub error message on failure', async () => {

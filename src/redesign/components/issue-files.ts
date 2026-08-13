@@ -48,11 +48,41 @@ export const fileLang = (name: string, langs: ReadonlySet<string>): string | und
   return langs.has(candidate) ? candidate : undefined;
 };
 
+/** The only two accepted uploads, plus the rejection of everything else. */
+export type UploadKind = 'docx' | 'pdf' | 'reject';
+
+/** Classifies a picked file by extension into the issue upload it drives. */
+export const classifyUpload = (name: string): UploadKind => {
+  const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  return ext === 'docx' ? 'docx' : ext === 'pdf' ? 'pdf' : 'reject';
+};
+
 /**
- * Files of one content directory (a magazine issue's `assets/`), managed
- * entirely through the GitHub Contents API — no clone. Lists what is uploaded,
- * uploads ANY file type (pdf, fb2, doc, images…) and deletes files. This is the
- * "where are the files / upload mine / delete" panel the journal workflow needs.
+ * The asset path(s) an upload writes, in commit order:
+ * - docx → one derived FB2;
+ * - pdf → the pdf itself, then the cover rendered from its first page;
+ * - reject → nothing.
+ */
+export const plannedAssetPaths = (
+  dir: string,
+  slug: string,
+  lang: string,
+  kind: UploadKind,
+): readonly string[] =>
+  kind === 'docx'
+    ? [`${dir}/${slug}.${lang}.fb2`]
+    : kind === 'pdf'
+      ? [`${dir}/${slug}.${lang}.pdf`, `${dir}/cover.${lang}.png`]
+      : [];
+
+/**
+ * The purpose-built file panel for one magazine issue's `assets/`, managed
+ * entirely through the GitHub Contents API — no clone. It lists the issue's
+ * files and accepts exactly ONE kind of upload: the newspaper itself, as PDF
+ * or DOCX. A DOCX is converted client-side to FB2 (the docx is never
+ * persisted); a PDF is stored and its first page is rendered into the cover.
+ * Everything else (re-upload, manual delete of any derived asset) is the
+ * customisation layer on top of that single use case.
  */
 @customElement('issue-files')
 export class IssueFiles extends LitElement {
@@ -159,6 +189,11 @@ export class IssueFiles extends LitElement {
   /** All languages the item exists in — used to detect a file's language suffix. */
   @property({ attribute: false }) langs: readonly string[] = [];
 
+  /** Issue slug + title + description — baked into the derived fb2 / asset names. */
+  @property() slug = '';
+  @property() title = '';
+  @property() desc = '';
+
   /** When true, show files of every language, not just the open one. */
   @state() private showAll = false;
 
@@ -187,22 +222,58 @@ export class IssueFiles extends LitElement {
     this.loading = false;
   }
 
+  /** Commits one derived File to the assets dir, throwing on API failure. */
+  private async commit(path: string, file: File, message: string): Promise<void> {
+    const base64 = await fileToBase64(file);
+    const r = await uploadBinaryViaApi(path, base64, message);
+    if (!r.ok) throw new Error(r.error ?? 'upload failed');
+  }
+
+  /**
+   * The purpose-built issue upload: ONLY the newspaper PDF or DOCX.
+   * - DOCX → converted client-side to FB2 (the docx itself is never persisted)
+   *   and uploaded as `<slug>.<lang>.fb2`.
+   * - PDF → uploaded as `<slug>.<lang>.pdf`, and its first page is rendered and
+   *   uploaded as `cover.<lang>.png`.
+   * The heavy converters (mammoth / mupdf-wasm) load lazily, only on use.
+   */
   private readonly onPick = async (event: Event): Promise<void> => {
     const input = event.target;
     const file = input instanceof HTMLInputElement ? input.files?.[0] : undefined;
     if (input instanceof HTMLInputElement) input.value = '';
     if (file === undefined) return;
+    const kind = classifyUpload(file.name);
+    if (kind === 'reject') {
+      this.error = 'Для номера загружается только файл газеты — PDF или DOCX.';
+      return;
+    }
+    const [primary, cover] = plannedAssetPaths(this.dir, this.slug, this.lang, kind);
     this.busy = true;
     this.message = '';
     this.error = '';
-    const base64 = await fileToBase64(file);
-    const result = await uploadBinaryViaApi(`${this.dir}/${file.name}`, base64, `assets: add ${file.name}`);
-    this.busy = false;
-    if (result.ok) {
-      this.message = `Загружен файл «${file.name}».`;
+    try {
+      if (kind === 'docx') {
+        const { docxFileToFb2 } = await import('@/components/MarkdownEditor/docx-to-fb2');
+        const fb2 = await docxFileToFb2(file, {
+          slug: this.slug,
+          issueTitle: this.title || this.slug,
+          issueLang: this.lang,
+          issueDescription: this.desc === '' ? undefined : this.desc,
+        });
+        await this.commit(primary, fb2, `assets: docx→fb2 ${this.slug}.${this.lang}`);
+        this.message = `DOCX сконвертирован в FB2 и загружен: ${this.slug}.${this.lang}.fb2`;
+      } else {
+        await this.commit(primary, file, `assets: pdf ${this.slug}.${this.lang}`);
+        const { extractPdfCover } = await import('@/features/magazine/extract-pdf-cover');
+        const coverFile = await extractPdfCover(file);
+        await this.commit(cover, coverFile, `assets: cover ${this.slug}.${this.lang}`);
+        this.message = `PDF загружен, обложка извлечена: cover.${this.lang}.png`;
+      }
       await this.load();
-    } else {
-      this.error = result.error ?? 'Загрузка не удалась.';
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : String(e);
+    } finally {
+      this.busy = false;
     }
   };
 
@@ -291,10 +362,19 @@ export class IssueFiles extends LitElement {
       ${this.message !== '' ? html`<p class="msg">${this.message}</p>` : nothing}
       <div class="upload">
         <label>
-          ${this.busy ? 'Обрабатываем…' : 'Загрузить файл (pdf, fb2, любой):'}
-          <input type="file" ?disabled=${this.busy} @change=${this.onPick} />
+          ${this.busy ? 'Обрабатываем файл газеты…' : 'Загрузить файл газеты (PDF или DOCX):'}
+          <input
+            type="file"
+            accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ?disabled=${this.busy}
+            @change=${this.onPick}
+          />
         </label>
       </div>
+      <p class="msg">
+        DOCX → автоматически конвертируется в FB2. PDF → загружается и из первой страницы
+        извлекается обложка. Другие файлы не загружаются.
+      </p>
     `;
   }
 }
