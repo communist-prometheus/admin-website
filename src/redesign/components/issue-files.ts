@@ -48,11 +48,41 @@ export const fileLang = (name: string, langs: ReadonlySet<string>): string | und
   return langs.has(candidate) ? candidate : undefined;
 };
 
+/** The only two accepted uploads, plus the rejection of everything else. */
+export type UploadKind = 'docx' | 'pdf' | 'reject';
+
+/** Classifies a picked file by extension into the issue upload it drives. */
+export const classifyUpload = (name: string): UploadKind => {
+  const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  return ext === 'docx' ? 'docx' : ext === 'pdf' ? 'pdf' : 'reject';
+};
+
 /**
- * Files of one content directory (a magazine issue's `assets/`), managed
- * entirely through the GitHub Contents API — no clone. Lists what is uploaded,
- * uploads ANY file type (pdf, fb2, doc, images…) and deletes files. This is the
- * "where are the files / upload mine / delete" panel the journal workflow needs.
+ * The asset path(s) an upload writes, in commit order:
+ * - docx → one derived FB2;
+ * - pdf → the pdf itself, then the cover rendered from its first page;
+ * - reject → nothing.
+ */
+export const plannedAssetPaths = (
+  dir: string,
+  slug: string,
+  lang: string,
+  kind: UploadKind,
+): readonly string[] =>
+  kind === 'docx'
+    ? [`${dir}/${slug}.${lang}.fb2`]
+    : kind === 'pdf'
+      ? [`${dir}/${slug}.${lang}.pdf`, `${dir}/cover.${lang}.png`]
+      : [];
+
+/**
+ * The purpose-built file panel for one magazine issue's `assets/`, managed
+ * entirely through the GitHub Contents API — no clone. It lists the issue's
+ * files and accepts exactly ONE kind of upload: the newspaper itself, as PDF
+ * or DOCX. A DOCX is converted client-side to FB2 (the docx is never
+ * persisted); a PDF is stored and its first page is rendered into the cover.
+ * Everything else (re-upload, manual delete of any derived asset) is the
+ * customisation layer on top of that single use case.
  */
 @customElement('issue-files')
 export class IssueFiles extends LitElement {
@@ -212,16 +242,17 @@ export class IssueFiles extends LitElement {
     const file = input instanceof HTMLInputElement ? input.files?.[0] : undefined;
     if (input instanceof HTMLInputElement) input.value = '';
     if (file === undefined) return;
-    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-    if (ext !== 'pdf' && ext !== 'docx') {
+    const kind = classifyUpload(file.name);
+    if (kind === 'reject') {
       this.error = 'Для номера загружается только файл газеты — PDF или DOCX.';
       return;
     }
+    const [primary, cover] = plannedAssetPaths(this.dir, this.slug, this.lang, kind);
     this.busy = true;
     this.message = '';
     this.error = '';
     try {
-      if (ext === 'docx') {
+      if (kind === 'docx') {
         const { docxFileToFb2 } = await import('@/components/MarkdownEditor/docx-to-fb2');
         const fb2 = await docxFileToFb2(file, {
           slug: this.slug,
@@ -229,25 +260,13 @@ export class IssueFiles extends LitElement {
           issueLang: this.lang,
           issueDescription: this.desc === '' ? undefined : this.desc,
         });
-        await this.commit(
-          `${this.dir}/${this.slug}.${this.lang}.fb2`,
-          fb2,
-          `assets: docx→fb2 ${this.slug}.${this.lang}`,
-        );
+        await this.commit(primary, fb2, `assets: docx→fb2 ${this.slug}.${this.lang}`);
         this.message = `DOCX сконвертирован в FB2 и загружен: ${this.slug}.${this.lang}.fb2`;
       } else {
-        await this.commit(
-          `${this.dir}/${this.slug}.${this.lang}.pdf`,
-          file,
-          `assets: pdf ${this.slug}.${this.lang}`,
-        );
+        await this.commit(primary, file, `assets: pdf ${this.slug}.${this.lang}`);
         const { extractPdfCover } = await import('@/features/magazine/extract-pdf-cover');
-        const cover = await extractPdfCover(file);
-        await this.commit(
-          `${this.dir}/cover.${this.lang}.png`,
-          cover,
-          `assets: cover ${this.slug}.${this.lang}`,
-        );
+        const coverFile = await extractPdfCover(file);
+        await this.commit(cover, coverFile, `assets: cover ${this.slug}.${this.lang}`);
         this.message = `PDF загружен, обложка извлечена: cover.${this.lang}.png`;
       }
       await this.load();
