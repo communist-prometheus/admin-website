@@ -571,6 +571,16 @@ export const listArticlesViaApi = async (
 const REPO_BASE = 'https://api.github.com/repos/communist-prometheus/public-website-content';
 const contentBranch = (): string => import.meta.env.VITE_GITHUB_BRANCH ?? 'develop';
 
+/**
+ * A browser-loadable raw URL for a content file on the current branch. The repo
+ * is public, so `<img src>` / download links work without an auth header. The
+ * path segments are encoded so spaces and Cyrillic filenames resolve.
+ */
+export const rawContentUrl = (path: string): string => {
+  const encoded = path.split('/').map(encodeURIComponent).join('/');
+  return `https://raw.githubusercontent.com/communist-prometheus/public-website-content/${contentBranch()}/${encoded}`;
+};
+
 /** UTF-8 → base64 (btoa is latin1-only; article bodies are Cyrillic). */
 const toBase64 = (text: string): string => {
   const bytes = new TextEncoder().encode(text);
