@@ -13,6 +13,7 @@ import {
   upsertFrontmatterBlock,
 } from '../engine/content.js';
 import '../components/issue-files.js';
+import '../components/issue-articles.js';
 
 /** One editable article block: a stable id plus its raw markdown source line(s).
  *  The rendered typography is derived from the raw text on every render, so the
@@ -60,6 +61,10 @@ const LANG_LABELS: Readonly<Record<string, string>> = {
 /** Builds the language tabs from the codes an article actually has. */
 const langTabs = (codes: readonly string[]): readonly CpTab[] =>
   codes.map((code) => ({ id: code, label: LANG_LABELS[code] ?? code.toUpperCase() }));
+
+/** Non-blog collections the route may name as `#/editor/<collection>/<slug>`;
+ * anything else falls back to a blog article at `#/editor/<slug>`. */
+const EDITOR_COLLECTIONS: ReadonlySet<string> = new Set(['magazine', 'pages', 'archive']);
 
 /** Presentational toolbar affordances (block/inline formatting placeholders). */
 const FORMAT_TOOLS: readonly FormatTool[] = [
@@ -216,6 +221,35 @@ export class ScreenEditor extends LitElement {
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
+    }
+
+    /* The description now lives here as the lead under the title (design mock),
+       not buried in the properties sheet. It reads as prose but edits in place. */
+    .lead {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0 0 var(--spacing-md);
+      padding: var(--spacing-sm) 0;
+      border: none;
+      border-bottom: 1px dashed transparent;
+      background: transparent;
+      resize: vertical;
+      font-family: inherit;
+      font-size: 1.15rem;
+      line-height: 1.5;
+      color: var(--color-text-secondary);
+    }
+    .lead::placeholder {
+      color: var(--color-text-tertiary, var(--color-text-secondary));
+      opacity: 0.7;
+    }
+    .lead:hover {
+      border-bottom-color: var(--color-hairline);
+    }
+    .lead:focus {
+      outline: none;
+      border-bottom-color: var(--color-accent);
+      color: var(--color-text-primary);
     }
 
     /* The language tabs can be wider than a phone (5 native names); let them
@@ -401,10 +435,10 @@ export class ScreenEditor extends LitElement {
       min-width: 0;
       overflow-wrap: anywhere;
     }
-    .issue-files {
-      margin-top: var(--spacing-xl);
-      padding-top: var(--spacing-lg);
-      border-top: 1px solid var(--color-hairline);
+    .issue-panel {
+      margin-top: var(--spacing-lg);
+      display: grid;
+      gap: var(--spacing-xl);
     }
 
     .sheet-form {
@@ -474,6 +508,12 @@ export class ScreenEditor extends LitElement {
 
   /** Active language variant driving the `cp-tabs`. */
   @state() private activeLang = 'ru';
+
+  /** Add-translation dialog visibility + the chosen new language + progress. */
+  @state() private addLangOpen = false;
+  @state() private addLangChoice = '';
+  @state() private addLangBusy = false;
+  @state() private addLangError = '';
 
   /** Frontmatter slide-over visibility. */
   @state() private propsOpen = false;
@@ -561,12 +601,15 @@ export class ScreenEditor extends LitElement {
 
   /**
    * The item the route names: `#/editor/<slug>` (a blog article, the default) or
-   * `#/editor/magazine/<slug>` (a journal issue). The collection selects the repo
-   * folder so the same editor edits both.
+   * `#/editor/<collection>/<slug>` for a non-blog section (magazine, pages,
+   * positions, archive). The collection selects the repo folder so the same
+   * editor edits every content type.
    */
   private routeTarget(): { collection: string; slug: string } {
     const parts = window.location.hash.split('/');
-    if (parts[2] === 'magazine') return { collection: 'magazine', slug: parts[3] ?? '' };
+    if (parts[2] !== undefined && EDITOR_COLLECTIONS.has(parts[2])) {
+      return { collection: parts[2], slug: parts[3] ?? '' };
+    }
     return { collection: 'blog', slug: parts[2] ?? '' };
   }
 
@@ -710,10 +753,94 @@ export class ScreenEditor extends LitElement {
   private async switchLang(lang: string): Promise<void> {
     const buffered = this.langBuffers.get(lang);
     if (buffered !== undefined) {
-      this.applyMarkdown(buffered, `blog/${this.slug}/index.${lang}.md`, true);
+      this.applyMarkdown(buffered, `${this.collection}/${this.slug}/index.${lang}.md`, true);
       return;
     }
     await this.loadLang(lang);
+  }
+
+  /** Known languages the item does NOT yet have — the add-translation choices. */
+  private get addableLangs(): readonly string[] {
+    return Object.keys(LANG_LABELS).filter((c) => !this.availableLangs.includes(c));
+  }
+
+  private readonly openAddLang = (): void => {
+    this.addLangChoice = this.addableLangs[0] ?? '';
+    this.addLangError = '';
+    this.addLangOpen = true;
+  };
+
+  private readonly closeAddLang = (): void => {
+    if (!this.addLangBusy) this.addLangOpen = false;
+  };
+
+  /**
+   * Creates a new language variant (`index.<lang>.md`) for the open blog article
+   * or magazine issue, seeded from the current language's frontmatter + body so
+   * the translator edits the original in place. The seed forces the new `lang:`
+   * and marks it an unpublished draft until reviewed. One Contents-API commit.
+   */
+  private readonly confirmAddLang = async (): Promise<void> => {
+    const lang = this.addLangChoice;
+    if (lang === '' || this.slug === '') return;
+    // Stash the current language's edits so switching away never loses them.
+    this.langBuffers.set(this.activeLang, this.editedMarkdown);
+    const source = this.editedMarkdown;
+    const withLang = upsertFrontmatterField(source, 'lang', lang);
+    const seed = upsertFrontmatterField(withLang, 'published', 'false');
+    const path = `${this.collection}/${this.slug}/index.${lang}.md`;
+    this.addLangBusy = true;
+    this.addLangError = '';
+    const result = await publishFileViaApi(path, seed, `${this.collection}: перевод ${this.slug} → ${lang}`);
+    this.addLangBusy = false;
+    if (!result.ok) {
+      this.addLangError = result.error ?? 'Не удалось создать перевод.';
+      return;
+    }
+    this.availableLangs = [...this.availableLangs, lang].sort();
+    this.langBuffers.set(lang, seed);
+    this.activeLang = lang;
+    this.applyMarkdown(seed, path, true);
+    this.addLangOpen = false;
+  };
+
+  private renderAddLangDialog(): TemplateResult {
+    const options: readonly CpSelectOption[] = this.addableLangs.map((c) => ({
+      value: c,
+      label: LANG_LABELS[c] ?? c.toUpperCase(),
+    }));
+    return html`
+      <cp-dialog
+        ?open=${this.addLangOpen}
+        ?busy=${this.addLangBusy}
+        heading="Новый перевод"
+        @cp-cancel=${this.closeAddLang}
+      >
+        <p class="hint">
+          Создаётся вариант на выбранном языке из текущего текста — переведите его
+          на месте. Пока не опубликован.
+        </p>
+        <cp-select
+          .options=${options}
+          .value=${this.addLangChoice}
+          @cp-change=${(e: Event) => {
+            if (e instanceof CustomEvent && typeof e.detail?.value === 'string')
+              this.addLangChoice = e.detail.value;
+          }}
+        ></cp-select>
+        ${this.addLangError !== ''
+          ? html`<p class="hint" style="color:var(--color-danger,#c0392b)">${this.addLangError}</p>`
+          : nothing}
+        <div slot="footer" class="dialog-foot">
+          ${this.addLangBusy
+            ? html`<cp-button variant="secondary" disabled>Создаём…</cp-button>`
+            : html`<cp-button variant="secondary" @cp-click=${this.closeAddLang}>Отмена</cp-button>
+                <cp-button arrow ?disabled=${this.addLangChoice === ''} @cp-click=${() => void this.confirmAddLang()}
+                  >Создать</cp-button
+                >`}
+        </div>
+      </cp-dialog>
+    `;
   }
 
   // The editor's cp-change only fires for real user edits (the component
@@ -753,13 +880,13 @@ export class ScreenEditor extends LitElement {
     }
   };
 
-  private onDescriptionChange = (event: Event): void => {
-    if (event instanceof CustomEvent) {
-      const value: unknown = event.detail?.value;
-      if (typeof value === 'string') {
-        this.description = value;
-        this.dirty = true;
-      }
+  /** The lead field under the title is a native textarea (a plain input event),
+   *  writing the article's `description` frontmatter. */
+  private onLeadInput = (event: Event): void => {
+    const target = event.target;
+    if (target instanceof HTMLTextAreaElement) {
+      this.description = target.value;
+      this.dirty = true;
     }
   };
 
@@ -883,6 +1010,28 @@ export class ScreenEditor extends LitElement {
     `;
   }
 
+  /**
+   * The primary body of a magazine issue: the structured, typed assets panel
+   * (cover + newspaper file + derived fb2) and the article-linking panel. A
+   * journal issue's `index.<lang>.md` carries no prose body, so it shows no
+   * markdown editor — the issue is assembled from its file, cover and articles.
+   */
+  private renderMagazineBody(): TemplateResult {
+    return html`
+      <div class="issue-panel">
+        <issue-files
+          .dir=${`magazine/${this.slug}/assets`}
+          .slug=${this.slug}
+          .title=${this.articleTitle}
+          .desc=${this.description}
+          .lang=${this.activeLang}
+          .langs=${this.availableLangs}
+        ></issue-files>
+        <issue-articles .issueSlug=${this.slug} .lang=${this.activeLang}></issue-articles>
+      </div>
+    `;
+  }
+
   private renderProps(): TemplateResult {
     // Topic/rubric are blog-article taxonomy; a journal issue has neither, so
     // those fields (and the required-topic gate) are hidden when editing one.
@@ -906,12 +1055,6 @@ export class ScreenEditor extends LitElement {
                 @cp-change=${this.onTopicChange}
               ></cp-select>`
             : nothing}
-          <cp-textarea
-            label="Описание"
-            rows="3"
-            .value=${this.description}
-            @cp-change=${this.onDescriptionChange}
-          ></cp-textarea>
           ${isArticle
             ? html`<cp-select
                 label="Рубрика"
@@ -1006,25 +1149,46 @@ export class ScreenEditor extends LitElement {
           </h1>
           <cp-tag tone="success">данные из репозитория</cp-tag>
         </div>
+        <textarea
+          class="lead"
+          rows="2"
+          placeholder="Лид — короткое описание под заголовком"
+          .value=${this.description}
+          @input=${this.onLeadInput}
+        ></textarea>
         <div class="tabs-scroll">
           <cp-tabs
             .tabs=${langTabs(this.availableLangs)}
             active=${this.activeLang}
             @cp-tab-change=${this.onLangChange}
           ></cp-tabs>
+          ${this.slug !== '' && this.addableLangs.length > 0
+            ? html`<cp-button
+                size="sm"
+                variant="ghost"
+                title="Добавить перевод"
+                @cp-click=${this.openAddLang}
+                >+ язык</cp-button
+              >`
+            : nothing}
         </div>
-        ${this.renderToolbar()}
-        <cp-markdown-editor
-          class="live"
-          .value=${this.body}
-          placeholder="Текст статьи в Markdown…"
-          @cp-change=${this.onBodyChange}
-        ></cp-markdown-editor>
-        <p class="hint">
-          Живой предпросмотр: форматирование отрендерено сразу, а разметку
-          <span class="kbd">#</span> <span class="kbd">**</span>
-          <span class="kbd">&gt;</span> видно только на строке с курсором.
-        </p>
+        ${this.renderAddLangDialog()}
+        ${this.collection === 'magazine'
+          ? this.renderMagazineBody()
+          : html`
+              ${this.renderToolbar()}
+              <cp-markdown-editor
+                class="live"
+                .value=${this.body}
+                placeholder="Текст статьи в Markdown…"
+                @cp-change=${this.onBodyChange}
+              ></cp-markdown-editor>
+              <p class="hint">
+                Живой предпросмотр: форматирование отрендерено сразу, а разметку
+                <span class="kbd">#</span> <span class="kbd">**</span>
+                <span class="kbd">&gt;</span> видно только на строке с курсором.
+              </p>
+            `}
         <p class="save-note">
           ${this.dirty
             ? html`<cp-icon name="warning" size="16"></cp-icon>
@@ -1035,15 +1199,6 @@ export class ScreenEditor extends LitElement {
           <span aria-hidden="true">·</span>
           <span class="path">${this.articlePath}</span>
         </p>
-        ${this.collection === 'magazine' && this.slug !== ''
-          ? html`<div class="issue-files">
-              <issue-files
-                .dir=${`magazine/${this.slug}/assets`}
-                .lang=${this.activeLang}
-                .langs=${this.availableLangs}
-              ></issue-files>
-            </div>`
-          : nothing}
       </article>
       ${this.renderProps()}${this.renderPublishDialog()}
     `;

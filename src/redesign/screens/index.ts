@@ -8,6 +8,7 @@ import './screen-magazine.js';
 import './screen-newsletter.js';
 import './screen-topics.js';
 import './screen-tickets.js';
+import './screen-collection.js';
 
 /**
  * Screen registry for the shell router (app-shell R4). Each screen is a
@@ -30,6 +31,14 @@ export const screens: Readonly<Record<string, Screen>> = {
   settings: element('Настройки', () => html`<screen-settings></screen-settings>`),
   editor: element('Редактор', () => html`<screen-editor></screen-editor>`),
   magazine: element('Журнал', () => html`<screen-magazine></screen-magazine>`),
+  pages: element(
+    'Страницы',
+    () => html`<screen-collection collection="pages" heading="Страницы"></screen-collection>`,
+  ),
+  archive: element(
+    'Архив',
+    () => html`<screen-collection collection="archive" heading="Архив"></screen-collection>`,
+  ),
   topics: element('Темы', () => html`<screen-topics></screen-topics>`),
   tickets: element('Тикеты', () => html`<screen-tickets></screen-tickets>`),
   newsletter: element('Рассылка', () => html`<screen-newsletter></screen-newsletter>`),

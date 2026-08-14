@@ -32,7 +32,7 @@ interface EditorInternals {
   pubDate: string;
   published: boolean;
   dirty: boolean;
-  onDescriptionChange: (event: Event) => void;
+  onLeadInput: (event: Event) => void;
   readonly editedMarkdown: string;
   readonly incomplete: boolean;
   applyMarkdown: (markdown: string, path: string, live: boolean) => void;
@@ -89,9 +89,14 @@ describe('screen-editor properties write-back (QA #4)', () => {
     expect(el.dirty).toBe(false);
   });
 
-  it('becomes dirty once a property is edited', () => {
+  it('becomes dirty once the lead (description) is edited', () => {
     const el = seededEditor();
-    el.onDescriptionChange(new CustomEvent('cp-change', { detail: { value: 'edited' } }));
+    const textarea = document.createElement('textarea');
+    textarea.value = 'edited';
+    const event = new Event('input');
+    Object.defineProperty(event, 'target', { value: textarea });
+    el.onLeadInput(event);
+    expect(el.description).toBe('edited');
     expect(el.dirty).toBe(true);
   });
 

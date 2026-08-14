@@ -25,7 +25,15 @@ describe('canSee (QA #2 route/nav gating)', () => {
   });
 
   it('lets editors see the content surfaces', () => {
-    for (const id of ['articles', 'magazine', 'topics', 'tickets', 'deploys']) {
+    for (const id of [
+      'articles',
+      'magazine',
+      'pages',
+      'archive',
+      'topics',
+      'tickets',
+      'deploys',
+    ]) {
       expect(canSee(item(id), auth('editor', false))).toBe(true);
     }
   });
