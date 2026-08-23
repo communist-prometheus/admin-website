@@ -1,3 +1,4 @@
+import { importFile } from '../../components/MarkdownEditor/ImportDocs/import-file.js';
 import { LitElement, html, css, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
@@ -11,6 +12,7 @@ import {
   upsertFrontmatterField,
   readFrontmatterField,
   upsertFrontmatterBlock,
+  uploadBinaryViaApi,
 } from '../engine/content.js';
 import '../components/issue-files.js';
 import '../components/issue-articles.js';
@@ -45,6 +47,14 @@ interface PublishStage {
   readonly label: string;
   readonly state: StageState;
 }
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 
 /** Display labels for known language codes; any other code falls back to its
  * uppercased code, so an article in es/uk/pl/… still gets a usable tab. */
@@ -554,6 +564,8 @@ export class ScreenEditor extends LitElement {
   /** Set when the single-article API load fails (shown instead of a spinner). */
   @state() private loadError = '';
 
+  @state() private docxBusy = false;
+
   /** Set when a user click should move focus into the freshly-rendered textarea. */
   private pendingFocus = false;
 
@@ -974,6 +986,32 @@ export class ScreenEditor extends LitElement {
     this.bodyEditor?.insertText('![](/assets/image.png)');
   };
 
+  private onPickDocx = async (event: Event): Promise<void> => {
+  const input = event.target;
+  const file = input instanceof HTMLInputElement ? input.files?.[0] : undefined;
+  if (!file) return;
+  this.docxBusy = true;
+  try {
+    const { markdown, images } = await importFile(file);
+    this.bodyEditor?.insertText(markdown);
+    this.dirty = true;
+    const assetDir = `${this.collection}/${this.slug}/assets`;
+    for (const image of images) {
+      const base64 = await fileToBase64(image);
+      await uploadBinaryViaApi(
+        `${assetDir}/${image.name}`,
+        base64,
+        `${this.collection}: изображение из импорта — ${image.name}`,
+      );
+    }
+  } catch (err) {
+    this.publishError = err instanceof Error ? err.message : 'Не удалось импортировать файл.';
+  } finally {
+    this.docxBusy = false;
+    if (input instanceof HTMLInputElement) input.value = '';
+  }
+};
+
   private renderToolbar(): TemplateResult {
     return html`
       <div class="toolbar" role="toolbar" aria-label="Форматирование материала">
@@ -1000,6 +1038,24 @@ export class ScreenEditor extends LitElement {
         >
           <cp-icon name="upload" size="18"></cp-icon>
         </button>
+        <input
+  class="docx-input"
+  type="file"
+  accept=".docx,.html,.htm,.md"
+  style="display:none"
+  ?disabled=${this.docxBusy}
+  @change=${(e: Event) => void this.onPickDocx(e)}
+/>
+<button
+  class="t"
+  type="button"
+  title="Импорт из Docx"
+  aria-label="Импортировать материал из Docx"
+  ?disabled=${this.docxBusy}
+  @click=${() => this.renderRoot.querySelector<HTMLInputElement>('.docx-input')?.click()}
+>
+  <cp-icon name="upload" size="18"></cp-icon>
+</button>
         <span class="spacer"></span>
         <cp-button variant="ghost" size="sm" @cp-click=${this.openProps}>
           ${this.incomplete ? html`<cp-icon name="warning" size="16"></cp-icon>` : nothing}
