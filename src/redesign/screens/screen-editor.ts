@@ -15,6 +15,8 @@ import {
   topicOptionsViaApi,
 } from '../engine/content.js';
 import { publishTarget } from '../engine/publish-target.js';
+import { listDeployRuns } from '../engine/github-api.js';
+import { siteBuildState, type SiteBuildState } from '../engine/site-build-state.js';
 import '../components/issue-files.js';
 import '../components/issue-articles.js';
 
@@ -587,6 +589,13 @@ export class ScreenEditor extends LitElement {
   /** Topics offered in the properties panel, read from settings/topics.json. */
   @state() private topicOptions: readonly CpSelectOption[] = [];
 
+  /**
+   * Whether the public site is currently building what the repository holds.
+   * A red build is why a correctly published article can sit in the admin and
+   * never appear on the site — the editor has to be told, here.
+   */
+  @state() private siteBuild: SiteBuildState = { phase: 'unknown' };
+
   /** Publish confirmation dialog visibility. */
   @state() private publishOpen = false;
 
@@ -634,6 +643,9 @@ export class ScreenEditor extends LitElement {
     // that exist rather than a list frozen into the UI.
     void topicOptionsViaApi().then((options) => {
       this.topicOptions = options;
+    });
+    void listDeployRuns().then((runs) => {
+      this.siteBuild = siteBuildState(runs);
     });
     globalThis.addEventListener('hashchange', this.onHashChange);
     // The article is read directly from the GitHub API, so there is no engine
@@ -1113,6 +1125,25 @@ export class ScreenEditor extends LitElement {
    * unless you went looking for it — and a wrong value (a missing category, a
    * draft flag) is exactly what keeps an article off the public site.
    */
+  /**
+   * The banner that tells an editor the site is not building. Without it a
+   * failed deploy is invisible from here: the article is in the repository and
+   * the admin shows it, while the site keeps serving the last good build.
+   */
+  private renderSiteBuildWarning(): TemplateResult | typeof nothing {
+    if (this.siteBuild.phase !== 'failed') return nothing;
+    const url = this.siteBuild.runUrl;
+    return html`
+      <cp-banner tone="danger" title="Сборка сайта падает">
+        Последняя сборка ${publishTarget().site} завершилась ошибкой, поэтому изменения
+        не доезжают до сайта — даже опубликованные.
+        ${url === undefined
+          ? nothing
+          : html`<a href=${url} target="_blank" rel="noopener">Открыть журнал сборки ↗</a>`}
+      </cp-banner>
+    `;
+  }
+
   private renderProps(): TemplateResult {
     // Rubric/topic are blog-article taxonomy; a journal issue has neither.
     const isArticle = this.collection !== 'magazine';
@@ -1223,6 +1254,7 @@ export class ScreenEditor extends LitElement {
           </h1>
           <cp-tag tone="success">данные из репозитория</cp-tag>
         </div>
+        ${this.renderSiteBuildWarning()}
         <textarea
           class="lead"
           rows="2"

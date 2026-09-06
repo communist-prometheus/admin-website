@@ -96,3 +96,26 @@ describe('screen-editor: topic is optional', () => {
     expect(el.shadowRoot?.querySelector('cp-select[required]')).toBeNull();
   });
 });
+
+describe('screen-editor: the state of the site build', () => {
+  it('warns when the site build is failing, so a published article that never appears is explained', async () => {
+    const el = await mounted(PUBLISHED);
+    const priv = el as unknown as { siteBuild: { phase: string; runUrl?: string } };
+    priv.siteBuild = { phase: 'failed', runUrl: 'https://run/7' };
+    el.requestUpdate();
+    await el.updateComplete;
+    const banner = el.shadowRoot?.querySelector('cp-banner[tone="danger"]');
+    expect(banner?.getAttribute('title')).toBe('Сборка сайта падает');
+    expect(text(el)).toContain('не доезжают до сайта');
+    expect(el.shadowRoot?.querySelector('a[href="https://run/7"]')).not.toBeNull();
+  });
+
+  it('stays quiet while the site builds fine', async () => {
+    const el = await mounted(PUBLISHED);
+    const priv = el as unknown as { siteBuild: { phase: string } };
+    priv.siteBuild = { phase: 'ok' };
+    el.requestUpdate();
+    await el.updateComplete;
+    expect(el.shadowRoot?.querySelector('cp-banner[tone="danger"]')).toBeNull();
+  });
+});
