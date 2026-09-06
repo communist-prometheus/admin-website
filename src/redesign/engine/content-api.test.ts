@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { parse as parseYaml } from 'yaml';
 import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
 import {
   listArticlesViaApi,
@@ -160,12 +161,13 @@ describe('editor single-file API (read / langs / publish, no clone)', () => {
       }
       return new Response(JSON.stringify({ sha: 'blob1' }), { status: 200 });
     });
-    const r = await publishFileViaApi('blog/x/index.ru.md', 'Привет, мир', 'msg');
+    const md = '---\ntitle: Привет\nlang: ru\ncategory: t\n---\n\nПривет, мир\n';
+    const r = await publishFileViaApi('blog/x/index.ru.md', md, 'msg');
     expect(r).toEqual({ ok: true, sha: 'commit1' });
     const put = calls.find((c) => c.method === 'PUT');
     expect(put?.body?.sha).toBe('blob1'); // updates against the current blob
     expect(put?.body?.message).toBe('msg');
-    expect(decode(String(put?.body?.content))).toBe('Привет, мир'); // Cyrillic survives
+    expect(decode(String(put?.body?.content))).toBe(md); // Cyrillic survives
   });
 
   it('listDirViaApi returns only files (not sub-dirs), with size and sha', async () => {
@@ -220,8 +222,8 @@ describe('editor single-file API (read / langs / publish, no clone)', () => {
   it('linkIssueArticlesViaApi back-links new articles and rewrites the TOC', async () => {
     const repo: Record<string, string> = {
       'magazine/n3/index.ru.md': '---\ntitle: N3\nlang: ru\narticles:\n  - a\n---\n\nB\n',
-      'blog/a/index.ru.md': '---\ntitle: A\nlang: ru\nmagazine: n3\n---\n\nB\n',
-      'blog/b/index.ru.md': '---\ntitle: B\nlang: ru\n---\n\nB\n',
+      'blog/a/index.ru.md': '---\ntitle: A\nlang: ru\ncategory: t\nmagazine: n3\n---\n\nB\n',
+      'blog/b/index.ru.md': '---\ntitle: B\nlang: ru\ncategory: t\n---\n\nB\n',
     };
     const puts: Array<{ path: string; content: string }> = [];
     const decode = (b64: string): string =>
@@ -250,8 +252,8 @@ describe('editor single-file API (read / langs / publish, no clone)', () => {
   it('linkIssueArticlesViaApi drops the back-link from de-selected articles', async () => {
     const repo: Record<string, string> = {
       'magazine/n3/index.ru.md': '---\ntitle: N3\nlang: ru\narticles:\n  - a\n  - b\n---\n\nB\n',
-      'blog/a/index.ru.md': '---\ntitle: A\nlang: ru\nmagazine: n3\n---\n\nB\n',
-      'blog/b/index.ru.md': '---\ntitle: B\nlang: ru\nmagazine: n3\n---\n\nB\n',
+      'blog/a/index.ru.md': '---\ntitle: A\nlang: ru\ncategory: t\nmagazine: n3\n---\n\nB\n',
+      'blog/b/index.ru.md': '---\ntitle: B\nlang: ru\ncategory: t\nmagazine: n3\n---\n\nB\n',
     };
     const decode = (b64: string): string =>
       new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
@@ -269,6 +271,111 @@ describe('editor single-file API (read / langs / publish, no clone)', () => {
     expect(r).toMatchObject({ ok: true, linked: 0, unlinked: 1 });
     expect(repo['blog/b/index.ru.md']).not.toContain('magazine:');
     expect(readSeq(repo['magazine/n3/index.ru.md'])).toEqual(['a']);
+  });
+
+  it('linkIssueArticlesViaApi writes a YAML array (never a bare key) when no article exists in the language', async () => {
+    // The real incident: an issue translated to `en` inherited the ru TOC, none
+    // of those articles had an `en` file, so the rewritten TOC came out as a bare
+    // `articles:` (an empty YAML value) and the public build failed on the schema.
+    const repo: Record<string, string> = {
+      'magazine/n2/index.en.md':
+        '---\ntitle: N2\nlang: en\npublished: false\narticles:\n  - a\n  - b\nimage: ./assets/cover.ru.png\n---\n\nB\n',
+      'blog/a/index.ru.md': '---\ntitle: A\nlang: ru\ncategory: t\nmagazine: n2\n---\n\nB\n',
+      'blog/b/index.ru.md': '---\ntitle: B\nlang: ru\ncategory: t\nmagazine: n2\n---\n\nB\n',
+    };
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      const path = decodeURIComponent(url.match(/contents\/([^?]+)/)?.[1] ?? '');
+      if (init?.method === 'PUT') {
+        repo[path] = decode(JSON.parse(String(init.body)).content);
+        return new Response(JSON.stringify({ commit: { sha: 'c' } }), { status: 201 });
+      }
+      if (acceptOf(init).includes('raw')) return new Response(repo[path] ?? '', { status: repo[path] ? 200 : 404 });
+      return new Response(JSON.stringify({ sha: 'blob' }), { status: 200 });
+    });
+
+    const r = await linkIssueArticlesViaApi('n2', 'en', ['a']);
+    expect(r.ok).toBe(true);
+    const fm: unknown = parseYaml(repo['magazine/n2/index.en.md'].split('\n---')[0].slice(4));
+    expect(fm).toMatchObject({ articles: [] });
+  });
+
+  it('linkIssueArticlesViaApi aborts (no writes) when an article read fails for a reason other than 404', async () => {
+    const puts: string[] = [];
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') puts.push(url);
+      const path = decodeURIComponent(url.match(/contents\/([^?]+)/)?.[1] ?? '');
+      if (path === 'magazine/n2/index.en.md') {
+        return new Response('---\ntitle: N2\nlang: en\narticles:\n  - a\n---\n\nB\n', { status: 200 });
+      }
+      return new Response(JSON.stringify({ message: 'Bad credentials' }), { status: 401 });
+    });
+    const r = await linkIssueArticlesViaApi('n2', 'en', ['a', 'b']);
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain('Bad credentials');
+    expect(puts).toEqual([]);
+  });
+
+  it('publishFileViaApi refuses a content file whose frontmatter is not valid YAML (no commit)', async () => {
+    // The real master incident: a multi-line `description` pasted unquoted with a
+    // `: ` inside — js-yaml: "bad indentation of a mapping entry".
+    const broken = [
+      '---',
+      'title: Excess Capital And Excess Population',
+      'lang: en',
+      'description: While bourgeois thought writes off crises, Marx exposes the paradox of the system: the surplus.',
+      '"Without revolutionary theory", reads the axiom.',
+      'category: programme',
+      'published: true',
+      '---',
+      '',
+      'Body',
+      '',
+    ].join('\n');
+    const puts: string[] = [];
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') puts.push(url);
+      return new Response(JSON.stringify({ sha: 'b', commit: { sha: 'c' } }), { status: 200 });
+    });
+    const r = await publishFileViaApi('blog/surplus/index.en.md', broken, 'm');
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/YAML/);
+    expect(puts).toEqual([]);
+  });
+
+  it('publishFileViaApi refuses a content file the site schema would reject (no commit)', async () => {
+    const bareToc = '---\ntitle: N2\nlang: en\npublished: false\narticles:\nimage: ./assets/cover.ru.png\n---\n\nB\n';
+    const puts: string[] = [];
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') puts.push(url);
+      return new Response(JSON.stringify({ sha: 'b', commit: { sha: 'c' } }), { status: 200 });
+    });
+    const r = await publishFileViaApi('magazine/n2/index.en.md', bareToc, 'm');
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/articles/);
+    expect(puts).toEqual([]);
+  });
+
+  it('publishFileViaApi refuses a frontmatter lang that contradicts the filename (no commit)', async () => {
+    const puts: string[] = [];
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') puts.push(url);
+      return new Response(JSON.stringify({ sha: 'b', commit: { sha: 'c' } }), { status: 200 });
+    });
+    const md = '---\ntitle: A\nlang: ru\ncategory: t\n---\n\nB\n';
+    const r = await publishFileViaApi('blog/a/index.en.md', md, 'm');
+    expect(r.ok).toBe(false);
+    expect(puts).toEqual([]);
+  });
+
+  it('publishFileViaApi leaves non-content paths (assets, settings) ungated', async () => {
+    const puts: string[] = [];
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') puts.push(url);
+      return new Response(JSON.stringify({ sha: 'b', commit: { sha: 'c' } }), { status: 200 });
+    });
+    const r = await publishFileViaApi('settings/topics.json', '{}', 'm');
+    expect(r.ok).toBe(true);
+    expect(puts).toHaveLength(1);
   });
 
   it('publishFileViaApi surfaces the GitHub error message on failure', async () => {

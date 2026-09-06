@@ -6,6 +6,7 @@ import { screens } from './screens/index.js';
 import { createGitStateStore, type GitStateStore, type SyncStatus } from './engine/git-state.js';
 import { login, loginWithToken, logout, currentUser } from './engine/auth.js';
 import { bootEngine } from './engine/engine-boot.js';
+import { publishTarget } from './engine/publish-target.js';
 import { getViewerRole, type ViewerRole } from './engine/github-api.js';
 
 /** One of the four viewport corners the draggable FAB can snap to. */
@@ -74,6 +75,51 @@ export class AppShell extends LitElement {
     }
     :host([data-theme='dark']) .logo-dark {
       display: inline;
+    }
+    /* A non-production admin says so: it looks identical to the real one
+       otherwise, and publishing to the wrong site is invisible until the
+       article fails to appear on comprom.org. */
+    .env {
+      flex: 0 0 auto;
+      margin-right: var(--spacing-sm);
+      padding: 0.15rem 0.5rem;
+      border: 1px solid var(--color-accent);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-accent);
+      white-space: nowrap;
+    }
+    /* The full host does not fit a phone header next to the account controls,
+       and pushing them off-screen would be worse than a short label. */
+    .env-short {
+      display: none;
+    }
+    /* A phone header is tight even without the badge: at 390px the brand, the
+       account name, the sign-out button and the theme toggle already overflow,
+       pushing the last of them off-screen. Tighten the spacing and cap the
+       account name so everything stays reachable. */
+    @media (max-width: 767px) {
+      header {
+        gap: var(--spacing-xs, 0.5rem);
+        padding: 0 var(--spacing-xs, 0.5rem);
+      }
+      .brand img {
+        height: 24px;
+      }
+      .env-full {
+        display: none;
+      }
+      .env-short {
+        display: inline;
+        text-transform: uppercase;
+      }
+      .header-right .account {
+        max-width: 5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
     .header-right {
       display: flex;
@@ -865,6 +911,14 @@ export class AppShell extends LitElement {
           <img class="logo-light" src="/logo-light.svg" alt="" />
           <img class="logo-dark" src="/logo-dark.svg" alt="" />
         </a>
+        ${publishTarget().production
+          ? nothing
+          : html`<span
+              class="env"
+              title=${`Публикации из этой админки идут на ${publishTarget().site}, не на comprom.org`}
+              ><span class="env-full">${publishTarget().site}</span
+              ><span class="env-short">${publishTarget().site.split('.')[0]}</span></span
+            >`}
         <div class="header-right">
           <cp-status state=${this.sync.tone} label=${this.sync.label}></cp-status>
           ${!this.authChecked

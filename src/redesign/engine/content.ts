@@ -7,6 +7,7 @@
  * SW reports "not ready" — otherwise content silently reads empty after an SW
  * eviction or a post-deploy SW version bump.
  */
+import { fieldSpan, readFieldText } from './frontmatter-value.js';
 import { swFetch } from './sw-fetch.js';
 import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
 
@@ -168,10 +169,11 @@ export const upsertFrontmatterField = (markdown: string, key: string, value: str
   if (!markdown.startsWith('---')) return `---\n${line}\n---\n\n${markdown}`;
   const end = markdown.indexOf('\n---', 3);
   if (end < 0) return markdown;
-  const prefix = `${key}:`;
   const lines = markdown.slice(4, end).split('\n');
-  const at = lines.findIndex((l) => l.startsWith(prefix));
-  if (at >= 0) lines[at] = line;
+  // Replace the key's WHOLE previous value: overwriting only its first line
+  // would orphan the continuations of a multi-line one.
+  const span = fieldSpan(lines, key);
+  if (span !== undefined) lines.splice(span.start, span.end - span.start, line);
   else {
     const langAt = lines.findIndex((l) => l.startsWith('lang:'));
     lines.splice(langAt >= 0 ? langAt + 1 : lines.length, 0, line);
@@ -191,16 +193,7 @@ export const readFrontmatterField = (markdown: string, key: string): string | un
   if (!markdown.startsWith('---')) return undefined;
   const end = markdown.indexOf('\n---', 3);
   const lines = (end < 0 ? markdown.slice(4) : markdown.slice(4, end)).split('\n');
-  const at = lines.findIndex((l) => l.startsWith(`${key}:`));
-  if (at < 0) return undefined;
-  const inline = lines[at].slice(key.length + 1).trim();
-  const block = inline.match(/^([|>])[+-]?$/);
-  if (!block) return inline.replace(/^["']|["']$/g, '');
-  const cont: string[] = [];
-  for (let i = at + 1; i < lines.length && /^\s/.test(lines[i]); i += 1) {
-    cont.push(lines[i].replace(/^\s+/, ''));
-  }
-  return block[1] === '>' ? cont.join(' ') : cont.join('\n');
+  return readFieldText(lines, key);
 };
 
 /**
@@ -215,12 +208,12 @@ export const upsertFrontmatterBlock = (markdown: string, key: string, value: str
   const end = markdown.indexOf('\n---', 3);
   if (end < 0) return markdown;
   const lines = markdown.slice(4, end).split('\n');
-  const at = lines.findIndex((l) => l.startsWith(`${key}:`));
-  if (at >= 0) {
-    let removeCount = 1;
-    for (let i = at + 1; i < lines.length && /^\s/.test(lines[i]); i += 1) removeCount += 1;
-    lines.splice(at, removeCount, ...field);
-  } else {
+  // The span covers the WHOLE previous value — a multi-line quoted scalar with
+  // blank lines inside it included. Removing less is what left the tail of a
+  // Russian description sitting under a new English one.
+  const span = fieldSpan(lines, key);
+  if (span !== undefined) lines.splice(span.start, span.end - span.start, ...field);
+  else {
     const langAt = lines.findIndex((l) => l.startsWith('lang:'));
     lines.splice(langAt >= 0 ? langAt + 1 : lines.length, 0, ...field);
   }
@@ -236,7 +229,12 @@ export const removeFrontmatterField = (markdown: string, key: string): string =>
   if (!markdown.startsWith('---')) return markdown;
   const end = markdown.indexOf('\n---', 3);
   if (end < 0) return markdown;
-  const lines = markdown.slice(4, end).split('\n').filter((l) => !l.startsWith(`${key}:`));
+  const lines = markdown.slice(4, end).split('\n');
+  const span = fieldSpan(lines, key);
+  if (span === undefined) return markdown;
+  // Drop the whole value, not just its first line, so a multi-line field
+  // cannot leave orphaned continuation lines behind.
+  lines.splice(span.start, span.end - span.start);
   return `---\n${lines.join('\n')}${markdown.slice(end)}`;
 };
 
@@ -271,7 +269,9 @@ export const upsertSequenceField = (
   key: string,
   items: readonly string[],
 ): string => {
-  const field = [`${key}:`, ...items.map((it) => `  - ${it}`)];
+  // An empty set is written as an explicit `key: []` — a bare `key:` is YAML's
+  // empty value, which the site's collection schema rejects (it wants a list).
+  const field = items.length === 0 ? [`${key}: []`] : [`${key}:`, ...items.map((it) => `  - ${it}`)];
   if (!markdown.startsWith('---')) return `---\n${field.join('\n')}\n---\n\n${markdown}`;
   const end = markdown.indexOf('\n---', 3);
   if (end < 0) return markdown;
@@ -452,6 +452,33 @@ const isTopic = (x: unknown): x is Topic =>
 export const readTopics = async (): Promise<readonly Topic[]> =>
   parseJsonArray(await readFile('settings/topics.json'), isTopic);
 
+/** One `<option>` for a topic picker: the topic key plus its Russian name. */
+export interface TopicOption {
+  readonly value: string;
+  readonly label: string;
+}
+
+/**
+ * The editorial topics as select options, read straight from the repository
+ * through the API (no clone), so the editor offers the topics that actually
+ * exist instead of a list hardcoded in the UI. Empty on any failure — the topic
+ * is optional, so an unreadable settings file must not block editing.
+ */
+export const topicOptionsViaApi = async (): Promise<readonly TopicOption[]> => {
+  const raw = await readFileViaApi('settings/topics.json');
+  if (raw === undefined) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isTopic).map((topic) => ({
+      value: topic.key,
+      label: topic.name['ru'] ?? topic.name['en'] ?? topic.key,
+    }));
+  } catch {
+    return [];
+  }
+};
+
 /** A summary of one blog article (grouped from `blog/<slug>/index.<lang>.md`). */
 export interface ArticleSummary {
   readonly slug: string;
@@ -610,6 +637,30 @@ export const readFileViaApi = async (path: string): Promise<string | undefined> 
   }
 };
 
+/** A content read that tells "absent" apart from "failed": a 404 means the
+ *  item has no such language, anything else (401 expired token, 403 throttle,
+ *  5xx) is a failure the caller must not mistake for absence. */
+type ContentRead =
+  | { readonly kind: 'ok'; readonly text: string }
+  | { readonly kind: 'missing' }
+  | { readonly kind: 'error'; readonly error: string };
+
+const readContentFile = async (path: string): Promise<ContentRead> => {
+  const t = await freshGhToken();
+  if (t === undefined) return { kind: 'error', error: 'signed-out' };
+  try {
+    const res = await fetch(`${REPO_BASE}/contents/${path}?ref=${contentBranch()}`, {
+      cache: 'no-store',
+      headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github.raw' },
+    });
+    if (res.ok) return { kind: 'ok', text: await res.text() };
+    if (res.status === 404) return { kind: 'missing' };
+    return { kind: 'error', error: await apiError(res, `Чтение не удалось (${res.status}).`) };
+  } catch (e) {
+    return { kind: 'error', error: e instanceof Error ? e.message : String(e) };
+  }
+};
+
 /** The languages one item exists in (its `index.<lang>.md` files), via API. The
  *  collection is `blog` for articles, `magazine` for journal issues. */
 export const articleLangsViaApi = async (
@@ -638,6 +689,19 @@ export const articleLangsViaApi = async (
 };
 
 /**
+ * The content gate for the direct-API write path — the same YAML / lang /
+ * schema rules the Service Worker applies at stage time, so a single-file
+ * commit can no more push an unbuildable article than a clone+push can. The
+ * gate (and the schema library behind it) loads lazily: publishing is rare,
+ * the shell's first paint is not. Non-content paths pass straight through.
+ */
+const guardContentWrite = async (path: string, content: string): Promise<string | undefined> => {
+  const { validateContentFile } = await import('@/validation/content-gate');
+  const reason = validateContentFile(path, content);
+  return reason === undefined ? undefined : `Файл не прошёл проверку и не сохранён: ${reason}`;
+};
+
+/**
  * Commits ONE edited file via the GitHub Contents API — a single-file commit,
  * no clone and no whole-repo push. Fetches the file's current blob sha (an
  * update needs it), then PUTs the new content. Returns the commit sha or the
@@ -648,6 +712,8 @@ export const publishFileViaApi = async (
   content: string,
   message: string,
 ): Promise<{ ok: boolean; sha?: string; error?: string }> => {
+  const rejected = await guardContentWrite(path, content);
+  if (rejected !== undefined) return { ok: false, error: rejected };
   const t = await freshGhToken();
   if (t === undefined) return { ok: false, error: 'signed-out' };
   const auth = { authorization: `Bearer ${t}` };
@@ -707,24 +773,29 @@ export const linkIssueArticlesViaApi = async (
   selected: readonly string[],
 ): Promise<LinkResult> => {
   const indexPath = `magazine/${issueSlug}/index.${lang}.md`;
-  const indexMd = await readFileViaApi(indexPath);
-  if (indexMd === undefined) {
+  const index = await readContentFile(indexPath);
+  if (index.kind === 'missing') {
     return { ok: false, linked: 0, unlinked: 0, error: `Не найден index номера (${lang}).` };
   }
+  if (index.kind === 'error') return { ok: false, linked: 0, unlinked: 0, error: index.error };
+  const indexMd = index.text;
   const current = new Set(readSequenceField(indexMd, 'articles'));
   const want = new Set(selected);
   const toLink = selected.filter((s) => !current.has(s));
   const toUnlink = [...current].filter((s) => !want.has(s));
 
-  // Add the back-link to newly-selected articles; skip any without this language.
+  // Add the back-link to newly-selected articles; skip any without this
+  // language. A failed read (not a 404) aborts the whole save — treating it as
+  // "absent" would silently drop the article from the issue.
   const linked: string[] = [];
   for (const slug of selected) {
     const path = `blog/${slug}/index.${lang}.md`;
-    const md = await readFileViaApi(path);
-    if (md === undefined || md === '') continue;
+    const read = await readContentFile(path);
+    if (read.kind === 'error') return { ok: false, linked: 0, unlinked: 0, error: read.error };
+    if (read.kind === 'missing' || read.text === '') continue;
     linked.push(slug);
     if (toLink.includes(slug)) {
-      const next = upsertFrontmatterField(md, 'magazine', issueSlug);
+      const next = upsertFrontmatterField(read.text, 'magazine', issueSlug);
       const r = await publishFileViaApi(path, next, `magazine: ссылка ${slug} → ${issueSlug}`);
       if (!r.ok) return { ok: false, linked: 0, unlinked: 0, error: r.error };
     }
@@ -734,9 +805,10 @@ export const linkIssueArticlesViaApi = async (
   let unlinked = 0;
   for (const slug of toUnlink) {
     const path = `blog/${slug}/index.${lang}.md`;
-    const md = await readFileViaApi(path);
-    if (md === undefined || md === '') continue;
-    const next = removeFrontmatterField(md, 'magazine');
+    const read = await readContentFile(path);
+    if (read.kind === 'error') return { ok: false, linked: 0, unlinked: 0, error: read.error };
+    if (read.kind === 'missing' || read.text === '') continue;
+    const next = removeFrontmatterField(read.text, 'magazine');
     const r = await publishFileViaApi(path, next, `magazine: отвязка ${slug} от ${issueSlug}`);
     if (!r.ok) return { ok: false, linked: 0, unlinked: 0, error: r.error };
     unlinked += 1;
