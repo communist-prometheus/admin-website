@@ -154,6 +154,15 @@ describe('frontmatter sequence helpers (issue TOC ↔ article back-links)', () =
     expect(next).toContain('Body'); // body untouched
   });
 
+  it('writes an explicit empty list when nothing is linked (never a bare `key:`)', () => {
+    // A bare `articles:` parses as an empty YAML value; the site schema wants an
+    // array and the build died on exactly this (magazine-2-avgust-2026/index.en.md).
+    const next = upsertSequenceField(ISSUE, 'articles', []);
+    expect(next).toContain('articles: []');
+    expect(next).not.toMatch(/articles:\s*\n/);
+    expect(readSequenceField(next, 'articles')).toEqual([]);
+  });
+
   it('inserts a new sequence after lang: when absent', () => {
     const md = '---\ntitle: X\nlang: ru\n---\n\nB\n';
     const next = upsertSequenceField(md, 'articles', ['a']);

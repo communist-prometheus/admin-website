@@ -243,6 +243,19 @@ export class IssueFiles extends LitElement {
       color: var(--color-text-secondary);
       margin: 0;
     }
+    /* A picked-but-unpublished file: the note explains nothing committed yet,
+       the actions carry the explicit publish + cancel. */
+    .stage-note {
+      font-size: 0.82rem;
+      color: var(--color-accent);
+      margin: 0;
+    }
+    .stage-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      flex-wrap: wrap;
+    }
     .msg {
       color: var(--color-text-secondary);
       font-size: 0.86rem;
@@ -296,13 +309,33 @@ export class IssueFiles extends LitElement {
   /** Path awaiting a delete confirmation (two-step, so a tap can't wipe a file). */
   @state() private confirmingPath = '';
 
+  /** A cover image chosen but NOT yet published — previewed for confirmation so
+   *  picking a file never silently commits. Published only on the button. */
+  @state() private stagedCover?: File;
+  @state() private stagedCoverUrl = '';
+
+  /** A newspaper file (PDF/DOCX) chosen but not yet uploaded. */
+  @state() private stagedPaper?: File;
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
   }
 
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.clearStagedCover();
+  }
+
   override updated(changed: Map<string, unknown>): void {
     if (changed.has('dir')) void this.load();
+  }
+
+  /** Drops the staged cover and frees its object URL. */
+  private clearStagedCover(): void {
+    if (this.stagedCoverUrl !== '') URL.revokeObjectURL(this.stagedCoverUrl);
+    this.stagedCoverUrl = '';
+    this.stagedCover = undefined;
   }
 
   private async load(): Promise<void> {
@@ -328,16 +361,34 @@ export class IssueFiles extends LitElement {
    *   (`extractPdfCover`) and committed as `cover.<lang>.png`.
    * Both converters load lazily so mammoth/mupdf stay out of the initial bundle.
    */
-  private readonly onPick = async (event: Event): Promise<void> => {
+  /** Stages a picked newspaper file for confirmation — no commit yet. */
+  private readonly onPick = (event: Event): void => {
     const input = event.target;
     const file = input instanceof HTMLInputElement ? input.files?.[0] : undefined;
     if (input instanceof HTMLInputElement) input.value = '';
     if (file === undefined) return;
-    const kind = classifyUpload(file.name);
-    if (kind === 'reject') {
+    if (classifyUpload(file.name) === 'reject') {
       this.error = 'Для номера загружается только файл газеты — PDF или DOCX.';
       return;
     }
+    this.stagedPaper = file;
+    this.error = '';
+    this.message = '';
+  };
+
+  /**
+   * Publishes the staged newspaper file — the explicit action behind the
+   * upload button, so nothing reaches the repo until the editor confirms:
+   * - DOCX → converted client-side to FB2 (`docxFileToFb2`); the docx is never
+   *   persisted, only `<slug>.<lang>.fb2` is committed.
+   * - PDF → committed as `<slug>.<lang>.pdf`, and its first page is rendered
+   *   (`extractPdfCover`) and committed as `cover.<lang>.png`.
+   * Both converters load lazily so mammoth/mupdf stay out of the initial bundle.
+   */
+  private readonly commitPaper = async (): Promise<void> => {
+    const file = this.stagedPaper;
+    if (file === undefined) return;
+    const kind = classifyUpload(file.name);
     const [primary, cover] = plannedAssetPaths(this.dir, this.slug, this.lang, kind);
     this.busy = true;
     this.message = '';
@@ -360,6 +411,7 @@ export class IssueFiles extends LitElement {
         await this.commit(cover, coverFile, `assets: cover ${this.slug}.${this.lang}`);
         this.message = `PDF загружен, обложка извлечена: cover.${this.lang}.png`;
       }
+      this.stagedPaper = undefined;
       await this.load();
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
@@ -368,8 +420,8 @@ export class IssueFiles extends LitElement {
     }
   };
 
-  /** Replaces just the cover for the open language with a picked image. */
-  private readonly onPickCover = async (event: Event): Promise<void> => {
+  /** Stages a picked cover image for confirmation — previews it, no commit. */
+  private readonly onPickCover = (event: Event): void => {
     const input = event.target;
     const file = input instanceof HTMLInputElement ? input.files?.[0] : undefined;
     if (input instanceof HTMLInputElement) input.value = '';
@@ -379,6 +431,17 @@ export class IssueFiles extends LitElement {
       this.error = 'Обложка — это изображение (png, jpg, webp…).';
       return;
     }
+    this.clearStagedCover();
+    this.stagedCover = file;
+    this.stagedCoverUrl = URL.createObjectURL(file);
+    this.error = '';
+    this.message = '';
+  };
+
+  /** Publishes the staged cover for the open language — the explicit button. */
+  private readonly commitCover = async (): Promise<void> => {
+    const file = this.stagedCover;
+    if (file === undefined) return;
     this.busy = true;
     this.message = '';
     this.error = '';
@@ -388,6 +451,7 @@ export class IssueFiles extends LitElement {
         file,
         `assets: cover ${this.slug}.${this.lang}`,
       );
+      this.clearStagedCover();
       this.message = `Обложка обновлена: cover.${this.lang}.png`;
       await this.load();
     } catch (e) {
@@ -432,29 +496,53 @@ export class IssueFiles extends LitElement {
   }
 
   private renderCover(assets: IssueAssets): TemplateResult {
+    const staged = this.stagedCover !== undefined;
     return html`
       <section class="slot">
         <div class="slot-head">
           <h3>Обложка</h3>
           <span class="spacer"></span>
-          ${assets.cover === undefined
-            ? html`<cp-tag tone="warning">нет</cp-tag>`
-            : assets.coverShared
-              ? html`<cp-tag>общая</cp-tag>`
-              : html`<cp-tag tone="success">есть</cp-tag>`}
+          ${staged
+            ? html`<cp-tag tone="warning">новая, не опубликована</cp-tag>`
+            : assets.cover === undefined
+              ? html`<cp-tag tone="warning">нет</cp-tag>`
+              : assets.coverShared
+                ? html`<cp-tag>общая</cp-tag>`
+                : html`<cp-tag tone="success">есть</cp-tag>`}
         </div>
-        ${assets.cover === undefined
-          ? html`<div class="cover-none">нет обложки</div>`
-          : html`<img
-              class="cover-preview"
-              src=${rawContentUrl(assets.cover.path)}
-              alt="Обложка номера (${this.lang})"
-              loading="lazy"
-            />`}
-        <label class="upload">
-          <span>${this.busy ? 'Обрабатываем…' : 'Заменить обложку (изображение):'}</span>
-          <input type="file" accept="image/*" ?disabled=${this.busy} @change=${this.onPickCover} />
-        </label>
+        ${staged
+          ? html`<img class="cover-preview" src=${this.stagedCoverUrl} alt="Новая обложка (предпросмотр)" />`
+          : assets.cover === undefined
+            ? html`<div class="cover-none">нет обложки</div>`
+            : html`<img
+                class="cover-preview"
+                src=${rawContentUrl(assets.cover.path)}
+                alt="Обложка номера (${this.lang})"
+                loading="lazy"
+              />`}
+        ${staged
+          ? html`
+              <p class="stage-note">
+                Выбран файл «${this.stagedCover?.name}». Пока ничего не загружено — нажмите
+                «Опубликовать обложку».
+              </p>
+              <div class="stage-actions">
+                <cp-button size="sm" ?disabled=${this.busy} @cp-click=${() => void this.commitCover()}>
+                  ${this.busy ? 'Публикуем…' : 'Опубликовать обложку'}
+                </cp-button>
+                <cp-button
+                  size="sm"
+                  variant="secondary"
+                  ?disabled=${this.busy}
+                  @cp-click=${() => this.clearStagedCover()}
+                  >Отмена</cp-button
+                >
+              </div>
+            `
+          : html`<label class="upload">
+              <span>Заменить обложку (изображение):</span>
+              <input type="file" accept="image/*" ?disabled=${this.busy} @change=${this.onPickCover} />
+            </label>`}
       </section>
     `;
   }
@@ -472,19 +560,34 @@ export class IssueFiles extends LitElement {
         <ul class="rows">
           ${this.renderFileRow('PDF', assets.pdf)}${this.renderFileRow('FB2', assets.fb2)}
         </ul>
-        <label class="upload">
-          <span
-            >${this.busy
-              ? 'Обрабатываем файл газеты…'
-              : 'Загрузить файл газеты (PDF или DOCX):'}</span
-          >
-          <input
-            type="file"
-            accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            ?disabled=${this.busy}
-            @change=${this.onPick}
-          />
-        </label>
+        ${this.stagedPaper !== undefined
+          ? html`
+              <p class="stage-note">
+                Выбран файл «${this.stagedPaper.name}». Пока ничего не загружено — нажмите
+                «Загрузить».
+              </p>
+              <div class="stage-actions">
+                <cp-button size="sm" ?disabled=${this.busy} @cp-click=${() => void this.commitPaper()}>
+                  ${this.busy ? 'Загружаем…' : 'Загрузить файл номера'}
+                </cp-button>
+                <cp-button
+                  size="sm"
+                  variant="secondary"
+                  ?disabled=${this.busy}
+                  @cp-click=${() => (this.stagedPaper = undefined)}
+                  >Отмена</cp-button
+                >
+              </div>
+            `
+          : html`<label class="upload">
+              <span>Выбрать файл газеты (PDF или DOCX):</span>
+              <input
+                type="file"
+                accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                ?disabled=${this.busy}
+                @change=${this.onPick}
+              />
+            </label>`}
         <p class="hint">
           DOCX → автоматически конвертируется в FB2. PDF → загружается, обложка берётся из
           первой страницы. Другие файлы не принимаются.
