@@ -28,13 +28,13 @@ interface EditorInternals {
   live: boolean;
   activeLang: string;
   topic: string;
+  rubric: string;
   description: string;
   pubDate: string;
   published: boolean;
   dirty: boolean;
   onLeadInput: (event: Event) => void;
   readonly editedMarkdown: string;
-  readonly incomplete: boolean;
   applyMarkdown: (markdown: string, path: string, live: boolean) => void;
 }
 
@@ -55,17 +55,58 @@ describe('screen-editor properties write-back (QA #4)', () => {
     document.body.replaceChildren();
   });
 
-  it('seeds topic from the article category on load (no false incomplete)', () => {
+  it('seeds the rubric from the article category on load', () => {
     const el = seededEditor();
-    expect(el.topic).toBe('programme');
-    expect(el.incomplete).toBe(false);
+    expect(el.rubric).toBe('programme');
   });
 
-  it('writes an edited category back into the published frontmatter', () => {
+  it('writes an edited rubric back as the article category', () => {
     const el = seededEditor();
-    el.topic = 'history';
+    el.rubric = 'history';
     expect(el.editedMarkdown).toContain('category: history');
     expect(el.editedMarkdown).not.toContain('category: programme');
+  });
+
+  /*
+   * The topic field is the OPTIONAL editorial marker (`topic`, keyed by
+   * settings/topics.json), not the required `category`. Writing the topic
+   * list's values into `category` is what emptied the select for every real
+   * article (whose category is programme/history/international/…) and made the
+   * editor believe a required field was missing.
+   */
+  it('keeps topic and category apart: a chosen topic never overwrites the category', () => {
+    const el = seededEditor();
+    el.topic = 'translation';
+    const out = el.editedMarkdown;
+    expect(out).toContain('topic: translation');
+    expect(out).toContain('category: programme');
+  });
+
+  it('leaves a missing topic empty and publishes without one', () => {
+    const el = editorFrom('---\ntitle: "T"\ncategory: programme\nlang: en\n---\n\nBody\n');
+    expect(el.topic).toBe('');
+    expect(el.editedMarkdown).not.toContain('topic:');
+  });
+
+  it('seeds an existing topic instead of inventing one from the category', () => {
+    const el = editorFrom(
+      '---\ntitle: "T"\ncategory: programme\ntopic: editorial\nlang: en\n---\n\nBody\n',
+    );
+    expect(el.topic).toBe('editorial');
+    expect(el.rubric).toBe('programme');
+  });
+
+  /*
+   * The strongest guard against the admin corrupting content: opening an
+   * article and publishing it with no edits must be a no-op. The incident file
+   * gained a `pubDate` of the publishing day next to its existing
+   * `publishDate`, and lost part of its description, from exactly this path.
+   */
+  it('re-emits an untouched article byte-identically', () => {
+    const original =
+      '---\ntitle: "T"\nlang: ru\nmagazine: magazine-2\ncategory: programme\npublished: true\npublishDate: 2026-06-28\ndescription: >-\n  A lead.\n  Second line.\n---\n\nBody text.\n';
+    const el = editorFrom(original, 'ru');
+    expect(el.editedMarkdown).toBe(original);
   });
 
   it('writes an edited pubDate back into the published frontmatter', () => {

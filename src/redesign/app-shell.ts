@@ -6,6 +6,7 @@ import { screens } from './screens/index.js';
 import { createGitStateStore, type GitStateStore, type SyncStatus } from './engine/git-state.js';
 import { login, loginWithToken, logout, currentUser } from './engine/auth.js';
 import { bootEngine } from './engine/engine-boot.js';
+import { publishTarget } from './engine/publish-target.js';
 import { getViewerRole, type ViewerRole } from './engine/github-api.js';
 
 /** One of the four viewport corners the draggable FAB can snap to. */
@@ -74,6 +75,19 @@ export class AppShell extends LitElement {
     }
     :host([data-theme='dark']) .logo-dark {
       display: inline;
+    }
+    /* A non-production admin says so: it looks identical to the real one
+       otherwise, and publishing to the wrong site is invisible until the
+       article fails to appear on comprom.org. */
+    .env {
+      margin-right: var(--spacing-sm);
+      padding: 0.15rem 0.5rem;
+      border: 1px solid var(--color-accent);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-accent);
+      white-space: nowrap;
     }
     .header-right {
       display: flex;
@@ -865,6 +879,11 @@ export class AppShell extends LitElement {
           <img class="logo-light" src="/logo-light.svg" alt="" />
           <img class="logo-dark" src="/logo-dark.svg" alt="" />
         </a>
+        ${publishTarget().production
+          ? nothing
+          : html`<span class="env" title="Публикации из этой админки идут на этот сайт"
+              >${publishTarget().site}</span
+            >`}
         <div class="header-right">
           <cp-status state=${this.sync.tone} label=${this.sync.label}></cp-status>
           ${!this.authChecked

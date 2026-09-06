@@ -11,7 +11,10 @@ import {
   upsertFrontmatterField,
   readFrontmatterField,
   upsertFrontmatterBlock,
+  removeFrontmatterField,
+  topicOptionsViaApi,
 } from '../engine/content.js';
+import { publishTarget } from '../engine/publish-target.js';
 import '../components/issue-files.js';
 import '../components/issue-articles.js';
 
@@ -75,20 +78,28 @@ const FORMAT_TOOLS: readonly FormatTool[] = [
   { label: 'Список', glyph: '•', prefix: '- ' },
 ];
 
-/** Frontmatter «Тема» options; the empty value keeps the field incomplete. */
-const TOPIC_OPTIONS: readonly CpSelectOption[] = [
-  { value: '', label: '— выберите тему —' },
-  { value: 'translation', label: 'Наш перевод' },
+/**
+ * «Рубрика» is the article's `category` — the field the site's collection
+ * schema requires. These are the values the content repository actually uses;
+ * an article whose category is outside the list keeps it (see `rubricOptions`).
+ */
+const RUBRIC_OPTIONS: readonly CpSelectOption[] = [
+  { value: '', label: '— без рубрики —' },
+  { value: 'programme', label: 'Программа' },
+  { value: 'theory', label: 'Теория' },
+  { value: 'history', label: 'История' },
+  { value: 'international', label: 'Международное' },
   { value: 'editorial', label: 'От редакции' },
-  { value: 'primer', label: 'Ликбез' },
+  { value: 'critique', label: 'Критика' },
+  { value: 'appeal', label: 'Обращение' },
+  { value: 'translation', label: 'Перевод' },
 ];
 
-/** Frontmatter «Рубрика» options. */
-const RUBRIC_OPTIONS: readonly CpSelectOption[] = [
-  { value: 'economics', label: 'Экономика' },
-  { value: 'theory', label: 'Теория' },
-  { value: 'critique', label: 'Критика' },
-];
+/** The «Тема» placeholder; real topics are read from settings/topics.json. */
+const NO_TOPIC: CpSelectOption = { value: '', label: '— без темы —' };
+
+/** Frontmatter keys that have carried the publication date over time. */
+const DATE_KEYS: readonly string[] = ['pubDate', 'publishDate', 'date'];
 
 /** Publish is now a single GitHub API commit of the one edited file. */
 const REAL_STAGES: readonly string[] = ['Публикация'];
@@ -167,7 +178,8 @@ const renderInline = (text: string): readonly (TemplateResult | string)[] => {
  * single FOCUSED block reveals its raw markdown markers by becoming a
  * `--font-mono`/`--color-accent` textarea whose input updates the in-memory
  * markdown. A sticky toolbar hosts presentational formatting affordances, a
- * «Свойства» `cp-sheet` of frontmatter, the ru/en/it language `cp-tabs`, and the
+ * inline properties panel (rubric, topic, date, published), the ru/en/it
+ * language `cp-tabs`, and the
  * primary «Опубликовать» action.
  *
  * «Опубликовать» opens a `cp-dialog` staging the pipeline via `cp-steps`
@@ -446,6 +458,26 @@ export class ScreenEditor extends LitElement {
       flex-direction: column;
       gap: var(--spacing-md);
     }
+    /* The material's properties sit on the page, above its text: what a
+       publish will write must be visible without opening anything. */
+    .props {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+      align-items: end;
+      gap: var(--spacing-md);
+      margin: var(--spacing-sm) 0 var(--spacing-md);
+      padding: var(--spacing-md);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-md, 10px);
+    }
+    .eyebrow .live {
+      color: var(--color-accent);
+      font-weight: 600;
+    }
+    .eyebrow .draft {
+      color: var(--draft, var(--color-text-secondary));
+      font-weight: 600;
+    }
 
     .dialog-note {
       margin: var(--spacing-md) 0 0;
@@ -515,10 +547,10 @@ export class ScreenEditor extends LitElement {
   @state() private addLangBusy = false;
   @state() private addLangError = '';
 
-  /** Frontmatter slide-over visibility. */
-  @state() private propsOpen = false;
-
-  /** Selected «Тема»; empty keeps the material incomplete. */
+  /**
+   * The OPTIONAL editorial marker (`topic`, keyed by settings/topics.json).
+   * It is not the article's category and never stands in for one.
+   */
   @state() private topic = '';
 
   /** Article description frontmatter, seeded from the file + written back. */
@@ -527,14 +559,33 @@ export class ScreenEditor extends LitElement {
   /** The description as loaded, so writeback only fires when the user changed it. */
   private descriptionSeed = '';
 
-  /** Selected «Рубрика». */
-  @state() private rubric = 'theory';
+  /** The article's `category` — required by the site's collection schema. */
+  @state() private rubric = '';
 
   /** Publication date (ISO), seeded from frontmatter when present. */
-  @state() private pubDate = '2026-07-24';
+  @state() private pubDate = '';
 
-  /** «Опубликовано» frontmatter switch. */
+  /** The `published` frontmatter switch. */
   @state() private published = false;
+
+  /**
+   * Every property as it was loaded. A publish rewrites ONLY what the user
+   * actually changed, so opening an article and publishing it is a no-op — the
+   * incident file grew a second date key (`pubDate` next to `publishDate`)
+   * precisely because every field was re-emitted unconditionally.
+   */
+  private seeds: Readonly<Record<'topic' | 'rubric' | 'pubDate' | 'published', string>> = {
+    topic: '',
+    rubric: '',
+    pubDate: '',
+    published: '',
+  };
+
+  /** Which key holds the date in THIS file: `pubDate`, `publishDate` or `date`. */
+  private dateKey = 'pubDate';
+
+  /** Topics offered in the properties panel, read from settings/topics.json. */
+  @state() private topicOptions: readonly CpSelectOption[] = [];
 
   /** Publish confirmation dialog visibility. */
   @state() private publishOpen = false;
@@ -579,6 +630,11 @@ export class ScreenEditor extends LitElement {
     void import('../editor/cp-markdown-editor.js');
     this.loadedSlug = this.routeSlug();
     void this.load();
+    // The topic list comes from the repository, so the picker offers the topics
+    // that exist rather than a list frozen into the UI.
+    void topicOptionsViaApi().then((options) => {
+      this.topicOptions = options;
+    });
     globalThis.addEventListener('hashchange', this.onHashChange);
     // The article is read directly from the GitHub API, so there is no engine
     // clone to wait on — no ready-gate re-read needed.
@@ -681,10 +737,13 @@ export class ScreenEditor extends LitElement {
     this.body = parsed.body;
     this.articlePath = path;
     this.live = live;
-    // Seed the Свойства fields from the real frontmatter — "Тема" maps to the
-    // article's `category`. Without this seed the required-field check below
-    // always fired a false "заполните Тема" warning.
-    this.topic = frontmatterValue(fm, 'category') ?? frontmatterValue(fm, 'topic') ?? '';
+    // The two taxonomies are separate frontmatter keys and are seeded as such:
+    // `category` (required by the site schema, values like programme/history)
+    // and the optional `topic` marker from settings/topics.json. Seeding the
+    // topic select from `category` is what showed it empty for every real
+    // article and let a topic choice overwrite the category.
+    this.rubric = frontmatterValue(fm, 'category') ?? '';
+    this.topic = frontmatterValue(fm, 'topic') ?? '';
     // Block-scalar aware: descriptions are stored as folded (`>-`) blocks, so a
     // naive single-line read would seed just ">-" and a publish would overwrite
     // the real text. Seed the full text and remember it to only write on change.
@@ -693,14 +752,19 @@ export class ScreenEditor extends LitElement {
     // Content is inconsistent: some articles use `pubDate`, some `publishDate`
     // (magazine-era), some `date`. Read all three so every article carries a real
     // date (else half the list has no date and clumps at the end when sorted).
-    const date =
-      frontmatterValue(fm, 'pubDate') ??
-      frontmatterValue(fm, 'publishDate') ??
-      frontmatterValue(fm, 'date');
-    if (date !== undefined) this.pubDate = date;
+    // Whichever key this file uses is the one a publish writes back to, so an
+    // article dated with `publishDate` never grows a second `pubDate` key.
+    this.dateKey = DATE_KEYS.find((key) => frontmatterValue(fm, key) !== undefined) ?? 'pubDate';
+    this.pubDate = frontmatterValue(fm, this.dateKey) ?? '';
     const published = frontmatterValue(fm, 'published');
     this.published =
       published !== undefined ? published === 'true' : frontmatterValue(fm, 'draft') !== 'true';
+    this.seeds = {
+      topic: this.topic,
+      rubric: this.rubric,
+      pubDate: this.pubDate,
+      published: published ?? '',
+    };
     // Freshly loaded content is not "unsaved" — clear the dirty flag the save
     // note reads (it used to be hardcoded on, flagging every article).
     this.dirty = false;
@@ -714,24 +778,27 @@ export class ScreenEditor extends LitElement {
   private get editedMarkdown(): string {
     let fm = this.frontmatter;
     if (fm !== '') {
-      if (this.topic !== '') fm = upsertFrontmatterField(fm, 'category', this.topic);
+      // Each property is written back ONLY when it differs from what was
+      // loaded, so opening an article and publishing it changes nothing.
+      if (this.rubric !== this.seeds.rubric && this.rubric !== '')
+        fm = upsertFrontmatterField(fm, 'category', this.rubric);
+      if (this.topic !== this.seeds.topic)
+        fm =
+          this.topic === ''
+            ? removeFrontmatterField(fm, 'topic')
+            : upsertFrontmatterField(fm, 'topic', this.topic);
       // Only rewrite the description when the user actually edited it, so an
       // untouched folded-block description is left byte-identical (no orphaned
       // continuation lines); a real edit is re-emitted as a clean literal block.
       if (this.description !== this.descriptionSeed)
         fm = upsertFrontmatterBlock(fm, 'description', this.description);
-      if (this.pubDate !== '') fm = upsertFrontmatterField(fm, 'pubDate', this.pubDate);
-      fm = upsertFrontmatterField(fm, 'published', String(this.published));
+      if (this.pubDate !== this.seeds.pubDate && this.pubDate !== '')
+        fm = upsertFrontmatterField(fm, this.dateKey, this.pubDate);
+      if (String(this.published) !== this.seeds.published)
+        fm = upsertFrontmatterField(fm, 'published', String(this.published));
     }
     const body = this.body.trimEnd();
     return fm === '' ? `${body}\n` : `${fm}\n\n${body}\n`;
-  }
-
-  /** A required frontmatter field is empty. */
-  private get incomplete(): boolean {
-    // A journal issue has no topic, so it is never "incomplete" for that reason
-    // (this was still flagging the warning icon on the props button for issues).
-    return this.collection !== 'magazine' && this.topic === '';
   }
 
   private onLangChange = (event: Event): void => {
@@ -900,14 +967,6 @@ export class ScreenEditor extends LitElement {
     }
   };
 
-  private openProps = (): void => {
-    this.propsOpen = true;
-  };
-
-  private closeProps = (): void => {
-    this.propsOpen = false;
-  };
-
   private startPublish = (): void => {
     this.publishOpen = true;
     this.publishSha = '';
@@ -1001,11 +1060,9 @@ export class ScreenEditor extends LitElement {
           <cp-icon name="upload" size="18"></cp-icon>
         </button>
         <span class="spacer"></span>
-        <cp-button variant="ghost" size="sm" @cp-click=${this.openProps}>
-          ${this.incomplete ? html`<cp-icon name="warning" size="16"></cp-icon>` : nothing}
-          Свойства
-        </cp-button>
-        <cp-button size="sm" arrow @cp-click=${this.startPublish}>Опубликовать</cp-button>
+        <cp-button size="sm" arrow @cp-click=${this.startPublish}
+          >Опубликовать на ${publishTarget().site}</cp-button
+        >
       </div>
     `;
   }
@@ -1032,50 +1089,61 @@ export class ScreenEditor extends LitElement {
     `;
   }
 
+  /**
+   * The rubric choices: the repository's real categories, plus this article's
+   * own value when it is not among them, so opening an article can never
+   * silently drop the category it already carries.
+   */
+  private get rubricOptions(): readonly CpSelectOption[] {
+    const known = RUBRIC_OPTIONS.some((option) => option.value === this.rubric);
+    return known ? RUBRIC_OPTIONS : [...RUBRIC_OPTIONS, { value: this.rubric, label: this.rubric }];
+  }
+
+  /** Same for the topic marker, which comes from settings/topics.json. */
+  private get topicChoices(): readonly CpSelectOption[] {
+    const options = [NO_TOPIC, ...this.topicOptions];
+    return options.some((option) => option.value === this.topic)
+      ? options
+      : [...options, { value: this.topic, label: this.topic }];
+  }
+
+  /**
+   * The properties of the material, rendered as part of the page. They used to
+   * live behind a `cp-sheet`, so what a publish would write was invisible
+   * unless you went looking for it — and a wrong value (a missing category, a
+   * draft flag) is exactly what keeps an article off the public site.
+   */
   private renderProps(): TemplateResult {
-    // Topic/rubric are blog-article taxonomy; a journal issue has neither, so
-    // those fields (and the required-topic gate) are hidden when editing one.
+    // Rubric/topic are blog-article taxonomy; a journal issue has neither.
     const isArticle = this.collection !== 'magazine';
     return html`
-      <cp-sheet
-        ?open=${this.propsOpen}
-        heading="Свойства материала"
-        @cp-close=${this.closeProps}
-      >
-        <div class="sheet-form">
-          ${isArticle && this.incomplete
-            ? html`<cp-tag tone="warning">заполните обязательное поле «Тема»</cp-tag>`
-            : nothing}
-          ${isArticle
-            ? html`<cp-select
-                label="Тема"
-                required
-                .value=${this.topic}
-                .options=${TOPIC_OPTIONS}
-                @cp-change=${this.onTopicChange}
-              ></cp-select>`
-            : nothing}
-          ${isArticle
-            ? html`<cp-select
+      <section class="props" aria-label="Свойства материала">
+        ${isArticle
+          ? html`<cp-select
                 label="Рубрика"
                 .value=${this.rubric}
-                .options=${RUBRIC_OPTIONS}
+                .options=${this.rubricOptions}
                 @cp-change=${this.onRubricChange}
+              ></cp-select>
+              <cp-select
+                label="Тема"
+                .value=${this.topic}
+                .options=${this.topicChoices}
+                @cp-change=${this.onTopicChange}
               ></cp-select>`
-            : nothing}
-          <cp-date-input
-            label="Дата публикации"
-            type="date"
-            .value=${this.pubDate}
-            @cp-change=${this.onDateChange}
-          ></cp-date-input>
-          <cp-switch
-            label="Опубликовано"
-            ?checked=${this.published}
-            @cp-change=${this.onPublishedChange}
-          ></cp-switch>
-        </div>
-      </cp-sheet>
+          : nothing}
+        <cp-date-input
+          label="Дата публикации"
+          type="date"
+          .value=${this.pubDate}
+          @cp-change=${this.onDateChange}
+        ></cp-date-input>
+        <cp-switch
+          label="Опубликовано"
+          ?checked=${this.published}
+          @cp-change=${this.onPublishedChange}
+        ></cp-switch>
+      </section>
     `;
   }
 
@@ -1143,7 +1211,13 @@ export class ScreenEditor extends LitElement {
     return html`
       <article class="ed">
         <div class="head">
-          <p class="eyebrow">Контент · ${this.slug} · черновик</p>
+          <p class="eyebrow">
+            Контент · ${this.slug} ·
+            <span class=${this.published ? 'live' : 'draft'}
+              >${this.published ? 'опубликовано' : 'черновик'}</span
+            >
+            · ${publishTarget().site}
+          </p>
           <h1 class="title" tabindex="-1">
             ${this.articleTitle === '' ? 'Без названия' : this.articleTitle}
           </h1>
@@ -1172,7 +1246,7 @@ export class ScreenEditor extends LitElement {
               >`
             : nothing}
         </div>
-        ${this.renderAddLangDialog()}
+        ${this.renderAddLangDialog()} ${this.renderProps()}
         ${this.collection === 'magazine'
           ? this.renderMagazineBody()
           : html`
@@ -1200,7 +1274,7 @@ export class ScreenEditor extends LitElement {
           <span class="path">${this.articlePath}</span>
         </p>
       </article>
-      ${this.renderProps()}${this.renderPublishDialog()}
+      ${this.renderPublishDialog()}
     `;
   }
 }

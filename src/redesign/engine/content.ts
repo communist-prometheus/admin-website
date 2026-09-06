@@ -7,6 +7,7 @@
  * SW reports "not ready" — otherwise content silently reads empty after an SW
  * eviction or a post-deploy SW version bump.
  */
+import { fieldSpan, readFieldText } from './frontmatter-value.js';
 import { swFetch } from './sw-fetch.js';
 import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
 
@@ -168,10 +169,11 @@ export const upsertFrontmatterField = (markdown: string, key: string, value: str
   if (!markdown.startsWith('---')) return `---\n${line}\n---\n\n${markdown}`;
   const end = markdown.indexOf('\n---', 3);
   if (end < 0) return markdown;
-  const prefix = `${key}:`;
   const lines = markdown.slice(4, end).split('\n');
-  const at = lines.findIndex((l) => l.startsWith(prefix));
-  if (at >= 0) lines[at] = line;
+  // Replace the key's WHOLE previous value: overwriting only its first line
+  // would orphan the continuations of a multi-line one.
+  const span = fieldSpan(lines, key);
+  if (span !== undefined) lines.splice(span.start, span.end - span.start, line);
   else {
     const langAt = lines.findIndex((l) => l.startsWith('lang:'));
     lines.splice(langAt >= 0 ? langAt + 1 : lines.length, 0, line);
@@ -191,16 +193,7 @@ export const readFrontmatterField = (markdown: string, key: string): string | un
   if (!markdown.startsWith('---')) return undefined;
   const end = markdown.indexOf('\n---', 3);
   const lines = (end < 0 ? markdown.slice(4) : markdown.slice(4, end)).split('\n');
-  const at = lines.findIndex((l) => l.startsWith(`${key}:`));
-  if (at < 0) return undefined;
-  const inline = lines[at].slice(key.length + 1).trim();
-  const block = inline.match(/^([|>])[+-]?$/);
-  if (!block) return inline.replace(/^["']|["']$/g, '');
-  const cont: string[] = [];
-  for (let i = at + 1; i < lines.length && /^\s/.test(lines[i]); i += 1) {
-    cont.push(lines[i].replace(/^\s+/, ''));
-  }
-  return block[1] === '>' ? cont.join(' ') : cont.join('\n');
+  return readFieldText(lines, key);
 };
 
 /**
@@ -215,12 +208,12 @@ export const upsertFrontmatterBlock = (markdown: string, key: string, value: str
   const end = markdown.indexOf('\n---', 3);
   if (end < 0) return markdown;
   const lines = markdown.slice(4, end).split('\n');
-  const at = lines.findIndex((l) => l.startsWith(`${key}:`));
-  if (at >= 0) {
-    let removeCount = 1;
-    for (let i = at + 1; i < lines.length && /^\s/.test(lines[i]); i += 1) removeCount += 1;
-    lines.splice(at, removeCount, ...field);
-  } else {
+  // The span covers the WHOLE previous value — a multi-line quoted scalar with
+  // blank lines inside it included. Removing less is what left the tail of a
+  // Russian description sitting under a new English one.
+  const span = fieldSpan(lines, key);
+  if (span !== undefined) lines.splice(span.start, span.end - span.start, ...field);
+  else {
     const langAt = lines.findIndex((l) => l.startsWith('lang:'));
     lines.splice(langAt >= 0 ? langAt + 1 : lines.length, 0, ...field);
   }
@@ -236,7 +229,12 @@ export const removeFrontmatterField = (markdown: string, key: string): string =>
   if (!markdown.startsWith('---')) return markdown;
   const end = markdown.indexOf('\n---', 3);
   if (end < 0) return markdown;
-  const lines = markdown.slice(4, end).split('\n').filter((l) => !l.startsWith(`${key}:`));
+  const lines = markdown.slice(4, end).split('\n');
+  const span = fieldSpan(lines, key);
+  if (span === undefined) return markdown;
+  // Drop the whole value, not just its first line, so a multi-line field
+  // cannot leave orphaned continuation lines behind.
+  lines.splice(span.start, span.end - span.start);
   return `---\n${lines.join('\n')}${markdown.slice(end)}`;
 };
 
@@ -453,6 +451,33 @@ const isTopic = (x: unknown): x is Topic =>
 /** Reads the repo's real topics (colour + per-language names). */
 export const readTopics = async (): Promise<readonly Topic[]> =>
   parseJsonArray(await readFile('settings/topics.json'), isTopic);
+
+/** One `<option>` for a topic picker: the topic key plus its Russian name. */
+export interface TopicOption {
+  readonly value: string;
+  readonly label: string;
+}
+
+/**
+ * The editorial topics as select options, read straight from the repository
+ * through the API (no clone), so the editor offers the topics that actually
+ * exist instead of a list hardcoded in the UI. Empty on any failure — the topic
+ * is optional, so an unreadable settings file must not block editing.
+ */
+export const topicOptionsViaApi = async (): Promise<readonly TopicOption[]> => {
+  const raw = await readFileViaApi('settings/topics.json');
+  if (raw === undefined) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isTopic).map((topic) => ({
+      value: topic.key,
+      label: topic.name['ru'] ?? topic.name['en'] ?? topic.key,
+    }));
+  } catch {
+    return [];
+  }
+};
 
 /** A summary of one blog article (grouped from `blog/<slug>/index.<lang>.md`). */
 export interface ArticleSummary {
