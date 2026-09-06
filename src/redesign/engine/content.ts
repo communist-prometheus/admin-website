@@ -271,7 +271,9 @@ export const upsertSequenceField = (
   key: string,
   items: readonly string[],
 ): string => {
-  const field = [`${key}:`, ...items.map((it) => `  - ${it}`)];
+  // An empty set is written as an explicit `key: []` — a bare `key:` is YAML's
+  // empty value, which the site's collection schema rejects (it wants a list).
+  const field = items.length === 0 ? [`${key}: []`] : [`${key}:`, ...items.map((it) => `  - ${it}`)];
   if (!markdown.startsWith('---')) return `---\n${field.join('\n')}\n---\n\n${markdown}`;
   const end = markdown.indexOf('\n---', 3);
   if (end < 0) return markdown;
@@ -610,6 +612,30 @@ export const readFileViaApi = async (path: string): Promise<string | undefined> 
   }
 };
 
+/** A content read that tells "absent" apart from "failed": a 404 means the
+ *  item has no such language, anything else (401 expired token, 403 throttle,
+ *  5xx) is a failure the caller must not mistake for absence. */
+type ContentRead =
+  | { readonly kind: 'ok'; readonly text: string }
+  | { readonly kind: 'missing' }
+  | { readonly kind: 'error'; readonly error: string };
+
+const readContentFile = async (path: string): Promise<ContentRead> => {
+  const t = await freshGhToken();
+  if (t === undefined) return { kind: 'error', error: 'signed-out' };
+  try {
+    const res = await fetch(`${REPO_BASE}/contents/${path}?ref=${contentBranch()}`, {
+      cache: 'no-store',
+      headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github.raw' },
+    });
+    if (res.ok) return { kind: 'ok', text: await res.text() };
+    if (res.status === 404) return { kind: 'missing' };
+    return { kind: 'error', error: await apiError(res, `Чтение не удалось (${res.status}).`) };
+  } catch (e) {
+    return { kind: 'error', error: e instanceof Error ? e.message : String(e) };
+  }
+};
+
 /** The languages one item exists in (its `index.<lang>.md` files), via API. The
  *  collection is `blog` for articles, `magazine` for journal issues. */
 export const articleLangsViaApi = async (
@@ -638,6 +664,19 @@ export const articleLangsViaApi = async (
 };
 
 /**
+ * The content gate for the direct-API write path — the same YAML / lang /
+ * schema rules the Service Worker applies at stage time, so a single-file
+ * commit can no more push an unbuildable article than a clone+push can. The
+ * gate (and the schema library behind it) loads lazily: publishing is rare,
+ * the shell's first paint is not. Non-content paths pass straight through.
+ */
+const guardContentWrite = async (path: string, content: string): Promise<string | undefined> => {
+  const { validateContentFile } = await import('@/validation/content-gate');
+  const reason = validateContentFile(path, content);
+  return reason === undefined ? undefined : `Файл не прошёл проверку и не сохранён: ${reason}`;
+};
+
+/**
  * Commits ONE edited file via the GitHub Contents API — a single-file commit,
  * no clone and no whole-repo push. Fetches the file's current blob sha (an
  * update needs it), then PUTs the new content. Returns the commit sha or the
@@ -648,6 +687,8 @@ export const publishFileViaApi = async (
   content: string,
   message: string,
 ): Promise<{ ok: boolean; sha?: string; error?: string }> => {
+  const rejected = await guardContentWrite(path, content);
+  if (rejected !== undefined) return { ok: false, error: rejected };
   const t = await freshGhToken();
   if (t === undefined) return { ok: false, error: 'signed-out' };
   const auth = { authorization: `Bearer ${t}` };
@@ -707,24 +748,29 @@ export const linkIssueArticlesViaApi = async (
   selected: readonly string[],
 ): Promise<LinkResult> => {
   const indexPath = `magazine/${issueSlug}/index.${lang}.md`;
-  const indexMd = await readFileViaApi(indexPath);
-  if (indexMd === undefined) {
+  const index = await readContentFile(indexPath);
+  if (index.kind === 'missing') {
     return { ok: false, linked: 0, unlinked: 0, error: `Не найден index номера (${lang}).` };
   }
+  if (index.kind === 'error') return { ok: false, linked: 0, unlinked: 0, error: index.error };
+  const indexMd = index.text;
   const current = new Set(readSequenceField(indexMd, 'articles'));
   const want = new Set(selected);
   const toLink = selected.filter((s) => !current.has(s));
   const toUnlink = [...current].filter((s) => !want.has(s));
 
-  // Add the back-link to newly-selected articles; skip any without this language.
+  // Add the back-link to newly-selected articles; skip any without this
+  // language. A failed read (not a 404) aborts the whole save — treating it as
+  // "absent" would silently drop the article from the issue.
   const linked: string[] = [];
   for (const slug of selected) {
     const path = `blog/${slug}/index.${lang}.md`;
-    const md = await readFileViaApi(path);
-    if (md === undefined || md === '') continue;
+    const read = await readContentFile(path);
+    if (read.kind === 'error') return { ok: false, linked: 0, unlinked: 0, error: read.error };
+    if (read.kind === 'missing' || read.text === '') continue;
     linked.push(slug);
     if (toLink.includes(slug)) {
-      const next = upsertFrontmatterField(md, 'magazine', issueSlug);
+      const next = upsertFrontmatterField(read.text, 'magazine', issueSlug);
       const r = await publishFileViaApi(path, next, `magazine: ссылка ${slug} → ${issueSlug}`);
       if (!r.ok) return { ok: false, linked: 0, unlinked: 0, error: r.error };
     }
@@ -734,9 +780,10 @@ export const linkIssueArticlesViaApi = async (
   let unlinked = 0;
   for (const slug of toUnlink) {
     const path = `blog/${slug}/index.${lang}.md`;
-    const md = await readFileViaApi(path);
-    if (md === undefined || md === '') continue;
-    const next = removeFrontmatterField(md, 'magazine');
+    const read = await readContentFile(path);
+    if (read.kind === 'error') return { ok: false, linked: 0, unlinked: 0, error: read.error };
+    if (read.kind === 'missing' || read.text === '') continue;
+    const next = removeFrontmatterField(read.text, 'magazine');
     const r = await publishFileViaApi(path, next, `magazine: отвязка ${slug} от ${issueSlug}`);
     if (!r.ok) return { ok: false, linked: 0, unlinked: 0, error: r.error };
     unlinked += 1;
