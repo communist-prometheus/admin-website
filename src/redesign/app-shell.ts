@@ -80,6 +80,7 @@ export class AppShell extends LitElement {
        otherwise, and publishing to the wrong site is invisible until the
        article fails to appear on comprom.org. */
     .env {
+      flex: 0 0 auto;
       margin-right: var(--spacing-sm);
       padding: 0.15rem 0.5rem;
       border: 1px solid var(--color-accent);
@@ -88,6 +89,37 @@ export class AppShell extends LitElement {
       font-weight: 600;
       color: var(--color-accent);
       white-space: nowrap;
+    }
+    /* The full host does not fit a phone header next to the account controls,
+       and pushing them off-screen would be worse than a short label. */
+    .env-short {
+      display: none;
+    }
+    /* A phone header is tight even without the badge: at 390px the brand, the
+       account name, the sign-out button and the theme toggle already overflow,
+       pushing the last of them off-screen. Tighten the spacing and cap the
+       account name so everything stays reachable. */
+    @media (max-width: 767px) {
+      header {
+        gap: var(--spacing-xs, 0.5rem);
+        padding: 0 var(--spacing-xs, 0.5rem);
+      }
+      .brand img {
+        height: 24px;
+      }
+      .env-full {
+        display: none;
+      }
+      .env-short {
+        display: inline;
+        text-transform: uppercase;
+      }
+      .header-right .account {
+        max-width: 5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
     .header-right {
       display: flex;
@@ -881,8 +913,11 @@ export class AppShell extends LitElement {
         </a>
         ${publishTarget().production
           ? nothing
-          : html`<span class="env" title="Публикации из этой админки идут на этот сайт"
-              >${publishTarget().site}</span
+          : html`<span
+              class="env"
+              title=${`Публикации из этой админки идут на ${publishTarget().site}, не на comprom.org`}
+              ><span class="env-full">${publishTarget().site}</span
+              ><span class="env-short">${publishTarget().site.split('.')[0]}</span></span
             >`}
         <div class="header-right">
           <cp-status state=${this.sync.tone} label=${this.sync.label}></cp-status>

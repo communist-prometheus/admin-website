@@ -32,6 +32,16 @@ describe('app-shell environment badge', () => {
     expect(text(el)).toContain('dev.comprom.org');
   });
 
+  it('carries a short label too, for a phone header that cannot fit the host', async () => {
+    vi.stubEnv('VITE_GITHUB_BRANCH', 'develop');
+    const el = await mount();
+    const badge = el.shadowRoot?.querySelector('.env');
+    expect(badge?.querySelector('.env-full')?.textContent).toBe('dev.comprom.org');
+    expect(badge?.querySelector('.env-short')?.textContent).toBe('dev');
+    // The tooltip names the site in full, whichever label is on screen.
+    expect(badge?.getAttribute('title')).toContain('dev.comprom.org');
+  });
+
   it('stays clean on the production admin', async () => {
     vi.stubEnv('VITE_GITHUB_BRANCH', 'master');
     const el = await mount();
