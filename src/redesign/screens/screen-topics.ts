@@ -1,304 +1,182 @@
 import { LitElement, html, css, nothing } from 'lit';
+import type { TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import type { CpTab } from '@communist-prometheus/cp-components';
 import '@communist-prometheus/cp-components';
-import { readTopics, type Topic } from '../engine/content.js';
-import { onEngineReady } from '../engine/engine-ready.js';
-import { classifyEmpty } from '../engine/load-state.js';
+import { readTopicsViaApi, saveTopicsViaApi, type Topic } from '../engine/settings-io.js';
+import { publishTarget } from '../engine/publish-target.js';
+import { TAXONOMY_LANGS, taxonomyStyles } from './taxonomy-shared.js';
+import { emptyTopic, withColor, withKey, withText, withoutAt } from './taxonomy-draft.js';
 
 /**
- * The seven publication languages, expressed as the keys used inside a topic's
- * `name` map (`settings/topics.json`). Bulgarian is stored as `bl` and Ukrainian
- * as `uk` — the tab labels below humanise them to BG/UK.
- */
-type LangCode = 'ru' | 'en' | 'it' | 'es' | 'bl' | 'pl' | 'uk';
-
-/** Language segments for the per-topic `cp-tabs` strip (label ≠ name-map key). */
-const LANGUAGES: readonly CpTab[] = [
-  { id: 'ru', label: 'RU' },
-  { id: 'en', label: 'EN' },
-  { id: 'it', label: 'IT' },
-  { id: 'es', label: 'ES' },
-  { id: 'bl', label: 'BG' },
-  { id: 'pl', label: 'PL' },
-  { id: 'uk', label: 'UK' },
-];
-
-/** The set of valid language keys, for narrowing an arbitrary tab id. */
-const LANG_CODES: ReadonlySet<string> = new Set(LANGUAGES.map((tab) => tab.id));
-
-/** Narrows an arbitrary tab id to a known {@link LangCode}. */
-const isLangCode = (value: string): value is LangCode => LANG_CODES.has(value);
-
-/**
- * Topics screen (settings spec: the "Темы" subpanel). When the real content
- * engine is running (local `dev:token`), it reads the repo's
- * `settings/topics.json` and lists the ACTUAL topics — colour, per-language name
- * and stable key — proving live data end-to-end; a `cp-tag` badge reports
- * whether the data is live or a demo fallback. Each topic renders a colour-left
- * `article` with a swatch, the name for the currently selected language, editable
- * name/note/description fields seeded from that language, and a live `cp-pill`
- * previewing the on-site plaque in the topic's colour. A `cp-tabs` strip switches
- * the active language (tracked in local `@state`). Theme tokens inherit from
- * `:root` through the shadow boundary; no ad-hoc chrome, tokens only.
+ * The topics screen: the coloured editorial plaque an article can carry
+ * (`topic` in its frontmatter, defined in `settings/topics.json`).
+ *
+ * It used to read through the Service Worker git engine, which needs a full
+ * repository clone, and so could sit on its loading placeholder indefinitely while
+ * every other screen in this UI read happily over the GitHub API. It now reads
+ * — and writes — over that same API, so topics can actually be created and
+ * edited here instead of by hand on GitHub.
  */
 @customElement('screen-topics')
 export class ScreenTopics extends LitElement {
-  static override styles = css`
-    :host {
-      display: block;
-      font-family: var(--font-sans);
-      color: var(--color-text-primary);
-      line-height: 1.6;
-    }
+  static override styles = [
+    taxonomyStyles,
+    css`
+      .preview {
+        flex: 0 0 auto;
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #fff;
+      }
+    `,
+  ];
 
-    .head {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: var(--spacing-sm);
-      margin-bottom: var(--spacing-md);
-    }
-
-    h1 {
-      font-size: clamp(1.9rem, 7vw, 2.6rem);
-      line-height: 1.15;
-      font-weight: 700;
-      margin: 0;
-      margin-right: auto;
-      background: linear-gradient(135deg, var(--color-accent), var(--color-text-primary));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-
-    h1:focus-visible {
-      outline: 2px solid var(--color-accent);
-      outline-offset: 4px;
-    }
-
-    .eyebrow {
-      flex-basis: 100%;
-      margin: 0;
-      font-size: 0.8rem;
-      color: var(--color-text-secondary);
-    }
-
-    .intro {
-      max-width: 64ch;
-      margin: 0 0 var(--spacing-lg);
-      color: var(--color-text-secondary);
-    }
-
-    .tabs-scroll {
-      overflow-x: auto;
-      max-width: 100%;
-      margin-bottom: var(--spacing-lg);
-    }
-
-    .list {
-      display: grid;
-      gap: var(--spacing-lg);
-    }
-
-    .topic {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-md);
-      padding: var(--spacing-lg);
-      background: var(--color-surface);
-      border: 1px solid var(--color-hairline);
-      border-inline-start: 4px solid var(--tc, var(--color-accent));
-      border-radius: var(--radius-md);
-    }
-
-    .thead {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-    }
-
-    .swatch {
-      inline-size: 1.5rem;
-      block-size: 1.5rem;
-      flex: none;
-      background: var(--tc, var(--color-accent));
-      border: 1px solid var(--color-hairline);
-      border-radius: var(--radius-sm);
-    }
-
-    .name {
-      margin: 0;
-      margin-right: auto;
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
-
-    .key {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--color-text-secondary);
-    }
-
-    .fields {
-      margin: 0;
-      display: grid;
-      gap: var(--spacing-sm);
-    }
-
-    .field {
-      display: grid;
-      gap: 0.15rem;
-    }
-
-    .field dt {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--color-text-secondary);
-    }
-
-    .field dd {
-      margin: 0;
-      font-size: 1rem;
-    }
-
-    .missing {
-      color: var(--color-text-secondary);
-      font-style: italic;
-    }
-
-    cp-banner {
-      display: block;
-      margin-bottom: var(--spacing-lg);
-    }
-
-    .preview {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-      flex-wrap: wrap;
-      padding-top: var(--spacing-xs);
-      border-top: 1px dashed var(--color-hairline);
-    }
-
-    .preview-label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--color-text-secondary);
-    }
-
-    .note {
-      margin: var(--spacing-md) 0 0;
-      font-size: 0.85rem;
-      color: var(--color-text-secondary);
-    }
-  `;
-
-  /** Topics read from the repo; empty until loaded (or if the engine is off). */
-  @state() private topics: readonly Topic[] = [];
-
-  /** Whether the real read has completed. */
-  @state() private loaded = false;
-
-  /** Currently edited language; drives which localised name the fields show. */
-  @state() private activeLang: LangCode = 'ru';
-
-  /** Unsubscribes the engine-ready listener on disconnect. */
-  private disposeReady: () => void = () => {};
+  @state() private draft: readonly Topic[] = [];
+  @state() private loading = true;
+  @state() private busy = false;
+  @state() private error = '';
+  @state() private message = '';
+  @state() private activeLang = 'ru';
 
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
-    // Re-read when the engine finishes booting (first-load race, QA #12).
-    this.disposeReady = onEngineReady(() => void this.load());
-  }
-
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this.disposeReady();
   }
 
   private async load(): Promise<void> {
-    const topics = await readTopics();
-    this.topics = topics;
-    this.loaded = true;
+    this.loading = true;
+    this.error = '';
+    try {
+      this.draft = await readTopicsViaApi();
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : String(e);
+    }
+    this.loading = false;
   }
 
-  private readonly onLangChange = (event: CustomEvent<{ readonly id: string }>): void => {
-    if (isLangCode(event.detail.id)) {
-      this.activeLang = event.detail.id;
-    }
+  private readonly add = (): void => {
+    this.draft = [...this.draft, emptyTopic()];
+    this.message = '';
   };
 
-  private renderTopic(topic: Topic) {
-    const lang = this.activeLang;
-    const name = topic.name[lang] ?? '';
-    const hasName = name !== '';
+  private readonly removeAt = (index: number): void => {
+    this.draft = withoutAt(this.draft, index);
+    this.message = '';
+  };
+
+  private readonly updateKey = (index: number, value: string): void => {
+    this.draft = withKey(this.draft, index, value);
+    this.message = '';
+  };
+
+  private readonly updateColor = (index: number, value: string): void => {
+    this.draft = withColor(this.draft, index, value);
+    this.message = '';
+  };
+
+  private readonly updateText = (
+    index: number,
+    field: 'name' | 'subtitle',
+    lang: string,
+    value: string,
+  ): void => {
+    this.draft = withText(this.draft, index, field, lang, value);
+    this.message = '';
+  };
+
+  private readonly save = async (): Promise<void> => {
+    this.busy = true;
+    this.error = '';
+    this.message = '';
+    const result = await saveTopicsViaApi(this.draft);
+    this.busy = false;
+    if (result.ok) this.message = `Сохранено в ${publishTarget().site}.`;
+    else this.error = result.error ?? 'Не удалось сохранить.';
+  };
+
+  /** Reads a value out of a component's input/change event. */
+  private onInput(event: Event, apply: (value: string) => void): void {
+    if (!(event instanceof CustomEvent)) return;
+    const value: unknown = event.detail?.value;
+    if (typeof value === 'string') apply(value);
+  }
+
+  private renderRow(topic: Topic, index: number): TemplateResult {
+    const name = topic.name[this.activeLang] ?? '';
     return html`
-      <article class="topic" style="--tc:${topic.color}">
-        <div class="thead">
-          <span class="swatch" aria-hidden="true"></span>
-          <h2 class="name">${hasName ? name : topic.key}</h2>
-          <span class="key">${topic.key}</span>
-          <span class="key" aria-hidden="true">${topic.color}</span>
-        </div>
-
-        <dl class="fields">
-          <div class="field">
-            <dt>Название · ${lang}</dt>
-            <dd>${hasName ? name : html`<span class="missing">нет перевода</span>`}</dd>
-          </div>
-        </dl>
-
-        <div class="preview">
-          <span class="preview-label">Плашка на сайте:</span>
-          <cp-pill style="--tc:${topic.color}">${hasName ? name : topic.key}</cp-pill>
-        </div>
-      </article>
+      <li class="row">
+        <input
+          class="swatch"
+          type="color"
+          aria-label="Цвет темы"
+          .value=${topic.color}
+          @input=${(e: Event) => {
+            const target = e.target;
+            if (target instanceof HTMLInputElement) this.updateColor(index, target.value);
+          }}
+        />
+        <cp-input
+          label="Ключ"
+          .value=${topic.key}
+          placeholder="editorial"
+          @cp-input=${(e: Event) => this.onInput(e, (v) => this.updateKey(index, v))}
+          @cp-change=${(e: Event) => this.onInput(e, (v) => this.updateKey(index, v))}
+        ></cp-input>
+        <cp-input
+          label=${`Название (${this.activeLang})`}
+          .value=${name}
+          @cp-input=${(e: Event) => this.onInput(e, (v) => this.updateText(index, 'name', this.activeLang, v))}
+          @cp-change=${(e: Event) => this.onInput(e, (v) => this.updateText(index, 'name', this.activeLang, v))}
+        ></cp-input>
+        <cp-input
+          label=${`Приписка (${this.activeLang})`}
+          .value=${topic.subtitle?.[this.activeLang] ?? ''}
+          @cp-input=${(e: Event) =>
+            this.onInput(e, (v) => this.updateText(index, 'subtitle', this.activeLang, v))}
+          @cp-change=${(e: Event) =>
+            this.onInput(e, (v) => this.updateText(index, 'subtitle', this.activeLang, v))}
+        ></cp-input>
+        <span class="preview" style=${`background:${topic.color}`}>${name || topic.key || '—'}</span>
+        <cp-button variant="ghost" size="sm" @cp-click=${() => this.removeAt(index)}>Удалить</cp-button>
+      </li>
     `;
   }
 
-  override render() {
-    const live = this.topics.length > 0;
+  override render(): TemplateResult {
     return html`
-      <header class="head">
-        <p class="eyebrow">Настройки · оформление статей</p>
-        <h1 tabindex="-1">Темы</h1>
-      </header>
-      <p class="intro">
-        Темы группируют статьи цветной плашкой. Название задаётся для каждого из 7 языков в
-        settings/topics.json.
+      <p class="eyebrow">Настройки · оформление статей</p>
+      <h1>Темы</h1>
+      <p class="lede">
+        Тема группирует статьи цветной плашкой на странице материала и на карточке. Ключ хранится в
+        поле <code>topic</code> материала, а цвет и названия по языкам — здесь.
       </p>
-
-      ${live
-        ? html`
-            <cp-banner tone="info" title="Просмотр без редактирования">
-              Темы пока правятся в settings/topics.json. Здесь — что сейчас в репозитории:
-              ключ, цвет и название на выбранном языке.
-            </cp-banner>
-
-            <div class="tabs-scroll">
-              <cp-tabs
-                .tabs=${LANGUAGES}
-                active=${this.activeLang}
-                @cp-tab-change=${this.onLangChange}
-              ></cp-tabs>
+      ${this.loading
+        ? html`<p class="msg">Загружаем темы…</p>`
+        : html`
+            <cp-tabs
+              .tabs=${TAXONOMY_LANGS}
+              active=${this.activeLang}
+              @cp-tab-change=${(e: Event) => {
+                if (e instanceof CustomEvent && typeof e.detail?.id === 'string')
+                  this.activeLang = e.detail.id;
+              }}
+            ></cp-tabs>
+            ${this.draft.length === 0
+              ? html`<p class="msg">Тем пока нет — добавьте первую.</p>`
+              : html`<ul class="rows">
+                  ${this.draft.map((topic, index) => this.renderRow(topic, index))}
+                </ul>`}
+            <div class="actions">
+              <cp-button variant="secondary" size="sm" @cp-click=${this.add}>+ тема</cp-button>
+              <cp-button size="sm" arrow ?disabled=${this.busy} @cp-click=${() => void this.save()}>
+                ${this.busy ? 'Сохраняем…' : `Сохранить в ${publishTarget().site}`}
+              </cp-button>
             </div>
-
-            <div class="list">${this.topics.map((topic) => this.renderTopic(topic))}</div>
-
-            <p class="note">
-              Прочитано из settings/topics.json — ${this.topics.length}
-              ${this.topics.length === 1 ? 'тема' : 'тем'} реального репозитория.
-            </p>
-          `
-        : html`<p class="note">
-            ${classifyEmpty(this.loaded) === 'loading'
-              ? 'Загружаем темы…'
-              : classifyEmpty(this.loaded) === 'signed-out'
-                ? 'Войдите через GitHub, чтобы увидеть темы из settings/topics.json.'
-                : 'Тем пока нет или не удалось их загрузить.'}
-          </p>`}
+          `}
+      ${this.error !== '' ? html`<p class="msg error">${this.error}</p>` : nothing}
+      ${this.message !== '' ? html`<p class="msg">${this.message}</p>` : nothing}
     `;
   }
 }

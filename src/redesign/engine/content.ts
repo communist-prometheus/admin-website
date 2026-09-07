@@ -876,6 +876,67 @@ const apiError = async (res: Response, fallback: string): Promise<string> => {
   return typeof e === 'object' && e && 'message' in e ? String(Reflect.get(e, 'message')) : fallback;
 };
 
+/** Every path in the repository tree, optionally narrowed to one folder. */
+const repoTree = async (): Promise<readonly string[]> => {
+  const t = await freshGhToken();
+  if (t === undefined) return [];
+  const res = await fetch(`${REPO_BASE}/git/trees/${contentBranch()}?recursive=1`, {
+    headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github+json' },
+  });
+  if (!res.ok) return [];
+  const data: unknown = await res.json();
+  const tree = typeof data === 'object' && data && 'tree' in data ? Reflect.get(data, 'tree') : undefined;
+  return Array.isArray(tree)
+    ? tree
+        .map((e) => (typeof e === 'object' && e && 'path' in e ? String(Reflect.get(e, 'path')) : ''))
+        .filter((path) => path !== '')
+    : [];
+};
+
+/**
+ * With no `slug`: every slug the collection contains — what a new or renamed
+ * article must not collide with. With a `slug`: every file path inside that
+ * article's folder, which is what a rename has to move.
+ * @param collection - `blog`, `pages`, `magazine`, …
+ * @param slug - when given, list that article's files instead of the slugs
+ * @returns slugs, or file paths
+ */
+export const listSlugsViaApi = async (
+  collection: string,
+  slug?: string,
+): Promise<readonly string[]> => {
+  const paths = await repoTree();
+  if (slug !== undefined) {
+    const prefix = `${collection}/${slug}/`;
+    return paths.filter((path) => path.startsWith(prefix));
+  }
+  const prefix = `${collection}/`;
+  const slugs = new Set(
+    paths
+      .filter((path) => path.startsWith(prefix))
+      .map((path) => path.slice(prefix.length).split('/')[0] ?? '')
+      .filter((name) => name !== ''),
+  );
+  return [...slugs].sort();
+};
+
+/** A file's raw bytes, base64-encoded — binary-safe, for moving assets. */
+export const readBinaryViaApi = async (
+  path: string,
+): Promise<{ readonly content: string } | undefined> => {
+  const t = await freshGhToken();
+  if (t === undefined) return undefined;
+  const res = await fetch(`${REPO_BASE}/contents/${path}?ref=${contentBranch()}`, {
+    cache: 'no-store',
+    headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github+json' },
+  });
+  if (!res.ok) return undefined;
+  const data: unknown = await res.json();
+  const content = typeof data === 'object' && data && 'content' in data ? String(Reflect.get(data, 'content')) : undefined;
+  // The API returns base64 wrapped at 60 columns; the write path wants it flat.
+  return content === undefined ? undefined : { content: content.replace(/\s+/g, '') };
+};
+
 /** Uploads a file (already base64-encoded) via the Contents API — ANY type,
  *  including fb2/doc/pdf. Overwrites in place when the path already exists. */
 export const uploadBinaryViaApi = async (
