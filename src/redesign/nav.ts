@@ -42,6 +42,7 @@ export const navItems: readonly NavItem[] = [
   { id: 'pages', label: 'Страницы', icon: 'file-text', group: 'content', role: 'editor' },
   { id: 'archive', label: 'Архив', icon: 'book', group: 'content', role: 'editor' },
   { id: 'topics', label: 'Темы', icon: 'hash', group: 'content', role: 'editor' },
+  { id: 'categories', label: 'Рубрики', icon: 'hash', group: 'content', role: 'editor' },
   { id: 'members', label: 'Участники', icon: 'users', group: 'community', role: 'admin' },
   { id: 'tickets', label: 'Тикеты', icon: 'ticket', group: 'community', role: 'editor' },
   { id: 'newsletter', label: 'Рассылка', icon: 'mail', group: 'distribution', ownerOnly: true },
