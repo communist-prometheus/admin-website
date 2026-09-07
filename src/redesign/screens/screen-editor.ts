@@ -15,6 +15,9 @@ import {
   topicOptionsViaApi,
 } from '../engine/content.js';
 import { publishTarget } from '../engine/publish-target.js';
+import { listSlugsViaApi } from '../engine/content.js';
+import { slugify, slugProblem } from '../engine/slug.js';
+import { renameArticleViaApi } from '../engine/rename-article.js';
 import { listDeployRuns } from '../engine/github-api.js';
 import { siteBuildState, type SiteBuildState } from '../engine/site-build-state.js';
 import '../components/issue-files.js';
@@ -110,6 +113,12 @@ const REAL_STAGES: readonly string[] = ['Публикация'];
 const frontmatterValue = (text: string, key: string): string | undefined => {
   const match = text.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
   return match ? (match.at(1) ?? '').trim().replace(/^["']|["']$/g, '') : undefined;
+};
+
+/** Quotes a value for YAML: prose may hold a colon, a quote or a leading dash. */
+const quoteYaml = (value: string): string => {
+  const escaped = value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+  return `"${escaped}"`;
 };
 
 /** Splits a raw markdown document into its frontmatter block, `title` and body. */
@@ -576,7 +585,8 @@ export class ScreenEditor extends LitElement {
    * incident file grew a second date key (`pubDate` next to `publishDate`)
    * precisely because every field was re-emitted unconditionally.
    */
-  private seeds: Readonly<Record<'topic' | 'rubric' | 'pubDate' | 'published', string>> = {
+  private seeds: Readonly<Record<'title' | 'topic' | 'rubric' | 'pubDate' | 'published', string>> = {
+    title: '',
     topic: '',
     rubric: '',
     pubDate: '',
@@ -585,6 +595,15 @@ export class ScreenEditor extends LitElement {
 
   /** Which key holds the date in THIS file: `pubDate`, `publishDate` or `date`. */
   private dateKey = 'pubDate';
+
+  /** True while the article's files are being moved to a new address. */
+  @state() private renaming = false;
+
+  /** The address being edited, normalised as the editor types. */
+  @state() private slugDraft = '';
+
+  /** Slugs already used in this collection — an address must not collide. */
+  @state() private takenSlugs: readonly string[] = [];
 
   /** Topics offered in the properties panel, read from settings/topics.json. */
   @state() private topicOptions: readonly CpSelectOption[] = [];
@@ -646,6 +665,11 @@ export class ScreenEditor extends LitElement {
     });
     void listDeployRuns().then((runs) => {
       this.siteBuild = siteBuildState(runs);
+    });
+    // The addresses already in use, so a collision is caught while typing
+    // rather than by overwriting another article's folder.
+    void listSlugsViaApi(this.collection).then((slugs) => {
+      this.takenSlugs = slugs;
     });
     globalThis.addEventListener('hashchange', this.onHashChange);
     // The article is read directly from the GitHub API, so there is no engine
@@ -771,7 +795,9 @@ export class ScreenEditor extends LitElement {
     const published = frontmatterValue(fm, 'published');
     this.published =
       published !== undefined ? published === 'true' : frontmatterValue(fm, 'draft') !== 'true';
+    this.slugDraft = this.slug;
     this.seeds = {
+      title: this.articleTitle,
       topic: this.topic,
       rubric: this.rubric,
       pubDate: this.pubDate,
@@ -792,6 +818,10 @@ export class ScreenEditor extends LitElement {
     if (fm !== '') {
       // Each property is written back ONLY when it differs from what was
       // loaded, so opening an article and publishing it changes nothing.
+      // A title is free-form prose: it is always quoted, so a colon or a quote
+      // inside it cannot turn the frontmatter into invalid YAML.
+      if (this.articleTitle !== this.seeds.title)
+        fm = upsertFrontmatterField(fm, 'title', quoteYaml(this.articleTitle));
       if (this.rubric !== this.seeds.rubric && this.rubric !== '')
         fm = upsertFrontmatterField(fm, 'category', this.rubric);
       if (this.topic !== this.seeds.topic)
@@ -958,6 +988,64 @@ export class ScreenEditor extends LitElement {
       }
     }
   };
+
+  /**
+   * Moves the article to the typed address. Every language and asset moves
+   * together, and the editor is sent to the new address afterwards so it is not
+   * left looking at a folder that no longer exists.
+   */
+  private async applyRename(): Promise<void> {
+    if (this.slugError !== '' || this.slugDraft === this.slug) return;
+    this.renaming = true;
+    const from = this.slug;
+    const result = await renameArticleViaApi(this.collection, from, this.slugDraft);
+    this.renaming = false;
+    if (!result.ok) {
+      this.publishError = result.error ?? 'Не удалось перенести материал.';
+      this.publishOpen = true;
+      return;
+    }
+    this.slug = this.slugDraft;
+    this.takenSlugs = [...this.takenSlugs.filter((s) => s !== from), this.slugDraft];
+    this.articlePath = `${this.collection}/${this.slug}/index.${this.activeLang}.md`;
+    globalThis.location.hash =
+      this.collection === 'blog' ? `#/editor/${this.slug}` : `#/editor/${this.collection}/${this.slug}`;
+  }
+
+  /** Reads the `value` of a component input/change event. */
+  private eventValue(event: Event): string | undefined {
+    if (event instanceof CustomEvent && typeof event.detail?.value === 'string') {
+      return event.detail.value;
+    }
+    const target = event.target;
+    return target instanceof HTMLInputElement ? target.value : undefined;
+  }
+
+  /** The article title — what every listing and the page heading show. */
+  private readonly onTitleInput = (event: Event): void => {
+    const value = this.eventValue(event);
+    if (value === undefined) return;
+    this.articleTitle = value;
+    this.dirty = true;
+  };
+
+  /**
+   * The address, normalised as it is typed: transliterated, lowercased, spaces
+   * turned into hyphens. Typing is never blocked — what cannot be normalised
+   * shows as an error under the field instead.
+   */
+  private readonly onSlugInput = (event: Event): void => {
+    const value = this.eventValue(event);
+    if (value === undefined) return;
+    this.slugDraft = slugify(value);
+    this.dirty = true;
+  };
+
+  /** Why the typed address cannot be used, or '' when it can. */
+  private get slugError(): string {
+    if (this.slugDraft === this.slug) return '';
+    return slugProblem(this.slugDraft, this.takenSlugs, this.slug) ?? '';
+  }
 
   /** The lead field under the title is a native textarea (a plain input event),
    *  writing the article's `description` frontmatter. */
@@ -1249,9 +1337,37 @@ export class ScreenEditor extends LitElement {
             >
             · ${publishTarget().site}
           </p>
-          <h1 class="title" tabindex="-1">
-            ${this.articleTitle === '' ? 'Без названия' : this.articleTitle}
-          </h1>
+          <cp-input
+            class="title-field"
+            label="Заголовок"
+            .value=${this.articleTitle}
+            placeholder="Без названия"
+            @cp-input=${this.onTitleInput}
+            @cp-change=${this.onTitleInput}
+          ></cp-input>
+          <div class="address">
+            <cp-input
+              label="Адрес"
+              .value=${this.slugDraft}
+              placeholder="illyuziya-socializma"
+              @cp-input=${this.onSlugInput}
+              @cp-change=${this.onSlugInput}
+            ></cp-input>
+            <p class="address-note">
+              ${this.slugError !== ''
+                ? html`<span class="bad">${this.slugError}</span>`
+                : html`${publishTarget().siteUrl}/${this.activeLang}/${this.collection}/${this.slugDraft}/`}
+            </p>
+            ${this.slugDraft !== this.slug && this.slugError === ''
+              ? html`<cp-button
+                  size="sm"
+                  variant="secondary"
+                  ?disabled=${this.renaming}
+                  @cp-click=${() => void this.applyRename()}
+                  >${this.renaming ? 'Переносим…' : 'Перенести материал'}</cp-button
+                >`
+              : nothing}
+          </div>
           <cp-tag tone="success">данные из репозитория</cp-tag>
         </div>
         ${this.renderSiteBuildWarning()}
