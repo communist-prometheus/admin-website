@@ -103,15 +103,46 @@ describe('editing the article address', () => {
 });
 
 describe('the identity fields are on the page', () => {
-  it('renders an editable title and address', async () => {
+  /*
+   * The heading keeps the document look — it is edited in place, not replaced
+   * by a form field — and the address sits with the other properties.
+   */
+  it('keeps the heading a heading, and edits it in place', async () => {
+    const { el } = editor();
+    document.body.append(el);
+    await el.updateComplete;
+    const heading = el.shadowRoot?.querySelector('h1.title');
+    expect(heading).not.toBeNull();
+    expect(heading?.getAttribute('contenteditable')).toBe('plaintext-only');
+    expect(heading?.textContent).toBe('Старое название');
+  });
+
+  it('types into the heading without the caret being reset by a re-render', async () => {
     const { el, priv } = editor();
     document.body.append(el);
     await el.updateComplete;
-    const labels = [...(el.shadowRoot?.querySelectorAll('cp-input') ?? [])].map((input) =>
-      input.getAttribute('label'),
-    );
-    expect(labels).toContain('Заголовок');
-    expect(labels).toContain('Адрес');
+    const heading = el.shadowRoot?.querySelector('h1.title');
+    if (!(heading instanceof HTMLElement)) throw new Error('heading missing');
+
+    heading.textContent = 'Новое название';
+    heading.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    await el.updateComplete;
+
+    expect(priv.articleTitle).toBe('Новое название');
+    // The template must not have overwritten what is being typed.
+    expect(heading.textContent).toBe('Новое название');
+  });
+
+  it('puts the address with the other properties', async () => {
+    const { el, priv } = editor();
+    document.body.append(el);
+    await el.updateComplete;
+    const address = el.shadowRoot?.querySelector('.props .address cp-input[label="Адрес"]');
+    expect(address).not.toBeNull();
     expect(priv.slugDraft).toBe('staroe-nazvanie');
+    // The public URL the address produces is shown next to it.
+    expect((el.shadowRoot?.querySelector('.address-note')?.textContent ?? '').trim()).toContain(
+      '/blog/staroe-nazvanie/',
+    );
   });
 });
