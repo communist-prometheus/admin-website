@@ -471,6 +471,31 @@ export class ScreenEditor extends LitElement {
     }
     /* The material's properties sit on the page, above its text: what a
        publish will write must be visible without opening anything. */
+    /* An empty heading still has to read as the document's title slot. */
+    h1.title:empty::before {
+      content: attr(data-placeholder);
+      color: var(--color-text-secondary);
+      -webkit-text-fill-color: var(--color-text-secondary);
+    }
+    h1.title:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 4px;
+      border-radius: var(--radius-sm, 6px);
+    }
+    .address {
+      display: grid;
+      gap: 0.35rem;
+      align-content: end;
+    }
+    .address-note {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--color-text-secondary);
+      overflow-wrap: anywhere;
+    }
+    .address-note.bad {
+      color: var(--color-danger, #c0392b);
+    }
     .props {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
@@ -1012,19 +1037,28 @@ export class ScreenEditor extends LitElement {
       this.collection === 'blog' ? `#/editor/${this.slug}` : `#/editor/${this.collection}/${this.slug}`;
   }
 
-  /** Reads the `value` of a component input/change event. */
+  /** Reads the text of an input, a component event, or an edited heading. */
   private eventValue(event: Event): string | undefined {
     if (event instanceof CustomEvent && typeof event.detail?.value === 'string') {
       return event.detail.value;
     }
     const target = event.target;
-    return target instanceof HTMLInputElement ? target.value : undefined;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+      return target.value;
+    }
+    // The attribute, not `isContentEditable`: the property is a browser-only
+    // convenience and is absent in the test DOM.
+    return target instanceof HTMLElement && target.hasAttribute('contenteditable')
+      ? (target.textContent ?? '')
+      : undefined;
   }
 
   /** The article title — what every listing and the page heading show. */
   private readonly onTitleInput = (event: Event): void => {
     const value = this.eventValue(event);
     if (value === undefined) return;
+    // Record it as already in the DOM: the editor typed it there.
+    this.titleInDom = value;
     this.articleTitle = value;
     this.dirty = true;
   };
@@ -1119,6 +1153,28 @@ export class ScreenEditor extends LitElement {
 
   /** The live markdown editor, so the toolbar can drive CodeMirror commands. */
   @query('cp-markdown-editor') private bodyEditor?: CpMarkdownEditor;
+
+  @query('h1.title') private titleEl?: HTMLElement;
+
+  /** The heading text last written into the DOM by this component. */
+  private titleInDom = '';
+
+  /**
+   * The heading is edited in place, so its text is written into the DOM rather
+   * than interpolated by a template: re-rendering a contenteditable element
+   * would drop the caret to its start on every keystroke. Only a title that
+   * changed from OUTSIDE the heading — a load, a language switch — is written
+   * back, which is why the last synced value is tracked.
+   */
+  override updated(changed: Map<string, unknown>): void {
+    const el = this.titleEl;
+    if (el === undefined) return;
+    if (this.articleTitle !== this.titleInDom) {
+      el.textContent = this.articleTitle;
+      this.titleInDom = this.articleTitle;
+    }
+    void changed;
+  }
 
   /** Applies a toolbar tool (inline wrap or line prefix) to the editor selection. */
   private applyFormat = (tool: FormatTool): void => {
@@ -1251,6 +1307,29 @@ export class ScreenEditor extends LitElement {
                 @cp-change=${this.onTopicChange}
               ></cp-select>`
           : nothing}
+        <div class="address">
+          <cp-input
+            label="Адрес"
+            .value=${this.slugDraft}
+            placeholder="illyuziya-socializma"
+            @cp-input=${this.onSlugInput}
+            @cp-change=${this.onSlugInput}
+          ></cp-input>
+          <p class=${this.slugError !== '' ? 'address-note bad' : 'address-note'}>
+            ${this.slugError !== ''
+              ? this.slugError
+              : `${publishTarget().siteUrl}/${this.activeLang}/${this.collection}/${this.slugDraft}/`}
+          </p>
+          ${this.slugDraft !== this.slug && this.slugError === ''
+            ? html`<cp-button
+                size="sm"
+                variant="secondary"
+                ?disabled=${this.renaming}
+                @cp-click=${() => void this.applyRename()}
+                >${this.renaming ? 'Переносим…' : 'Перенести материал'}</cp-button
+              >`
+            : nothing}
+        </div>
         <cp-date-input
           label="Дата публикации"
           type="date"
@@ -1337,37 +1416,15 @@ export class ScreenEditor extends LitElement {
             >
             · ${publishTarget().site}
           </p>
-          <cp-input
-            class="title-field"
-            label="Заголовок"
-            .value=${this.articleTitle}
-            placeholder="Без названия"
-            @cp-input=${this.onTitleInput}
-            @cp-change=${this.onTitleInput}
-          ></cp-input>
-          <div class="address">
-            <cp-input
-              label="Адрес"
-              .value=${this.slugDraft}
-              placeholder="illyuziya-socializma"
-              @cp-input=${this.onSlugInput}
-              @cp-change=${this.onSlugInput}
-            ></cp-input>
-            <p class="address-note">
-              ${this.slugError !== ''
-                ? html`<span class="bad">${this.slugError}</span>`
-                : html`${publishTarget().siteUrl}/${this.activeLang}/${this.collection}/${this.slugDraft}/`}
-            </p>
-            ${this.slugDraft !== this.slug && this.slugError === ''
-              ? html`<cp-button
-                  size="sm"
-                  variant="secondary"
-                  ?disabled=${this.renaming}
-                  @cp-click=${() => void this.applyRename()}
-                  >${this.renaming ? 'Переносим…' : 'Перенести материал'}</cp-button
-                >`
-              : nothing}
-          </div>
+          <h1
+            class="title"
+            tabindex="-1"
+            contenteditable="plaintext-only"
+            role="textbox"
+            aria-label="Заголовок материала"
+            data-placeholder="Без названия"
+            @input=${this.onTitleInput}
+          ></h1>
           <cp-tag tone="success">данные из репозитория</cp-tag>
         </div>
         ${this.renderSiteBuildWarning()}
