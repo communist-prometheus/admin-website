@@ -13,6 +13,8 @@ import {
   upsertFrontmatterBlock,
   removeFrontmatterField,
   topicOptionsViaApi,
+  readSequenceField,
+  upsertSequenceField,
 } from '../engine/content.js';
 import { publishTarget } from '../engine/publish-target.js';
 import { listSlugsViaApi } from '../engine/content.js';
@@ -248,19 +250,27 @@ export class ScreenEditor extends LitElement {
 
     /* The description now lives here as the lead under the title (design mock),
        not buried in the properties sheet. It reads as prose but edits in place. */
+    /* The public article page renders the lead as a block with an accent rule
+       down its left edge; the field an editor types it into shows the same
+       thing, and grows with the text instead of scrolling inside two rows. */
     .lead {
       width: 100%;
       box-sizing: border-box;
-      margin: 0 0 var(--spacing-md);
-      padding: var(--spacing-sm) 0;
+      margin: 0 0 var(--spacing-lg, 2rem);
+      padding: 0 0 0 var(--spacing-md);
       border: none;
-      border-bottom: 1px dashed transparent;
+      border-left: 3px solid var(--color-accent);
       background: transparent;
-      resize: vertical;
+      overflow: hidden;
+      resize: none;
       font-family: inherit;
-      font-size: 1.15rem;
-      line-height: 1.5;
+      font-size: 1.125rem;
+      line-height: 1.65;
       color: var(--color-text-secondary);
+    }
+    .lead:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 4px;
     }
     .lead::placeholder {
       color: var(--color-text-tertiary, var(--color-text-secondary));
@@ -496,6 +506,53 @@ export class ScreenEditor extends LitElement {
     .address-note.bad {
       color: var(--color-danger, #c0392b);
     }
+    /* Two groups side by side on a desktop, stacked on a phone: what belongs
+       to the material, and what belongs to the translation being edited. */
+    .props-levels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+      gap: var(--spacing-md);
+      margin: var(--spacing-sm) 0 var(--spacing-md);
+    }
+    .props-head {
+      grid-column: 1 / -1;
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    .props-note {
+      grid-column: 1 / -1;
+      margin: -0.4rem 0 0;
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+    }
+    .topic-picker {
+      grid-column: 1 / -1;
+      display: grid;
+      gap: 0.35rem;
+    }
+    .field-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .topic-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-xs, 0.5rem) var(--spacing-md);
+    }
+    .topic-list label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .topic-list input {
+      accent-color: var(--color-accent);
+    }
     .props {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
@@ -584,10 +641,13 @@ export class ScreenEditor extends LitElement {
   @state() private addLangError = '';
 
   /**
-   * The OPTIONAL editorial marker (`topic`, keyed by settings/topics.json).
-   * It is not the article's category and never stands in for one.
+   * Editorial topics live at two levels and add up on the site: the material's
+   * (`topics`, the same in every language) and this translation's own
+   * (`languageTopics`). Both optional, both keyed by settings/topics.json.
    */
-  @state() private topic = '';
+  @state() private materialTopics: readonly string[] = [];
+
+  @state() private langTopics: readonly string[] = [];
 
   /** Article description frontmatter, seeded from the file + written back. */
   @state() private description = '';
@@ -610,9 +670,12 @@ export class ScreenEditor extends LitElement {
    * incident file grew a second date key (`pubDate` next to `publishDate`)
    * precisely because every field was re-emitted unconditionally.
    */
-  private seeds: Readonly<Record<'title' | 'topic' | 'rubric' | 'pubDate' | 'published', string>> = {
+  private seeds: Readonly<
+    Record<'title' | 'topics' | 'langTopics' | 'rubric' | 'pubDate' | 'published', string>
+  > = {
     title: '',
-    topic: '',
+    topics: '',
+    langTopics: '',
     rubric: '',
     pubDate: '',
     published: '',
@@ -804,7 +867,12 @@ export class ScreenEditor extends LitElement {
     // topic select from `category` is what showed it empty for every real
     // article and let a topic choice overwrite the category.
     this.rubric = frontmatterValue(fm, 'category') ?? '';
-    this.topic = frontmatterValue(fm, 'topic') ?? '';
+    // Both levels, plus the single-key form earlier content carries.
+    const legacy = frontmatterValue(fm, 'topic');
+    this.materialTopics = [
+      ...new Set([...(legacy === undefined ? [] : [legacy]), ...readSequenceField(fm, 'topics')]),
+    ];
+    this.langTopics = readSequenceField(fm, 'languageTopics');
     // Block-scalar aware: descriptions are stored as folded (`>-`) blocks, so a
     // naive single-line read would seed just ">-" and a publish would overwrite
     // the real text. Seed the full text and remember it to only write on change.
@@ -823,7 +891,8 @@ export class ScreenEditor extends LitElement {
     this.slugDraft = this.slug;
     this.seeds = {
       title: this.articleTitle,
-      topic: this.topic,
+      topics: this.materialTopics.join(','),
+      langTopics: this.langTopics.join(','),
       rubric: this.rubric,
       pubDate: this.pubDate,
       published: published ?? '',
@@ -849,11 +918,15 @@ export class ScreenEditor extends LitElement {
         fm = upsertFrontmatterField(fm, 'title', quoteYaml(this.articleTitle));
       if (this.rubric !== this.seeds.rubric && this.rubric !== '')
         fm = upsertFrontmatterField(fm, 'category', this.rubric);
-      if (this.topic !== this.seeds.topic)
-        fm =
-          this.topic === ''
-            ? removeFrontmatterField(fm, 'topic')
-            : upsertFrontmatterField(fm, 'topic', this.topic);
+      // The two topic levels are written as their own lists. The single-key
+      // `topic` an older file may carry is folded into the material list on
+      // load, so it is dropped here rather than left to contradict it.
+      if (this.materialTopics.join(',') !== this.seeds.topics) {
+        fm = removeFrontmatterField(fm, 'topic');
+        fm = upsertSequenceField(fm, 'topics', this.materialTopics);
+      }
+      if (this.langTopics.join(',') !== this.seeds.langTopics)
+        fm = upsertSequenceField(fm, 'languageTopics', this.langTopics);
       // Only rewrite the description when the user actually edited it, so an
       // untouched folded-block description is left byte-identical (no orphaned
       // continuation lines); a real edit is re-emitted as a clean literal block.
@@ -984,14 +1057,20 @@ export class ScreenEditor extends LitElement {
     this.dirty = true;
   };
 
-  private onTopicChange = (event: Event): void => {
-    if (event instanceof CustomEvent) {
-      const value: unknown = event.detail?.value;
-      if (typeof value === 'string') {
-        this.topic = value;
-        this.dirty = true;
-      }
-    }
+  /** Ticks a topic on or off at the material level. */
+  private readonly toggleMaterialTopic = (key: string): void => {
+    this.materialTopics = this.materialTopics.includes(key)
+      ? this.materialTopics.filter((k) => k !== key)
+      : [...this.materialTopics, key];
+    this.dirty = true;
+  };
+
+  /** Ticks a topic on or off for this translation only. */
+  private readonly toggleLangTopic = (key: string): void => {
+    this.langTopics = this.langTopics.includes(key)
+      ? this.langTopics.filter((k) => k !== key)
+      : [...this.langTopics, key];
+    this.dirty = true;
   };
 
   private onRubricChange = (event: Event): void => {
@@ -1088,8 +1167,15 @@ export class ScreenEditor extends LitElement {
     if (target instanceof HTMLTextAreaElement) {
       this.description = target.value;
       this.dirty = true;
+      this.growLead(target);
     }
   };
+
+  /** Sizes the lead field to its content — it never scrolls inside itself. */
+  private growLead(field: HTMLTextAreaElement): void {
+    field.style.height = 'auto';
+    field.style.height = `${field.scrollHeight}px`;
+  }
 
   private onPublishedChange = (event: Event): void => {
     if (event instanceof CustomEvent) {
@@ -1156,6 +1242,8 @@ export class ScreenEditor extends LitElement {
 
   @query('h1.title') private titleEl?: HTMLElement;
 
+  @query('textarea.lead') private leadField?: HTMLTextAreaElement;
+
   /** The heading text last written into the DOM by this component. */
   private titleInDom = '';
 
@@ -1173,6 +1261,9 @@ export class ScreenEditor extends LitElement {
       el.textContent = this.articleTitle;
       this.titleInDom = this.articleTitle;
     }
+    // A loaded (or language-switched) lead has to be sized too, not just a
+    // typed one.
+    if (this.leadField !== undefined) this.growLead(this.leadField);
     void changed;
   }
 
@@ -1255,12 +1346,49 @@ export class ScreenEditor extends LitElement {
     return known ? RUBRIC_OPTIONS : [...RUBRIC_OPTIONS, { value: this.rubric, label: this.rubric }];
   }
 
-  /** Same for the topic marker, which comes from settings/topics.json. */
-  private get topicChoices(): readonly CpSelectOption[] {
-    const options = [NO_TOPIC, ...this.topicOptions];
-    return options.some((option) => option.value === this.topic)
-      ? options
-      : [...options, { value: this.topic, label: this.topic }];
+  /**
+   * The topics offered for ticking: those the repository defines, plus any key
+   * this article already carries that is no longer in the settings file — so
+   * opening an article can never silently drop a marker it has.
+   */
+  private topicChoicesFor(selected: readonly string[]): readonly CpSelectOption[] {
+    const known = this.topicOptions.map((option) => option.value);
+    const extra = selected.filter((key) => !known.includes(key)).map((key) => ({ value: key, label: key }));
+    return [...this.topicOptions, ...extra];
+  }
+
+  /**
+   * One level's topic picker: a checkbox per topic, because a material — and a
+   * translation on top of it — can carry several.
+   */
+  private renderTopicPicker(
+    selected: readonly string[],
+    toggle: (key: string) => void,
+    hint: string,
+  ): TemplateResult {
+    const choices = this.topicChoicesFor(selected);
+    return html`
+      <div class="topic-picker">
+        <span class="field-label">Темы</span>
+        ${choices.length === 0
+          ? html`<p class="hint">Темы задаются в разделе «Темы».</p>`
+          : html`<ul class="topic-list">
+              ${choices.map(
+                (choice) => html`<li>
+                  <label>
+                    <input
+                      type="checkbox"
+                      .checked=${selected.includes(choice.value)}
+                      @change=${() => toggle(choice.value)}
+                    />
+                    <span>${choice.label}</span>
+                  </label>
+                </li>`,
+              )}
+            </ul>`}
+        <p class="hint">${hint}</p>
+      </div>
+    `;
   }
 
   /**
@@ -1289,59 +1417,77 @@ export class ScreenEditor extends LitElement {
   }
 
   private renderProps(): TemplateResult {
-    // Rubric/topic are blog-article taxonomy; a journal issue has neither.
+    // Rubric and topics are blog-article taxonomy; a journal issue has neither.
     const isArticle = this.collection !== 'magazine';
+    const langLabel = LANG_LABELS[this.activeLang] ?? this.activeLang.toUpperCase();
     return html`
-      <section class="props" aria-label="Свойства материала">
-        ${isArticle
-          ? html`<cp-select
+      <div class="props-levels">
+        <section class="props props-material" aria-label="Свойства материала">
+          <h2 class="props-head">Свойства материала</h2>
+          <p class="props-note">Общие для всех языков материала.</p>
+          ${isArticle
+            ? html`<cp-select
                 label="Рубрика"
                 .value=${this.rubric}
                 .options=${this.rubricOptions}
                 @cp-change=${this.onRubricChange}
-              ></cp-select>
-              <cp-select
-                label="Тема"
-                .value=${this.topic}
-                .options=${this.topicChoices}
-                @cp-change=${this.onTopicChange}
               ></cp-select>`
-          : nothing}
-        <div class="address">
-          <cp-input
-            label="Адрес"
-            .value=${this.slugDraft}
-            placeholder="illyuziya-socializma"
-            @cp-input=${this.onSlugInput}
-            @cp-change=${this.onSlugInput}
-          ></cp-input>
-          <p class=${this.slugError !== '' ? 'address-note bad' : 'address-note'}>
-            ${this.slugError !== ''
-              ? this.slugError
-              : `${publishTarget().siteUrl}/${this.activeLang}/${this.collection}/${this.slugDraft}/`}
-          </p>
-          ${this.slugDraft !== this.slug && this.slugError === ''
-            ? html`<cp-button
-                size="sm"
-                variant="secondary"
-                ?disabled=${this.renaming}
-                @cp-click=${() => void this.applyRename()}
-                >${this.renaming ? 'Переносим…' : 'Перенести материал'}</cp-button
-              >`
             : nothing}
-        </div>
-        <cp-date-input
-          label="Дата публикации"
-          type="date"
-          .value=${this.pubDate}
-          @cp-change=${this.onDateChange}
-        ></cp-date-input>
-        <cp-switch
-          label="Опубликовано"
-          ?checked=${this.published}
-          @cp-change=${this.onPublishedChange}
-        ></cp-switch>
-      </section>
+          <div class="address">
+            <cp-input
+              label="Адрес"
+              .value=${this.slugDraft}
+              placeholder="illyuziya-socializma"
+              @cp-input=${this.onSlugInput}
+              @cp-change=${this.onSlugInput}
+            ></cp-input>
+            <p class=${this.slugError !== '' ? 'address-note bad' : 'address-note'}>
+              ${this.slugError !== ''
+                ? this.slugError
+                : `${publishTarget().siteUrl}/${this.activeLang}/${this.collection}/${this.slugDraft}/`}
+            </p>
+            ${this.slugDraft !== this.slug && this.slugError === ''
+              ? html`<cp-button
+                  size="sm"
+                  variant="secondary"
+                  ?disabled=${this.renaming}
+                  @cp-click=${() => void this.applyRename()}
+                  >${this.renaming ? 'Переносим…' : 'Перенести материал'}</cp-button
+                >`
+              : nothing}
+          </div>
+          <cp-date-input
+            label="Дата публикации"
+            type="date"
+            .value=${this.pubDate}
+            @cp-change=${this.onDateChange}
+          ></cp-date-input>
+          ${isArticle
+            ? this.renderTopicPicker(
+                this.materialTopics,
+                this.toggleMaterialTopic,
+                'Показываются у материала на всех языках.',
+              )
+            : nothing}
+        </section>
+
+        <section class="props props-translation" aria-label="Свойства перевода">
+          <h2 class="props-head">Свойства перевода · ${langLabel}</h2>
+          <p class="props-note">Только для этого языка: заголовок и лид правятся выше.</p>
+          <cp-switch
+            label="Опубликовано"
+            ?checked=${this.published}
+            @cp-change=${this.onPublishedChange}
+          ></cp-switch>
+          ${isArticle
+            ? this.renderTopicPicker(
+                this.langTopics,
+                this.toggleLangTopic,
+                'Добавляются к темам материала — на других языках их не будет.',
+              )
+            : nothing}
+        </section>
+      </div>
     `;
   }
 
@@ -1430,7 +1576,7 @@ export class ScreenEditor extends LitElement {
         ${this.renderSiteBuildWarning()}
         <textarea
           class="lead"
-          rows="2"
+          rows="1"
           placeholder="Лид — короткое описание под заголовком"
           .value=${this.description}
           @input=${this.onLeadInput}
