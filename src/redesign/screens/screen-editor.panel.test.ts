@@ -71,8 +71,10 @@ describe('screen-editor: properties live on the page', () => {
     expect(controls(el).length).toBeGreaterThanOrEqual(4);
     const labels = controls(el).map((control) => control.getAttribute('label'));
     expect(labels).toContain('Рубрика');
-    expect(labels).toContain('Тема');
     expect(labels).toContain('Опубликовано');
+    // Topics are ticked, not picked from a list: a material can carry several,
+    // and a translation adds its own on top.
+    expect(el.shadowRoot?.querySelectorAll('.topic-picker').length).toBe(2);
   });
 
   it('keeps the properties editable, seeded from the file', async () => {
