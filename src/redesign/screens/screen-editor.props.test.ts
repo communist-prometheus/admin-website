@@ -27,7 +27,8 @@ interface EditorInternals {
   slug: string;
   live: boolean;
   activeLang: string;
-  topic: string;
+  materialTopics: readonly string[];
+  langTopics: readonly string[];
   rubric: string;
   description: string;
   pubDate: string;
@@ -74,25 +75,27 @@ describe('screen-editor properties write-back (QA #4)', () => {
    * article (whose category is programme/history/international/…) and made the
    * editor believe a required field was missing.
    */
-  it('keeps topic and category apart: a chosen topic never overwrites the category', () => {
+  it('keeps topics and category apart: a chosen topic never overwrites the category', () => {
     const el = seededEditor();
-    el.topic = 'translation';
+    el.materialTopics = ['translation'];
     const out = el.editedMarkdown;
-    expect(out).toContain('topic: translation');
+    expect(out).toContain('topics:\n  - translation');
     expect(out).toContain('category: programme');
   });
 
-  it('leaves a missing topic empty and publishes without one', () => {
+  it('leaves missing topics empty and publishes without them', () => {
     const el = editorFrom('---\ntitle: "T"\ncategory: programme\nlang: en\n---\n\nBody\n');
-    expect(el.topic).toBe('');
-    expect(el.editedMarkdown).not.toContain('topic:');
+    expect(el.materialTopics).toEqual([]);
+    expect(el.langTopics).toEqual([]);
+    expect(el.editedMarkdown).not.toContain('topics:');
   });
 
-  it('seeds an existing topic instead of inventing one from the category', () => {
+  it('seeds existing topics instead of inventing one from the category', () => {
     const el = editorFrom(
       '---\ntitle: "T"\ncategory: programme\ntopic: editorial\nlang: en\n---\n\nBody\n',
     );
-    expect(el.topic).toBe('editorial');
+    // The single-key form older content carries counts as a material topic.
+    expect(el.materialTopics).toEqual(['editorial']);
     expect(el.rubric).toBe('programme');
   });
 
@@ -174,7 +177,7 @@ describe('screen-editor properties write-back (QA #4)', () => {
 
   it('keeps the body intact when re-emitting frontmatter', () => {
     const el = seededEditor();
-    el.topic = 'history';
+    el.rubric = 'history';
     expect(el.editedMarkdown).toContain('Body');
   });
 });
