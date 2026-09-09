@@ -16,4 +16,13 @@ export const BlogFrontmatterSchema = Schema.Struct({
     Schema.Union(Schema.String, Schema.DateFromSelf)
   ),
   image: Schema.optional(Schema.String),
+  /*
+   * Editorial topics at their two levels: the material's, written into every
+   * language of it, and this translation's own. Both optional, both lists —
+   * the site adds them together. `topic` is the single-key form earlier
+   * content carries.
+   */
+  topic: Schema.optional(Schema.String),
+  topics: Schema.optional(Schema.Array(Schema.String)),
+  languageTopics: Schema.optional(Schema.Array(Schema.String)),
 })
