@@ -22,12 +22,35 @@ lang: en
 
 body`
 
+const withTopics = `---
+title: Hello
+category: General
+lang: en
+topics:
+  - editorial
+languageTopics:
+  - translation
+---
+
+body`
+
 describe('guardStagePayload', () => {
   it('ignores non-content paths (assets, labels.json, etc.)', () => {
     expect(
       guardStagePayload('src/content/blog/foo/assets/cover.jpg', 'BIN')
     ).toBeUndefined()
     expect(guardStagePayload('settings/languages.json', '{}')).toBeUndefined()
+  })
+
+  /*
+   * Topics live at two levels (`topics` for the material, `languageTopics` for
+   * the translation) and the site adds them up. The gate has to know both, or
+   * publishing an article that carries topics is refused.
+   */
+  it('accepts topics at both levels', () => {
+    expect(
+      guardStagePayload('blog/hello/index.en.md', withTopics)
+    ).toBeUndefined()
   })
 
   it('accepts a content md file with valid frontmatter', () => {
