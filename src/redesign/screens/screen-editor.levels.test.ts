@@ -90,14 +90,16 @@ describe('the properties panel separates the two levels', () => {
     expect(text(el)).toContain('Свойства перевода');
   });
 
-  it('puts the rubric, address and date with the material', async () => {
+  it('puts the rubric and the address with the material', async () => {
     const { el } = editor();
     document.body.append(el);
     await el.updateComplete;
     const material = el.shadowRoot?.querySelector('.props-material');
     expect(material?.querySelector('cp-select[label="Рубрика"]')).not.toBeNull();
     expect(material?.querySelector('cp-input[label="Адрес"]')).not.toBeNull();
-    expect(material?.querySelector('cp-date-input')).not.toBeNull();
+    // The date is the translation's: one goes out when it is ready, which is
+    // rarely the day the original did.
+    expect(material?.querySelector('cp-date-input')).toBeNull();
   });
 
   it('puts the published switch with the translation, named for the language', async () => {
