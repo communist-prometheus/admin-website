@@ -40,7 +40,16 @@ jobs:
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       - run: bun install --frozen-lockfile
-      - run: bunx playwright install --with-deps chromium
+      # `playwright install --with-deps` runs `apt-get update`, which fails the
+      # whole job when any source on the runner image is out of sync — twice in
+      # a row here on Google's Chrome repository ("Hash Sum mismatch"), a source
+      # nothing in this job needs: Playwright ships its own Chromium. Drop that
+      # source and the stale index cache before installing.
+      - name: Installing Playwright browsers
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          sudo rm -rf /var/lib/apt/lists/*
+          bunx playwright install --with-deps chromium
 
       # `sandbox:reset` only rewinds the sandbox branch to the baseline TAG —
       # it does not rebuild that tag from the fixtures. So a fixture change
