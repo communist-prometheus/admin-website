@@ -109,6 +109,28 @@ describe('the properties panel separates the two levels', () => {
     expect(el.shadowRoot?.querySelector('.props-material cp-switch')).toBeNull();
   });
 
+  /*
+   * Reading order follows what the fields describe: the material comes before
+   * the language tabs, because it is what the tabs are variants OF; the
+   * translation's own properties come after them, next to the text they belong
+   * to.
+   */
+  it('puts the material above the language tabs and the translation below', async () => {
+    const { el } = editor();
+    document.body.append(el);
+    await el.updateComplete;
+    const root = el.shadowRoot;
+    const material = root?.querySelector('.props-material');
+    const tabs = root?.querySelector('.tabs-scroll');
+    const translation = root?.querySelector('.props-translation');
+    expect(material).not.toBeNull();
+    expect(tabs).not.toBeNull();
+    expect(translation).not.toBeNull();
+    // DOCUMENT_POSITION_FOLLOWING === 4: the argument comes after the node.
+    expect(material?.compareDocumentPosition(tabs!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(tabs?.compareDocumentPosition(translation!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('offers topic pickers on both levels', async () => {
     const { el } = editor();
     document.body.append(el);
