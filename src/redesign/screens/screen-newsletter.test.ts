@@ -3,11 +3,21 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const listSubscribers = vi.fn();
 const listRuns = vi.fn();
 const forceDispatch = vi.fn();
+const readSchedule = vi.fn();
+const saveSchedule = vi.fn();
+const readCutoff = vi.fn();
+const listDispatches = vi.fn();
+const listDispatchRecipients = vi.fn();
 
 vi.mock('../engine/comms.js', () => ({
   listSubscribers: () => listSubscribers(),
   listRuns: () => listRuns(),
   forceDispatch: () => forceDispatch(),
+  readSchedule: () => readSchedule(),
+  saveSchedule: (s: unknown) => saveSchedule(s),
+  readCutoff: () => readCutoff(),
+  listDispatches: () => listDispatches(),
+  listDispatchRecipients: (at: string) => listDispatchRecipients(at),
 }));
 
 import './screen-newsletter.ts';
@@ -16,16 +26,48 @@ import type { ScreenNewsletter } from './screen-newsletter.ts';
 const shadowText = (el: HTMLElement): string =>
   (el.shadowRoot?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
+/** The screen internals a test drives directly, mirroring its private members. */
+interface NewsletterInternals {
+  tab: string;
+  weekday: number;
+  time: string;
+  confirmSend: () => Promise<void>;
+  submitSchedule: () => Promise<void>;
+  openDispatch: (tickAt: string) => Promise<void>;
+}
+
+const inner = (el: ScreenNewsletter): NewsletterInternals =>
+  el as unknown as NewsletterInternals;
+
 const mount = async (): Promise<ScreenNewsletter> => {
-  const el = document.createElement('screen-newsletter') as ScreenNewsletter;
+  const el: ScreenNewsletter = document.createElement('screen-newsletter');
   document.body.append(el);
   await el.updateComplete;
   // Let the connectedCallback reads settle.
   await Promise.resolve();
   await Promise.resolve();
+  await Promise.resolve();
   await el.updateComplete;
   return el;
 };
+
+const SCHEDULE = {
+  cron: '0 12 * * 6',
+  timezone: 'Europe/Moscow',
+  nextRunAt: '2026-09-12T09:00:00.000Z',
+};
+
+const dispatch = (tickAt: string, over: Record<string, number> = {}) => ({
+  tickAt,
+  recipients: 120,
+  sent: 118,
+  failed: 0,
+  bounced: 2,
+  complained: 0,
+  skipped: 0,
+  articleCount: 2,
+  ...over,
+});
 
 const subscriber = (id: number, status = 'active') => ({
   id,
@@ -35,15 +77,31 @@ const subscriber = (id: number, status = 'active') => ({
   createdAt: '2026-01-02T00:00:00Z',
 });
 
+const ALL = [
+  listSubscribers,
+  listRuns,
+  forceDispatch,
+  readSchedule,
+  saveSchedule,
+  readCutoff,
+  listDispatches,
+  listDispatchRecipients,
+];
+
+/** Every read the screen performs on connect resolves to a quiet default. */
+const resetReads = (): void => {
+  document.body.replaceChildren();
+  for (const m of ALL) m.mockReset();
+  listSubscribers.mockResolvedValue({ ok: true, data: [] });
+  listRuns.mockResolvedValue({ ok: true, data: [] });
+  readSchedule.mockResolvedValue({ ok: true, data: SCHEDULE });
+  readCutoff.mockResolvedValue({ ok: true, data: '2026-08-08T09:00:19.000Z' });
+  listDispatches.mockResolvedValue({ ok: true, data: [] });
+  listDispatchRecipients.mockResolvedValue({ ok: true, data: [] });
+};
+
 describe('screen-newsletter (wired to the real comms worker)', () => {
-  beforeEach(() => {
-    document.body.replaceChildren();
-    listSubscribers.mockReset();
-    listRuns.mockReset();
-    forceDispatch.mockReset();
-    listSubscribers.mockResolvedValue({ ok: true, data: [] });
-    listRuns.mockResolvedValue({ ok: true, data: [] });
-  });
+  beforeEach(resetReads);
 
   it('never claims the integration is missing', async () => {
     const el = await mount();
@@ -66,7 +124,7 @@ describe('screen-newsletter (wired to the real comms worker)', () => {
     listSubscribers.mockResolvedValue({ ok: true, data: [subscriber(1)] });
     forceDispatch.mockResolvedValue({ ok: true, sent: 1, failed: 0 });
     const el = await mount();
-    await (el as unknown as { confirmSend: () => Promise<void> }).confirmSend();
+    await inner(el).confirmSend();
     await el.updateComplete;
     expect(forceDispatch).toHaveBeenCalledTimes(1);
     // The banner heading lives in cp-banner's shadow root; assert on its slotted body.
@@ -76,8 +134,160 @@ describe('screen-newsletter (wired to the real comms worker)', () => {
   it('surfaces a failed read as an error, not as "no integration"', async () => {
     listSubscribers.mockResolvedValue({ ok: false });
     const el = await mount();
-    (el as unknown as { tab: string }).tab = 'subscribers';
+    inner(el).tab = 'subscribers';
     await el.updateComplete;
     expect(shadowText(el)).toContain('Не удалось загрузить подписчиков');
+  });
+});
+
+/*
+ * The interval control had disappeared from the screen entirely: the
+ * worker has stored a cron + timezone all along and exposes GET/PUT
+ * /api/schedule, but the panel only offered "Отправить сейчас" and prose
+ * saying the rest happens "по расписанию воркера-рассыльщика".
+ */
+describe('the dispatch schedule is editable again', () => {
+  beforeEach(() => {
+    resetReads();
+    listSubscribers.mockResolvedValue({ ok: true, data: [subscriber(1)] });
+  });
+
+  it('shows the saved day and time, not just a "send now" button', async () => {
+    const el = await mount();
+    const form = el.shadowRoot?.querySelector('.schedule');
+    expect(form).not.toBeNull();
+    const day = form?.querySelector<HTMLSelectElement>('select[name="weekday"]');
+    const time = form?.querySelector<HTMLInputElement>('input[name="time"]');
+    expect(day?.value).toBe('6');
+    expect(time?.value).toBe('12:00');
+  });
+
+  it('tells the editor when the next dispatch fires', async () => {
+    const el = await mount();
+    expect(shadowText(el)).toContain('Следующая отправка');
+  });
+
+  it('saves the chosen day and time as the worker cron', async () => {
+    saveSchedule.mockResolvedValue({ ok: true, schedule: { ...SCHEDULE, cron: '0 9 * * 1' } });
+    const el = await mount();
+    const priv = inner(el);
+    priv.weekday = 1;
+    priv.time = '09:00';
+    await priv.submitSchedule();
+    expect(saveSchedule).toHaveBeenCalledWith({ cron: '0 9 * * 1', timezone: 'Europe/Moscow' });
+  });
+
+  it('names the cutoff that decides what counts as new material', async () => {
+    const el = await mount();
+    expect(shadowText(el)).toContain('2026-08-08');
+  });
+
+  it('keeps a hand-written crontab editable as cron instead of rewriting it', async () => {
+    readSchedule.mockResolvedValue({
+      ok: true,
+      data: { cron: '0 9 * * 1,4', timezone: 'Europe/Moscow', nextRunAt: '' },
+    });
+    const el = await mount();
+    const raw = el.shadowRoot?.querySelector<HTMLInputElement>('input[name="cron"]');
+    expect(raw?.value).toBe('0 9 * * 1,4');
+    expect(el.shadowRoot?.querySelector('select[name="weekday"]')).toBeNull();
+  });
+
+  it('surfaces the worker refusal instead of pretending the save worked', async () => {
+    saveSchedule.mockResolvedValue({ ok: false, error: 'bad cron' });
+    const el = await mount();
+    await inner(el).submitSchedule();
+    await el.updateComplete;
+    expect(shadowText(el)).toContain('bad cron');
+  });
+});
+
+/*
+ * `send_log` holds one row per RECIPIENT, and the journal rendered each
+ * of them as its own dispatch — so a lone Resend bounce webhook showed
+ * up as "Отправка от 13:37 · 0 материалов". The journal lists runs now,
+ * and opening one names who it reached.
+ */
+describe('the send journal reads as dispatches, not rows', () => {
+  beforeEach(() => {
+    resetReads();
+    listSubscribers.mockResolvedValue({ ok: true, data: [subscriber(1)] });
+    listDispatches.mockResolvedValue({
+      ok: true,
+      data: [dispatch('2026-08-08T09:00:00.000Z'), dispatch('2026-07-25T09:00:00.000Z')],
+    });
+  });
+
+  const openLog = async (): Promise<ScreenNewsletter> => {
+    const el = await mount();
+    inner(el).tab = 'log';
+    await el.updateComplete;
+    return el;
+  };
+
+  it('lists one entry per dispatch with how many addresses it reached', async () => {
+    const el = await openLog();
+    const rows = [...(el.shadowRoot?.querySelectorAll('.log cp-list-row') ?? [])];
+    expect(rows).toHaveLength(2);
+    // cp-list-row renders title/meta inside its own shadow root.
+    expect(rows[0]?.getAttribute('meta')).toBe('120 получателей · 2 материалов');
+    expect(rows[0]?.getAttribute('title')).toContain('Отправка от');
+  });
+
+  it('opens a dispatch to show who received it and with what status', async () => {
+    listDispatchRecipients.mockResolvedValue({
+      ok: true,
+      data: [
+        {
+          id: 1,
+          email: 'a@example.org',
+          tickAt: '2026-08-08T09:00:00.000Z',
+          articleCount: 2,
+          status: 'sent',
+        },
+        {
+          id: 2,
+          email: 'b@example.org',
+          tickAt: '2026-08-08T09:00:00.000Z',
+          articleCount: 2,
+          status: 'failed',
+          error: 'resend 500',
+        },
+      ],
+    });
+    const el = await openLog();
+    await inner(el).openDispatch('2026-08-08T09:00:00.000Z');
+    await el.updateComplete;
+    expect(listDispatchRecipients).toHaveBeenCalledWith('2026-08-08T09:00:00.000Z');
+    const table = el.shadowRoot?.querySelector('cp-table');
+    const rows: readonly Record<string, unknown>[] = Reflect.get(table ?? {}, 'rows') ?? [];
+    expect(rows.map((r) => r.email)).toEqual(['a@example.org', 'b@example.org']);
+    expect(rows[1]?.error).toBe('resend 500');
+  });
+
+  it('shows a tick that found nothing as a run that happened, not a failure', async () => {
+    listDispatches.mockResolvedValue({
+      ok: true,
+      data: [
+        dispatch('2026-08-15T09:00:00.000Z', {
+          recipients: 1,
+          sent: 0,
+          bounced: 0,
+          skipped: 1,
+          articleCount: 0,
+        }),
+      ],
+    });
+    const el = await openLog();
+    const row = el.shadowRoot?.querySelector('.log cp-list-row');
+    expect(row?.getAttribute('meta')).toBe('новых материалов не было');
+    // An idle tick has no recipients to drill into.
+    expect(el.shadowRoot?.querySelector('.log-row')).toBeNull();
+  });
+
+  it('explains an empty history rather than showing nothing', async () => {
+    listDispatches.mockResolvedValue({ ok: true, data: [] });
+    const el = await openLog();
+    expect(shadowText(el)).toContain('Отправок ещё не было');
   });
 });

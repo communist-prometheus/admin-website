@@ -124,3 +124,110 @@ export const forceDispatch = async (): Promise<DispatchResult> => {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 };
+
+/** The dispatch schedule as the worker stores and returns it. */
+export interface DispatchSchedule {
+  readonly cron: string;
+  readonly timezone: string;
+  /** Next moment the worker will fire, computed server-side (ISO, UTC). */
+  readonly nextRunAt: string;
+}
+
+/** One past dispatch, folded back together from its per-recipient rows. */
+export interface DispatchTick {
+  readonly tickAt: string;
+  readonly recipients: number;
+  readonly sent: number;
+  readonly failed: number;
+  readonly bounced: number;
+  readonly complained: number;
+  readonly skipped: number;
+  readonly articleCount: number;
+}
+
+/** One recipient of one dispatch, with the outcome recorded for them. */
+export interface DispatchRecipient {
+  readonly id: number;
+  readonly subscriberId?: number;
+  readonly email?: string;
+  readonly tickAt: string;
+  readonly articleCount: number;
+  readonly status: string;
+  readonly error?: string;
+}
+
+const readJson = async (path: string): Promise<unknown | undefined> => {
+  try {
+    const response = await commsFetch(path);
+    if (!response.ok) return undefined;
+    return await response.json();
+  } catch {
+    return undefined;
+  }
+};
+
+const field = (body: unknown, key: string): unknown =>
+  typeof body === 'object' && body !== null && key in body ? Reflect.get(body, key) : undefined;
+
+/** Reads the saved dispatch schedule (`GET /api/schedule`). */
+export const readSchedule = async (): Promise<CommsRead<DispatchSchedule>> => {
+  const body = await readJson('/api/schedule');
+  const cron = field(body, 'cron');
+  const timezone = field(body, 'timezone');
+  if (typeof cron !== 'string' || typeof timezone !== 'string') return { ok: false };
+  const next = field(body, 'nextRunAt');
+  return { ok: true, data: { cron, timezone, nextRunAt: typeof next === 'string' ? next : '' } };
+};
+
+/** Outcome of saving the schedule, carrying the worker's reason on refusal. */
+export type SaveScheduleResult =
+  | { readonly ok: true; readonly schedule: DispatchSchedule }
+  | { readonly ok: false; readonly error: string };
+
+/** Saves the dispatch schedule (`PUT /api/schedule`). */
+export const saveSchedule = async (s: {
+  readonly cron: string;
+  readonly timezone: string;
+}): Promise<SaveScheduleResult> => {
+  try {
+    const response = await commsFetch('/api/schedule', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ cron: s.cron, timezone: s.timezone }),
+    });
+    const body: unknown = await response.json().catch(() => undefined);
+    if (!response.ok) {
+      const error = field(body, 'error');
+      return { ok: false, error: typeof error === 'string' ? error : `HTTP ${response.status}` };
+    }
+    const next = field(body, 'nextRunAt');
+    return {
+      ok: true,
+      schedule: { ...s, nextRunAt: typeof next === 'string' ? next : '' },
+    };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+};
+
+/**
+ * Reads the global cutoff watermark (`GET /api/cutoff`) — the boundary
+ * that decides which published material still counts as new. `undefined`
+ * means no boundary has been recorded, so everything counts.
+ */
+export const readCutoff = async (): Promise<CommsRead<string | undefined>> => {
+  const body = await readJson('/api/cutoff');
+  if (body === undefined) return { ok: false };
+  const at = field(body, 'at');
+  return { ok: true, data: typeof at === 'string' ? at : undefined };
+};
+
+/** Reads the dispatch history, one entry per run (`GET /api/runs/ticks`). */
+export const listDispatches = (): Promise<CommsRead<readonly DispatchTick[]>> =>
+  readList<DispatchTick>('/api/runs/ticks', 'ticks');
+
+/** Reads the recipients of one dispatch (`GET /api/runs/tick?at=…`). */
+export const listDispatchRecipients = (
+  tickAt: string,
+): Promise<CommsRead<readonly DispatchRecipient[]>> =>
+  readList<DispatchRecipient>(`/api/runs/tick?at=${encodeURIComponent(tickAt)}`, 'runs');
