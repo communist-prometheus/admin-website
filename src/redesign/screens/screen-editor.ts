@@ -827,6 +827,7 @@ export class ScreenEditor extends LitElement {
       this.availableLangs = langs;
       this.activeLang = lang;
       this.applyMarkdown(markdown, path, true);
+      await this.fillMissingDate();
     } else {
       this.loadError = `Не удалось загрузить «${path}».`;
     }
@@ -846,6 +847,7 @@ export class ScreenEditor extends LitElement {
     const markdown = await readFileViaApi(path);
     if (markdown !== undefined && markdown.trim() !== '') {
       this.applyMarkdown(markdown, path, true);
+      await this.fillMissingDate();
     }
   }
 
@@ -1110,6 +1112,30 @@ export class ScreenEditor extends LitElement {
     this.articlePath = `${this.collection}/${this.slug}/index.${this.activeLang}.md`;
     globalThis.location.hash =
       this.collection === 'blog' ? `#/editor/${this.slug}` : `#/editor/${this.collection}/${this.slug}`;
+  }
+
+  /**
+   * A translation that carries no date of its own borrows one from another
+   * language of the same material, so the field is never blank and the date is
+   * written into this file on the next publish instead of staying missing.
+   * Does nothing when the translation already has a date, or when no language
+   * of the material has one.
+   */
+  private async fillMissingDate(): Promise<void> {
+    if (this.pubDate !== '' || this.slug === '') return;
+    for (const lang of this.availableLangs) {
+      if (lang === this.activeLang) continue;
+      const markdown = await readFileViaApi(`${this.collection}/${this.slug}/index.${lang}.md`);
+      if (markdown === undefined) continue;
+      const parsed = parseArticle(markdown).frontmatter;
+      const date = DATE_KEYS.map((key) => frontmatterValue(parsed, key)).find(
+        (value) => value !== undefined,
+      );
+      if (date !== undefined) {
+        this.pubDate = date;
+        return;
+      }
+    }
   }
 
   /** Reads the text of an input, a component event, or an edited heading. */
@@ -1454,12 +1480,6 @@ export class ScreenEditor extends LitElement {
               >`
             : nothing}
         </div>
-        <cp-date-input
-          label="Дата публикации"
-          type="date"
-          .value=${this.pubDate}
-          @cp-change=${this.onDateChange}
-        ></cp-date-input>
         ${isArticle
           ? this.renderTopicPicker(
               this.materialTopics,
@@ -1481,7 +1501,15 @@ export class ScreenEditor extends LitElement {
     return html`
       <section class="props props-translation" aria-label="Свойства перевода">
         <h2 class="props-head">Свойства перевода · ${langLabel}</h2>
-        <p class="props-note">Только для этого языка: заголовок и лид правятся выше.</p>
+        <p class="props-note">
+          Только для этого языка — у каждого перевода своя дата. Заголовок и лид правятся выше.
+        </p>
+        <cp-date-input
+          label="Дата публикации"
+          type="date"
+          .value=${this.pubDate}
+          @cp-change=${this.onDateChange}
+        ></cp-date-input>
         <cp-switch
           label="Опубликовано"
           ?checked=${this.published}
