@@ -495,7 +495,7 @@ export class ScreenEditor extends LitElement {
     .address {
       display: grid;
       gap: 0.35rem;
-      align-content: end;
+      align-content: start;
     }
     .address-note {
       margin: 0;
@@ -548,7 +548,11 @@ export class ScreenEditor extends LitElement {
     .props {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-      align-items: end;
+      /* Fields line up along their tops. Aligning to the bottom made the
+         shorter ones sink to the baseline of the tallest cell in the row —
+         the address, which carries its resulting URL underneath — leaving a
+         hole above them. */
+      align-items: start;
       gap: var(--spacing-md);
       margin: var(--spacing-sm) 0 var(--spacing-md);
       padding: var(--spacing-md);
