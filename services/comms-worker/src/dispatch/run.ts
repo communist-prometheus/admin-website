@@ -1,6 +1,7 @@
 import { logEvent } from '../log/structured'
 import type { QuotaKind } from '../resend/response'
 import { advanceCutoff } from './cutoff-cycle'
+import { recordIdleTick } from './idle-tick'
 import { resumeAt } from './pause-window'
 import { planOne, type SendPlan } from './plan'
 import { finishTick } from './run-finish'
@@ -36,8 +37,10 @@ const pauseForQuota = async (
  * HTTP call — no per-second rate-limit burst). The shared cutoff is
  * advanced to `tickAt` ONLY on a clean tick (something went out and
  * nothing failed), so a partial failure replays next tick instead of
- * stranding the failed recipients past the watermark. Finally report the
- * run and sweep old send_log rows. Side-effect-free except through the
+ * stranding the failed recipients past the watermark. A tick that found
+ * nothing to carry records a marker row, so a quiet week is visible in
+ * the journal as a tick that ran rather than as a gap. Finally report
+ * the run and sweep old send_log rows. Side-effect-free except through the
  * injected deps.
  * @param d Injected dependencies (see {@link RunDispatchDeps}).
  * @returns Per-tick counters and wall-clock duration.
@@ -51,6 +54,7 @@ export const runDispatch = async (
   const plans = (await Promise.all(subs.map(s => planOne(ctx, s)))).filter(
     isPlan
   )
+  if (plans.length === 0) await recordIdleTick(d)
   const { sent, failed, quota } = await sendInBatches(ctx, plans)
   const clean = plans.length > 0 && failed === 0 && d.targetIds === undefined
   await advanceCutoff(d, clean)

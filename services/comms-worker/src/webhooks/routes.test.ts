@@ -93,7 +93,7 @@ describe('POST /webhooks/resend — signature failures', () => {
 })
 
 describe('POST /webhooks/resend — email.bounced (R3.10)', () => {
-  it('flips status to bounced + appends send_log row', async () => {
+  it('flips status to bounced + settles the original send_log row', async () => {
     const { id } = await seed('a@b.c', 're_1')
     const body = JSON.stringify({
       type: 'email.bounced',
@@ -110,7 +110,7 @@ describe('POST /webhooks/resend — email.bounced (R3.10)', () => {
 })
 
 describe('POST /webhooks/resend — email.complained (R3.11)', () => {
-  it('flips status to complained + appends send_log row', async () => {
+  it('flips status to complained + settles the original send_log row', async () => {
     const { id } = await seed('a@b.c', 're_2')
     const body = JSON.stringify({
       type: 'email.complained',

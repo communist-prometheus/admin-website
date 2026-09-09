@@ -2,6 +2,7 @@ import type { Context, Hono } from 'hono'
 import type { Bindings } from '../bindings'
 import { listForSubscriber } from './by-subscriber'
 import { listFailedRecipients } from './failed'
+import { handleOneTick, handleTicks } from './tick-handlers'
 import { listRecentWithEmail } from './with-email'
 
 type App = Hono<{ Bindings: object; Variables: object }>
@@ -54,6 +55,9 @@ const handleForSubscriber = async (c: Context): Promise<Response> => {
  * Mount the send-log routes:
  * - `GET /api/runs?limit=N&offset=M` — a page of send_log rows joined
  *   with the subscriber email, newest first (R5.1).
+ * - `GET /api/runs/ticks` — the same rows folded into one entry per
+ *   dispatch, with the outcome breakdown.
+ * - `GET /api/runs/tick?at=ISO` — the recipients of one dispatch.
  * - `GET /api/runs/failed` — the addresses a "resend to failed" run
  *   would target: active, and their most recent attempt failed.
  * - `GET /api/subscribers/:id/runs` — the full send history of one
@@ -67,6 +71,8 @@ const handleForSubscriber = async (c: Context): Promise<Response> => {
 export const mountRunsRoute = (app: App): App => {
   /* Registered before `/api/runs` would ever shadow it. */
   app.get('/api/runs/failed', handleFailed)
+  app.get('/api/runs/ticks', handleTicks)
+  app.get('/api/runs/tick', handleOneTick)
   app.get('/api/runs', handle)
   app.get('/api/subscribers/:id/runs', handleForSubscriber)
   return app
