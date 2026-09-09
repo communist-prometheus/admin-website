@@ -132,7 +132,9 @@ jobs:
       # run for 1h+ — fail fast instead so the queue stays honest.
       - name: Installing Playwright browsers
         run: |
-          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          # Match by content, not by filename: the runner image names this
+          # source differently across versions (.list vs deb822 .sources).
+          sudo grep -rl 'dl\.google\.com' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null | xargs -r sudo rm -fv
           sudo rm -rf /var/lib/apt/lists/*
           bunx playwright install --with-deps chromium
         timeout-minutes: 8
