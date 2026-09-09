@@ -30,6 +30,13 @@ const blogSchema = (allowed: ReadonlySet<string>) =>
     description: z.string().optional(),
     category: z.string(),
     topic: z.string().optional(),
+    /*
+     * Topics come at two levels and add up when both are present:
+     * `topics` belongs to the material (the admin writes it into every
+     * language of it), `languageTopics` to this translation alone.
+     */
+    topics: z.array(z.string()).optional(),
+    languageTopics: z.array(z.string()).optional(),
     pubDate: z.union([z.string(), z.date()]).optional(),
     published: z.boolean().optional(),
     publishDate: z.union([z.string(), z.date()]).optional(),

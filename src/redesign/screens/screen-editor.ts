@@ -495,7 +495,7 @@ export class ScreenEditor extends LitElement {
     .address {
       display: grid;
       gap: 0.35rem;
-      align-content: end;
+      align-content: start;
     }
     .address-note {
       margin: 0;
@@ -505,14 +505,6 @@ export class ScreenEditor extends LitElement {
     }
     .address-note.bad {
       color: var(--color-danger, #c0392b);
-    }
-    /* Two groups side by side on a desktop, stacked on a phone: what belongs
-       to the material, and what belongs to the translation being edited. */
-    .props-levels {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-      gap: var(--spacing-md);
-      margin: var(--spacing-sm) 0 var(--spacing-md);
     }
     .props-head {
       grid-column: 1 / -1;
@@ -556,7 +548,11 @@ export class ScreenEditor extends LitElement {
     .props {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-      align-items: end;
+      /* Fields line up along their tops. Aligning to the bottom made the
+         shorter ones sink to the baseline of the tallest cell in the row —
+         the address, which carries its resulting URL underneath — leaving a
+         hole above them. */
+      align-items: start;
       gap: var(--spacing-md);
       margin: var(--spacing-sm) 0 var(--spacing-md);
       padding: var(--spacing-md);
@@ -1416,78 +1412,89 @@ export class ScreenEditor extends LitElement {
     `;
   }
 
-  private renderProps(): TemplateResult {
+  /**
+   * What the whole material is: the same in every language, so it reads above
+   * the language tabs — the tabs are variants of this.
+   */
+  private renderMaterialProps(): TemplateResult {
     // Rubric and topics are blog-article taxonomy; a journal issue has neither.
+    const isArticle = this.collection !== 'magazine';
+    return html`
+      <section class="props props-material" aria-label="Свойства материала">
+        <h2 class="props-head">Свойства материала</h2>
+        <p class="props-note">Общие для всех языков материала.</p>
+        ${isArticle
+          ? html`<cp-select
+              label="Рубрика"
+              .value=${this.rubric}
+              .options=${this.rubricOptions}
+              @cp-change=${this.onRubricChange}
+            ></cp-select>`
+          : nothing}
+        <div class="address">
+          <cp-input
+            label="Адрес"
+            .value=${this.slugDraft}
+            placeholder="illyuziya-socializma"
+            @cp-input=${this.onSlugInput}
+            @cp-change=${this.onSlugInput}
+          ></cp-input>
+          <p class=${this.slugError !== '' ? 'address-note bad' : 'address-note'}>
+            ${this.slugError !== ''
+              ? this.slugError
+              : `${publishTarget().siteUrl}/${this.activeLang}/${this.collection}/${this.slugDraft}/`}
+          </p>
+          ${this.slugDraft !== this.slug && this.slugError === ''
+            ? html`<cp-button
+                size="sm"
+                variant="secondary"
+                ?disabled=${this.renaming}
+                @cp-click=${() => void this.applyRename()}
+                >${this.renaming ? 'Переносим…' : 'Перенести материал'}</cp-button
+              >`
+            : nothing}
+        </div>
+        <cp-date-input
+          label="Дата публикации"
+          type="date"
+          .value=${this.pubDate}
+          @cp-change=${this.onDateChange}
+        ></cp-date-input>
+        ${isArticle
+          ? this.renderTopicPicker(
+              this.materialTopics,
+              this.toggleMaterialTopic,
+              'Показываются у материала на всех языках.',
+            )
+          : nothing}
+      </section>
+    `;
+  }
+
+  /**
+   * What belongs to the language being edited, so it reads under the tabs,
+   * next to the text it describes.
+   */
+  private renderTranslationProps(): TemplateResult {
     const isArticle = this.collection !== 'magazine';
     const langLabel = LANG_LABELS[this.activeLang] ?? this.activeLang.toUpperCase();
     return html`
-      <div class="props-levels">
-        <section class="props props-material" aria-label="Свойства материала">
-          <h2 class="props-head">Свойства материала</h2>
-          <p class="props-note">Общие для всех языков материала.</p>
-          ${isArticle
-            ? html`<cp-select
-                label="Рубрика"
-                .value=${this.rubric}
-                .options=${this.rubricOptions}
-                @cp-change=${this.onRubricChange}
-              ></cp-select>`
-            : nothing}
-          <div class="address">
-            <cp-input
-              label="Адрес"
-              .value=${this.slugDraft}
-              placeholder="illyuziya-socializma"
-              @cp-input=${this.onSlugInput}
-              @cp-change=${this.onSlugInput}
-            ></cp-input>
-            <p class=${this.slugError !== '' ? 'address-note bad' : 'address-note'}>
-              ${this.slugError !== ''
-                ? this.slugError
-                : `${publishTarget().siteUrl}/${this.activeLang}/${this.collection}/${this.slugDraft}/`}
-            </p>
-            ${this.slugDraft !== this.slug && this.slugError === ''
-              ? html`<cp-button
-                  size="sm"
-                  variant="secondary"
-                  ?disabled=${this.renaming}
-                  @cp-click=${() => void this.applyRename()}
-                  >${this.renaming ? 'Переносим…' : 'Перенести материал'}</cp-button
-                >`
-              : nothing}
-          </div>
-          <cp-date-input
-            label="Дата публикации"
-            type="date"
-            .value=${this.pubDate}
-            @cp-change=${this.onDateChange}
-          ></cp-date-input>
-          ${isArticle
-            ? this.renderTopicPicker(
-                this.materialTopics,
-                this.toggleMaterialTopic,
-                'Показываются у материала на всех языках.',
-              )
-            : nothing}
-        </section>
-
-        <section class="props props-translation" aria-label="Свойства перевода">
-          <h2 class="props-head">Свойства перевода · ${langLabel}</h2>
-          <p class="props-note">Только для этого языка: заголовок и лид правятся выше.</p>
-          <cp-switch
-            label="Опубликовано"
-            ?checked=${this.published}
-            @cp-change=${this.onPublishedChange}
-          ></cp-switch>
-          ${isArticle
-            ? this.renderTopicPicker(
-                this.langTopics,
-                this.toggleLangTopic,
-                'Добавляются к темам материала — на других языках их не будет.',
-              )
-            : nothing}
-        </section>
-      </div>
+      <section class="props props-translation" aria-label="Свойства перевода">
+        <h2 class="props-head">Свойства перевода · ${langLabel}</h2>
+        <p class="props-note">Только для этого языка: заголовок и лид правятся выше.</p>
+        <cp-switch
+          label="Опубликовано"
+          ?checked=${this.published}
+          @cp-change=${this.onPublishedChange}
+        ></cp-switch>
+        ${isArticle
+          ? this.renderTopicPicker(
+              this.langTopics,
+              this.toggleLangTopic,
+              'Добавляются к темам материала — на других языках их не будет.',
+            )
+          : nothing}
+      </section>
     `;
   }
 
@@ -1581,6 +1588,7 @@ export class ScreenEditor extends LitElement {
           .value=${this.description}
           @input=${this.onLeadInput}
         ></textarea>
+        ${this.renderMaterialProps()}
         <div class="tabs-scroll">
           <cp-tabs
             .tabs=${langTabs(this.availableLangs)}
@@ -1597,7 +1605,7 @@ export class ScreenEditor extends LitElement {
               >`
             : nothing}
         </div>
-        ${this.renderAddLangDialog()} ${this.renderProps()}
+        ${this.renderAddLangDialog()} ${this.renderTranslationProps()}
         ${this.collection === 'magazine'
           ? this.renderMagazineBody()
           : html`
