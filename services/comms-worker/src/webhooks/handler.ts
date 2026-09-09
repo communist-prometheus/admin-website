@@ -17,12 +17,13 @@ export type ResendEvent = {
   readonly data?: { readonly email_id?: string }
 }
 
-const tickIso = (): string => new Date().toISOString()
-
 /**
  * Apply a verified Resend webhook event: look the original send up by
- * its Resend id, flip the subscriber status and append a marker log
- * row. No-ops for unsupported event types or unknown ids (idempotent).
+ * its Resend id, flip the subscriber status and settle THAT row's
+ * status. A bounce is the outcome of a send, not a dispatch of its
+ * own — appending a fresh row stamped with the webhook's clock made
+ * the editor's journal show phantom runs that delivered 0 articles.
+ * No-ops for unsupported event types or unknown ids (idempotent).
  * @param subs Subscriber repo.
  * @param log Send-log repo.
  * @param event Parsed event body.
@@ -40,12 +41,5 @@ export const applyResendEvent = async (
   const original = await log.findByResendId(resendId)
   if (original?.subscriberId === undefined) return
   await subs.setStatus(original.subscriberId, mapped.sub)
-  await log.append({
-    subscriberId: original.subscriberId,
-    tickAt: tickIso(),
-    articleCount: 0,
-    status: mapped.log,
-    resendId,
-    error: undefined,
-  })
+  await log.setStatus(original.id, mapped.log)
 }

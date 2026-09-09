@@ -5,17 +5,90 @@ import '@communist-prometheus/cp-components';
 import type { CpTab, CpTableColumn, CpTableRow } from '@communist-prometheus/cp-components';
 import {
   listSubscribers,
-  listRuns,
   forceDispatch,
   addSubscriber,
   removeSubscriber,
+  readSchedule,
+  saveSchedule,
+  readCutoff,
+  listDispatches,
+  listDispatchRecipients,
   type Subscriber,
-  type SendRun,
   type DispatchResult,
+  type DispatchSchedule,
+  type DispatchTick,
+  type DispatchRecipient,
 } from '../engine/comms.js';
+import { parseWeekly, weeklyCron, WEEKDAYS } from '../engine/schedule-cron.js';
 
 /** The seven publication languages a subscriber can receive. */
 const LANGS: readonly string[] = ['ru', 'en', 'it', 'es', 'uk', 'pl', 'bl'];
+
+/**
+ * Timezones the schedule is offered in. The saved one is appended when it
+ * is none of these, so a hand-set zone is never silently replaced.
+ */
+const TIMEZONES: readonly string[] = ['Europe/Moscow', 'UTC', 'Europe/Berlin', 'America/New_York'];
+
+/** Column definitions for the per-dispatch recipient table. */
+const RECIPIENT_COLUMNS: readonly CpTableColumn[] = [
+  { key: 'email', label: 'Адрес' },
+  { key: 'articles', label: 'Материалов' },
+  { key: 'status', label: 'Статус' },
+  { key: 'error', label: 'Ошибка' },
+];
+
+/** Maps a send-log status to a cp-status tone + label. */
+const SEND_STATUS: Readonly<Record<string, { state: string; label: string }>> = {
+  sent: { state: 'success', label: 'доставлено' },
+  failed: { state: 'danger', label: 'ошибка' },
+  bounced: { state: 'warning', label: 'отскок' },
+  complained: { state: 'warning', label: 'жалоба' },
+  skipped: { state: 'neutral', label: 'пропущен' },
+};
+
+const sendStatusOf = (status: string): { state: string; label: string } =>
+  SEND_STATUS[status] ?? { state: 'neutral', label: status };
+
+/**
+ * Render an ISO instant in the schedule's timezone. The worker stores and
+ * returns UTC; the editor reads the wall clock they set the schedule in.
+ */
+const inZone = (iso: string, timezone: string): string => {
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return iso;
+  try {
+    return new Intl.DateTimeFormat('ru-RU', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+      timeZone: timezone,
+    }).format(new Date(ms));
+  } catch {
+    return new Date(ms).toISOString().slice(0, 16).replace('T', ' ');
+  }
+};
+
+/**
+ * Whether the tick fired but had nothing to carry. Such a tick records a
+ * single marker row belonging to no recipient, so a quiet week reads as a
+ * run that happened rather than as a gap in the journal.
+ */
+const isIdle = (tick: DispatchTick): boolean =>
+  tick.articleCount === 0 && tick.sent === 0 && tick.failed === 0 && tick.skipped > 0;
+
+/** How a dispatch ended, as one chip: idle, clean, partly failed, or failed. */
+const tickTone = (tick: DispatchTick): { state: string; label: string } => {
+  if (isIdle(tick)) return { state: 'neutral', label: 'нечего отправлять' };
+  if (tick.sent === 0) return { state: 'danger', label: 'ничего не ушло' };
+  if (tick.failed > 0) return { state: 'warning', label: `${tick.failed} с ошибкой` };
+  return { state: 'success', label: 'доставлено' };
+};
+
+/** The one-line summary under a journal entry's title. */
+const tickMeta = (tick: DispatchTick): string =>
+  isIdle(tick)
+    ? 'новых материалов не было'
+    : `${tick.recipients} получателей · ${tick.articleCount} материалов`;
 
 /** The three sub-nav panels of the newsletter screen. */
 type TabId = 'schedule' | 'subscribers' | 'log';
@@ -144,6 +217,69 @@ export class ScreenNewsletter extends LitElement {
     .log {
       display: grid;
       gap: var(--spacing-sm);
+    }
+
+    .log-row {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
+      color: inherit;
+      text-align: inherit;
+      cursor: pointer;
+      border-radius: var(--radius-md);
+    }
+
+    .log-row:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    .schedule {
+      display: grid;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-md);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+    }
+
+    .schedule h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .schedule-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-md);
+      align-items: end;
+    }
+
+    .field {
+      display: grid;
+      gap: 0.3rem;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+    }
+
+    .field select,
+    .field input {
+      font: inherit;
+      font-size: 0.95rem;
+      color: var(--color-text-primary);
+      padding: 0.4rem 0.6rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-background);
+      min-width: 11rem;
+    }
+
+    .field input[name='cron'] {
+      font-family: var(--font-mono, ui-monospace, monospace);
     }
 
     .add-form {
@@ -284,14 +420,40 @@ export class ScreenNewsletter extends LitElement {
   /** Real subscribers from the comms worker; empty until loaded. */
   @state() private subscribers: readonly Subscriber[] = [];
 
-  /** Real send-log rows from the comms worker; empty until loaded. */
-  @state() private runs: readonly SendRun[] = [];
+  /** Past dispatches, one entry per tick (not per recipient). */
+  @state() private dispatches: readonly DispatchTick[] = [];
 
   /** Whether each read has completed, and whether it failed (vs empty). */
   @state() private subsLoaded = false;
   @state() private runsLoaded = false;
   @state() private subsFailed = false;
   @state() private runsFailed = false;
+
+  /**
+   * Saved dispatch schedule. The worker has always stored a cron +
+   * timezone and exposed GET/PUT /api/schedule — the screen simply had
+   * no control for it, which read as "интервал рассылки пропал".
+   */
+  @state() private schedule?: DispatchSchedule;
+  @state() private scheduleLoaded = false;
+  @state() private weekday = 6;
+  @state() private time = '12:00';
+  @state() private timezone = 'Europe/Moscow';
+  /** Raw crontab, used when the saved one is richer than a day + time. */
+  @state() private cron = '';
+  @state() private weeklyForm = true;
+  @state() private savingSchedule = false;
+  @state() private scheduleError = '';
+  @state() private scheduleSaved = false;
+
+  /** Watermark deciding which published material still counts as new. */
+  @state() private cutoff?: string;
+
+  /** The dispatch currently opened in the journal, and its recipients. */
+  @state() private openTick?: string;
+  @state() private recipients: readonly DispatchRecipient[] = [];
+  @state() private recipientsLoading = false;
+  @state() private recipientsFailed = false;
 
   /** Confirmation dialog + dispatch state. */
   @state() private confirmOpen = false;
@@ -310,7 +472,9 @@ export class ScreenNewsletter extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     void this.loadSubscribers();
-    void this.loadRuns();
+    void this.loadDispatches();
+    void this.loadSchedule();
+    void this.loadCutoff();
   }
 
   private async loadSubscribers(): Promise<void> {
@@ -320,12 +484,68 @@ export class ScreenNewsletter extends LitElement {
     this.subsLoaded = true;
   }
 
-  private async loadRuns(): Promise<void> {
-    const read = await listRuns();
+  private async loadDispatches(): Promise<void> {
+    const read = await listDispatches();
     this.runsFailed = !read.ok;
-    this.runs = read.ok ? read.data : [];
+    this.dispatches = read.ok ? read.data : [];
     this.runsLoaded = true;
   }
+
+  /** Loads the saved schedule and seeds the form from it. */
+  private async loadSchedule(): Promise<void> {
+    const read = await readSchedule();
+    this.scheduleLoaded = true;
+    if (!read.ok) return;
+    this.schedule = read.data;
+    this.timezone = read.data.timezone;
+    this.cron = read.data.cron;
+    const weekly = parseWeekly(read.data.cron);
+    this.weeklyForm = weekly !== undefined;
+    if (weekly !== undefined) {
+      this.weekday = weekly.weekday;
+      this.time = weekly.time;
+    }
+  }
+
+  private async loadCutoff(): Promise<void> {
+    const read = await readCutoff();
+    if (read.ok) this.cutoff = read.data;
+  }
+
+  /** Persists the edited schedule, surfacing the worker's refusal verbatim. */
+  private readonly submitSchedule = async (): Promise<void> => {
+    if (this.savingSchedule) return;
+    this.savingSchedule = true;
+    this.scheduleError = '';
+    this.scheduleSaved = false;
+    const cron = this.weeklyForm ? weeklyCron(this.weekday, this.time) : this.cron.trim();
+    const result = await saveSchedule({ cron, timezone: this.timezone });
+    this.savingSchedule = false;
+    if (result.ok) {
+      this.schedule = result.schedule;
+      this.cron = result.schedule.cron;
+      this.scheduleSaved = true;
+    } else {
+      this.scheduleError = result.error;
+    }
+  };
+
+  /** Opens one dispatch and reads who it reached. */
+  private readonly openDispatch = async (tickAt: string): Promise<void> => {
+    this.openTick = tickAt;
+    this.recipients = [];
+    this.recipientsLoading = true;
+    this.recipientsFailed = false;
+    const read = await listDispatchRecipients(tickAt);
+    this.recipientsLoading = false;
+    this.recipientsFailed = !read.ok;
+    this.recipients = read.ok ? read.data : [];
+  };
+
+  private readonly closeDispatch = (): void => {
+    this.openTick = undefined;
+    this.recipients = [];
+  };
 
   /** Number of active subscribers a dispatch would reach. */
   private get activeCount(): number {
@@ -356,7 +576,7 @@ export class ScreenNewsletter extends LitElement {
     this.sending = false;
     this.confirmOpen = false;
     this.result = result;
-    if (result.ok) void this.loadRuns();
+    if (result.ok) void this.loadDispatches();
   };
 
   private readonly toggleAddLang = (lang: string): void => {
@@ -413,13 +633,119 @@ export class ScreenNewsletter extends LitElement {
     >`;
   }
 
+  private renderScheduleFields(): TemplateResult {
+    if (!this.weeklyForm) {
+      return html`
+        <label class="field">
+          <span>Расписание (crontab)</span>
+          <input
+            name="cron"
+            type="text"
+            .value=${this.cron}
+            spellcheck="false"
+            @input=${(e: Event) => (this.cron = (e.target as HTMLInputElement).value)}
+          />
+        </label>
+        <p class="hint">
+          Сохранённое расписание сложнее, чем «день недели и время», поэтому редактируется как есть.
+        </p>
+      `;
+    }
+    return html`
+      <label class="field">
+        <span>День недели</span>
+        <select
+          name="weekday"
+          .value=${String(this.weekday)}
+          @change=${(e: Event) => (this.weekday = Number((e.target as HTMLSelectElement).value))}
+        >
+          ${WEEKDAYS.map(
+            (d) => html`<option value=${String(d.value)} ?selected=${d.value === this.weekday}>
+              ${d.label}
+            </option>`,
+          )}
+        </select>
+      </label>
+      <label class="field">
+        <span>Время</span>
+        <input
+          name="time"
+          type="time"
+          .value=${this.time}
+          @input=${(e: Event) => (this.time = (e.target as HTMLInputElement).value)}
+        />
+      </label>
+    `;
+  }
+
+  private renderScheduleForm(): TemplateResult {
+    if (!this.scheduleLoaded) return html`<p class="muted">Загружаем расписание…</p>`;
+    if (this.schedule === undefined) {
+      return html`
+        <div class="schedule">
+          <p class="muted">Не удалось прочитать расписание из сервиса рассылки.</p>
+          <cp-button variant="secondary" @cp-click=${() => void this.loadSchedule()}
+            >Повторить</cp-button
+          >
+        </div>
+      `;
+    }
+    const zones = TIMEZONES.includes(this.timezone) ? TIMEZONES : [...TIMEZONES, this.timezone];
+    return html`
+      <form
+        class="schedule"
+        @submit=${(e: Event) => {
+          e.preventDefault();
+          void this.submitSchedule();
+        }}
+      >
+        <h2>Расписание</h2>
+        <div class="schedule-grid">
+          ${this.renderScheduleFields()}
+          <label class="field">
+            <span>Часовой пояс</span>
+            <select
+              name="timezone"
+              .value=${this.timezone}
+              @change=${(e: Event) => (this.timezone = (e.target as HTMLSelectElement).value)}
+            >
+              ${zones.map(
+                (z) => html`<option value=${z} ?selected=${z === this.timezone}>${z}</option>`,
+              )}
+            </select>
+          </label>
+        </div>
+        ${this.schedule.nextRunAt === ''
+          ? nothing
+          : html`<p class="hint">
+              Следующая отправка: ${inZone(this.schedule.nextRunAt, this.timezone)}
+            </p>`}
+        <p class="hint">
+          ${this.cutoff === undefined
+            ? 'Водораздел не задан — в первый выпуск попадут все опубликованные материалы.'
+            : html`В выпуск попадут материалы, опубликованные после ${this.cutoff.slice(0, 10)}.`}
+        </p>
+        ${this.scheduleError === ''
+          ? nothing
+          : html`<p class="field-error" role="alert">${this.scheduleError}</p>`}
+        ${this.scheduleSaved ? html`<p class="hint" role="status">Расписание сохранено.</p>` : nothing}
+        <div class="actions">
+          <cp-button ?disabled=${this.savingSchedule} @cp-click=${() => void this.submitSchedule()}>
+            ${this.savingSchedule ? 'Сохраняем…' : 'Сохранить расписание'}
+          </cp-button>
+        </div>
+      </form>
+    `;
+  }
+
   private renderSchedule(): TemplateResult {
     return html`
       <section aria-label="Отправка выпуска">
+        ${this.renderScheduleForm()}
         <p class="hint">
-          Выпуск собирается автоматически и уходит подписчикам по расписанию воркера-рассыльщика. В
-          письмо попадают материалы, опубликованные с прошлой отправки. Кнопка ниже запускает
-          отправку немедленно — всем ${this.activeCount} активным подписчикам.
+          Выпуск собирается автоматически и уходит подписчикам по расписанию выше. В письмо попадают
+          материалы, опубликованные после водораздела. Кнопка ниже запускает отправку немедленно —
+          всем ${this.activeCount} активным подписчикам.
         </p>
         <div class="actions">
           <cp-button @cp-click=${this.openConfirm} ?disabled=${this.activeCount === 0}
@@ -526,38 +852,89 @@ export class ScreenNewsletter extends LitElement {
     `;
   }
 
+  private renderRecipients(): TemplateResult {
+    const tick = this.openTick ?? '';
+    const rows: CpTableRow[] = this.recipients.map((r) => {
+      const meta = sendStatusOf(r.status);
+      return {
+        id: String(r.id),
+        email: r.email ?? '— адрес удалён —',
+        articles: String(r.articleCount),
+        status: html`<cp-status state=${meta.state} label=${meta.label}></cp-status>`,
+        error: r.error ?? '',
+      };
+    });
+    return html`
+      <section aria-label="Получатели отправки">
+        <div class="toolbar">
+          <span class="meta">Отправка от ${inZone(tick, this.timezone)}</span>
+          <cp-button variant="secondary" @cp-click=${this.closeDispatch}>Ко всем отправкам</cp-button>
+        </div>
+        ${this.recipientsLoading
+          ? html`<p class="muted">Загружаем получателей…</p>`
+          : this.recipientsFailed
+            ? html`<p class="muted">Не удалось загрузить получателей этой отправки.</p>`
+            : this.recipients.length === 0
+              ? html`<p class="muted">Эта отправка не записала ни одного получателя.</p>`
+              : html`<div class="scroll-x">
+                  <cp-table
+                    caption="Получатели отправки"
+                    .columns=${RECIPIENT_COLUMNS}
+                    .rows=${rows}
+                  ></cp-table>
+                </div>`}
+      </section>
+    `;
+  }
+
+  /** One journal entry. An idle tick has no recipients, so it does not open. */
+  private renderTickRow(tick: DispatchTick): TemplateResult {
+    const tone = tickTone(tick);
+    const when = inZone(tick.tickAt, this.timezone);
+    const row = html`
+      <cp-list-row title="Отправка от ${when}" meta=${tickMeta(tick)}>
+        <cp-status slot="actions" state=${tone.state} label=${tone.label}></cp-status>
+      </cp-list-row>
+    `;
+    if (isIdle(tick)) return row;
+    return html`
+      <button
+        class="log-row"
+        type="button"
+        @click=${() => void this.openDispatch(tick.tickAt)}
+        aria-label="Открыть отправку от ${when}"
+      >
+        ${row}
+      </button>
+    `;
+  }
+
   private renderLog(): TemplateResult {
     if (!this.runsLoaded) return html`<p class="muted">Загружаем журнал…</p>`;
     if (this.runsFailed) {
       return html`
         <section aria-label="Журнал отправок">
           <p class="muted">Не удалось загрузить журнал отправок.</p>
-          <cp-button variant="secondary" @cp-click=${() => void this.loadRuns()}>Повторить</cp-button>
+          <cp-button variant="secondary" @cp-click=${() => void this.loadDispatches()}
+            >Повторить</cp-button
+          >
         </section>
       `;
     }
-    if (this.runs.length === 0) {
+    if (this.openTick !== undefined) return this.renderRecipients();
+    if (this.dispatches.length === 0) {
       return html`<section aria-label="Журнал отправок">
         <p class="muted">Отправок ещё не было.</p>
       </section>`;
     }
     return html`
       <section aria-label="Журнал отправок">
+        <p class="hint">
+          Одна строка — одна отправка. Откройте её, чтобы увидеть, кому и с каким результатом ушло
+          письмо.
+        </p>
         <div class="log">
-          ${this.runs.map(
-            (run) => html`
-              <cp-list-row
-                title="Отправка от ${run.tickAt.slice(0, 16).replace('T', ' ')}"
-                meta="${run.articleCount} материалов"
-              >
-                <cp-status
-                  slot="actions"
-                  state=${run.status === 'sent' ? 'success' : run.status === 'failed' ? 'danger' : 'warning'}
-                  label=${run.error ?? run.status}
-                ></cp-status>
-              </cp-list-row>
-            `,
-          )}
+          ${this.dispatches.map((tick) => this.renderTickRow(tick))}
         </div>
       </section>
     `;
