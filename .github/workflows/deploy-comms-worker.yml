@@ -51,6 +51,10 @@ jobs:
       - name: Audit EARS coverage
         run: bun scripts/comms-spec-coverage.ts
 
+      # The develop D1 binding is declared inside `env.develop`, so the
+      # migrations command needs the same `--env` the deploy gets —
+      # without it wrangler reports "Couldn't find a D1 DB with the name
+      # or binding 'comms-develop'".
       # `migrations apply` tracks state in the d1_migrations table and
       # only runs pending files — the previous `d1 execute` loop re-ran
       # every migration on every deploy and died on "table already
@@ -58,7 +62,7 @@ jobs:
       - name: Apply D1 migrations
         run: |
           cd services/comms-worker
-          npx wrangler d1 migrations apply "$D1_NAME" --remote
+          npx wrangler d1 migrations apply "$D1_NAME" --remote $WRANGLER_ENV
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
