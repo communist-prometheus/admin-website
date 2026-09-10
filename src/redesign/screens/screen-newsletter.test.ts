@@ -29,6 +29,7 @@ const shadowText = (el: HTMLElement): string =>
 /** The screen internals a test drives directly, mirroring its private members. */
 interface NewsletterInternals {
   tab: string;
+  statusFilter: string;
   weekday: number;
   time: string;
   confirmSend: () => Promise<void>;
@@ -289,5 +290,149 @@ describe('the send journal reads as dispatches, not rows', () => {
     listDispatches.mockResolvedValue({ ok: true, data: [] });
     const el = await openLog();
     expect(shadowText(el)).toContain('Отправок ещё не было');
+  });
+});
+
+/*
+ * The list mixes four lifecycle states, and three of them are terminal:
+ * an editor looking for "кто отвалился" had to read 130 rows to find
+ * them. The panel filters by status, and says what each status means —
+ * "отскок" and "жалоба" are not self-explanatory.
+ */
+describe('the subscriber list filters by status', () => {
+  const list = [
+    subscriber(1),
+    subscriber(2),
+    subscriber(3, 'unsubscribed'),
+    subscriber(4, 'bounced'),
+    subscriber(5, 'bounced'),
+    subscriber(6, 'complained'),
+  ];
+
+  const rowsOf = (el: ScreenNewsletter): readonly Record<string, unknown>[] => {
+    const table = el.shadowRoot?.querySelector('cp-table');
+    return Reflect.get(table ?? {}, 'rows') ?? [];
+  };
+
+  const openSubscribers = async (): Promise<ScreenNewsletter> => {
+    const el = await mount();
+    inner(el).tab = 'subscribers';
+    await el.updateComplete;
+    return el;
+  };
+
+  beforeEach(() => {
+    resetReads();
+    listSubscribers.mockResolvedValue({ ok: true, data: list });
+  });
+
+  it('offers one filter per status, each carrying its count', async () => {
+    const el = await openSubscribers();
+    const chips = [...(el.shadowRoot?.querySelectorAll('.status-filter button') ?? [])];
+    const labels = chips.map((c) => (c.textContent ?? '').replace(/\s+/g, ' ').trim());
+    expect(labels).toEqual([
+      'Все 6',
+      'Активные 2',
+      'Отписались 1',
+      'Отскок 2',
+      'Жалобы 1',
+    ]);
+  });
+
+  it('narrows the table to the chosen status', async () => {
+    const el = await openSubscribers();
+    inner(el).statusFilter = 'bounced';
+    await el.updateComplete;
+    expect(rowsOf(el).map((r) => r.id)).toEqual(['4', '5']);
+  });
+
+  it('restores the whole list when the filter is cleared', async () => {
+    const el = await openSubscribers();
+    inner(el).statusFilter = 'complained';
+    await el.updateComplete;
+    inner(el).statusFilter = 'all';
+    await el.updateComplete;
+    expect(rowsOf(el)).toHaveLength(6);
+  });
+
+  it('marks the chosen filter as pressed for assistive tech', async () => {
+    const el = await openSubscribers();
+    inner(el).statusFilter = 'unsubscribed';
+    await el.updateComplete;
+    const pressed = [...(el.shadowRoot?.querySelectorAll('.status-filter button') ?? [])].filter(
+      (c) => c.getAttribute('aria-pressed') === 'true',
+    );
+    expect(pressed).toHaveLength(1);
+    expect(pressed[0]?.textContent).toContain('Отписались');
+  });
+
+  it('explains what each status means', async () => {
+    const el = await openSubscribers();
+    const text = shadowText(el);
+    expect(text).toContain('получает выпуски');
+    expect(text).toContain('отказался от рассылки');
+    expect(text).toContain('не принял письмо');
+    expect(text).toContain('пометил письмо как спам');
+  });
+
+  it('says so when a filter matches nobody', async () => {
+    listSubscribers.mockResolvedValue({ ok: true, data: [subscriber(1)] });
+    const el = await openSubscribers();
+    inner(el).statusFilter = 'bounced';
+    await el.updateComplete;
+    expect(shadowText(el)).toContain('С этим статусом подписчиков нет');
+  });
+
+  it('keeps the dispatch aimed at every active address, not the filtered view', async () => {
+    const el = await openSubscribers();
+    inner(el).statusFilter = 'bounced';
+    await el.updateComplete;
+    inner(el).tab = 'schedule';
+    await el.updateComplete;
+    expect(shadowText(el)).toContain('2 активным');
+  });
+});
+
+/*
+ * A tick that delivered nothing is not automatically a failure: the
+ * pre-fix bounce rows and any run with no successful send but no error
+ * either are simply uneventful. Red is reserved for real errors.
+ */
+describe('the journal chip separates "quiet" from "broken"', () => {
+  const openLog = async (tick: Record<string, number>): Promise<ScreenNewsletter> => {
+    listDispatches.mockResolvedValue({ ok: true, data: [dispatch('2026-08-08T09:00:00.000Z', tick)] });
+    const el = await mount();
+    inner(el).tab = 'log';
+    await el.updateComplete;
+    return el;
+  };
+
+  // cp-status renders its label inside its own shadow root — read the attribute.
+  const chip = (el: ScreenNewsletter): { state?: string; label?: string } => {
+    const node = el.shadowRoot?.querySelector('.log cp-status');
+    return { state: node?.getAttribute('state') ?? undefined, label: node?.getAttribute('label') ?? undefined };
+  };
+  const chipState = (el: ScreenNewsletter): string | undefined => chip(el).state;
+
+  beforeEach(resetReads);
+
+  it('greys out a run that sent nothing and broke nothing', async () => {
+    const el = await openLog({ recipients: 1, sent: 0, failed: 0, bounced: 1, skipped: 0 });
+    expect(chip(el)).toEqual({ state: 'neutral', label: 'ничего не ушло' });
+  });
+
+  it('keeps red for a run where every send failed', async () => {
+    const el = await openLog({ recipients: 3, sent: 0, failed: 3, bounced: 0, skipped: 0 });
+    expect(chipState(el)).toBe('danger');
+  });
+
+  it('warns, not alarms, when only some sends failed', async () => {
+    const el = await openLog({ recipients: 3, sent: 2, failed: 1, bounced: 0, skipped: 0 });
+    expect(chipState(el)).toBe('warning');
+  });
+
+  it('keeps a clean run green', async () => {
+    const el = await openLog({ recipients: 3, sent: 3, failed: 0, bounced: 0, skipped: 0 });
+    expect(chipState(el)).toBe('success');
   });
 });

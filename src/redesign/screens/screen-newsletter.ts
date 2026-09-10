@@ -76,11 +76,17 @@ const inZone = (iso: string, timezone: string): string => {
 const isIdle = (tick: DispatchTick): boolean =>
   tick.articleCount === 0 && tick.sent === 0 && tick.failed === 0 && tick.skipped > 0;
 
-/** How a dispatch ended, as one chip: idle, clean, partly failed, or failed. */
+/**
+ * How a dispatch ended, as one chip. Red is reserved for real errors: a
+ * run that delivered nothing but broke nothing — the delivery-event rows
+ * written before the webhook fix, among others — is uneventful, not
+ * alarming, and reads grey.
+ */
 const tickTone = (tick: DispatchTick): { state: string; label: string } => {
   if (isIdle(tick)) return { state: 'neutral', label: 'нечего отправлять' };
-  if (tick.sent === 0) return { state: 'danger', label: 'ничего не ушло' };
+  if (tick.failed > 0 && tick.sent === 0) return { state: 'danger', label: 'все с ошибкой' };
   if (tick.failed > 0) return { state: 'warning', label: `${tick.failed} с ошибкой` };
+  if (tick.sent === 0) return { state: 'neutral', label: 'ничего не ушло' };
   return { state: 'success', label: 'доставлено' };
 };
 
@@ -113,13 +119,54 @@ const SUBSCRIBER_COLUMNS: readonly CpTableColumn[] = [
   { key: 'actions', label: '' },
 ];
 
-/** Maps a subscriber status to a cp-status tone + label. */
-const STATUS_META: Readonly<Record<Subscriber['status'], { state: string; label: string }>> = {
-  active: { state: 'success', label: 'активен' },
-  unsubscribed: { state: 'danger', label: 'отписался' },
-  bounced: { state: 'warning', label: 'отскок' },
-  complained: { state: 'warning', label: 'жалоба' },
+/**
+ * Maps a subscriber status to a cp-status tone, its label, the wording of
+ * the filter that selects it, and what the status actually means —
+ * "отскок" and "жалоба" say nothing to an editor who has not run a
+ * mailing list before.
+ */
+const STATUS_META: Readonly<
+  Record<
+    Subscriber['status'],
+    { state: string; label: string; filter: string; meaning: string }
+  >
+> = {
+  active: {
+    state: 'success',
+    label: 'активен',
+    filter: 'Активные',
+    meaning: 'получает выпуски',
+  },
+  unsubscribed: {
+    state: 'danger',
+    label: 'отписался',
+    filter: 'Отписались',
+    meaning: 'сам отказался от рассылки — письма ему больше не уходят',
+  },
+  bounced: {
+    state: 'warning',
+    label: 'отскок',
+    filter: 'Отскок',
+    meaning: 'сервер получателя не принял письмо (нет такого ящика, переполнен, домен отверг) — отправка прекращена',
+  },
+  complained: {
+    state: 'warning',
+    label: 'жалоба',
+    filter: 'Жалобы',
+    meaning: 'получатель пометил письмо как спам — отправка прекращена',
+  },
 };
+
+/** Subscriber statuses in the order the filter offers them. */
+const STATUSES: readonly Subscriber['status'][] = [
+  'active',
+  'unsubscribed',
+  'bounced',
+  'complained',
+];
+
+/** The subscriber filter: one status, or every one of them. */
+type StatusFilter = Subscriber['status'] | 'all';
 
 /**
  * Owner-only newsletter console (comms, design.md R5), wired to the REAL
@@ -313,6 +360,45 @@ export class ScreenNewsletter extends LitElement {
       gap: 0.4rem;
     }
 
+    .status-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .status-filter .chip {
+      font: inherit;
+      font-size: 0.8rem;
+      color: inherit;
+      background: none;
+    }
+
+    .status-filter .chip.on {
+      background: var(--color-accent);
+      color: var(--color-on-accent, var(--color-background));
+      border-color: var(--color-accent);
+    }
+
+    .status-filter .count {
+      font-variant-numeric: tabular-nums;
+      opacity: 0.75;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.35rem var(--spacing-sm);
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      align-items: baseline;
+    }
+
+    .legend dt,
+    .legend dd {
+      margin: 0;
+    }
+
     .chip {
       display: inline-flex;
       align-items: center;
@@ -466,6 +552,9 @@ export class ScreenNewsletter extends LitElement {
   @state() private adding = false;
   @state() private addError = '';
 
+  /** Which lifecycle state the subscriber table is narrowed to. */
+  @state() private statusFilter: StatusFilter = 'all';
+
   /** Id of the subscriber currently being removed (disables its row control). */
   @state() private removingId?: number;
 
@@ -547,9 +636,25 @@ export class ScreenNewsletter extends LitElement {
     this.recipients = [];
   };
 
-  /** Number of active subscribers a dispatch would reach. */
+  /**
+   * Number of active subscribers a dispatch would reach. Counted over the
+   * whole list — the table filter narrows what the editor is looking at,
+   * never who the mailing goes to.
+   */
   private get activeCount(): number {
-    return this.subscribers.filter((s) => s.status === 'active').length;
+    return this.countOf('active');
+  }
+
+  /** How many subscribers carry one status. */
+  private countOf(status: Subscriber['status']): number {
+    return this.subscribers.filter((s) => s.status === status).length;
+  }
+
+  /** The subscribers the table shows under the current filter. */
+  private get visibleSubscribers(): readonly Subscriber[] {
+    return this.statusFilter === 'all'
+      ? this.subscribers
+      : this.subscribers.filter((s) => s.status === this.statusFilter);
   }
 
   private readonly onTabChange = (event: Event): void => {
@@ -759,6 +864,42 @@ export class ScreenNewsletter extends LitElement {
     `;
   }
 
+  /** Filter chips: every status plus "all", each carrying its own count. */
+  private renderStatusFilter(): TemplateResult {
+    const chip = (value: StatusFilter, label: string, count: number): TemplateResult => html`
+      <button
+        type="button"
+        class="chip ${this.statusFilter === value ? 'on' : ''}"
+        aria-pressed=${this.statusFilter === value ? 'true' : 'false'}
+        @click=${() => (this.statusFilter = value)}
+      >
+        ${label} <span class="count">${count}</span>
+      </button>
+    `;
+    return html`
+      <div class="status-filter" role="group" aria-label="Фильтр по статусу подписчика">
+        ${chip('all', 'Все', this.subscribers.length)}
+        ${STATUSES.map((status) =>
+          chip(status, STATUS_META[status].filter, this.countOf(status)),
+        )}
+      </div>
+    `;
+  }
+
+  /** What each lifecycle state actually means, in the editor's words. */
+  private renderStatusLegend(): TemplateResult {
+    return html`
+      <dl class="legend">
+        ${STATUSES.map(
+          (status) => html`
+            <dt><cp-status state=${STATUS_META[status].state} label=${STATUS_META[status].label}></cp-status></dt>
+            <dd>${STATUS_META[status].meaning}</dd>
+          `,
+        )}
+      </dl>
+    `;
+  }
+
   private renderSubscribers(): TemplateResult {
     if (!this.subsLoaded) return html`<p class="muted">Загружаем подписчиков…</p>`;
     if (this.subsFailed) {
@@ -771,7 +912,8 @@ export class ScreenNewsletter extends LitElement {
         </section>
       `;
     }
-    const rows: CpTableRow[] = this.subscribers.map((sub) => {
+    const visible = this.visibleSubscribers;
+    const rows: CpTableRow[] = visible.map((sub) => {
       const meta = STATUS_META[sub.status];
       return {
         id: String(sub.id),
@@ -791,7 +933,7 @@ export class ScreenNewsletter extends LitElement {
         </button>`,
       };
     });
-    const unsub = this.subscribers.filter((s) => s.status !== 'active').length;
+    const unsub = this.subscribers.length - this.activeCount;
     return html`
       <section aria-label="Подписчики">
         <div class="toolbar">
@@ -799,12 +941,14 @@ export class ScreenNewsletter extends LitElement {
             >${this.activeCount} активных${unsub > 0 ? html` · ${unsub} неактивных` : nothing}</span
           >
         </div>
-        ${this.renderAddForm()}
+        ${this.renderStatusFilter()} ${this.renderStatusLegend()} ${this.renderAddForm()}
         ${this.subscribers.length === 0
           ? html`<p class="muted">Пока нет ни одного подписчика.</p>`
-          : html`<div class="scroll-x">
-              <cp-table caption="Список рассылки" .columns=${SUBSCRIBER_COLUMNS} .rows=${rows}></cp-table>
-            </div>`}
+          : visible.length === 0
+            ? html`<p class="muted">С этим статусом подписчиков нет.</p>`
+            : html`<div class="scroll-x">
+                <cp-table caption="Список рассылки" .columns=${SUBSCRIBER_COLUMNS} .rows=${rows}></cp-table>
+              </div>`}
       </section>
     `;
   }
