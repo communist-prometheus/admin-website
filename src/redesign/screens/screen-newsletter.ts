@@ -84,6 +84,10 @@ const isIdle = (tick: DispatchTick): boolean =>
  */
 const tickTone = (tick: DispatchTick): { state: string; label: string } => {
   if (isIdle(tick)) return { state: 'neutral', label: 'нечего отправлять' };
+  // Recipients whose batch the mail service never settled on: not errors,
+  // but the run reached fewer addresses than it meant to, so it is not a
+  // clean delivery either.
+  if (tick.skipped > 0) return { state: 'warning', label: `${tick.skipped} без ответа` };
   if (tick.failed > 0 && tick.sent === 0) return { state: 'danger', label: 'все с ошибкой' };
   if (tick.failed > 0) return { state: 'warning', label: `${tick.failed} с ошибкой` };
   if (tick.sent === 0) return { state: 'neutral', label: 'ничего не ушло' };

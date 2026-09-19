@@ -20,6 +20,7 @@ import { publishTarget } from '../engine/publish-target.js';
 import { listSlugsViaApi } from '../engine/content.js';
 import { slugify, slugProblem } from '../engine/slug.js';
 import { renameArticleViaApi } from '../engine/rename-article.js';
+import { importArticleFile } from '../engine/import-article.js';
 import { listDeployRuns } from '../engine/github-api.js';
 import { siteBuildState, type SiteBuildState } from '../engine/site-build-state.js';
 import '../components/issue-files.js';
@@ -342,6 +343,42 @@ export class ScreenEditor extends LitElement {
       background: var(--color-border);
       margin: 0 0.3rem;
     }
+    .toolbar .import-pick {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      width: auto;
+      padding: 0 0.6rem;
+      cursor: pointer;
+    }
+
+    .toolbar .import-pick input {
+      position: absolute;
+      width: 0;
+      height: 0;
+      opacity: 0;
+    }
+
+    .toolbar .import-pick:has(input:disabled) {
+      opacity: 0.55;
+      cursor: progress;
+    }
+
+    .import-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .import-note {
+      margin: 0 0 var(--spacing-sm);
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+    }
+
+    .import-note.bad {
+      color: var(--color-danger, #c0392b);
+    }
+
     .toolbar .spacer {
       flex: 1;
     }
@@ -686,6 +723,11 @@ export class ScreenEditor extends LitElement {
   /** The address being edited, normalised as the editor types. */
   @state() private slugDraft = '';
 
+  /** File-import state: in flight, what it reported, and why it refused. */
+  @state() private importBusy = false;
+  @state() private importNote = '';
+  @state() private importError = '';
+
   /** Slugs already used in this collection — an address must not collide. */
   @state() private takenSlugs: readonly string[] = [];
 
@@ -834,12 +876,24 @@ export class ScreenEditor extends LitElement {
     this.loaded = true;
   }
 
-  /** Seeds a blank new-article document (real save-to-new-file is a follow-up). */
+  /**
+   * A document that has no file in the repository yet. Publishing one CREATES
+   * `<collection>/<slug>/index.<lang>.md` rather than updating a path, so the
+   * address is not a rename target but the name of the file about to be written.
+   */
+  private get isNewMaterial(): boolean {
+    return this.articlePath === '';
+  }
+
+  /** Seeds a blank new-article document. */
   private startNewArticle(): void {
     this.slug = '';
     this.availableLangs = ['ru'];
     this.activeLang = 'ru';
-    this.applyMarkdown('---\ntitle: ""\nlang: ru\ncategory: \npublished: false\n---\n\n', '', true);
+    // No bare `category:` in the seed: a key with no value parses as null, and
+    // that is the exact shape that once broke the public build. The rubric
+    // picker writes the key when a rubric is actually chosen.
+    this.applyMarkdown('---\ntitle: ""\nlang: ru\npublished: false\n---\n\n', '', true);
   }
 
   private async loadLang(lang: string): Promise<void> {
@@ -1213,24 +1267,58 @@ export class ScreenEditor extends LitElement {
     this.publishOpen = true;
     this.publishSha = '';
     this.publishError = '';
-    if (this.articlePath === '') {
-      // New-article documents have no target file yet — saving to a new
-      // blog/<slug>/index.<lang>.md is a separate flow, not a silent no-op.
-      this.stageStates = ['failed', 'pending', 'pending'];
-      this.publishError = 'Новый материал: сохранение в новый файл пока в разработке.';
+    const blocked = this.isNewMaterial ? this.newMaterialProblem() : undefined;
+    if (blocked !== undefined) {
+      this.stageStates = ['failed'];
+      this.publishError = blocked;
       return;
     }
     void this.runRealPublish();
   };
+
+  /**
+   * Why a new material cannot be written yet, or undefined when it can. The
+   * address names the file, so an empty, malformed or already-occupied one has
+   * to stop the write rather than create a folder that collides with another
+   * material.
+   */
+  private newMaterialProblem(): string | undefined {
+    if (this.slugDraft === '') return 'Адрес не задан — по нему создаётся файл материала.';
+    return slugProblem(this.slugDraft, this.takenSlugs);
+  }
+
+  /** The file a publish writes: the existing one, or the one being created. */
+  private targetPath(): string {
+    return this.isNewMaterial
+      ? `${this.collection}/${this.slugDraft}/index.${this.activeLang}.md`
+      : this.articlePath;
+  }
+
+  /**
+   * Adopts the address a just-created material was written to: the document
+   * stops being new, the editor moves to it, and the address is taken from
+   * here on, so a second material cannot be pointed at the same folder.
+   */
+  private adoptCreated(path: string): void {
+    this.slug = this.slugDraft;
+    this.articlePath = path;
+    this.takenSlugs = [...new Set([...this.takenSlugs, this.slug])];
+    globalThis.location.hash =
+      this.collection === 'blog' ? `#/editor/${this.slug}` : `#/editor/${this.collection}/${this.slug}`;
+  }
 
   /** Publishes the ONE edited file via the GitHub API — a single-file commit,
    *  no clone and no whole-repo push. */
   private async runRealPublish(): Promise<void> {
     this.publishBusy = true;
     this.stageStates = ['running'];
-    const message = `${this.articleTitle === '' ? 'Материал' : this.articleTitle}: правка из редактора`;
-    const result = await publishFileViaApi(this.articlePath, this.editedMarkdown, message);
+    const creating = this.isNewMaterial;
+    const path = this.targetPath();
+    const name = this.articleTitle === '' ? 'Материал' : this.articleTitle;
+    const message = `${name}: ${creating ? 'новый материал из редактора' : 'правка из редактора'}`;
+    const result = await publishFileViaApi(path, this.editedMarkdown, message);
     if (result.ok) {
+      if (creating) this.adoptCreated(path);
       this.stageStates = ['done'];
       this.publishSha = result.sha ?? 'ok';
       this.dirty = false;
@@ -1302,6 +1390,54 @@ export class ScreenEditor extends LitElement {
     this.bodyEditor?.insertText('![](/assets/image.png)');
   };
 
+  /**
+   * Imports a picked .docx / .html / .md into the open material: the document
+   * is converted to markdown, its inline images are written into the
+   * material's asset folder, and the text is inserted AT THE CARET — an
+   * import adds to the article, it never replaces what is already written.
+   */
+  private onImportPick = async (event: Event): Promise<void> => {
+    const input = event.target;
+    const file = input instanceof HTMLInputElement ? input.files?.[0] : undefined;
+    if (file === undefined) return;
+    this.importBusy = true;
+    this.importError = '';
+    this.importNote = '';
+    try {
+      const result = await importArticleFile(file, this.collection, this.slug);
+      if (result.ok) {
+        this.insertImported(result.markdown);
+        this.importNote =
+          result.uploaded === 0
+            ? 'Импортировано.'
+            : `Импортировано, перенесено изображений: ${result.uploaded}.`;
+      } else {
+        this.importError = result.error;
+      }
+    } catch (e) {
+      this.importError = e instanceof Error ? e.message : String(e);
+    } finally {
+      this.importBusy = false;
+      if (input instanceof HTMLInputElement) input.value = '';
+    }
+  };
+
+  /**
+   * Adds imported markdown to the body. The live editor inserts at the caret
+   * and reports the edit itself; before it has mounted (or in a headless
+   * test) the text is appended, so an import is never silently dropped.
+   */
+  private insertImported(markdown: string): void {
+    // `@query` yields null, not undefined, until the editor has rendered.
+    const editor = this.bodyEditor ?? undefined;
+    if (editor === undefined) {
+      this.body = `${this.body.trimEnd()}\n\n${markdown.trim()}\n`;
+    } else {
+      editor.insertText(markdown);
+    }
+    this.dirty = true;
+  }
+
   private renderToolbar(): TemplateResult {
     return html`
       <div class="toolbar" role="toolbar" aria-label="Форматирование материала">
@@ -1328,6 +1464,17 @@ export class ScreenEditor extends LitElement {
         >
           <cp-icon name="upload" size="18"></cp-icon>
         </button>
+        <label class="t import-pick" title="Импорт из файла">
+          <input
+            class="import"
+            type="file"
+            accept=".docx,.html,.htm,.md"
+            ?disabled=${this.importBusy}
+            @change=${(e: Event) => void this.onImportPick(e)}
+          />
+          <cp-icon name="file" size="18"></cp-icon>
+          <span class="import-label">${this.importBusy ? 'Импорт…' : 'Импорт'}</span>
+        </label>
         <span class="spacer"></span>
         <cp-button size="sm" arrow @cp-click=${this.startPublish}
           >Опубликовать на ${publishTarget().site}</cp-button
@@ -1470,7 +1617,7 @@ export class ScreenEditor extends LitElement {
               ? this.slugError
               : `${publishTarget().siteUrl}/${this.activeLang}/${this.collection}/${this.slugDraft}/`}
           </p>
-          ${this.slugDraft !== this.slug && this.slugError === ''
+          ${!this.isNewMaterial && this.slugDraft !== this.slug && this.slugError === ''
             ? html`<cp-button
                 size="sm"
                 variant="secondary"
@@ -1638,6 +1785,11 @@ export class ScreenEditor extends LitElement {
           ? this.renderMagazineBody()
           : html`
               ${this.renderToolbar()}
+              ${this.importError !== ''
+                ? html`<p class="import-note bad" role="alert">${this.importError}</p>`
+                : this.importNote !== ''
+                  ? html`<p class="import-note" role="status">${this.importNote}</p>`
+                  : nothing}
               <cp-markdown-editor
                 class="live"
                 .value=${this.body}

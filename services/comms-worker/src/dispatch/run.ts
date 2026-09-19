@@ -55,12 +55,18 @@ export const runDispatch = async (
     isPlan
   )
   if (plans.length === 0) await recordIdleTick(d)
-  const { sent, failed, quota } = await sendInBatches(ctx, plans)
-  const clean = plans.length > 0 && failed === 0 && d.targetIds === undefined
+  const { sent, failed, unresolved, quota } = await sendInBatches(ctx, plans)
+  // An unresolved batch blocks a clean tick exactly as a failure does:
+  // nothing confirmed delivery, so the watermark must not move past it.
+  const clean =
+    plans.length > 0 &&
+    failed === 0 &&
+    unresolved === 0 &&
+    d.targetIds === undefined
   await advanceCutoff(d, clean)
   const pausedUntil =
     quota === undefined ? undefined : await pauseForQuota(d, quota)
   const skipped = subs.length - plans.length
   await finishTick(d, skipped, pausedUntil)
-  return summarize({ sent, failed, skipped }, start, pausedUntil)
+  return summarize({ sent, failed, skipped, unresolved }, start, pausedUntil)
 }
