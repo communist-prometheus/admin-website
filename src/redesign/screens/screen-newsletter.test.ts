@@ -431,6 +431,17 @@ describe('the journal chip separates "quiet" from "broken"', () => {
     expect(chipState(el)).toBe('warning');
   });
 
+  /*
+   * 2026-09-12: 100 recipients sat in a batch Resend was still processing
+   * when the retry budget ran out. They are recorded as unresolved, not
+   * as failures — but a run that reached only 16 of 116 addresses must
+   * not read as "доставлено" just because nothing errored.
+   */
+  it('flags a run whose batch never settled, instead of calling it delivered', async () => {
+    const el = await openLog({ recipients: 116, sent: 16, failed: 0, bounced: 0, skipped: 100 });
+    expect(chip(el)).toEqual({ state: 'warning', label: '100 без ответа' });
+  });
+
   it('keeps a clean run green', async () => {
     const el = await openLog({ recipients: 3, sent: 3, failed: 0, bounced: 0, skipped: 0 });
     expect(chipState(el)).toBe('success');

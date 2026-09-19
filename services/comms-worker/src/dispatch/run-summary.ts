@@ -14,6 +14,7 @@ export const summarize = (
     readonly sent: number
     readonly failed: number
     readonly skipped: number
+    readonly unresolved: number
   },
   start: number,
   pausedUntil?: string

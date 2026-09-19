@@ -41,6 +41,13 @@ export type BatchResult =
        * the un-sent recipients every tick.
        */
       readonly quota?: QuotaKind
+      /**
+       * Set when the batch was still being PROCESSED when the retry
+       * budget ran out (409 on an idempotent replay). The send neither
+       * succeeded nor failed as far as we can tell, so the recipients
+       * must not be reported as failures — see `batch-retry.ts`.
+       */
+      readonly unresolved?: boolean
     }
 
 /** Thin send client facade — single + batched transactional email. */
