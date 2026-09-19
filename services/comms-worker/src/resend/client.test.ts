@@ -214,6 +214,7 @@ describe('createResendClient.sendBatch', () => {
       ok: false,
       error: 'resend 503 (retry exhausted)',
       definitive: false,
+      unresolved: false,
     })
   })
 
@@ -230,6 +231,7 @@ describe('createResendClient.sendBatch', () => {
       ok: false,
       error: 'resend network (retry exhausted)',
       definitive: false,
+      unresolved: false,
     })
     expect(fetchFn).toHaveBeenCalledTimes(4)
   })

@@ -1,4 +1,5 @@
-import { sendBatchOnce } from './batch'
+import { type BatchVerdict, sendBatchOnce } from './batch'
+import { attemptsFor, backoffMs, CONFLICT } from './batch-budget'
 import { buildBatchInit } from './batch-request'
 import { exhaustedError, type QuotaKind } from './response'
 import type { BatchResult, SendInput } from './types'
@@ -18,21 +19,24 @@ const quotaResult = (quota: QuotaKind): BatchResult => ({
   quota,
 })
 
-/**
- * Attempts per batch, and the base backoff between them.
- *
- * A 100-email batch takes Resend seconds to accept, so the old single
- * retry after a flat 1s landed while the original was still in flight
- * and collected a 409. Back off exponentially (2s, 4s, 8s) and give the
- * original time to settle: on a retry Resend replays whatever it
- * recorded against our idempotency key, so a batch that WAS accepted
- * comes back `ok` with its real ids instead of being written off.
- */
-const MAX_ATTEMPTS = 4
-const BASE_BACKOFF_MS = 2_000
+/** The result when a verdict settles the batch, or undefined to retry. */
+const settle = (verdict: BatchVerdict): BatchResult | undefined => {
+  if (verdict.kind === 'ok') return { ok: true, ids: verdict.ids }
+  if (verdict.kind === 'fail')
+    return { ok: false, error: verdict.error, definitive: true }
+  return verdict.quota === undefined ? undefined : quotaResult(verdict.quota)
+}
 
-const backoffMs = (attempt: number, hinted: number): number =>
-  Math.max(hinted, BASE_BACKOFF_MS * 2 ** (attempt - 1))
+const waitOf = (verdict: BatchVerdict): number =>
+  verdict.kind === 'retry' ? verdict.waitMs : 0
+
+/** The result once the budget is spent: unknown for a conflict, failed otherwise. */
+const exhausted = (lastStatus: number): BatchResult => ({
+  ok: false,
+  error: exhaustedError(lastStatus),
+  definitive: false,
+  unresolved: lastStatus === CONFLICT,
+})
 
 /**
  * Send one Resend batch, retrying a transient failure (409 / 429 / 5xx
@@ -55,19 +59,17 @@ export const sendBatchWithRetry = async (
 ): Promise<BatchResult> => {
   const init = buildBatchInit(apiKey, inputs, idempotencyKey)
   let lastStatus = 0
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+  let attempt = 0
+  // The ceiling depends on what the server keeps answering, so it is
+  // re-read each round rather than fixed before the first attempt.
+  while (attempt < attemptsFor(lastStatus)) {
+    attempt += 1
     const verdict = await sendBatchOnce(doFetch, init)
-    if (verdict.kind === 'ok') return { ok: true, ids: verdict.ids }
-    if (verdict.kind === 'fail')
-      return { ok: false, error: verdict.error, definitive: true }
-    if (verdict.quota !== undefined) return quotaResult(verdict.quota)
-    lastStatus = verdict.status
-    if (attempt < MAX_ATTEMPTS)
-      await doSleep(backoffMs(attempt, verdict.waitMs))
+    const settled = settle(verdict)
+    if (settled !== undefined) return settled
+    lastStatus = verdict.kind === 'retry' ? verdict.status : lastStatus
+    if (attempt < attemptsFor(lastStatus))
+      await doSleep(backoffMs(attempt, waitOf(verdict), lastStatus))
   }
-  return {
-    ok: false,
-    error: exhaustedError(lastStatus),
-    definitive: false,
-  }
+  return exhausted(lastStatus)
 }

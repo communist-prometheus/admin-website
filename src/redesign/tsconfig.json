@@ -14,6 +14,8 @@
       "@communist-prometheus/cp-components/*": ["../../vendor/cp-components/dist/*"]
     }
   },
-  "include": ["**/*.ts"],
+  // The editor's file-import reuses the shared conversion pipeline under
+  // src/components, which relies on ambient module shims in src/types.
+  "include": ["**/*.ts", "../types/**/*.d.ts"],
   "exclude": ["**/*.test.ts", "test-setup.ts"]
 }

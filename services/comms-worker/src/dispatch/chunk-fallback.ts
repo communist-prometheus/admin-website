@@ -9,6 +9,11 @@ export type ChunkCounts = {
   readonly sent: number
   readonly failed: number
   /**
+   * Recipients whose batch was still being processed when the retry
+   * budget ran out. Neither delivered nor failed as far as we know.
+   */
+  readonly unresolved: number
+  /**
    * Set when the chunk was rejected by an account-wide quota. The
    * caller stops sending further chunks and pauses the dispatch until
    * the quota resets, rather than recording every remaining recipient
@@ -49,21 +54,5 @@ export const sendIndividually = async (
   logEvent('batch.fallback', { size: group.length })
   const results = await Promise.all(group.map(p => sendOne(ctx, p)))
   const sent = results.filter(Boolean).length
-  return { sent, failed: results.length - sent }
-}
-
-/**
- * Write the whole chunk off as failed under one shared error.
- * @param ctx Per-tick context.
- * @param group The chunk.
- * @param error Error to record against every recipient.
- * @returns Tally (always all-failed).
- */
-export const recordFailedChunk = async (
-  ctx: DispatchContext,
-  group: ReadonlyArray<SendPlan>,
-  error: string
-): Promise<ChunkCounts> => {
-  await Promise.all(group.map(p => recordFailed(ctx, p.sub, p.count, error)))
-  return { sent: 0, failed: group.length }
+  return { sent, failed: results.length - sent, unresolved: 0 }
 }

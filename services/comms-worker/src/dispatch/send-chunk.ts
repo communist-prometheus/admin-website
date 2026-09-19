@@ -1,10 +1,6 @@
-import { logEvent } from '../log/structured'
-import {
-  type ChunkCounts,
-  recordFailedChunk,
-  sendIndividually,
-} from './chunk-fallback'
+import type { ChunkCounts } from './chunk-fallback'
 import { chunkIdempotencyKey } from './chunk-key'
+import { rejected } from './chunk-rejected'
 import type { DispatchContext } from './context'
 import type { SendPlan } from './plan'
 import { recordSent } from './record'
@@ -22,11 +18,10 @@ const recordSentChunk = (
   )
 
 /**
- * Send one chunk (≤100) through the Resend batch endpoint in a single
- * HTTP call. On a definitive rejection fall back to one email per
- * recipient; when the transient retries are exhausted the batch may or
- * may not have landed, so record the failure and let the next tick
- * replay it (the cutoff does not advance) rather than risk duplicates.
+ * Send one chunk through the Resend batch endpoint in a single HTTP
+ * call. Anything the endpoint does not accept is handed to `rejected`,
+ * which decides between retrying one email at a time, recording a
+ * failure, and recording an outcome Resend never settled on.
  * @param ctx Static tick-wide context.
  * @param group Subscribers + payloads for this chunk.
  * @param chunkIndex Zero-based index of the chunk within this tick.
@@ -43,14 +38,7 @@ export const sendChunk = async (
   )
   if (res.ok) {
     await recordSentChunk(ctx, group, res.ids)
-    return { sent: group.length, failed: 0 }
+    return { sent: group.length, failed: 0, unresolved: 0 }
   }
-  logEvent('batch.fail', {
-    error: res.error,
-    definitive: res.definitive,
-    quota: res.quota,
-  })
-  if (res.definitive) return sendIndividually(ctx, group)
-  const counts = await recordFailedChunk(ctx, group, res.error)
-  return res.quota === undefined ? counts : { ...counts, quota: res.quota }
+  return rejected(ctx, group, res)
 }

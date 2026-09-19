@@ -32,6 +32,11 @@ export type DispatchSummary = {
   readonly sent: number
   readonly failed: number
   readonly skipped: number
+  /**
+   * Recipients whose batch Resend was still processing when the retry
+   * budget ran out — neither delivered nor failed, and replayed next tick.
+   */
+  readonly unresolved: number
   readonly durationMs: number
   /**
    * Set when the tick hit an account-wide Resend quota and paused the
