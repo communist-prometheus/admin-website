@@ -50,6 +50,16 @@ export const TESTID = {
   settingsLinks: 'settings-links',
   /** Saves the edited links directory. */
   settingsSaveLinks: 'settings-save-links',
+  /** The feature-flags section of settings. */
+  settingsFeatures: 'settings-features',
+  /** Saves the edited feature flags. */
+  settingsSaveFeatures: 'settings-save-features',
+  /** The local action-history section of settings. */
+  settingsHistory: 'settings-history',
+  /** The hard-reset section of settings. */
+  settingsReset: 'settings-reset',
+  /** Confirms the hard reset. */
+  settingsResetConfirm: 'settings-reset-confirm',
   /** Opens the delete-material dialog. */
   deleteMaterial: 'delete-material',
   /** The delete dialog; carries `data-state` = open | busy | failed. */
