@@ -10,6 +10,11 @@ import {
   type LinkEntry,
   type SiteLanguageEntry,
 } from '../engine/site-settings-io.js';
+import { readFeaturesViaApi, saveFeaturesViaApi, type FeatureFlags } from '../engine/features-io.js';
+import { clearEntries, listEntries } from '@/features/action-history/db';
+import type { ActionEntry } from '@/features/action-history/types';
+import { runHardReset } from '@/composables/useHardReset/hard-reset';
+import { summariseAction } from '../engine/action-summary.js';
 import { TESTID } from '../testids.js';
 
 /**
@@ -117,6 +122,19 @@ export class ScreenSettings extends LitElement {
       font-size: 0.85rem;
       color: var(--color-text-secondary);
     }
+
+    .history-row {
+      display: flex;
+      gap: var(--spacing-sm);
+      align-items: baseline;
+      font-size: 0.9rem;
+    }
+
+    .code {
+      font-family: var(--font-mono, ui-monospace, monospace);
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+    }
   `;
 
   /** The languages document being edited. */
@@ -134,11 +152,87 @@ export class ScreenSettings extends LitElement {
   @state() private linkBusy = false;
   @state() private linkLoaded = false;
 
+  /** Site feature flags, the local action log, and the reset in flight. */
+  @state() private features: FeatureFlags = { webring: false };
+  @state() private featuresError = '';
+  @state() private featuresNote = '';
+  @state() private featuresBusy = false;
+
+  @state() private history: readonly ActionEntry[] = [];
+  @state() private historyLoaded = false;
+
+  @state() private resetOpen = false;
+  @state() private resetStep = '';
+  @state() private resetError = '';
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this.loadLanguages();
     void this.loadLinks();
+    void this.loadFeatures();
+    void this.loadHistory();
   }
+
+  private async loadFeatures(): Promise<void> {
+    try {
+      this.features = await readFeaturesViaApi();
+    } catch (e) {
+      this.featuresError = e instanceof Error ? e.message : 'Не удалось прочитать флаги.';
+    }
+  }
+
+  private async loadHistory(): Promise<void> {
+    try {
+      this.history = await listEntries();
+    } catch {
+      this.history = [];
+    }
+    this.historyLoaded = true;
+  }
+
+  private readonly saveFeatures = async (): Promise<void> => {
+    if (this.featuresBusy) return;
+    this.featuresBusy = true;
+    this.featuresError = '';
+    this.featuresNote = '';
+    const result = await saveFeaturesViaApi(this.features);
+    this.featuresBusy = false;
+    if (result.ok) this.featuresNote = 'Флаги сохранены.';
+    else this.featuresError = result.error ?? 'Не удалось сохранить флаги.';
+  };
+
+  private readonly clearHistory = async (): Promise<void> => {
+    await clearEntries();
+    await this.loadHistory();
+  };
+
+  private readonly openReset = (): void => {
+    this.resetError = '';
+    this.resetStep = '';
+    this.resetOpen = true;
+  };
+
+  private readonly closeReset = (): void => {
+    if (this.resetStep === '') this.resetOpen = false;
+  };
+
+  /**
+   * Wipes every artefact this browser cached — the cloned repository, the
+   * caches, the databases, the stored token — and reloads. Irreversible for
+   * this browser only: nothing in the repository is touched.
+   */
+  private readonly confirmReset = async (): Promise<void> => {
+    this.resetError = '';
+    this.resetStep = 'Начинаем…';
+    try {
+      await runHardReset((progress) => {
+        this.resetStep = `${progress.step}/${progress.total} · ${progress.label}`;
+      });
+    } catch (e) {
+      this.resetStep = '';
+      this.resetError = e instanceof Error ? e.message : 'Сброс не завершился.';
+    }
+  };
 
   private async loadLanguages(): Promise<void> {
     try {
@@ -368,13 +462,124 @@ export class ScreenSettings extends LitElement {
     `;
   }
 
+  private renderFeatures(): TemplateResult {
+    return html`
+      <section aria-label="Функции сайта" data-testid=${TESTID.settingsFeatures}>
+        <h2>Функции сайта</h2>
+        <p class="hint">Что сайт публикует (settings/features.json).</p>
+        <label class="ring feature-webring">
+          <input
+            type="checkbox"
+            .checked=${this.features.webring}
+            @change=${(e: Event) => {
+              const target = e.target;
+              if (target instanceof HTMLInputElement)
+                this.features = { ...this.features, webring: target.checked };
+            }}
+          />
+          Вебринг на сайте
+        </label>
+        ${this.featuresError !== ''
+          ? html`<p class="bad" role="alert">${this.featuresError}</p>`
+          : nothing}
+        ${this.featuresNote !== ''
+          ? html`<p class="ok" role="status">${this.featuresNote}</p>`
+          : nothing}
+        <div class="actions">
+          <cp-button
+            size="sm"
+            arrow
+            data-testid=${TESTID.settingsSaveFeatures}
+            ?disabled=${this.featuresBusy}
+            @cp-click=${() => void this.saveFeatures()}
+            >${this.featuresBusy ? 'Сохраняем…' : 'Сохранить функции'}</cp-button
+          >
+        </div>
+      </section>
+    `;
+  }
+
+  private renderHistory(): TemplateResult {
+    return html`
+      <section aria-label="История действий" data-testid=${TESTID.settingsHistory}>
+        <h2>История действий</h2>
+        <p class="hint">
+          Что происходило в этом браузере за последний час — для разбора, а не для аудита:
+          журнал живёт локально и никуда не уходит.
+        </p>
+        ${this.historyLoaded && this.history.length === 0
+          ? html`<p class="hint">Записей пока нет.</p>`
+          : html`<ul class="rows">
+              ${this.history.map(
+                (entry) => html`
+                  <li class="history-row">
+                    <span class="code">${new Date(entry.ts).toLocaleTimeString('ru-RU')}</span>
+                    <span>${summariseAction(entry)}</span>
+                  </li>
+                `,
+              )}
+            </ul>`}
+        <div class="actions">
+          <cp-button variant="secondary" size="sm" @cp-click=${() => void this.clearHistory()}
+            >Очистить журнал</cp-button
+          >
+        </div>
+      </section>
+    `;
+  }
+
+  private renderReset(): TemplateResult {
+    return html`
+      <section aria-label="Сброс локальных данных" data-testid=${TESTID.settingsReset}>
+        <h2>Сброс локальных данных</h2>
+        <p class="hint">
+          Стирает всё, что админка закэшировала в этом браузере: клон репозитория, кэши,
+          базы, сохранённый токен. Репозиторий не трогается — после сброса нужно будет
+          войти заново.
+        </p>
+        ${this.resetError !== '' ? html`<p class="bad" role="alert">${this.resetError}</p>` : nothing}
+        ${this.resetStep !== '' ? html`<p class="ok" role="status">${this.resetStep}</p>` : nothing}
+        <div class="actions">
+          <cp-button
+            variant="secondary"
+            size="sm"
+            data-testid=${TESTID.settingsReset}
+            @cp-click=${this.openReset}
+            >Сбросить локальные данные</cp-button
+          >
+        </div>
+        <cp-dialog
+          ?open=${this.resetOpen}
+          ?busy=${this.resetStep !== ''}
+          tone="danger"
+          heading="Стереть локальные данные админки?"
+          @cp-cancel=${this.closeReset}
+        >
+          <p class="hint">
+            Это действие затрагивает только текущий браузер. Несохранённые правки будут
+            потеряны, и потребуется повторный вход.
+          </p>
+          <div slot="footer" class="actions">
+            <cp-button variant="secondary" @cp-click=${this.closeReset}>Отмена</cp-button>
+            <cp-button
+              data-testid=${TESTID.settingsResetConfirm}
+              @cp-click=${() => void this.confirmReset()}
+              >Стереть</cp-button
+            >
+          </div>
+        </cp-dialog>
+      </section>
+    `;
+  }
+
   override render(): TemplateResult {
     return html`
       <div class="head">
         <p class="eyebrow">Администрирование · настройки сайта</p>
         <h1 tabindex="-1">Настройки</h1>
       </div>
-      ${this.renderLanguages()} ${this.renderLinks()}
+      ${this.renderLanguages()} ${this.renderLinks()} ${this.renderFeatures()}
+      ${this.renderHistory()} ${this.renderReset()}
     `;
   }
 }
