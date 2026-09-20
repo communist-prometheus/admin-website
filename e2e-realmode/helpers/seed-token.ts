@@ -11,13 +11,15 @@ const PAT = process.env['GITHUB_E2E_KEY'] ?? ''
  * loads — never falls back to `networkidle` or blind sleeps.
  * @param page - Playwright page to seed
  * @param options - Wait tunables forwarded to `visit`
+ * @param entry - Page to load; the rebuilt admin lives at /redesign.html
  */
 export const seedTokenAndLoad = async (
   page: Page,
-  options?: WaitOptions
+  options?: WaitOptions,
+  entry = '/'
 ): Promise<void> => {
   if (!PAT) throw new Error('GITHUB_E2E_KEY missing')
-  await visit(page, '/', options)
+  await visit(page, entry, options)
   await page.evaluate(t => localStorage.setItem('gh_token', t), PAT)
   await page.reload({ waitUntil: 'domcontentloaded' })
 }

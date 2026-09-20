@@ -21,6 +21,7 @@ import { listSlugsViaApi } from '../engine/content.js';
 import { slugify, slugProblem } from '../engine/slug.js';
 import { renameArticleViaApi } from '../engine/rename-article.js';
 import { importArticleFile } from '../engine/import-article.js';
+import { TESTID } from '../testids.js';
 import { listDeployRuns } from '../engine/github-api.js';
 import { siteBuildState, type SiteBuildState } from '../engine/site-build-state.js';
 import '../components/issue-files.js';
@@ -723,6 +724,9 @@ export class ScreenEditor extends LitElement {
   /** The address being edited, normalised as the editor types. */
   @state() private slugDraft = '';
 
+  /** What a publish reported when it wrote nothing (already up to date). */
+  @state() private publishNote = '';
+
   /** File-import state: in flight, what it reported, and why it refused. */
   @state() private importBusy = false;
   @state() private importNote = '';
@@ -912,6 +916,7 @@ export class ScreenEditor extends LitElement {
     this.articleTitle = parsed.title;
     this.body = parsed.body;
     this.articlePath = path;
+    this.appliedMarkdown = markdown;
     this.live = live;
     // The two taxonomies are separate frontmatter keys and are seeded as such:
     // `category` (required by the site schema, values like programme/history)
@@ -1072,6 +1077,7 @@ export class ScreenEditor extends LitElement {
       <cp-dialog
         ?open=${this.addLangOpen}
         ?busy=${this.addLangBusy}
+        data-testid=${TESTID.addLangDialog}
         heading="Новый перевод"
         @cp-cancel=${this.closeAddLang}
       >
@@ -1094,7 +1100,11 @@ export class ScreenEditor extends LitElement {
           ${this.addLangBusy
             ? html`<cp-button variant="secondary" disabled>Создаём…</cp-button>`
             : html`<cp-button variant="secondary" @cp-click=${this.closeAddLang}>Отмена</cp-button>
-                <cp-button arrow ?disabled=${this.addLangChoice === ''} @cp-click=${() => void this.confirmAddLang()}
+                <cp-button
+                  arrow
+                  data-testid=${TESTID.addLangConfirm}
+                  ?disabled=${this.addLangChoice === ''}
+                  @cp-click=${() => void this.confirmAddLang()}
                   >Создать</cp-button
                 >`}
         </div>
@@ -1267,6 +1277,7 @@ export class ScreenEditor extends LitElement {
     this.publishOpen = true;
     this.publishSha = '';
     this.publishError = '';
+    this.publishNote = '';
     const blocked = this.isNewMaterial ? this.newMaterialProblem() : undefined;
     if (blocked !== undefined) {
       this.stageStates = ['failed'];
@@ -1284,7 +1295,14 @@ export class ScreenEditor extends LitElement {
    */
   private newMaterialProblem(): string | undefined {
     if (this.slugDraft === '') return 'Адрес не задан — по нему создаётся файл материала.';
-    return slugProblem(this.slugDraft, this.takenSlugs);
+    const address = slugProblem(this.slugDraft, this.takenSlugs);
+    if (address !== undefined) return address;
+    // The blog schema requires `category`; a blank new material has none, so
+    // every first publish would otherwise be refused by the content gate in
+    // its own words ("category: is missing") instead of the editor's.
+    if (this.collection === 'blog' && this.rubric === '')
+      return 'Выберите рубрику — без неё материал не примет схема сайта.';
+    return undefined;
   }
 
   /** The file a publish writes: the existing one, or the one being created. */
@@ -1310,15 +1328,26 @@ export class ScreenEditor extends LitElement {
   /** Publishes the ONE edited file via the GitHub API — a single-file commit,
    *  no clone and no whole-repo push. */
   private async runRealPublish(): Promise<void> {
+    const creating = this.isNewMaterial;
+    const markdown = this.editedMarkdown;
+    /* Writing a byte-identical file back is not a no-op: GitHub records an
+     * EMPTY commit, and the content sync rebuilds the public site for it.
+     * Opening a material to read it must cost the repository nothing. */
+    if (!creating && markdown === this.appliedMarkdown) {
+      this.stageStates = ['done'];
+      this.publishNote = 'Материал без изменений — публиковать нечего.';
+      this.dirty = false;
+      return;
+    }
     this.publishBusy = true;
     this.stageStates = ['running'];
-    const creating = this.isNewMaterial;
     const path = this.targetPath();
     const name = this.articleTitle === '' ? 'Материал' : this.articleTitle;
     const message = `${name}: ${creating ? 'новый материал из редактора' : 'правка из редактора'}`;
-    const result = await publishFileViaApi(path, this.editedMarkdown, message);
+    const result = await publishFileViaApi(path, markdown, message);
     if (result.ok) {
       if (creating) this.adoptCreated(path);
+      this.appliedMarkdown = markdown;
       this.stageStates = ['done'];
       this.publishSha = result.sha ?? 'ok';
       this.dirty = false;
@@ -1354,6 +1383,9 @@ export class ScreenEditor extends LitElement {
 
   @query('textarea.lead') private leadField?: HTMLTextAreaElement;
 
+  /** The document exactly as it was loaded, for the unchanged check. */
+  private appliedMarkdown = '';
+
   /** The heading text last written into the DOM by this component. */
   private titleInDom = '';
 
@@ -1365,21 +1397,24 @@ export class ScreenEditor extends LitElement {
    * back, which is why the last synced value is tracked.
    */
   override updated(changed: Map<string, unknown>): void {
-    const el = this.titleEl;
-    if (el === undefined) return;
-    if (this.articleTitle !== this.titleInDom) {
+    /* `@query` yields null — not undefined — until the element renders, so
+     * every guard here normalises first. A `!== undefined` check let a null
+     * through and threw on each update of a document with no lead field. */
+    const el = this.titleEl ?? undefined;
+    const lead = this.leadField ?? undefined;
+    if (el !== undefined && this.articleTitle !== this.titleInDom) {
       el.textContent = this.articleTitle;
       this.titleInDom = this.articleTitle;
     }
     // A loaded (or language-switched) lead has to be sized too, not just a
     // typed one.
-    if (this.leadField !== undefined) this.growLead(this.leadField);
+    if (lead !== undefined) this.growLead(lead);
     void changed;
   }
 
   /** Applies a toolbar tool (inline wrap or line prefix) to the editor selection. */
   private applyFormat = (tool: FormatTool): void => {
-    const editor = this.bodyEditor;
+    const editor = this.bodyEditor ?? undefined;
     if (editor === undefined) return;
     if (tool.wrap !== undefined) editor.wrapSelection(tool.wrap[0], tool.wrap[1]);
     else if (tool.prefix !== undefined) editor.prefixLines(tool.prefix);
@@ -1467,16 +1502,17 @@ export class ScreenEditor extends LitElement {
         <label class="t import-pick" title="Импорт из файла">
           <input
             class="import"
+            data-testid=${TESTID.editorImport}
             type="file"
             accept=".docx,.html,.htm,.md"
             ?disabled=${this.importBusy}
             @change=${(e: Event) => void this.onImportPick(e)}
           />
-          <cp-icon name="file" size="18"></cp-icon>
+          <cp-icon name="book" size="18"></cp-icon>
           <span class="import-label">${this.importBusy ? 'Импорт…' : 'Импорт'}</span>
         </label>
         <span class="spacer"></span>
-        <cp-button size="sm" arrow @cp-click=${this.startPublish}
+        <cp-button size="sm" arrow data-testid=${TESTID.publish} @cp-click=${this.startPublish}
           >Опубликовать на ${publishTarget().site}</cp-button
         >
       </div>
@@ -1607,6 +1643,7 @@ export class ScreenEditor extends LitElement {
         <div class="address">
           <cp-input
             label="Адрес"
+            data-testid=${TESTID.editorAddress}
             .value=${this.slugDraft}
             placeholder="illyuziya-socializma"
             @cp-input=${this.onSlugInput}
@@ -1673,14 +1710,37 @@ export class ScreenEditor extends LitElement {
     `;
   }
 
+  /**
+   * The publish dialog's settled state, exposed as a data attribute so a
+   * test can wait on the outcome rather than on a spinner disappearing.
+   */
+  private get publishState(): 'idle' | 'running' | 'done' | 'failed' | 'unchanged' {
+    if (this.publishError !== '') return 'failed';
+    if (this.publishNote !== '') return 'unchanged';
+    if (this.publishSha !== '') return 'done';
+    return this.publishBusy ? 'running' : 'idle';
+  }
+
   private renderDialogBody(): TemplateResult {
     if (this.publishError !== '') {
-      return html`<cp-banner tone="danger" title="Публикация не удалась"
+      return html`<cp-banner
+        tone="danger"
+        title="Публикация не удалась"
+        data-testid=${TESTID.publishError}
         >${this.publishError}</cp-banner
       >`;
     }
+    if (this.publishNote !== '') {
+      return html`<cp-banner tone="info" title="Ничего не изменилось"
+        >${this.publishNote}</cp-banner
+      >`;
+    }
     if (this.publishSha !== '') {
-      return html`<cp-banner tone="success" title="Отправлено в репозиторий"
+      return html`<cp-banner
+        tone="success"
+        title="Отправлено в репозиторий"
+        data-testid=${TESTID.publishSha}
+        data-sha=${this.publishSha}
         >Коммит <code>${this.publishSha.slice(0, 7)}</code> запушен в
         контент-репозиторий.</cp-banner
       >`;
@@ -1695,6 +1755,8 @@ export class ScreenEditor extends LitElement {
       <cp-dialog
         ?open=${this.publishOpen}
         ?busy=${this.publishBusy}
+        data-testid=${TESTID.publishDialog}
+        data-state=${this.publishState}
         heading="Публикация материала"
         @cp-cancel=${this.closePublish}
       >
@@ -1735,7 +1797,13 @@ export class ScreenEditor extends LitElement {
       `;
     }
     return html`
-      <article class="ed">
+      <article
+        class="ed"
+        data-testid=${TESTID.editorDoc}
+        data-path=${this.articlePath}
+        data-slug=${this.slug}
+        data-lang=${this.activeLang}
+      >
         <div class="head">
           <p class="eyebrow">
             Контент · ${this.slug} ·
@@ -1746,6 +1814,7 @@ export class ScreenEditor extends LitElement {
           </p>
           <h1
             class="title"
+            data-testid=${TESTID.editorTitle}
             tabindex="-1"
             contenteditable="plaintext-only"
             role="textbox"
@@ -1774,6 +1843,7 @@ export class ScreenEditor extends LitElement {
             ? html`<cp-button
                 size="sm"
                 variant="ghost"
+                data-testid=${TESTID.addLang}
                 title="Добавить перевод"
                 @cp-click=${this.openAddLang}
                 >+ язык</cp-button
@@ -1786,12 +1856,17 @@ export class ScreenEditor extends LitElement {
           : html`
               ${this.renderToolbar()}
               ${this.importError !== ''
-                ? html`<p class="import-note bad" role="alert">${this.importError}</p>`
+                ? html`<p class="import-note bad" role="alert" data-testid=${TESTID.importNote}>
+                    ${this.importError}
+                  </p>`
                 : this.importNote !== ''
-                  ? html`<p class="import-note" role="status">${this.importNote}</p>`
+                  ? html`<p class="import-note" role="status" data-testid=${TESTID.importNote}>
+                      ${this.importNote}
+                    </p>`
                   : nothing}
               <cp-markdown-editor
                 class="live"
+                data-testid=${TESTID.editorBody}
                 .value=${this.body}
                 placeholder="Текст статьи в Markdown…"
                 @cp-change=${this.onBodyChange}

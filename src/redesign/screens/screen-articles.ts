@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import { listArticlesViaApi, type ArticleSummary } from '../engine/content.js';
+import { TESTID } from '../testids.js';
 
 /**
  * Articles screen (content-list spec). Lists the actual `blog/<slug>/index.<lang>.md`
@@ -109,7 +110,12 @@ export class ScreenArticles extends LitElement {
 
   private renderCard(article: ArticleSummary) {
     return html`
-      <cp-card hoverable @cp-card-click=${() => this.openEditor(article.slug)}>
+      <cp-card
+        hoverable
+        data-testid=${TESTID.articleRow}
+        data-slug=${article.slug}
+        @cp-card-click=${() => this.openEditor(article.slug)}
+      >
         ${article.topic ? html`<cp-pill slot="pill">${article.topic}</cp-pill>` : nothing}
         <span slot="title">${article.title}</span>
         <span slot="summary">${article.languages.join(' · ')}</span>
@@ -158,10 +164,14 @@ export class ScreenArticles extends LitElement {
       <div class="head">
         <p class="eyebrow">Контент${live ? html` · ${this.articles.length} материалов` : nothing}</p>
         <h1 tabindex="-1">Статьи</h1>
-        <cp-button arrow @cp-click=${() => this.openEditor()}>Новая статья</cp-button>
+        <cp-button arrow data-testid=${TESTID.createMaterial} @cp-click=${() => this.openEditor()}
+          >Новая статья</cp-button
+        >
       </div>
       ${live
-        ? html`<div class="grid">${this.articles.map((article) => this.renderCard(article))}</div>`
+        ? html`<div class="grid" data-testid=${TESTID.articleList}>
+            ${this.articles.map((article) => this.renderCard(article))}
+          </div>`
         : this.renderEmpty()}
     `;
   }
