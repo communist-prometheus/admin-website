@@ -42,6 +42,14 @@ export const TESTID = {
   addLangDialog: 'add-lang-dialog',
   /** Confirms the chosen translation language. */
   addLangConfirm: 'add-lang-confirm',
+  /** The site-languages section of settings. */
+  settingsLanguages: 'settings-languages',
+  /** Saves the edited languages list. */
+  settingsSaveLanguages: 'settings-save-languages',
+  /** The curated-links section of settings. */
+  settingsLinks: 'settings-links',
+  /** Saves the edited links directory. */
+  settingsSaveLinks: 'settings-save-links',
   /** Opens the delete-material dialog. */
   deleteMaterial: 'delete-material',
   /** The delete dialog; carries `data-state` = open | busy | failed. */
