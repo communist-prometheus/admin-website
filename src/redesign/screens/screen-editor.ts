@@ -21,6 +21,7 @@ import { listSlugsViaApi } from '../engine/content.js';
 import { slugify, slugProblem } from '../engine/slug.js';
 import { renameArticleViaApi } from '../engine/rename-article.js';
 import { importArticleFile } from '../engine/import-article.js';
+import { deleteLanguage, deleteMaterial } from '../engine/delete-article.js';
 import { TESTID } from '../testids.js';
 import { listDeployRuns } from '../engine/github-api.js';
 import { siteBuildState, type SiteBuildState } from '../engine/site-build-state.js';
@@ -724,6 +725,11 @@ export class ScreenEditor extends LitElement {
   /** The address being edited, normalised as the editor types. */
   @state() private slugDraft = '';
 
+  /** Delete dialog: open, in flight, and why it refused. */
+  @state() private deleteOpen = false;
+  @state() private deleteBusy = false;
+  @state() private deleteError = '';
+
   /** What a publish reported when it wrote nothing (already up to date). */
   @state() private publishNote = '';
 
@@ -1358,6 +1364,87 @@ export class ScreenEditor extends LitElement {
     this.publishBusy = false;
   }
 
+  private readonly openDelete = (): void => {
+    this.deleteError = '';
+    this.deleteOpen = true;
+  };
+
+  private readonly closeDelete = (): void => {
+    if (!this.deleteBusy) this.deleteOpen = false;
+  };
+
+  /**
+   * Removes the material, or just the language being edited, and leaves the
+   * editor — it must not keep showing a document that no longer exists.
+   */
+  private readonly runDelete = async (whole: boolean): Promise<void> => {
+    if (this.deleteBusy || this.slug === '') return;
+    this.deleteBusy = true;
+    this.deleteError = '';
+    const result = whole
+      ? await deleteMaterial(this.collection, this.slug)
+      : await deleteLanguage(this.collection, this.slug, this.activeLang);
+    this.deleteBusy = false;
+    if (!result.ok) {
+      this.deleteError = result.error;
+      return;
+    }
+    this.deleteOpen = false;
+    this.dirty = false;
+    globalThis.location.hash = whole
+      ? this.listRoute()
+      : `#/editor/${this.collection === 'blog' ? '' : `${this.collection}/`}${this.slug}`;
+    if (!whole) globalThis.location.reload();
+  };
+
+  /** Where the editor returns to once its material is gone. */
+  private listRoute(): string {
+    return this.collection === 'blog' ? '#/articles' : `#/${this.collection}`;
+  }
+
+  private renderDeleteDialog(): TemplateResult {
+    const state = this.deleteError !== '' ? 'failed' : this.deleteBusy ? 'busy' : 'open';
+    return html`
+      <cp-dialog
+        ?open=${this.deleteOpen}
+        ?busy=${this.deleteBusy}
+        tone="danger"
+        data-testid=${TESTID.deleteDialog}
+        data-state=${state}
+        heading="Удалить материал «${this.slug}»?"
+        @cp-cancel=${this.closeDelete}
+      >
+        <p class="dialog-note">
+          Удаление необратимо: файлы пропадут из репозитория, а материал — с сайта
+          при ближайшей сборке.
+        </p>
+        ${this.deleteError !== ''
+          ? html`<cp-banner tone="danger" title="Не удалось удалить">${this.deleteError}</cp-banner>`
+          : nothing}
+        <div slot="footer" class="dialog-foot">
+          <cp-button variant="secondary" ?disabled=${this.deleteBusy} @cp-click=${this.closeDelete}
+            >Отмена</cp-button
+          >
+          ${this.availableLangs.length > 1
+            ? html`<cp-button
+                variant="secondary"
+                data-testid=${TESTID.deleteLangConfirm}
+                ?disabled=${this.deleteBusy}
+                @cp-click=${() => void this.runDelete(false)}
+                >Только «${this.activeLang}»</cp-button
+              >`
+            : nothing}
+          <cp-button
+            data-testid=${TESTID.deleteAllConfirm}
+            ?disabled=${this.deleteBusy}
+            @cp-click=${() => void this.runDelete(true)}
+            >${this.deleteBusy ? 'Удаляем…' : 'Удалить материал'}</cp-button
+          >
+        </div>
+      </cp-dialog>
+    `;
+  }
+
   private closePublish = (): void => {
     // Always allow closing — a hung publish must never trap the user in the
     // dialog. Abandoning it clears the busy flag; the timed-out SW op resolves
@@ -1512,6 +1599,16 @@ export class ScreenEditor extends LitElement {
           <span class="import-label">${this.importBusy ? 'Импорт…' : 'Импорт'}</span>
         </label>
         <span class="spacer"></span>
+        ${this.isNewMaterial
+          ? nothing
+          : html`<cp-button
+              size="sm"
+              variant="ghost"
+              data-testid=${TESTID.deleteMaterial}
+              title="Удалить материал"
+              @cp-click=${this.openDelete}
+              >Удалить</cp-button
+            >`}
         <cp-button size="sm" arrow data-testid=${TESTID.publish} @cp-click=${this.startPublish}
           >Опубликовать на ${publishTarget().site}</cp-button
         >
@@ -1888,7 +1985,7 @@ export class ScreenEditor extends LitElement {
           <span class="path">${this.articlePath}</span>
         </p>
       </article>
-      ${this.renderPublishDialog()}
+      ${this.renderPublishDialog()} ${this.renderDeleteDialog()}
     `;
   }
 }
