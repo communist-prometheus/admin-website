@@ -42,6 +42,14 @@ export const TESTID = {
   addLangDialog: 'add-lang-dialog',
   /** Confirms the chosen translation language. */
   addLangConfirm: 'add-lang-confirm',
+  /** Opens the delete-material dialog. */
+  deleteMaterial: 'delete-material',
+  /** The delete dialog; carries `data-state` = open | busy | failed. */
+  deleteDialog: 'delete-dialog',
+  /** Confirms dropping only the language being edited. */
+  deleteLangConfirm: 'delete-lang-confirm',
+  /** Confirms dropping the whole material. */
+  deleteAllConfirm: 'delete-all-confirm',
   /** Starts a publish. */
   publish: 'publish',
   /** The publish dialog; carries `data-state` = running | done | failed. */

@@ -1,15 +1,22 @@
 import { getAuthBase } from '@/config/auth-session'
-import { useAuthStore } from '@/stores/auth'
+import {
+  clearSsoRolesStorage,
+  saveSsoRoles,
+} from '@/stores/sso-roles-storage'
 import { readPayload, type SessionPayload } from './session-payload'
+import { notifySsoRoles } from './session-roles'
 
 export type { SessionPayload } from './session-payload'
 
-const safeSetSsoRoles = (roles: readonly string[]): void => {
-  try {
-    useAuthStore().setSsoRoles(roles)
-  } catch {
-    // Pinia not ready (early-boot edge); store will sync next call.
-  }
+/*
+ * Persist first, then announce. Persistence is what lets the next boot
+ * resolve owner-gated nav synchronously; the announcement is for whatever
+ * UI layer is listening right now. Neither step may drag a framework in
+ * here — that is what made a Lit app depend on pinia.
+ */
+const publishSsoRoles = (roles: readonly string[]): void => {
+  saveSsoRoles(roles)
+  notifySsoRoles(roles)
 }
 
 // Only write on a confirmed-success response. A failed mint (network
@@ -17,7 +24,7 @@ const safeSetSsoRoles = (roles: readonly string[]): void => {
 // clobber the previously-persisted roles — that was hiding the Comms
 // entry from real owners. Successful responses always carry roles.
 const writeRolesToStore = (payload: SessionPayload | undefined): void =>
-  payload === undefined ? undefined : safeSetSsoRoles(payload.roles)
+  payload === undefined ? undefined : publishSsoRoles(payload.roles)
 
 /**
  * Trade a fresh GitHub OAuth token for an SSO session cookie scoped
@@ -54,9 +61,6 @@ export const clearSession = async (): Promise<void> => {
     method: 'POST',
     credentials: 'include',
   }).catch(() => undefined)
-  try {
-    useAuthStore().clearSsoRoles()
-  } catch {
-    // Pinia not ready — harmless.
-  }
+  clearSsoRolesStorage()
+  notifySsoRoles([])
 }
