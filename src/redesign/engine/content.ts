@@ -7,6 +7,7 @@
  * SW reports "not ready" — otherwise content silently reads empty after an SW
  * eviction or a post-deploy SW version bump.
  */
+import { contentBranch, contentRepoBase, rawContentBase } from './content-repo.js';
 import { fieldSpan, readFieldText } from './frontmatter-value.js';
 import { swFetch } from './sw-fetch.js';
 import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
@@ -554,7 +555,7 @@ export const listArticlesViaApi = async (
   collection = 'blog',
 ): Promise<ArticleListResult> => {
   const branch = import.meta.env.VITE_GITHUB_BRANCH ?? 'develop';
-  const base = `https://api.github.com/repos/communist-prometheus/public-website-content`;
+  const base = contentRepoBase();
   const t = await freshGhToken();
   if (t === undefined) return { articles: [], error: 'signed-out' };
   const auth = { authorization: `Bearer ${t}` };
@@ -594,9 +595,11 @@ export const listArticlesViaApi = async (
   }
 };
 
-/** Repo REST base + branch shared by the direct-API editor reads/writes. */
-const REPO_BASE = 'https://api.github.com/repos/communist-prometheus/public-website-content';
-const contentBranch = (): string => import.meta.env.VITE_GITHUB_BRANCH ?? 'develop';
+/*
+ * Repo REST base + branch shared by the direct-API editor reads/writes.
+ * Both follow the build (see `content-repo.ts`) so a test run can be pointed
+ * at the sandbox repository instead of production content.
+ */
 
 /**
  * A browser-loadable raw URL for a content file on the current branch. The repo
@@ -605,7 +608,7 @@ const contentBranch = (): string => import.meta.env.VITE_GITHUB_BRANCH ?? 'devel
  */
 export const rawContentUrl = (path: string): string => {
   const encoded = path.split('/').map(encodeURIComponent).join('/');
-  return `https://raw.githubusercontent.com/communist-prometheus/public-website-content/${contentBranch()}/${encoded}`;
+  return `${rawContentBase()}/${contentBranch()}/${encoded}`;
 };
 
 /** UTF-8 → base64 (btoa is latin1-only; article bodies are Cyrillic). */
@@ -627,7 +630,7 @@ export const readFileViaApi = async (path: string): Promise<string | undefined> 
   try {
     // `no-store`: the same URL is fetched with a different Accept for the blob
     // sha at publish time; a cache that ignores Accept must not cross the wires.
-    const res = await fetch(`${REPO_BASE}/contents/${path}?ref=${contentBranch()}`, {
+    const res = await fetch(`${contentRepoBase()}/contents/${path}?ref=${contentBranch()}`, {
       cache: 'no-store',
       headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github.raw' },
     });
@@ -649,7 +652,7 @@ const readContentFile = async (path: string): Promise<ContentRead> => {
   const t = await freshGhToken();
   if (t === undefined) return { kind: 'error', error: 'signed-out' };
   try {
-    const res = await fetch(`${REPO_BASE}/contents/${path}?ref=${contentBranch()}`, {
+    const res = await fetch(`${contentRepoBase()}/contents/${path}?ref=${contentBranch()}`, {
       cache: 'no-store',
       headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github.raw' },
     });
@@ -670,7 +673,7 @@ export const articleLangsViaApi = async (
   const t = await freshGhToken();
   if (t === undefined) return [];
   try {
-    const res = await fetch(`${REPO_BASE}/contents/${collection}/${slug}?ref=${contentBranch()}`, {
+    const res = await fetch(`${contentRepoBase()}/contents/${collection}/${slug}?ref=${contentBranch()}`, {
       cache: 'no-store',
       headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github+json' },
     });
@@ -720,7 +723,7 @@ export const publishFileViaApi = async (
   const branch = contentBranch();
   try {
     let sha: string | undefined;
-    const cur = await fetch(`${REPO_BASE}/contents/${path}?ref=${branch}`, {
+    const cur = await fetch(`${contentRepoBase()}/contents/${path}?ref=${branch}`, {
       cache: 'no-store',
       headers: { ...auth, accept: 'application/vnd.github+json' },
     });
@@ -728,7 +731,7 @@ export const publishFileViaApi = async (
       const d: unknown = await cur.json();
       sha = typeof d === 'object' && d && 'sha' in d ? String(Reflect.get(d, 'sha')) : undefined;
     }
-    const put = await fetch(`${REPO_BASE}/contents/${path}`, {
+    const put = await fetch(`${contentRepoBase()}/contents/${path}`, {
       method: 'PUT',
       headers: { ...auth, 'content-type': 'application/json' },
       body: JSON.stringify({ message, content: toBase64(content), branch, ...(sha ? { sha } : {}) }),
@@ -836,7 +839,7 @@ export const listDirViaApi = async (dir: string): Promise<readonly RepoFile[]> =
   const t = await freshGhToken();
   if (t === undefined) return [];
   try {
-    const res = await fetch(`${REPO_BASE}/contents/${dir}?ref=${contentBranch()}`, {
+    const res = await fetch(`${contentRepoBase()}/contents/${dir}?ref=${contentBranch()}`, {
       cache: 'no-store',
       headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github+json' },
     });
@@ -862,7 +865,7 @@ const blobShaViaApi = async (
   auth: Record<string, string>,
   branch: string,
 ): Promise<string | undefined> => {
-  const res = await fetch(`${REPO_BASE}/contents/${path}?ref=${branch}`, {
+  const res = await fetch(`${contentRepoBase()}/contents/${path}?ref=${branch}`, {
     cache: 'no-store',
     headers: { ...auth, accept: 'application/vnd.github+json' },
   });
@@ -880,7 +883,7 @@ const apiError = async (res: Response, fallback: string): Promise<string> => {
 const repoTree = async (): Promise<readonly string[]> => {
   const t = await freshGhToken();
   if (t === undefined) return [];
-  const res = await fetch(`${REPO_BASE}/git/trees/${contentBranch()}?recursive=1`, {
+  const res = await fetch(`${contentRepoBase()}/git/trees/${contentBranch()}?recursive=1`, {
     headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github+json' },
   });
   if (!res.ok) return [];
@@ -926,7 +929,7 @@ export const readBinaryViaApi = async (
 ): Promise<{ readonly content: string } | undefined> => {
   const t = await freshGhToken();
   if (t === undefined) return undefined;
-  const res = await fetch(`${REPO_BASE}/contents/${path}?ref=${contentBranch()}`, {
+  const res = await fetch(`${contentRepoBase()}/contents/${path}?ref=${contentBranch()}`, {
     cache: 'no-store',
     headers: { authorization: `Bearer ${t}`, accept: 'application/vnd.github+json' },
   });
@@ -950,7 +953,7 @@ export const uploadBinaryViaApi = async (
   const branch = contentBranch();
   try {
     const sha = await blobShaViaApi(path, auth, branch);
-    const put = await fetch(`${REPO_BASE}/contents/${path}`, {
+    const put = await fetch(`${contentRepoBase()}/contents/${path}`, {
       method: 'PUT',
       headers: { ...auth, 'content-type': 'application/json' },
       body: JSON.stringify({ message, content: base64, branch, ...(sha ? { sha } : {}) }),
@@ -975,7 +978,7 @@ export const deleteFileViaApi = async (
   try {
     const sha = await blobShaViaApi(path, auth, branch);
     if (sha === undefined) return { ok: false, error: 'Файл не найден.' };
-    const res = await fetch(`${REPO_BASE}/contents/${path}`, {
+    const res = await fetch(`${contentRepoBase()}/contents/${path}`, {
       method: 'DELETE',
       headers: { ...auth, 'content-type': 'application/json' },
       body: JSON.stringify({ message, sha, branch }),

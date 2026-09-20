@@ -43,6 +43,7 @@ interface EditorInternals {
   articlePath: string;
   articleTitle: string;
   publishError: string;
+  publishNote: string;
   publishOpen: boolean;
   dirty: boolean;
   readonly editedMarkdown: string;
@@ -100,9 +101,20 @@ describe('a material that has no file yet', () => {
     expect(priv.publishError).not.toBe('');
   });
 
+  it('names the missing rubric itself, rather than letting the gate answer', async () => {
+    const { priv } = blank();
+    priv.slugDraft = 'novyj-material';
+    priv.rubric = '';
+    priv.startPublish();
+    await Promise.resolve();
+    expect(publishFileViaApi).not.toHaveBeenCalled();
+    expect(priv.publishError).toContain('рубрику');
+  });
+
   it('never claims the flow is unfinished', async () => {
     const { priv } = blank();
     priv.slugDraft = 'novyj-material';
+    priv.rubric = 'programme';
     priv.startPublish();
     await Promise.resolve();
     await Promise.resolve();
@@ -114,6 +126,7 @@ describe('publishing a new material', () => {
   it('creates the file the address names, in the language being written', async () => {
     const { priv } = blank();
     priv.slugDraft = 'novyj-material';
+    priv.rubric = 'programme';
     priv.activeLang = 'ru';
     await priv.runRealPublish();
     const [path, content] = publishFileViaApi.mock.calls[0] as [string, string, string];
@@ -203,5 +216,84 @@ describe('what the seed produces has to pass the content gate', () => {
     for (const line of priv.editedMarkdown.split('\n')) {
       expect(line).not.toMatch(/^[a-zA-Z]+:\s*$/);
     }
+  });
+});
+
+/*
+ * Publishing an article nobody edited used to write it back byte-identical.
+ * GitHub records that as an EMPTY commit — zero files changed — and the
+ * content sync then rebuilds the public site for nothing. Opening a material
+ * to read it must cost the repository nothing.
+ */
+describe('publishing a material nobody changed', () => {
+  const ARTICLE =
+    '---\ntitle: "A"\nlang: ru\ncategory: programme\npublished: true\n---\n\nBody\n';
+
+  const opened = (): EditorInternals => {
+    const el: ScreenEditor = document.createElement('screen-editor');
+    const priv = inner(el);
+    priv.collection = 'blog';
+    priv.slug = 'a';
+    priv.activeLang = 'ru';
+    priv.availableLangs = ['ru'];
+    priv.applyMarkdown(ARTICLE, 'blog/a/index.ru.md', true);
+    priv.slugDraft = 'a';
+    return priv;
+  };
+
+  it('writes nothing when the document is byte-identical to the file', async () => {
+    const priv = opened();
+    await priv.runRealPublish();
+    expect(publishFileViaApi).not.toHaveBeenCalled();
+  });
+
+  it('says so rather than reporting a publish that never happened', async () => {
+    const priv = opened();
+    await priv.runRealPublish();
+    expect(priv.publishError).toBe('');
+    expect(priv.publishNote).toContain('без изменений');
+  });
+
+  it('publishes as soon as something actually differs', async () => {
+    const priv = opened();
+    priv.articleTitle = 'B';
+    await priv.runRealPublish();
+    expect(publishFileViaApi).toHaveBeenCalledTimes(1);
+  });
+
+  it('always writes a material that has no file yet', async () => {
+    const { priv } = blank();
+    priv.slugDraft = 'novyj-material';
+    priv.rubric = 'programme';
+    await priv.runRealPublish();
+    expect(publishFileViaApi).toHaveBeenCalledTimes(1);
+  });
+});
+
+/*
+ * Lit's `@query` yields null, not undefined, until the element has rendered,
+ * so `!== undefined` guards let a null through. In the real app that threw
+ * "Cannot read properties of null (reading 'style')" on every update of a
+ * document with no lead field — a flood of page errors behind a UI that
+ * looked fine.
+ */
+describe('the editor updating before its parts have rendered', () => {
+  it('does not throw when nothing is on screen yet', async () => {
+    const el: ScreenEditor = document.createElement('screen-editor');
+    document.body.append(el);
+    await el.updateComplete;
+    expect(() => el.requestUpdate()).not.toThrow();
+    await expect(el.updateComplete).resolves.toBeTruthy();
+  });
+
+  it('survives a repeated update of a freshly seeded material', async () => {
+    const { el, priv } = blank();
+    document.body.append(el);
+    await el.updateComplete;
+    priv.articleTitle = 'Заголовок';
+    el.requestUpdate();
+    await el.updateComplete;
+    el.requestUpdate();
+    await expect(el.updateComplete).resolves.toBeTruthy();
   });
 });

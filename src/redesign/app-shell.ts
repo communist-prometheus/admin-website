@@ -5,6 +5,7 @@ import { navItems, groups, canSee, type AuthState } from './nav.js';
 import { screens } from './screens/index.js';
 import { createGitStateStore, type GitStateStore, type SyncStatus } from './engine/git-state.js';
 import { login, loginWithToken, logout, currentUser } from './engine/auth.js';
+import { TESTID } from './testids.js';
 import { bootEngine } from './engine/engine-boot.js';
 import { publishTarget } from './engine/publish-target.js';
 import { getViewerRole, type ViewerRole } from './engine/github-api.js';
@@ -924,7 +925,7 @@ export class AppShell extends LitElement {
           ${!this.authChecked
             ? nothing
             : this.account
-              ? html`<span class="account">${this.account}</span>
+              ? html`<span class="account" data-testid=${TESTID.account}>${this.account}</span>
                   <cp-button variant="ghost" size="sm" @cp-click=${() => this.handleLogout()}
                     >Выйти</cp-button
                   >`
@@ -942,7 +943,12 @@ export class AppShell extends LitElement {
       </header>
       <div class="body">
         ${this.renderRailNav()}
-        <main tabindex="-1" aria-live="polite">
+        <main
+          tabindex="-1"
+          aria-live="polite"
+          data-testid=${TESTID.screen}
+          data-route=${this.route}
+        >
           ${this.signedIn ? this.renderRouted(screen) : this.renderSignedOut()}
         </main>
       </div>
