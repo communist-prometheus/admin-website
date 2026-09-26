@@ -48,3 +48,24 @@ export const prefixLinesSpec = (state: EditorState, prefix: string): Transaction
 /** Replaces the current selection with `text` (e.g. an image placeholder). */
 export const insertTextSpec = (state: EditorState, text: string): TransactionSpec =>
   state.replaceSelection(text);
+
+/**
+ * Adds `text` at the END of the document, separated from what is already
+ * there by a blank line, and leaves the caret after it.
+ *
+ * This is where an addition goes when the writer has placed no caret: an
+ * untouched CodeMirror selection sits at offset 0, so `replaceSelection`
+ * would push the text above the article — invisible to someone who had
+ * scrolled down, which is how "import does nothing" was really reported.
+ */
+export const appendTextSpec = (state: EditorState, text: string): TransactionSpec => {
+  const end = state.doc.length;
+  // Absorb whatever blank space the article already ends with, so the gap is
+  // exactly one empty line however the previous paragraph was terminated.
+  const kept = state.doc.toString().replace(/\s+$/, '').length;
+  const insert = kept === 0 ? text : `\n\n${text}`;
+  return {
+    changes: { from: kept, to: end, insert },
+    selection: { anchor: kept + insert.length },
+  };
+};

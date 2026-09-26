@@ -5,7 +5,12 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { livePreview } from './live-preview.js';
-import { insertTextSpec, prefixLinesSpec, wrapSelectionSpec } from './editor-commands.js';
+import {
+  appendTextSpec,
+  insertTextSpec,
+  prefixLinesSpec,
+  wrapSelectionSpec,
+} from './editor-commands.js';
 
 /**
  * `cp-markdown-editor` — a self-contained Obsidian-style live-preview markdown
@@ -60,6 +65,13 @@ export class CpMarkdownEditor extends LitElement {
 
   private view?: EditorView;
 
+  /**
+   * Whether the writer has put a caret in this editor. Until they have,
+   * CodeMirror's selection sits at offset 0, which is NOT where an addition
+   * belongs — see {@link appendTextSpec}.
+   */
+  private touched = false;
+
   override firstUpdated(): void {
     const parent = this.renderRoot.querySelector<HTMLElement>('.host');
     if (parent === null) return;
@@ -76,6 +88,11 @@ export class CpMarkdownEditor extends LitElement {
           EditorView.lineWrapping,
           placeholder(this.placeholder),
           this.appTheme(),
+          EditorView.domEventHandlers({
+            focus: () => {
+              this.touched = true;
+            },
+          }),
           EditorView.updateListener.of((update) => {
             // Emit only for user edits, never for the programmatic `value` sync in
             // updated(): after a sync the doc equals `this.value`; a user edit
@@ -153,11 +170,20 @@ export class CpMarkdownEditor extends LitElement {
     view.focus();
   }
 
-  /** Inserts `text` at the caret, replacing any selection (image link). */
+  /**
+   * Adds `text` where the writer is working: at their caret (replacing any
+   * selection), or at the end of the article when they have placed no caret.
+   * The view scrolls to the addition either way, so it is never applied out
+   * of sight — an import that lands above the fold reads as an import that
+   * did nothing.
+   */
   insertText(text: string): void {
     const view = this.view;
     if (view === undefined) return;
-    view.dispatch(insertTextSpec(view.state, text));
+    const spec = this.touched
+      ? insertTextSpec(view.state, text)
+      : appendTextSpec(view.state, text);
+    view.dispatch({ ...spec, scrollIntoView: true });
     view.focus();
   }
 
