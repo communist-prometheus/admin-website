@@ -21,6 +21,8 @@ import { listSlugsViaApi } from '../engine/content.js';
 import { slugify, slugProblem } from '../engine/slug.js';
 import { renameArticleViaApi } from '../engine/rename-article.js';
 import { importArticleFile } from '../engine/import-article.js';
+import { deleteLanguage, deleteMaterial } from '../engine/delete-article.js';
+import { TESTID } from '../testids.js';
 import { listDeployRuns } from '../engine/github-api.js';
 import { siteBuildState, type SiteBuildState } from '../engine/site-build-state.js';
 import '../components/issue-files.js';
@@ -288,15 +290,38 @@ export class ScreenEditor extends LitElement {
 
     /* The language tabs can be wider than a phone (5 native names); let them
        scroll horizontally inside their own strip instead of widening the page. */
-    .tabs-scroll {
+    /*
+     * The language tabs and "add a language" belong on one line: the button
+     * used to sit in a block container under the (full-width) tabs, which on a
+     * phone read as a caption rather than a control.
+     */
+    .lang-row {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
       max-width: 100%;
-      overflow-x: auto;
       margin-bottom: var(--spacing-md);
+    }
+
+    .lang-row cp-tabs {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-x: auto;
+    }
+
+    .lang-row cp-button {
+      flex: none;
     }
     cp-tabs {
       display: block;
     }
 
+    /*
+     * Two groups, not one wrapping strip: the formatting glyphs scroll
+     * sideways as a unit, and the document actions (import, delete, publish)
+     * keep their own line. The old single flex row wrapped at arbitrary
+     * points on a narrow screen and buried "Импорт" between two glyphs.
+     */
     .toolbar {
       position: sticky;
       /* Stick just below the app header instead of colliding with it. */
@@ -305,11 +330,33 @@ export class ScreenEditor extends LitElement {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0.15rem;
+      gap: 0.35rem;
       padding: 0.35rem;
       margin-bottom: var(--spacing-lg);
       background: var(--color-background);
       border-bottom: 1px solid var(--color-border);
+    }
+
+    .toolbar .tools {
+      display: flex;
+      align-items: center;
+      gap: 0.15rem;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .toolbar .tools::-webkit-scrollbar {
+      display: none;
+    }
+
+    .toolbar .acts {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-left: auto;
     }
     .toolbar .t {
       width: 2.2rem;
@@ -343,30 +390,94 @@ export class ScreenEditor extends LitElement {
       background: var(--color-border);
       margin: 0 0.3rem;
     }
-    .toolbar .import-pick {
+    /*
+     * Import is a document action, so it is drawn as one — outlined, labelled
+     * and the same height as the buttons beside it. As a bare glyph among the
+     * formatting tools it was unfindable on a phone.
+     */
+    .import-pick {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.35rem;
-      width: auto;
-      padding: 0 0.6rem;
+      height: 2.2rem;
+      padding: 0 0.7rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text-primary);
+      background: var(--color-surface);
       cursor: pointer;
     }
 
-    .toolbar .import-pick input {
+    .import-pick:hover:not(:has(input:disabled)) {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .import-pick:focus-within {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    .import-pick input {
       position: absolute;
       width: 0;
       height: 0;
       opacity: 0;
     }
 
-    .toolbar .import-pick:has(input:disabled) {
+    .import-pick:has(input:disabled) {
       opacity: 0.55;
       cursor: progress;
     }
 
     .import-label {
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-weight: 600;
+    }
+
+    /*
+     * The publish target spelled out keeps the sticky toolbar to one line on a
+     * desktop; on a phone that label alone wraps the toolbar to a third row,
+     * so the host name moves to the button's tooltip.
+     */
+    .on-narrow {
+      display: none;
+    }
+
+    @media (max-width: 34rem) {
+      .on-wide {
+        display: none;
+      }
+
+      .on-narrow {
+        display: inline;
+      }
+    }
+
+    /*
+     * Touch sizing. Every control an author taps while writing on a phone gets
+     * a 44px (2.75rem) target; the desktop sizes stay as they are, so the
+     * toolbar does not grow on a mouse-driven screen.
+     */
+    @media (pointer: coarse) {
+      .toolbar .t {
+        width: 2.75rem;
+        height: 2.75rem;
+      }
+
+      .import-pick {
+        min-height: 2.75rem;
+        padding: 0 0.9rem;
+      }
+
+      .lang-row cp-button {
+        min-height: 2.75rem;
+      }
+
+      .toolbar .acts cp-button::part(button) {
+        min-height: 2.75rem;
+      }
     }
 
     .import-note {
@@ -723,6 +834,14 @@ export class ScreenEditor extends LitElement {
   /** The address being edited, normalised as the editor types. */
   @state() private slugDraft = '';
 
+  /** Delete dialog: open, in flight, and why it refused. */
+  @state() private deleteOpen = false;
+  @state() private deleteBusy = false;
+  @state() private deleteError = '';
+
+  /** What a publish reported when it wrote nothing (already up to date). */
+  @state() private publishNote = '';
+
   /** File-import state: in flight, what it reported, and why it refused. */
   @state() private importBusy = false;
   @state() private importNote = '';
@@ -912,6 +1031,7 @@ export class ScreenEditor extends LitElement {
     this.articleTitle = parsed.title;
     this.body = parsed.body;
     this.articlePath = path;
+    this.appliedMarkdown = markdown;
     this.live = live;
     // The two taxonomies are separate frontmatter keys and are seeded as such:
     // `category` (required by the site schema, values like programme/history)
@@ -1072,6 +1192,7 @@ export class ScreenEditor extends LitElement {
       <cp-dialog
         ?open=${this.addLangOpen}
         ?busy=${this.addLangBusy}
+        data-testid=${TESTID.addLangDialog}
         heading="Новый перевод"
         @cp-cancel=${this.closeAddLang}
       >
@@ -1094,7 +1215,11 @@ export class ScreenEditor extends LitElement {
           ${this.addLangBusy
             ? html`<cp-button variant="secondary" disabled>Создаём…</cp-button>`
             : html`<cp-button variant="secondary" @cp-click=${this.closeAddLang}>Отмена</cp-button>
-                <cp-button arrow ?disabled=${this.addLangChoice === ''} @cp-click=${() => void this.confirmAddLang()}
+                <cp-button
+                  arrow
+                  data-testid=${TESTID.addLangConfirm}
+                  ?disabled=${this.addLangChoice === ''}
+                  @cp-click=${() => void this.confirmAddLang()}
                   >Создать</cp-button
                 >`}
         </div>
@@ -1267,6 +1392,7 @@ export class ScreenEditor extends LitElement {
     this.publishOpen = true;
     this.publishSha = '';
     this.publishError = '';
+    this.publishNote = '';
     const blocked = this.isNewMaterial ? this.newMaterialProblem() : undefined;
     if (blocked !== undefined) {
       this.stageStates = ['failed'];
@@ -1284,7 +1410,14 @@ export class ScreenEditor extends LitElement {
    */
   private newMaterialProblem(): string | undefined {
     if (this.slugDraft === '') return 'Адрес не задан — по нему создаётся файл материала.';
-    return slugProblem(this.slugDraft, this.takenSlugs);
+    const address = slugProblem(this.slugDraft, this.takenSlugs);
+    if (address !== undefined) return address;
+    // The blog schema requires `category`; a blank new material has none, so
+    // every first publish would otherwise be refused by the content gate in
+    // its own words ("category: is missing") instead of the editor's.
+    if (this.collection === 'blog' && this.rubric === '')
+      return 'Выберите рубрику — без неё материал не примет схема сайта.';
+    return undefined;
   }
 
   /** The file a publish writes: the existing one, or the one being created. */
@@ -1310,15 +1443,26 @@ export class ScreenEditor extends LitElement {
   /** Publishes the ONE edited file via the GitHub API — a single-file commit,
    *  no clone and no whole-repo push. */
   private async runRealPublish(): Promise<void> {
+    const creating = this.isNewMaterial;
+    const markdown = this.editedMarkdown;
+    /* Writing a byte-identical file back is not a no-op: GitHub records an
+     * EMPTY commit, and the content sync rebuilds the public site for it.
+     * Opening a material to read it must cost the repository nothing. */
+    if (!creating && markdown === this.appliedMarkdown) {
+      this.stageStates = ['done'];
+      this.publishNote = 'Материал без изменений — публиковать нечего.';
+      this.dirty = false;
+      return;
+    }
     this.publishBusy = true;
     this.stageStates = ['running'];
-    const creating = this.isNewMaterial;
     const path = this.targetPath();
     const name = this.articleTitle === '' ? 'Материал' : this.articleTitle;
     const message = `${name}: ${creating ? 'новый материал из редактора' : 'правка из редактора'}`;
-    const result = await publishFileViaApi(path, this.editedMarkdown, message);
+    const result = await publishFileViaApi(path, markdown, message);
     if (result.ok) {
       if (creating) this.adoptCreated(path);
+      this.appliedMarkdown = markdown;
       this.stageStates = ['done'];
       this.publishSha = result.sha ?? 'ok';
       this.dirty = false;
@@ -1327,6 +1471,87 @@ export class ScreenEditor extends LitElement {
       this.publishError = result.error ?? 'Публикация не удалась.';
     }
     this.publishBusy = false;
+  }
+
+  private readonly openDelete = (): void => {
+    this.deleteError = '';
+    this.deleteOpen = true;
+  };
+
+  private readonly closeDelete = (): void => {
+    if (!this.deleteBusy) this.deleteOpen = false;
+  };
+
+  /**
+   * Removes the material, or just the language being edited, and leaves the
+   * editor — it must not keep showing a document that no longer exists.
+   */
+  private readonly runDelete = async (whole: boolean): Promise<void> => {
+    if (this.deleteBusy || this.slug === '') return;
+    this.deleteBusy = true;
+    this.deleteError = '';
+    const result = whole
+      ? await deleteMaterial(this.collection, this.slug)
+      : await deleteLanguage(this.collection, this.slug, this.activeLang);
+    this.deleteBusy = false;
+    if (!result.ok) {
+      this.deleteError = result.error;
+      return;
+    }
+    this.deleteOpen = false;
+    this.dirty = false;
+    globalThis.location.hash = whole
+      ? this.listRoute()
+      : `#/editor/${this.collection === 'blog' ? '' : `${this.collection}/`}${this.slug}`;
+    if (!whole) globalThis.location.reload();
+  };
+
+  /** Where the editor returns to once its material is gone. */
+  private listRoute(): string {
+    return this.collection === 'blog' ? '#/articles' : `#/${this.collection}`;
+  }
+
+  private renderDeleteDialog(): TemplateResult {
+    const state = this.deleteError !== '' ? 'failed' : this.deleteBusy ? 'busy' : 'open';
+    return html`
+      <cp-dialog
+        ?open=${this.deleteOpen}
+        ?busy=${this.deleteBusy}
+        tone="danger"
+        data-testid=${TESTID.deleteDialog}
+        data-state=${state}
+        heading="Удалить материал «${this.slug}»?"
+        @cp-cancel=${this.closeDelete}
+      >
+        <p class="dialog-note">
+          Удаление необратимо: файлы пропадут из репозитория, а материал — с сайта
+          при ближайшей сборке.
+        </p>
+        ${this.deleteError !== ''
+          ? html`<cp-banner tone="danger" title="Не удалось удалить">${this.deleteError}</cp-banner>`
+          : nothing}
+        <div slot="footer" class="dialog-foot">
+          <cp-button variant="secondary" ?disabled=${this.deleteBusy} @cp-click=${this.closeDelete}
+            >Отмена</cp-button
+          >
+          ${this.availableLangs.length > 1
+            ? html`<cp-button
+                variant="secondary"
+                data-testid=${TESTID.deleteLangConfirm}
+                ?disabled=${this.deleteBusy}
+                @cp-click=${() => void this.runDelete(false)}
+                >Только «${this.activeLang}»</cp-button
+              >`
+            : nothing}
+          <cp-button
+            data-testid=${TESTID.deleteAllConfirm}
+            ?disabled=${this.deleteBusy}
+            @cp-click=${() => void this.runDelete(true)}
+            >${this.deleteBusy ? 'Удаляем…' : 'Удалить материал'}</cp-button
+          >
+        </div>
+      </cp-dialog>
+    `;
   }
 
   private closePublish = (): void => {
@@ -1354,6 +1579,9 @@ export class ScreenEditor extends LitElement {
 
   @query('textarea.lead') private leadField?: HTMLTextAreaElement;
 
+  /** The document exactly as it was loaded, for the unchanged check. */
+  private appliedMarkdown = '';
+
   /** The heading text last written into the DOM by this component. */
   private titleInDom = '';
 
@@ -1365,21 +1593,24 @@ export class ScreenEditor extends LitElement {
    * back, which is why the last synced value is tracked.
    */
   override updated(changed: Map<string, unknown>): void {
-    const el = this.titleEl;
-    if (el === undefined) return;
-    if (this.articleTitle !== this.titleInDom) {
+    /* `@query` yields null — not undefined — until the element renders, so
+     * every guard here normalises first. A `!== undefined` check let a null
+     * through and threw on each update of a document with no lead field. */
+    const el = this.titleEl ?? undefined;
+    const lead = this.leadField ?? undefined;
+    if (el !== undefined && this.articleTitle !== this.titleInDom) {
       el.textContent = this.articleTitle;
       this.titleInDom = this.articleTitle;
     }
     // A loaded (or language-switched) lead has to be sized too, not just a
     // typed one.
-    if (this.leadField !== undefined) this.growLead(this.leadField);
+    if (lead !== undefined) this.growLead(lead);
     void changed;
   }
 
   /** Applies a toolbar tool (inline wrap or line prefix) to the editor selection. */
   private applyFormat = (tool: FormatTool): void => {
-    const editor = this.bodyEditor;
+    const editor = this.bodyEditor ?? undefined;
     if (editor === undefined) return;
     if (tool.wrap !== undefined) editor.wrapSelection(tool.wrap[0], tool.wrap[1]);
     else if (tool.prefix !== undefined) editor.prefixLines(tool.prefix);
@@ -1441,44 +1672,64 @@ export class ScreenEditor extends LitElement {
   private renderToolbar(): TemplateResult {
     return html`
       <div class="toolbar" role="toolbar" aria-label="Форматирование материала">
-        ${FORMAT_TOOLS.map(
-          (tool) => html`
-            <button
-              class="t ${tool.italic ? 'i' : ''}"
-              type="button"
-              title=${tool.label}
-              aria-label=${tool.label}
-              @click=${() => this.applyFormat(tool)}
-            >
-              ${tool.glyph}
-            </button>
-          `,
-        )}
-        <span class="sep" aria-hidden="true"></span>
-        <button
-          class="t"
-          type="button"
-          title="Изображение"
-          aria-label="Вставить изображение"
-          @click=${this.insertImage}
-        >
-          <cp-icon name="upload" size="18"></cp-icon>
-        </button>
-        <label class="t import-pick" title="Импорт из файла">
-          <input
-            class="import"
-            type="file"
-            accept=".docx,.html,.htm,.md"
-            ?disabled=${this.importBusy}
-            @change=${(e: Event) => void this.onImportPick(e)}
-          />
-          <cp-icon name="file" size="18"></cp-icon>
-          <span class="import-label">${this.importBusy ? 'Импорт…' : 'Импорт'}</span>
-        </label>
-        <span class="spacer"></span>
-        <cp-button size="sm" arrow @cp-click=${this.startPublish}
-          >Опубликовать на ${publishTarget().site}</cp-button
-        >
+        <div class="tools">
+          ${FORMAT_TOOLS.map(
+            (tool) => html`
+              <button
+                class="t ${tool.italic ? 'i' : ''}"
+                type="button"
+                title=${tool.label}
+                aria-label=${tool.label}
+                @click=${() => this.applyFormat(tool)}
+              >
+                ${tool.glyph}
+              </button>
+            `,
+          )}
+          <button
+            class="t"
+            type="button"
+            title="Изображение"
+            aria-label="Вставить изображение"
+            @click=${this.insertImage}
+          >
+            <cp-icon name="upload" size="18"></cp-icon>
+          </button>
+        </div>
+        <div class="acts">
+          <label class="import-pick" title="Импорт из .docx, .html или .md">
+            <input
+              class="import"
+              data-testid=${TESTID.editorImport}
+              type="file"
+              accept=".docx,.html,.htm,.md"
+              ?disabled=${this.importBusy}
+              @change=${(e: Event) => void this.onImportPick(e)}
+            />
+            <cp-icon name="book" size="18"></cp-icon>
+            <span class="import-label">${this.importBusy ? 'Импорт…' : 'Импорт'}</span>
+          </label>
+          ${this.isNewMaterial
+            ? nothing
+            : html`<cp-button
+                size="sm"
+                variant="ghost"
+                data-testid=${TESTID.deleteMaterial}
+                title="Удалить материал"
+                @cp-click=${this.openDelete}
+                >Удалить</cp-button
+              >`}
+          <cp-button
+            size="sm"
+            arrow
+            data-testid=${TESTID.publish}
+            title="Опубликовать на ${publishTarget().site}"
+            @cp-click=${this.startPublish}
+          >
+            <span class="on-wide">Опубликовать на ${publishTarget().site}</span>
+            <span class="on-narrow">Опубликовать</span>
+          </cp-button>
+        </div>
       </div>
     `;
   }
@@ -1607,6 +1858,7 @@ export class ScreenEditor extends LitElement {
         <div class="address">
           <cp-input
             label="Адрес"
+            data-testid=${TESTID.editorAddress}
             .value=${this.slugDraft}
             placeholder="illyuziya-socializma"
             @cp-input=${this.onSlugInput}
@@ -1673,14 +1925,37 @@ export class ScreenEditor extends LitElement {
     `;
   }
 
+  /**
+   * The publish dialog's settled state, exposed as a data attribute so a
+   * test can wait on the outcome rather than on a spinner disappearing.
+   */
+  private get publishState(): 'idle' | 'running' | 'done' | 'failed' | 'unchanged' {
+    if (this.publishError !== '') return 'failed';
+    if (this.publishNote !== '') return 'unchanged';
+    if (this.publishSha !== '') return 'done';
+    return this.publishBusy ? 'running' : 'idle';
+  }
+
   private renderDialogBody(): TemplateResult {
     if (this.publishError !== '') {
-      return html`<cp-banner tone="danger" title="Публикация не удалась"
+      return html`<cp-banner
+        tone="danger"
+        title="Публикация не удалась"
+        data-testid=${TESTID.publishError}
         >${this.publishError}</cp-banner
       >`;
     }
+    if (this.publishNote !== '') {
+      return html`<cp-banner tone="info" title="Ничего не изменилось"
+        >${this.publishNote}</cp-banner
+      >`;
+    }
     if (this.publishSha !== '') {
-      return html`<cp-banner tone="success" title="Отправлено в репозиторий"
+      return html`<cp-banner
+        tone="success"
+        title="Отправлено в репозиторий"
+        data-testid=${TESTID.publishSha}
+        data-sha=${this.publishSha}
         >Коммит <code>${this.publishSha.slice(0, 7)}</code> запушен в
         контент-репозиторий.</cp-banner
       >`;
@@ -1695,6 +1970,8 @@ export class ScreenEditor extends LitElement {
       <cp-dialog
         ?open=${this.publishOpen}
         ?busy=${this.publishBusy}
+        data-testid=${TESTID.publishDialog}
+        data-state=${this.publishState}
         heading="Публикация материала"
         @cp-cancel=${this.closePublish}
       >
@@ -1735,7 +2012,13 @@ export class ScreenEditor extends LitElement {
       `;
     }
     return html`
-      <article class="ed">
+      <article
+        class="ed"
+        data-testid=${TESTID.editorDoc}
+        data-path=${this.articlePath}
+        data-slug=${this.slug}
+        data-lang=${this.activeLang}
+      >
         <div class="head">
           <p class="eyebrow">
             Контент · ${this.slug} ·
@@ -1746,6 +2029,7 @@ export class ScreenEditor extends LitElement {
           </p>
           <h1
             class="title"
+            data-testid=${TESTID.editorTitle}
             tabindex="-1"
             contenteditable="plaintext-only"
             role="textbox"
@@ -1764,7 +2048,7 @@ export class ScreenEditor extends LitElement {
           @input=${this.onLeadInput}
         ></textarea>
         ${this.renderMaterialProps()}
-        <div class="tabs-scroll">
+        <div class="lang-row">
           <cp-tabs
             .tabs=${langTabs(this.availableLangs)}
             active=${this.activeLang}
@@ -1774,6 +2058,7 @@ export class ScreenEditor extends LitElement {
             ? html`<cp-button
                 size="sm"
                 variant="ghost"
+                data-testid=${TESTID.addLang}
                 title="Добавить перевод"
                 @cp-click=${this.openAddLang}
                 >+ язык</cp-button
@@ -1786,12 +2071,17 @@ export class ScreenEditor extends LitElement {
           : html`
               ${this.renderToolbar()}
               ${this.importError !== ''
-                ? html`<p class="import-note bad" role="alert">${this.importError}</p>`
+                ? html`<p class="import-note bad" role="alert" data-testid=${TESTID.importNote}>
+                    ${this.importError}
+                  </p>`
                 : this.importNote !== ''
-                  ? html`<p class="import-note" role="status">${this.importNote}</p>`
+                  ? html`<p class="import-note" role="status" data-testid=${TESTID.importNote}>
+                      ${this.importNote}
+                    </p>`
                   : nothing}
               <cp-markdown-editor
                 class="live"
+                data-testid=${TESTID.editorBody}
                 .value=${this.body}
                 placeholder="Текст статьи в Markdown…"
                 @cp-change=${this.onBodyChange}
@@ -1813,7 +2103,7 @@ export class ScreenEditor extends LitElement {
           <span class="path">${this.articlePath}</span>
         </p>
       </article>
-      ${this.renderPublishDialog()}
+      ${this.renderPublishDialog()} ${this.renderDeleteDialog()}
     `;
   }
 }

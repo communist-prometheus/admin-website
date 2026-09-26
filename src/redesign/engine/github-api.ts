@@ -6,9 +6,10 @@
  * to sample data with an honest badge.
  */
 
+import { contentOwner, contentRepo } from './content-repo.js';
 import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
 
-const OWNER = 'communist-prometheus';
+
 const API = 'https://api.github.com';
 
 /**
@@ -78,9 +79,9 @@ export interface ViewerRole {
  * caller can pick a conservative fallback rather than silently granting access.
  */
 export const getViewerRole = async (
-  repo = 'public-website-content',
+  repo = contentRepo(),
 ): Promise<ViewerRole | undefined> => {
-  const data = await get(`/repos/${OWNER}/${repo}`);
+  const data = await get(`/repos/${contentOwner()}/${repo}`);
   if (data === undefined) return undefined;
   const permissions = field(data, 'permissions');
   if (field(permissions, 'admin') === true) return { role: 'admin', owner: true };
@@ -89,8 +90,8 @@ export const getViewerRole = async (
 };
 
 /** Lists collaborators of a repo (default: the content repo). */
-export const listMembers = async (repo = 'public-website-content'): Promise<readonly Member[]> => {
-  const data = await get(`/repos/${OWNER}/${repo}/collaborators?per_page=100`);
+export const listMembers = async (repo = contentRepo()): Promise<readonly Member[]> => {
+  const data = await get(`/repos/${contentOwner()}/${repo}/collaborators?per_page=100`);
   return Array.isArray(data) ? data.map(toMember).filter((m): m is Member => m !== undefined) : [];
 };
 
@@ -136,7 +137,7 @@ const toTicket = (x: unknown): Ticket | undefined => {
 export const listTickets = async (repo = 'tickets'): Promise<readonly Ticket[]> => {
   // Newest first, explicitly (not relying on the API default), like every list.
   const data = await get(
-    `/repos/${OWNER}/${repo}/issues?state=all&sort=created&direction=desc&per_page=50`,
+    `/repos/${contentOwner()}/${repo}/issues?state=all&sort=created&direction=desc&per_page=50`,
   );
   return Array.isArray(data) ? data.map(toTicket).filter((t): t is Ticket => t !== undefined) : [];
 };
@@ -192,7 +193,7 @@ export const createTicket = async (
   ticket: NewTicket,
   repo = 'tickets',
 ): Promise<CreateResult> => {
-  const { ok, data } = await post(`/repos/${OWNER}/${repo}/issues`, {
+  const { ok, data } = await post(`/repos/${contentOwner()}/${repo}/issues`, {
     title: ticket.title,
     body: ticket.body,
     labels: LABELS_OF[ticket.kind],
@@ -279,7 +280,7 @@ export const listDeployRunSteps = async (
   runId: number,
   repo = 'public-website',
 ): Promise<readonly DeployStep[]> => {
-  const data = await get(`/repos/${OWNER}/${repo}/actions/runs/${runId}/jobs`);
+  const data = await get(`/repos/${contentOwner()}/${repo}/actions/runs/${runId}/jobs`);
   const jobs = field(data, 'jobs');
   if (!Array.isArray(jobs)) return [];
   const steps: DeployStep[] = [];
@@ -311,7 +312,7 @@ export const listDeployRuns = async (
   // also runs sync-content / sync-to-content, and an unscoped runs query would
   // surface those as phantom "deploy" rows with the wrong status.
   const data = await get(
-    `/repos/${OWNER}/${repo}/actions/workflows/deploy.yml/runs?branch=${branch}&per_page=30`,
+    `/repos/${contentOwner()}/${repo}/actions/workflows/deploy.yml/runs?branch=${branch}&per_page=30`,
   );
   const runs = field(data, 'workflow_runs');
   return Array.isArray(runs)
@@ -326,8 +327,8 @@ export const listDeployRuns = async (
  */
 export const listPushes = async (
   branch = import.meta.env.VITE_GITHUB_BRANCH ?? 'develop',
-  repo = 'public-website-content',
+  repo = contentRepo(),
 ): Promise<readonly Push[]> => {
-  const data = await get(`/repos/${OWNER}/${repo}/commits?sha=${branch}&per_page=15`);
+  const data = await get(`/repos/${contentOwner()}/${repo}/commits?sha=${branch}&per_page=15`);
   return Array.isArray(data) ? data.map(toPush).filter((p): p is Push => p !== undefined) : [];
 };

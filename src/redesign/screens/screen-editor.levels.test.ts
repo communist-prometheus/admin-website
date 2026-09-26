@@ -123,7 +123,7 @@ describe('the properties panel separates the two levels', () => {
     await el.updateComplete;
     const root = el.shadowRoot;
     const material = root?.querySelector('.props-material');
-    const tabs = root?.querySelector('.tabs-scroll');
+    const tabs = root?.querySelector('.lang-row');
     const translation = root?.querySelector('.props-translation');
     expect(material).not.toBeNull();
     expect(tabs).not.toBeNull();

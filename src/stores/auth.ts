@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { Ref } from 'vue'
 import { ref } from 'vue'
+import { onSsoRoles } from '@/composables/useAuth/session-roles'
 import { loadToken } from '@/composables/useAuth/token-storage'
 import type { User } from '@/types/user'
 import { createLogout, createSetUser } from './auth-actions'
@@ -40,6 +41,10 @@ export const useAuthStore = defineStore('auth', () => {
   const ssoActions = buildSsoActions(ssoRoles)
 
   installUserSync({ user, setUser, logout })
+  /* Minting a session no longer reaches into this store — it announces the
+   * roles instead, so auth carries no dependency on Vue. The store is the
+   * subscriber. */
+  onSsoRoles(ssoActions.setSsoRoles)
 
   return {
     user,
