@@ -2,6 +2,7 @@ import {
   type ContentPathParts,
   parseContentPath,
 } from '@/sw/handlers/file/path-parts'
+import { dateReason } from './content-gate-date-rule'
 import {
   langReason,
   schemaReason,
@@ -19,7 +20,8 @@ import {
  *   1. the frontmatter is valid YAML,
  *   2. filename `<lang>` is in `supportedLangs` (when a set is given),
  *   3. `frontmatter.lang` equals filename `<lang>`,
- *   4. the per-type schema accepts the record.
+ *   4. the per-type schema accepts the record,
+ *   5. every date key holds a real calendar day.
  *
  * A rejected payload is exactly what breaks the public build: an
  * unquoted `: ` in a description (YAML), or a bare `articles:` the
@@ -42,7 +44,8 @@ export const validateParsedContent = (
   return parsed.ok === false
     ? parsed.reason
     : (langReason(parts, parsed.data, supportedLangs) ??
-        schemaReason(parts.type, parsed.data))
+        schemaReason(parts.type, parsed.data) ??
+        dateReason(parsed.data))
 }
 
 /**

@@ -102,7 +102,9 @@ describe('a translation with no date of its own', () => {
     stubRepo({ 'blog/x/index.ru.md': RU, 'blog/x/index.en.md': EN_NO_DATE });
     const { priv } = editor(EN_NO_DATE, 'en');
     await priv.fillMissingDate();
-    expect(priv.editedMarkdown).toContain('pubDate: 2026-06-28');
+    // A file that carries no date key gets the site-canonical `publishDate`:
+    // the site reads that first, so writing `pubDate` here could be overruled.
+    expect(priv.editedMarkdown).toContain('publishDate: 2026-06-28');
   });
 
   it('leaves a translation that has its own date alone', async () => {
