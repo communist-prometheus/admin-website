@@ -111,6 +111,13 @@ const NO_TOPIC: CpSelectOption = { value: '', label: '— без темы —' }
 /** Frontmatter keys that have carried the publication date over time. */
 const DATE_KEYS: readonly string[] = ['pubDate', 'publishDate', 'date'];
 
+/** Today as the `YYYY-MM-DD` a date input and the frontmatter both use. */
+const today = (): string => {
+  const now = new Date();
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
+
 /** Publish is now a single GitHub API commit of the one edited file. */
 const REAL_STAGES: readonly string[] = ['Публикация'];
 
@@ -825,8 +832,16 @@ export class ScreenEditor extends LitElement {
     published: '',
   };
 
-  /** Which key holds the date in THIS file: `pubDate`, `publishDate` or `date`. */
-  private dateKey = 'pubDate';
+  /**
+   * Which keys hold the date in THIS file. Content is inconsistent — some
+   * materials carry `pubDate`, some `publishDate`, some both — and the SITE
+   * reads `publishDate` first. Editing only the first key found therefore left
+   * a stale `publishDate` winning on the site, which is how a translation
+   * re-dated in the admin still went out under the original's July date.
+   * Every key the file carries is written; a file with none gets the
+   * site-canonical `publishDate`.
+   */
+  private dateKeys: readonly string[] = ['publishDate'];
 
   /** True while the article's files are being moved to a new address. */
   @state() private renaming = false;
@@ -1055,8 +1070,9 @@ export class ScreenEditor extends LitElement {
     // date (else half the list has no date and clumps at the end when sorted).
     // Whichever key this file uses is the one a publish writes back to, so an
     // article dated with `publishDate` never grows a second `pubDate` key.
-    this.dateKey = DATE_KEYS.find((key) => frontmatterValue(fm, key) !== undefined) ?? 'pubDate';
-    this.pubDate = frontmatterValue(fm, this.dateKey) ?? '';
+    const present = DATE_KEYS.filter((key) => frontmatterValue(fm, key) !== undefined);
+    this.dateKeys = present.length > 0 ? present : ['publishDate'];
+    this.pubDate = frontmatterValue(fm, this.dateKeys[0] ?? 'publishDate') ?? '';
     const published = frontmatterValue(fm, 'published');
     this.published =
       published !== undefined ? published === 'true' : frontmatterValue(fm, 'draft') !== 'true';
@@ -1105,7 +1121,7 @@ export class ScreenEditor extends LitElement {
       if (this.description !== this.descriptionSeed)
         fm = upsertFrontmatterBlock(fm, 'description', this.description);
       if (this.pubDate !== this.seeds.pubDate && this.pubDate !== '')
-        fm = upsertFrontmatterField(fm, this.dateKey, this.pubDate);
+        for (const key of this.dateKeys) fm = upsertFrontmatterField(fm, key, this.pubDate);
       if (String(this.published) !== this.seeds.published)
         fm = upsertFrontmatterField(fm, 'published', String(this.published));
     }
@@ -1166,7 +1182,17 @@ export class ScreenEditor extends LitElement {
     this.langBuffers.set(this.activeLang, this.editedMarkdown);
     const source = this.editedMarkdown;
     const withLang = upsertFrontmatterField(source, 'lang', lang);
-    const seed = upsertFrontmatterField(withLang, 'published', 'false');
+    const draft = upsertFrontmatterField(withLang, 'published', 'false');
+    /*
+     * A translation is published the day it is made, not the day the original
+     * was. Seeding it with the original's date put three English translations
+     * made in late September under an early-July date — behind the digest's
+     * watermark, so the newsletter never carried them.
+     */
+    const seed = this.dateKeys.reduce(
+      (text, key) => upsertFrontmatterField(text, key, today()),
+      draft,
+    );
     const path = `${this.collection}/${this.slug}/index.${lang}.md`;
     this.addLangBusy = true;
     this.addLangError = '';
