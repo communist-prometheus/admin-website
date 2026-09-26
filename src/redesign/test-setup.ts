@@ -15,3 +15,14 @@ if (internals !== undefined) {
   proto['checkValidity'] ??= (): boolean => true;
   proto['reportValidity'] ??= (): boolean => true;
 }
+
+/**
+ * jsdom has no `document.execCommand`. CodeMirror's `EditorView.focus()` calls
+ * it through a Safari selection workaround, so every programmatic insert into
+ * the markdown editor throws in tests while working fine in a browser. A no-op
+ * stub keeps the workaround inert.
+ */
+const doc = globalThis.document as Document & { execCommand?: () => boolean };
+if (doc !== undefined && doc.execCommand === undefined) {
+  doc.execCommand = (): boolean => false;
+}

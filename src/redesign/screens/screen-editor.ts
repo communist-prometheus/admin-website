@@ -290,15 +290,38 @@ export class ScreenEditor extends LitElement {
 
     /* The language tabs can be wider than a phone (5 native names); let them
        scroll horizontally inside their own strip instead of widening the page. */
-    .tabs-scroll {
+    /*
+     * The language tabs and "add a language" belong on one line: the button
+     * used to sit in a block container under the (full-width) tabs, which on a
+     * phone read as a caption rather than a control.
+     */
+    .lang-row {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
       max-width: 100%;
-      overflow-x: auto;
       margin-bottom: var(--spacing-md);
+    }
+
+    .lang-row cp-tabs {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-x: auto;
+    }
+
+    .lang-row cp-button {
+      flex: none;
     }
     cp-tabs {
       display: block;
     }
 
+    /*
+     * Two groups, not one wrapping strip: the formatting glyphs scroll
+     * sideways as a unit, and the document actions (import, delete, publish)
+     * keep their own line. The old single flex row wrapped at arbitrary
+     * points on a narrow screen and buried "Импорт" between two glyphs.
+     */
     .toolbar {
       position: sticky;
       /* Stick just below the app header instead of colliding with it. */
@@ -307,11 +330,33 @@ export class ScreenEditor extends LitElement {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0.15rem;
+      gap: 0.35rem;
       padding: 0.35rem;
       margin-bottom: var(--spacing-lg);
       background: var(--color-background);
       border-bottom: 1px solid var(--color-border);
+    }
+
+    .toolbar .tools {
+      display: flex;
+      align-items: center;
+      gap: 0.15rem;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .toolbar .tools::-webkit-scrollbar {
+      display: none;
+    }
+
+    .toolbar .acts {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-left: auto;
     }
     .toolbar .t {
       width: 2.2rem;
@@ -345,30 +390,94 @@ export class ScreenEditor extends LitElement {
       background: var(--color-border);
       margin: 0 0.3rem;
     }
-    .toolbar .import-pick {
+    /*
+     * Import is a document action, so it is drawn as one — outlined, labelled
+     * and the same height as the buttons beside it. As a bare glyph among the
+     * formatting tools it was unfindable on a phone.
+     */
+    .import-pick {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.35rem;
-      width: auto;
-      padding: 0 0.6rem;
+      height: 2.2rem;
+      padding: 0 0.7rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text-primary);
+      background: var(--color-surface);
       cursor: pointer;
     }
 
-    .toolbar .import-pick input {
+    .import-pick:hover:not(:has(input:disabled)) {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .import-pick:focus-within {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    .import-pick input {
       position: absolute;
       width: 0;
       height: 0;
       opacity: 0;
     }
 
-    .toolbar .import-pick:has(input:disabled) {
+    .import-pick:has(input:disabled) {
       opacity: 0.55;
       cursor: progress;
     }
 
     .import-label {
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-weight: 600;
+    }
+
+    /*
+     * The publish target spelled out keeps the sticky toolbar to one line on a
+     * desktop; on a phone that label alone wraps the toolbar to a third row,
+     * so the host name moves to the button's tooltip.
+     */
+    .on-narrow {
+      display: none;
+    }
+
+    @media (max-width: 34rem) {
+      .on-wide {
+        display: none;
+      }
+
+      .on-narrow {
+        display: inline;
+      }
+    }
+
+    /*
+     * Touch sizing. Every control an author taps while writing on a phone gets
+     * a 44px (2.75rem) target; the desktop sizes stay as they are, so the
+     * toolbar does not grow on a mouse-driven screen.
+     */
+    @media (pointer: coarse) {
+      .toolbar .t {
+        width: 2.75rem;
+        height: 2.75rem;
+      }
+
+      .import-pick {
+        min-height: 2.75rem;
+        padding: 0 0.9rem;
+      }
+
+      .lang-row cp-button {
+        min-height: 2.75rem;
+      }
+
+      .toolbar .acts cp-button::part(button) {
+        min-height: 2.75rem;
+      }
     }
 
     .import-note {
@@ -1563,55 +1672,64 @@ export class ScreenEditor extends LitElement {
   private renderToolbar(): TemplateResult {
     return html`
       <div class="toolbar" role="toolbar" aria-label="Форматирование материала">
-        ${FORMAT_TOOLS.map(
-          (tool) => html`
-            <button
-              class="t ${tool.italic ? 'i' : ''}"
-              type="button"
-              title=${tool.label}
-              aria-label=${tool.label}
-              @click=${() => this.applyFormat(tool)}
-            >
-              ${tool.glyph}
-            </button>
-          `,
-        )}
-        <span class="sep" aria-hidden="true"></span>
-        <button
-          class="t"
-          type="button"
-          title="Изображение"
-          aria-label="Вставить изображение"
-          @click=${this.insertImage}
-        >
-          <cp-icon name="upload" size="18"></cp-icon>
-        </button>
-        <label class="t import-pick" title="Импорт из файла">
-          <input
-            class="import"
-            data-testid=${TESTID.editorImport}
-            type="file"
-            accept=".docx,.html,.htm,.md"
-            ?disabled=${this.importBusy}
-            @change=${(e: Event) => void this.onImportPick(e)}
-          />
-          <cp-icon name="book" size="18"></cp-icon>
-          <span class="import-label">${this.importBusy ? 'Импорт…' : 'Импорт'}</span>
-        </label>
-        <span class="spacer"></span>
-        ${this.isNewMaterial
-          ? nothing
-          : html`<cp-button
-              size="sm"
-              variant="ghost"
-              data-testid=${TESTID.deleteMaterial}
-              title="Удалить материал"
-              @cp-click=${this.openDelete}
-              >Удалить</cp-button
-            >`}
-        <cp-button size="sm" arrow data-testid=${TESTID.publish} @cp-click=${this.startPublish}
-          >Опубликовать на ${publishTarget().site}</cp-button
-        >
+        <div class="tools">
+          ${FORMAT_TOOLS.map(
+            (tool) => html`
+              <button
+                class="t ${tool.italic ? 'i' : ''}"
+                type="button"
+                title=${tool.label}
+                aria-label=${tool.label}
+                @click=${() => this.applyFormat(tool)}
+              >
+                ${tool.glyph}
+              </button>
+            `,
+          )}
+          <button
+            class="t"
+            type="button"
+            title="Изображение"
+            aria-label="Вставить изображение"
+            @click=${this.insertImage}
+          >
+            <cp-icon name="upload" size="18"></cp-icon>
+          </button>
+        </div>
+        <div class="acts">
+          <label class="import-pick" title="Импорт из .docx, .html или .md">
+            <input
+              class="import"
+              data-testid=${TESTID.editorImport}
+              type="file"
+              accept=".docx,.html,.htm,.md"
+              ?disabled=${this.importBusy}
+              @change=${(e: Event) => void this.onImportPick(e)}
+            />
+            <cp-icon name="book" size="18"></cp-icon>
+            <span class="import-label">${this.importBusy ? 'Импорт…' : 'Импорт'}</span>
+          </label>
+          ${this.isNewMaterial
+            ? nothing
+            : html`<cp-button
+                size="sm"
+                variant="ghost"
+                data-testid=${TESTID.deleteMaterial}
+                title="Удалить материал"
+                @cp-click=${this.openDelete}
+                >Удалить</cp-button
+              >`}
+          <cp-button
+            size="sm"
+            arrow
+            data-testid=${TESTID.publish}
+            title="Опубликовать на ${publishTarget().site}"
+            @cp-click=${this.startPublish}
+          >
+            <span class="on-wide">Опубликовать на ${publishTarget().site}</span>
+            <span class="on-narrow">Опубликовать</span>
+          </cp-button>
+        </div>
       </div>
     `;
   }
@@ -1930,7 +2048,7 @@ export class ScreenEditor extends LitElement {
           @input=${this.onLeadInput}
         ></textarea>
         ${this.renderMaterialProps()}
-        <div class="tabs-scroll">
+        <div class="lang-row">
           <cp-tabs
             .tabs=${langTabs(this.availableLangs)}
             active=${this.activeLang}
