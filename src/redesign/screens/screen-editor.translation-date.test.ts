@@ -141,6 +141,24 @@ describe('a translation is dated the day it is made', () => {
     expect(seed).toContain(`publishDate: ${TODAY}`);
   });
 
+  it('gives no date to a material that carries none — a page, say', async () => {
+    const DATELESS = ['---', 'title: "About"', 'lang: ru', '---', '', 'Body text.', ''].join('\n');
+    const el: ScreenEditor = document.createElement('screen-editor');
+    const priv = inner(el);
+    priv.slug = 'about';
+    priv.collection = 'pages';
+    priv.live = true;
+    priv.activeLang = 'ru';
+    priv.availableLangs = ['ru'];
+    priv.applyMarkdown(DATELESS, 'pages/about/index.ru.md', true);
+    priv.addLangChoice = 'en';
+    await priv.confirmAddLang();
+    const seed = written.find((w) => w.path.endsWith('index.en.md'))?.body ?? '';
+    expect(seed).toContain('lang: en');
+    expect(seed).not.toContain('publishDate');
+    expect(seed).not.toContain('pubDate');
+  });
+
   it('still marks the new translation an unpublished draft', async () => {
     const { priv } = editor(RU);
     priv.addLangChoice = 'en';

@@ -1226,11 +1226,14 @@ export class ScreenEditor extends LitElement {
      * was. Seeding it with the original's date put three English translations
      * made in late September under an early-July date — behind the digest's
      * watermark, so the newsletter never carried them.
+     *
+     * Only keys the original actually carries are stamped: a material with no
+     * date at all — a page — must not grow one just by being translated.
      */
-    const seed = this.dateKeys.reduce(
-      (text, key) => upsertFrontmatterField(text, key, today()),
-      draft,
+    const dated = DATE_KEYS.filter(
+      (key) => frontmatterValue(parseArticle(source).frontmatter, key) !== undefined,
     );
+    const seed = dated.reduce((text, key) => upsertFrontmatterField(text, key, today()), draft);
     const path = `${this.collection}/${this.slug}/index.${lang}.md`;
     this.addLangBusy = true;
     this.addLangError = '';
