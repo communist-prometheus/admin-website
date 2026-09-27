@@ -21,6 +21,7 @@ import { listSlugsViaApi } from '../engine/content.js';
 import { slugify, slugProblem } from '../engine/slug.js';
 import { renameArticleViaApi } from '../engine/rename-article.js';
 import { importArticleFile } from '../engine/import-article.js';
+import { readLanguagesViaApi, type SiteLanguageEntry } from '../engine/site-settings-io.js';
 import { deleteLanguage, deleteMaterial } from '../engine/delete-article.js';
 import { TESTID } from '../testids.js';
 import { listDeployRuns } from '../engine/github-api.js';
@@ -59,8 +60,12 @@ interface PublishStage {
   readonly state: StageState;
 }
 
-/** Display labels for known language codes; any other code falls back to its
- * uppercased code, so an article in es/uk/pl/… still gets a usable tab. */
+/**
+ * Fallback display labels. The real list lives in `settings/languages.json`
+ * and is edited in Настройки → Языки сайта; these names only dress codes that
+ * list does not name — an article whose language was removed from it still
+ * gets a readable tab instead of a bare code.
+ */
 const LANG_LABELS: Readonly<Record<string, string>> = {
   ru: 'Русский',
   en: 'English',
@@ -71,9 +76,21 @@ const LANG_LABELS: Readonly<Record<string, string>> = {
   bl: 'Беларуская',
 };
 
+/** The display name for a code: the configured one, else a built-in, else the code. */
+const langLabel = (
+  code: string,
+  configured: readonly SiteLanguageEntry[],
+): string =>
+  configured.find((entry) => entry.code === code)?.label ??
+  LANG_LABELS[code] ??
+  code.toUpperCase();
+
 /** Builds the language tabs from the codes an article actually has. */
-const langTabs = (codes: readonly string[]): readonly CpTab[] =>
-  codes.map((code) => ({ id: code, label: LANG_LABELS[code] ?? code.toUpperCase() }));
+const langTabs = (
+  codes: readonly string[],
+  configured: readonly SiteLanguageEntry[],
+): readonly CpTab[] =>
+  codes.map((code) => ({ id: code, label: langLabel(code, configured) }));
 
 /** Non-blog collections the route may name as `#/editor/<collection>/<slug>`;
  * anything else falls back to a blog article at `#/editor/<slug>`. */
@@ -786,6 +803,9 @@ export class ScreenEditor extends LitElement {
   @state() private activeLang = 'ru';
 
   /** Add-translation dialog visibility + the chosen new language + progress. */
+  /** The site's configured languages; empty until the settings read lands. */
+  @state() private siteLangs: readonly SiteLanguageEntry[] = [];
+
   @state() private addLangOpen = false;
   @state() private addLangChoice = '';
   @state() private addLangBusy = false;
@@ -923,6 +943,14 @@ export class ScreenEditor extends LitElement {
     void topicOptionsViaApi().then((options) => {
       this.topicOptions = options;
     });
+    // Same for the languages: one added in the settings screen must be offerable
+    // here, which is the only place a translation is created. A failed read
+    // leaves the list empty and the built-in codes stand in.
+    void readLanguagesViaApi()
+      .then((entries) => {
+        this.siteLangs = entries;
+      })
+      .catch(() => undefined);
     void listDeployRuns().then((runs) => {
       this.siteBuild = siteBuildState(runs);
     });
@@ -1155,8 +1183,18 @@ export class ScreenEditor extends LitElement {
   }
 
   /** Known languages the item does NOT yet have — the add-translation choices. */
+  /**
+   * The languages a translation may be created in: the site's configured list
+   * minus what this material already has. Before, this was the keys of the
+   * hardcoded {@link LANG_LABELS} — so a language added in Настройки never
+   * reached the one dialog that needs it.
+   */
   private get addableLangs(): readonly string[] {
-    return Object.keys(LANG_LABELS).filter((c) => !this.availableLangs.includes(c));
+    const source =
+      this.siteLangs.length > 0
+        ? this.siteLangs.map((entry) => entry.code)
+        : Object.keys(LANG_LABELS);
+    return source.filter((code) => !this.availableLangs.includes(code));
   }
 
   private readonly openAddLang = (): void => {
@@ -1212,7 +1250,7 @@ export class ScreenEditor extends LitElement {
   private renderAddLangDialog(): TemplateResult {
     const options: readonly CpSelectOption[] = this.addableLangs.map((c) => ({
       value: c,
-      label: LANG_LABELS[c] ?? c.toUpperCase(),
+      label: langLabel(c, this.siteLangs),
     }));
     return html`
       <cp-dialog
@@ -1922,10 +1960,10 @@ export class ScreenEditor extends LitElement {
    */
   private renderTranslationProps(): TemplateResult {
     const isArticle = this.collection !== 'magazine';
-    const langLabel = LANG_LABELS[this.activeLang] ?? this.activeLang.toUpperCase();
+    const activeLabel = langLabel(this.activeLang, this.siteLangs);
     return html`
       <section class="props props-translation" aria-label="Свойства перевода">
-        <h2 class="props-head">Свойства перевода · ${langLabel}</h2>
+        <h2 class="props-head">Свойства перевода · ${activeLabel}</h2>
         <p class="props-note">
           Только для этого языка — у каждого перевода своя дата. Заголовок и лид правятся выше.
         </p>
@@ -2076,7 +2114,7 @@ export class ScreenEditor extends LitElement {
         ${this.renderMaterialProps()}
         <div class="lang-row">
           <cp-tabs
-            .tabs=${langTabs(this.availableLangs)}
+            .tabs=${langTabs(this.availableLangs, this.siteLangs)}
             active=${this.activeLang}
             @cp-tab-change=${this.onLangChange}
           ></cp-tabs>
