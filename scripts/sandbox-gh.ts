@@ -1,6 +1,34 @@
 import { ghHeaders, type SandboxConfig } from './sandbox-config'
+import { rateLimitWaitMs } from './sandbox-rate-limit'
 
 const API = 'https://api.github.com'
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise(resolve => setTimeout(resolve, ms))
+
+/**
+ * `fetch` that waits out an exhausted GitHub budget once. The job re-seeds the
+ * sandbox on every run, so it is the first thing to hit the hourly limit — and
+ * it used to die on the very first call, failing a PR over something that had
+ * nothing to do with the code under review.
+ * @param url - Request URL.
+ * @param init - Request init.
+ * @returns The response, after at most one wait-and-retry.
+ */
+const ghFetch = async (
+  url: string,
+  init?: RequestInit
+): Promise<Response> => {
+  const first = await fetch(url, init)
+  const wait = rateLimitWaitMs(first, Date.now())
+  if (wait === undefined) return first
+  process.stdout.write(
+    `github budget exhausted — waiting ${Math.round(wait / 1000)}s for the reset
+`
+  )
+  await sleep(wait)
+  return fetch(url, init)
+}
 
 const ok = async (res: Response, ctx: string): Promise<unknown> => {
   if (res.ok) return res.json()
@@ -16,7 +44,7 @@ const ok = async (res: Response, ctx: string): Promise<unknown> => {
 export const getRepo = async (
   cfg: SandboxConfig
 ): Promise<Record<string, unknown> | undefined> => {
-  const res = await fetch(`${API}/repos/${cfg.owner}/${cfg.repo}`, {
+  const res = await ghFetch(`${API}/repos/${cfg.owner}/${cfg.repo}`, {
     headers: ghHeaders(cfg.token),
   })
   if (res.status === 404) return undefined
@@ -24,7 +52,7 @@ export const getRepo = async (
 }
 
 const isAuthUser = async (cfg: SandboxConfig): Promise<boolean> => {
-  const res = await fetch(`${API}/user`, { headers: ghHeaders(cfg.token) })
+  const res = await ghFetch(`${API}/user`, { headers: ghHeaders(cfg.token) })
   const me = (await ok(res, 'getAuthUser')) as { login: string }
   return me.login.toLowerCase() === cfg.owner.toLowerCase()
 }
@@ -45,7 +73,7 @@ export const createRepo = async (cfg: SandboxConfig): Promise<void> => {
   const url = userOwned
     ? `${API}/user/repos`
     : `${API}/orgs/${cfg.owner}/repos`
-  const res = await fetch(url, {
+  const res = await ghFetch(url, {
     method: 'POST',
     headers: { ...ghHeaders(cfg.token), 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -76,14 +104,20 @@ export const createBlob = async (
   path: string,
   content: string
 ): Promise<BlobOut> => {
-  const res = await fetch(`${API}/repos/${cfg.owner}/${cfg.repo}/git/blobs`, {
-    method: 'POST',
-    headers: { ...ghHeaders(cfg.token), 'content-type': 'application/json' },
-    body: JSON.stringify({
-      content: Buffer.from(content, 'utf8').toString('base64'),
-      encoding: 'base64',
-    }),
-  })
+  const res = await ghFetch(
+    `${API}/repos/${cfg.owner}/${cfg.repo}/git/blobs`,
+    {
+      method: 'POST',
+      headers: {
+        ...ghHeaders(cfg.token),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        content: Buffer.from(content, 'utf8').toString('base64'),
+        encoding: 'base64',
+      }),
+    }
+  )
   const data = (await ok(res, `createBlob ${path}`)) as { sha: string }
   return { path, sha: data.sha }
 }
@@ -104,11 +138,17 @@ export const createTree = async (
     type: 'blob',
     sha: b.sha,
   }))
-  const res = await fetch(`${API}/repos/${cfg.owner}/${cfg.repo}/git/trees`, {
-    method: 'POST',
-    headers: { ...ghHeaders(cfg.token), 'content-type': 'application/json' },
-    body: JSON.stringify({ tree }),
-  })
+  const res = await ghFetch(
+    `${API}/repos/${cfg.owner}/${cfg.repo}/git/trees`,
+    {
+      method: 'POST',
+      headers: {
+        ...ghHeaders(cfg.token),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ tree }),
+    }
+  )
   const data = (await ok(res, 'createTree')) as { sha: string }
   return data.sha
 }
@@ -127,7 +167,7 @@ export const createCommit = async (
   message: string,
   parents: readonly string[]
 ): Promise<string> => {
-  const res = await fetch(
+  const res = await ghFetch(
     `${API}/repos/${cfg.owner}/${cfg.repo}/git/commits`,
     {
       method: 'POST',
@@ -156,7 +196,7 @@ export const getRef = async (
   cfg: SandboxConfig,
   ref: string
 ): Promise<string | undefined> => {
-  const res = await fetch(
+  const res = await ghFetch(
     `${API}/repos/${cfg.owner}/${cfg.repo}/git/ref/${ref}`,
     { headers: ghHeaders(cfg.token) }
   )
@@ -176,11 +216,17 @@ export const createRef = async (
   ref: string,
   sha: string
 ): Promise<void> => {
-  const res = await fetch(`${API}/repos/${cfg.owner}/${cfg.repo}/git/refs`, {
-    method: 'POST',
-    headers: { ...ghHeaders(cfg.token), 'content-type': 'application/json' },
-    body: JSON.stringify({ ref, sha }),
-  })
+  const res = await ghFetch(
+    `${API}/repos/${cfg.owner}/${cfg.repo}/git/refs`,
+    {
+      method: 'POST',
+      headers: {
+        ...ghHeaders(cfg.token),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ ref, sha }),
+    }
+  )
   await ok(res, `createRef ${ref}`)
 }
 
@@ -195,7 +241,7 @@ export const updateRef = async (
   ref: string,
   sha: string
 ): Promise<void> => {
-  const res = await fetch(
+  const res = await ghFetch(
     `${API}/repos/${cfg.owner}/${cfg.repo}/git/refs/${ref}`,
     {
       method: 'PATCH',
