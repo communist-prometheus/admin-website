@@ -73,7 +73,9 @@ const LANG_LABELS: Readonly<Record<string, string>> = {
   es: 'Español',
   uk: 'Українська',
   pl: 'Polski',
-  bl: 'Беларуская',
+  // `bl` is this repository's own code for Bulgarian: the material filed under
+  // it is Bulgarian prose, not Belarusian as this map used to claim.
+  bl: 'Български',
 };
 
 /** The display name for a code: the configured one, else a built-in, else the code. */
