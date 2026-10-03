@@ -54,7 +54,9 @@ describe('createResendClient.send — request shape', () => {
     })
     const init = fetchFn.mock.calls[0]?.[1]
     const headers = new Headers(init?.headers)
-    expect(headers.get('Idempotency-Key')).toBe('42:2026-06-06T09:00:00Z')
+    expect(headers.get('Idempotency-Key')).toMatch(
+      /^42:2026-06-06T09:00:00Z:[0-9a-f]{32}$/
+    )
     const body = JSON.parse(init?.body as string) as Record<string, unknown>
     const messageHeaders = body.headers as Record<string, string>
     expect(messageHeaders['List-Unsubscribe']).toBe('<https://x/u>')
@@ -138,7 +140,9 @@ describe('createResendClient.sendBatch', () => {
     expect(url).toBe('https://api.resend.com/emails/batch')
     const body = JSON.parse(init.body as string) as ReadonlyArray<unknown>
     expect(body).toHaveLength(2)
-    expect(new Headers(init.headers).get('Idempotency-Key')).toBe('idem-1')
+    expect(new Headers(init.headers).get('Idempotency-Key')).toMatch(
+      /^idem-1:[0-9a-f]{32}$/
+    )
   })
 
   it('does nothing and returns empty ids for an empty batch', async () => {

@@ -57,7 +57,7 @@ export const sendBatchWithRetry = async (
   inputs: ReadonlyArray<SendInput>,
   idempotencyKey?: string
 ): Promise<BatchResult> => {
-  const init = buildBatchInit(apiKey, inputs, idempotencyKey)
+  const init = await buildBatchInit(apiKey, inputs, idempotencyKey)
   let lastStatus = 0
   let attempt = 0
   // The ceiling depends on what the server keeps answering, so it is

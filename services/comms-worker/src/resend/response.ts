@@ -15,9 +15,11 @@ export type QuotaKind = 'daily' | 'monthly'
 /**
  * Status codes eligible for a retry.
  *
- * 409 is an idempotency conflict. Because the key is unique per (tick,
- * chunk) — see `dispatch/send-chunk.ts` — it can only ever mean "the
- * identical request is still being processed", which is transient. It
+ * 409 is an idempotency conflict. Because the key is bound to the
+ * payload — see `payload-key.ts` — it can only mean "the identical
+ * request is still being processed", which is transient; the other 409,
+ * a key reused with a different payload, is singled out as terminal in
+ * `batch-classify.ts`. It
  * used to be classified terminal, and that is what silently killed the
  * 2026-07-11 dispatch: a 100-email batch takes Resend longer than the
  * backoff, the retry re-sent the same key while the original was still

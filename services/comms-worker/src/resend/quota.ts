@@ -1,3 +1,4 @@
+import { readErrorName } from './error-name'
 import type { QuotaKind } from './response'
 
 const QUOTA_BY_NAME: Readonly<Record<string, QuotaKind>> = {
@@ -25,10 +26,5 @@ export const quotaKindFromName = (name: unknown): QuotaKind | undefined =>
  */
 export const readQuotaKind = async (
   res: Response
-): Promise<QuotaKind | undefined> => {
-  const body = (await res
-    .clone()
-    .json()
-    .catch(() => undefined)) as { name?: unknown } | undefined
-  return quotaKindFromName(body?.name)
-}
+): Promise<QuotaKind | undefined> =>
+  quotaKindFromName(await readErrorName(res))

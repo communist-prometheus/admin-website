@@ -6,12 +6,13 @@ import { sendChunk } from './send-chunk'
 /**
  * Emails per Resend batch call.
  *
- * The endpoint accepts 100, and 100 was what we sent — but Resend needs
- * proportionally longer to accept a full batch, and twice a 100-email
- * chunk outlived the retry budget and answered 409 to exhaustion
- * (2026-07-11, 2026-09-12). Half the size settles in well under it; the
- * cost is one extra HTTP call per 50 recipients, which is nothing next
- * to writing a hundred deliveries off as failures.
+ * The endpoint accepts 100. The size was halved on the belief that a
+ * full batch outlived the retry budget (409 to exhaustion, 2026-07-11,
+ * 2026-09-12); the 2026-10-03 run disproved it — a 50-email chunk 0 was
+ * refused while the 50-email chunk 1 went straight through. The refusals
+ * were an idempotency-key collision with the develop deployment (see
+ * `resend/payload-key.ts`), unrelated to size. 50 stays because a
+ * smaller chunk bounds how many recipients one rejected request strands.
  */
 const CHUNK_SIZE = 50
 
