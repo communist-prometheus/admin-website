@@ -1,3 +1,4 @@
+import { payloadBoundKey } from './payload-key'
 import type { SendInput } from './types'
 
 /** Resend batch transactional email endpoint (≤100 emails per call). */
@@ -14,23 +15,29 @@ const toEmail = (i: SendInput): Record<string, unknown> => ({
 
 /**
  * Build the `fetch` init for a Resend batch POST. The optional
- * idempotency key applies to the whole request.
+ * idempotency key applies to the whole request and is bound to its
+ * payload — see {@link payloadBoundKey}.
  * @param apiKey Resend API key.
  * @param inputs Emails to send (≤100).
  * @param idempotencyKey Optional request-level idempotency key.
  * @returns Pre-built `RequestInit`.
  */
-export const buildBatchInit = (
+export const buildBatchInit = async (
   apiKey: string,
   inputs: ReadonlyArray<SendInput>,
   idempotencyKey?: string
-): RequestInit => ({
-  method: 'POST',
-  headers: {
-    Authorization: `Bearer ${apiKey}`,
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-    ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
-  },
-  body: JSON.stringify(inputs.map(toEmail)),
-})
+): Promise<RequestInit> => {
+  const body = JSON.stringify(inputs.map(toEmail))
+  return {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(idempotencyKey
+        ? { 'Idempotency-Key': await payloadBoundKey(idempotencyKey, body) }
+        : {}),
+    },
+    body,
+  }
+}

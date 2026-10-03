@@ -1,3 +1,4 @@
+import { payloadBoundKey } from './payload-key'
 import type { SendInput } from './types'
 
 const buildBody = (input: SendInput): string =>
@@ -18,17 +19,23 @@ const baseHeaders = (apiKey: string): Record<string, string> => ({
 
 /**
  * Build the `fetch` `RequestInit` used to POST a transactional email.
+ * The idempotency key, when set, is bound to the payload — see
+ * {@link payloadBoundKey}.
  * @param apiKey Resend API key.
  * @param input Email payload.
  * @returns Pre-built `RequestInit` ready to be passed to `fetch`.
  */
-export const buildRequest = (
+export const buildRequest = async (
   apiKey: string,
   input: SendInput
-): RequestInit => {
+): Promise<RequestInit> => {
   const headers = baseHeaders(apiKey)
+  const body = buildBody(input)
   if (input.idempotencyKey !== undefined) {
-    headers['Idempotency-Key'] = input.idempotencyKey
+    headers['Idempotency-Key'] = await payloadBoundKey(
+      input.idempotencyKey,
+      body
+    )
   }
-  return { method: 'POST', headers, body: buildBody(input) }
+  return { method: 'POST', headers, body }
 }
