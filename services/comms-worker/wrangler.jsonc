@@ -8,6 +8,10 @@
   // Heartbeat fires hourly UTC; the worker decides per-tick whether
   // the user-saved schedule says "fire now" via cron-parser (spec §5).
   "triggers": { "crons": ["0 * * * *"] },
+  // Keep the structured `logEvent` lines. Without this nothing a cron
+  // tick logged survived it, and three failed dispatches were diagnosed
+  // by guesswork instead of by reading what Resend had answered.
+  "observability": { "enabled": true },
   // Bindings declared but optional at deploy time so Stage 0 ships
   // before the D1 binding lands in Stage 1+.
   // Stage 1+:
@@ -32,6 +36,7 @@
   "env": {
     "develop": {
       "name": "comms-worker-develop",
+      "observability": { "enabled": true },
       "routes": [
         { "pattern": "dev-lists.comprom.org", "custom_domain": true }
       ],

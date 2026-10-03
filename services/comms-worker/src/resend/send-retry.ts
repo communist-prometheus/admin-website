@@ -19,7 +19,7 @@ export const sendWithRetry = async (
   apiKey: string,
   input: SendInput
 ): Promise<SendResult> => {
-  const init = buildRequest(apiKey, input)
+  const init = await buildRequest(apiKey, input)
   const first = await sendOnce(doFetch, init)
   if ('ok' in first) return first
   await doSleep(first.retryAfterMs)

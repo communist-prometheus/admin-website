@@ -98,3 +98,30 @@ describe('a genuinely failing batch', () => {
     expect(r).toMatchObject({ ok: false, definitive: true })
   })
 })
+
+describe('a key Resend has already seen with another payload', () => {
+  const mismatch = (): Response =>
+    new Response(
+      JSON.stringify({ name: 'invalid_idempotent_request', statusCode: 409 }),
+      { status: 409 }
+    )
+
+  it('is refused for good, so it is not waited on', async () => {
+    const fetchFn = vi.fn().mockImplementation(async () => mismatch())
+    const { sleep, waits } = recordingSleeper()
+    await sendBatchWithRetry(fetchFn, sleep, 'k', inputs, 'idem-1')
+    expect(fetchFn).toHaveBeenCalledOnce()
+    expect(waits).toEqual([])
+  })
+
+  it('is a rejection that names its cause, not an unsettled send', async () => {
+    const fetchFn = vi.fn().mockImplementation(async () => mismatch())
+    const { sleep } = recordingSleeper()
+    const r = await sendBatchWithRetry(fetchFn, sleep, 'k', inputs, 'idem-1')
+    expect(r).toEqual({
+      ok: false,
+      error: 'resend 409 invalid_idempotent_request',
+      definitive: true,
+    })
+  })
+})
