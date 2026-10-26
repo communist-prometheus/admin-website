@@ -4,7 +4,7 @@ import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import { readLabelsViaApi, saveLabelsViaApi, type Label } from '../engine/settings-io.js';
 import { publishTarget } from '../engine/publish-target.js';
-import { TAXONOMY_LANGS, taxonomyStyles } from './taxonomy-shared.js';
+import { TAXONOMY_LANGS, siteLanguageTabs, taxonomyStyles } from './taxonomy-shared.js';
 import { emptyLabel, withKey, withText, withoutAt } from './taxonomy-draft.js';
 
 /**
@@ -25,10 +25,14 @@ export class ScreenCategories extends LitElement {
   @state() private error = '';
   @state() private message = '';
   @state() private activeLang = 'ru';
+  @state() private langTabs = TAXONOMY_LANGS;
 
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+    void siteLanguageTabs().then((tabs) => {
+      this.langTabs = tabs;
+    });
   }
 
   private async load(): Promise<void> {
@@ -112,7 +116,7 @@ export class ScreenCategories extends LitElement {
         ? html`<p class="msg">Загружаем рубрики…</p>`
         : html`
             <cp-tabs
-              .tabs=${TAXONOMY_LANGS}
+              .tabs=${this.langTabs}
               active=${this.activeLang}
               @cp-tab-change=${(e: Event) => {
                 if (e instanceof CustomEvent && typeof e.detail?.id === 'string')
