@@ -1,5 +1,6 @@
 import { css } from 'lit';
 import type { CpTab } from '@communist-prometheus/cp-components';
+import { readLanguagesViaApi, type SiteLanguageEntry } from '../engine/site-settings-io.js';
 
 /**
  * What the two taxonomy screens (topics and categories) share: the language
@@ -8,7 +9,11 @@ import type { CpTab } from '@communist-prometheus/cp-components';
  * the same on purpose.
  */
 
-/** The publication languages, as the keys used inside the settings files. */
+/**
+ * The publication languages to fall back on when `settings/languages.json`
+ * cannot be read. The tabs normally come from that registry — a list compiled
+ * in here hid every language added later under «Языки сайта».
+ */
 export const TAXONOMY_LANGS: readonly CpTab[] = [
   { id: 'ru', label: 'RU' },
   { id: 'en', label: 'EN' },
@@ -18,6 +23,27 @@ export const TAXONOMY_LANGS: readonly CpTab[] = [
   { id: 'pl', label: 'PL' },
   { id: 'uk', label: 'UK' },
 ];
+
+/** Tab captions that differ from the upper-cased code (`bl` is Bulgarian). */
+const TAB_CAPTIONS: Readonly<Record<string, string>> = { bl: 'BG' };
+
+/**
+ * One tab per language the site publishes in, in registry order.
+ * @param languages - entries of `settings/languages.json`
+ * @returns tabs keyed by language code
+ */
+export const languageTabs = (languages: readonly SiteLanguageEntry[]): readonly CpTab[] =>
+  languages.map(({ code }) => ({ id: code, label: TAB_CAPTIONS[code] ?? code.toUpperCase() }));
+
+/**
+ * The language tabs from the registry, or the built-in list when it cannot be
+ * read — an unreadable registry must not leave a screen with no tabs at all.
+ * @returns tabs to render
+ */
+export const siteLanguageTabs = async (): Promise<readonly CpTab[]> =>
+  readLanguagesViaApi()
+    .then((languages) => (languages.length > 0 ? languageTabs(languages) : TAXONOMY_LANGS))
+    .catch(() => TAXONOMY_LANGS);
 
 export const taxonomyStyles = css`
   :host {

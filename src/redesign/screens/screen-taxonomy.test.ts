@@ -175,3 +175,46 @@ describe('screen-categories: the rubric editor that did not exist', () => {
     expect(JSON.parse(files['settings/labels.json'])).toEqual([]);
   });
 });
+
+/*
+ * Reported 2026-10-27: German was added under «Языки сайта», yet neither the
+ * topics nor the rubrics screen offered a German tab — both drew their tabs
+ * from a list compiled into the admin, so a rubric could not be named in a
+ * language the site already publishes in.
+ */
+describe('the taxonomy screens offer every language the site publishes in', () => {
+  const LANGUAGES = [
+    { code: 'en', label: 'English' },
+    { code: 'ru', label: 'Русский' },
+    { code: 'de', label: 'Deutsch' },
+  ];
+
+  const tabIds = (el: HTMLElement): readonly string[] => {
+    const tabs: unknown = Reflect.get(el.shadowRoot?.querySelector('cp-tabs') ?? {}, 'tabs');
+    return Array.isArray(tabs) ? tabs.map((tab) => String(Reflect.get(tab, 'id'))) : [];
+  };
+
+  it('rubrics: a language added in the settings gets its own tab', async () => {
+    stubGitHub(
+      {
+        'settings/labels.json': JSON.stringify(LABELS),
+        'settings/languages.json': JSON.stringify(LANGUAGES),
+      },
+      [],
+    );
+    const el = await mountCategories();
+    expect(tabIds(el)).toEqual(['en', 'ru', 'de']);
+  });
+
+  it('topics: a language added in the settings gets its own tab', async () => {
+    stubGitHub(
+      {
+        'settings/topics.json': JSON.stringify(TOPICS),
+        'settings/languages.json': JSON.stringify(LANGUAGES),
+      },
+      [],
+    );
+    const el = await mountTopics();
+    expect(tabIds(el)).toEqual(['en', 'ru', 'de']);
+  });
+});

@@ -8,6 +8,7 @@ import './screen-magazine.js';
 import './screen-newsletter.js';
 import './screen-topics.js';
 import './screen-categories.js';
+import './screen-interface.js';
 import './screen-tickets.js';
 import './screen-collection.js';
 
@@ -42,6 +43,7 @@ export const screens: Readonly<Record<string, Screen>> = {
   ),
   topics: element('Темы', () => html`<screen-topics></screen-topics>`),
   categories: element('Рубрики', () => html`<screen-categories></screen-categories>`),
+  interface: element('Интерфейс сайта', () => html`<screen-interface></screen-interface>`),
   tickets: element('Тикеты', () => html`<screen-tickets></screen-tickets>`),
   newsletter: element('Рассылка', () => html`<screen-newsletter></screen-newsletter>`),
   deploys: element('Деплои', () => html`<screen-deploys></screen-deploys>`),

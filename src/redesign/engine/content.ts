@@ -643,12 +643,12 @@ export const readFileViaApi = async (path: string): Promise<string | undefined> 
 /** A content read that tells "absent" apart from "failed": a 404 means the
  *  item has no such language, anything else (401 expired token, 403 throttle,
  *  5xx) is a failure the caller must not mistake for absence. */
-type ContentRead =
+export type ContentRead =
   | { readonly kind: 'ok'; readonly text: string }
   | { readonly kind: 'missing' }
   | { readonly kind: 'error'; readonly error: string };
 
-const readContentFile = async (path: string): Promise<ContentRead> => {
+export const readContentFile = async (path: string): Promise<ContentRead> => {
   const t = await freshGhToken();
   if (t === undefined) return { kind: 'error', error: 'signed-out' };
   try {
