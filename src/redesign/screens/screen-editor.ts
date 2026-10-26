@@ -22,6 +22,10 @@ import { slugify, slugProblem } from '../engine/slug.js';
 import { renameArticleViaApi } from '../engine/rename-article.js';
 import { importArticleFile } from '../engine/import-article.js';
 import { readLanguagesViaApi, type SiteLanguageEntry } from '../engine/site-settings-io.js';
+import { readLabelsViaApi } from '../engine/settings-io.js';
+
+/** The language the admin itself is written in, used to name rubrics. */
+const EDIT_LANG = 'ru';
 import { deleteLanguage, deleteMaterial } from '../engine/delete-article.js';
 import { TESTID } from '../testids.js';
 import { listDeployRuns } from '../engine/github-api.js';
@@ -105,21 +109,23 @@ const FORMAT_TOOLS: readonly FormatTool[] = [
   { label: 'Список', glyph: '•', prefix: '- ' },
 ];
 
+/** The «без рубрики» choice, always first. */
+const NO_RUBRIC: CpSelectOption = { value: '', label: '— без рубрики —' };
+
 /**
- * «Рубрика» is the article's `category` — the field the site's collection
- * schema requires. These are the values the content repository actually uses;
- * an article whose category is outside the list keeps it (see `rubricOptions`).
+ * Fallback rubrics. The real registry is `settings/labels.json`, edited in
+ * «Рубрики»; these only stand in when that file cannot be read, so the picker
+ * is never empty. Do not add to this list — a rubric added here but absent
+ * from the registry files articles under a key the site cannot translate, and
+ * the public blog then shows the raw word.
  */
-const RUBRIC_OPTIONS: readonly CpSelectOption[] = [
-  { value: '', label: '— без рубрики —' },
+const RUBRIC_FALLBACK: readonly CpSelectOption[] = [
   { value: 'programme', label: 'Программа' },
-  { value: 'theory', label: 'Теория' },
   { value: 'history', label: 'История' },
   { value: 'international', label: 'Международное' },
   { value: 'editorial', label: 'От редакции' },
   { value: 'critique', label: 'Критика' },
   { value: 'appeal', label: 'Обращение' },
-  { value: 'translation', label: 'Перевод' },
 ];
 
 /** The «Тема» placeholder; real topics are read from settings/topics.json. */
@@ -889,6 +895,12 @@ export class ScreenEditor extends LitElement {
   @state() private topicOptions: readonly CpSelectOption[] = [];
 
   /**
+   * The rubric registry from `settings/labels.json`, empty until the read
+   * lands or when it fails — {@link RUBRIC_FALLBACK} stands in then.
+   */
+  @state() private rubricRegistry: readonly CpSelectOption[] = [];
+
+  /**
    * Whether the public site is currently building what the repository holds.
    * A red build is why a correctly published article can sit in the admin and
    * never appear on the site — the editor has to be told, here.
@@ -943,6 +955,16 @@ export class ScreenEditor extends LitElement {
     void topicOptionsViaApi().then((options) => {
       this.topicOptions = options;
     });
+    // Rubrics come from the same settings file «Рубрики» writes, so a rubric
+    // created there can actually be put on an article.
+    void readLabelsViaApi()
+      .then((labels) => {
+        this.rubricRegistry = labels.map((label) => ({
+          value: label.key,
+          label: label.translations[EDIT_LANG] ?? label.translations['en'] ?? label.key,
+        }));
+      })
+      .catch(() => undefined);
     // Same for the languages: one added in the settings screen must be offerable
     // here, which is the only place a translation is created. A failed read
     // leaves the list empty and the built-in codes stand in.
@@ -1829,8 +1851,11 @@ export class ScreenEditor extends LitElement {
    * silently drop the category it already carries.
    */
   private get rubricOptions(): readonly CpSelectOption[] {
-    const known = RUBRIC_OPTIONS.some((option) => option.value === this.rubric);
-    return known ? RUBRIC_OPTIONS : [...RUBRIC_OPTIONS, { value: this.rubric, label: this.rubric }];
+    const registry =
+      this.rubricRegistry.length > 0 ? this.rubricRegistry : RUBRIC_FALLBACK;
+    const offered = [NO_RUBRIC, ...registry];
+    const known = offered.some((option) => option.value === this.rubric);
+    return known ? offered : [...offered, { value: this.rubric, label: this.rubric }];
   }
 
   /**
