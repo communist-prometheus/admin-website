@@ -48,10 +48,14 @@ test('create material: blank document → address → publish commits a new file
     .getByRole('textbox')
     .fill(slug)
   /* The site's schema requires a category, so choosing one is part of
-   * creating a material, not an optional flourish. */
+   * creating a material, not an optional flourish.
+   *
+   * `general` exists only in the sandbox's own settings/labels.json, never
+   * in the editor's built-in fallback list — picking it proves the rubric
+   * choices come from the repository registry the rubrics screen writes. */
   await page
     .getByRole('combobox', { name: 'Рубрика' })
-    .selectOption('programme')
+    .selectOption('general')
 
   const shaBefore = await headSha()
   await click(page, page.locator(anchor(TESTID.publish)), SLOW)
