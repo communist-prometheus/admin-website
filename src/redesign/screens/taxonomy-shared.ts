@@ -48,9 +48,18 @@ export const siteLanguageTabs = async (): Promise<readonly CpTab[]> =>
 export const taxonomyStyles = css`
   :host {
     display: block;
+    min-width: 0;
     font-family: var(--font-sans);
     color: var(--color-text-primary);
     line-height: 1.6;
+  }
+  /* One tab per site language: the strip scrolls on its own on a narrow
+     phone instead of pushing the whole page sideways. */
+  cp-tabs {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
   }
   .eyebrow {
     margin: 0;

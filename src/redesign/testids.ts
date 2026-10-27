@@ -54,6 +54,8 @@ export const TESTID = {
   settingsFeatures: 'settings-features',
   /** Saves the edited feature flags. */
   settingsSaveFeatures: 'settings-save-features',
+  /** Saves the site interface texts (header, menu, shared captions). */
+  interfaceSave: 'interface-save',
   /** The local action-history section of settings. */
   settingsHistory: 'settings-history',
   /** The hard-reset section of settings. */
