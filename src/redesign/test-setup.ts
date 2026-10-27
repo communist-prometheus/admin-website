@@ -26,3 +26,17 @@ const doc = globalThis.document as Document & { execCommand?: () => boolean };
 if (doc !== undefined && doc.execCommand === undefined) {
   doc.execCommand = (): boolean => false;
 }
+
+/**
+ * jsdom has no layout, and its `Range` lacks `getClientRects` and
+ * `getBoundingClientRect`. CodeMirror measures text through them on the
+ * animation frame after a scroll-into-view; when that frame lands after a test
+ * has finished, the run fails on an unhandled error even though every test
+ * passed. Empty measurements match what jsdom reports for elements.
+ */
+const range = (globalThis as { Range?: { prototype: Record<string, unknown> } }).Range;
+if (range !== undefined) {
+  range.prototype['getClientRects'] ??= (): DOMRectList => document.createElement('div').getClientRects();
+  range.prototype['getBoundingClientRect'] ??= (): DOMRect =>
+    document.createElement('div').getBoundingClientRect();
+}
