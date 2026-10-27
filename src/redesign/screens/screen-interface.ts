@@ -18,6 +18,7 @@ import {
   type StringsFiles,
   type StringsGroup,
 } from '../engine/site-strings-io.js';
+import { TESTID } from '../testids.js';
 import { languageTabs, taxonomyStyles } from './taxonomy-shared.js';
 
 /**
@@ -93,6 +94,16 @@ export class ScreenInterface extends LitElement {
       }
       .gaps {
         margin: 0 0 var(--spacing-sm);
+      }
+      /* The caption, the field and the key stack: a key beside the field
+         squeezed each field to a different width. */
+      .row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-xs);
+      }
+      .row cp-input {
+        flex: 0 0 auto;
       }
       .row.missing {
         border-left: 3px solid var(--color-accent);
@@ -237,7 +248,13 @@ export class ScreenInterface extends LitElement {
       ></cp-tabs>
       ${SECTIONS.map((section) => this.renderSection(section))}
       <div class="actions">
-        <cp-button size="sm" arrow ?disabled=${this.busy} @cp-click=${() => void this.save()}>
+        <cp-button
+          data-testid=${TESTID.interfaceSave}
+          size="sm"
+          arrow
+          ?disabled=${this.busy}
+          @cp-click=${() => void this.save()}
+        >
           ${this.busy ? 'Сохраняем…' : `Сохранить в ${publishTarget().site}`}
         </cp-button>
       </div>

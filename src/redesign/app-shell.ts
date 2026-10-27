@@ -122,6 +122,25 @@ export class AppShell extends LitElement {
         white-space: nowrap;
       }
     }
+    /* Sign-out lives in the header; the narrowest phones get it in the menu. */
+    .fab-logout {
+      display: none;
+    }
+    /* At 320-480px the brand, the environment badge, the account name, the
+       sign-out button and the theme toggle came to ~375px: the page scrolled
+       sideways on every screen. Sign-out moves into the menu, which every
+       phone already opens for navigation; the account name stays in sight. */
+    @media (max-width: 480px) {
+      .header-right .logout {
+        display: none;
+      }
+      .fab-logout {
+        display: flex;
+      }
+      .env {
+        margin-right: 0;
+      }
+    }
     .header-right {
       display: flex;
       align-items: center;
@@ -761,6 +780,10 @@ export class AppShell extends LitElement {
           aria-label="Основная навигация"
         >
           ${this.renderNavItems()}
+          <button class="nav-link fab-logout" @click=${() => this.handleLogout()}>
+            <cp-icon name="arrow-right" size="18"></cp-icon>
+            <span>Выйти</span>
+          </button>
         </nav>
       </div>
     `;
@@ -926,7 +949,11 @@ export class AppShell extends LitElement {
             ? nothing
             : this.account
               ? html`<span class="account" data-testid=${TESTID.account}>${this.account}</span>
-                  <cp-button variant="ghost" size="sm" @cp-click=${() => this.handleLogout()}
+                  <cp-button
+                    class="logout"
+                    variant="ghost"
+                    size="sm"
+                    @cp-click=${() => this.handleLogout()}
                     >Выйти</cp-button
                   >`
               : html`<cp-button size="sm" @cp-click=${() => (this.authOpen = true)}
