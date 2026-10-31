@@ -41,26 +41,42 @@ const get = async (path: string): Promise<unknown> => {
 const field = (value: unknown, key: string): unknown =>
   typeof value === 'object' && value !== null && key in value ? Reflect.get(value, key) : undefined;
 
+/**
+ * A member's GitHub permission on the content repo — the role itself in the
+ * rebuilt admin: `admin` is an owner, `push` an editor, `pull` a viewer.
+ */
+export type Access = 'pull' | 'push' | 'admin';
+
+/** The role name each access level is shown under. */
+export const ROLE_LABELS: Readonly<Record<Access, string>> = {
+  admin: 'Владелец',
+  push: 'Редактор',
+  pull: 'Наблюдатель',
+};
+
 /** A repo collaborator (member). */
 export interface Member {
   readonly login: string;
+  readonly access: Access;
   readonly role: string;
   readonly avatar: string;
 }
 
-const roleOf = (permissions: unknown): string => {
-  if (field(permissions, 'admin') === true) return 'Владелец';
-  if (field(permissions, 'push') === true) return 'Редактор';
-  return 'Наблюдатель';
+const accessOf = (permissions: unknown): Access => {
+  if (field(permissions, 'admin') === true) return 'admin';
+  if (field(permissions, 'push') === true) return 'push';
+  return 'pull';
 };
 
 const toMember = (x: unknown): Member | undefined => {
   const login = field(x, 'login');
   if (typeof login !== 'string') return undefined;
   const avatar = field(x, 'avatar_url');
+  const access = accessOf(field(x, 'permissions'));
   return {
     login,
-    role: roleOf(field(x, 'permissions')),
+    access,
+    role: ROLE_LABELS[access],
     avatar: typeof avatar === 'string' ? avatar : '',
   };
 };
@@ -87,6 +103,55 @@ export const getViewerRole = async (
   if (field(permissions, 'admin') === true) return { role: 'admin', owner: true };
   if (field(permissions, 'push') === true) return { role: 'editor', owner: false };
   return { role: 'viewer', owner: false };
+};
+
+/** The outcome of a role change — GitHub's own message when it refuses. */
+export interface AccessResult {
+  readonly ok: boolean;
+  readonly error?: string;
+}
+
+const messageOf = async (response: Response): Promise<string> => {
+  const body: unknown = await response.json().catch(() => undefined);
+  const message = field(body, 'message');
+  return typeof message === 'string' ? message : `GitHub ответил ${response.status}`;
+};
+
+/**
+ * Changes a member's role by rewriting their permission on the content repo.
+ * GitHub itself decides whether the signed-in person may do it (only owners
+ * may), so a refusal is returned as GitHub worded it rather than guessed here.
+ */
+export const setMemberAccess = async (
+  login: string,
+  access: Access,
+  repo = contentRepo(),
+): Promise<AccessResult> => {
+  const t = await token();
+  if (t === undefined) return { ok: false, error: 'Нет входа в GitHub.' };
+  try {
+    const response = await fetch(
+      `${API}/repos/${contentOwner()}/${repo}/collaborators/${encodeURIComponent(login)}`,
+      {
+        method: 'PUT',
+        headers: {
+          authorization: `Bearer ${t}`,
+          accept: 'application/vnd.github+json',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ permission: access }),
+      },
+    );
+    return response.ok ? { ok: true } : { ok: false, error: await messageOf(response) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+};
+
+/** The signed-in person's GitHub login, or undefined when signed out. */
+export const getViewerLogin = async (): Promise<string | undefined> => {
+  const login = field(await get('/user'), 'login');
+  return typeof login === 'string' ? login : undefined;
 };
 
 /** Lists collaborators of a repo (default: the content repo). */
