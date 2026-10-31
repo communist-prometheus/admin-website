@@ -2,12 +2,30 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import '@communist-prometheus/cp-components';
 import type { CpTableColumn, CpTableRow } from '@communist-prometheus/cp-components';
-import { listMembers, type Member } from '../engine/github-api.js';
+import {
+  getViewerLogin,
+  listMembers,
+  ROLE_LABELS,
+  setMemberAccess,
+  type Access,
+  type Member,
+} from '../engine/github-api.js';
 import { onEngineReady } from '../engine/engine-ready.js';
 import { classifyEmpty } from '../engine/load-state.js';
 
 /** Semantic tag tones used for member roles (mirrors cp-tag's tone union). */
 type RoleTone = 'success' | 'info' | 'neutral';
+
+/** Access levels, highest first, as the role picker lists them. */
+const ACCESS_LEVELS: readonly Access[] = ['admin', 'push', 'pull'];
+
+const isAccess = (value: unknown): value is Access =>
+  ACCESS_LEVELS.some((level) => level === value);
+
+/** The picker renders inside cp-table's shadow root, out of reach of this
+ * component's styles, so it is styled inline with the theme tokens. */
+const PICKER_STYLE =
+  'font:inherit;color:var(--color-text-primary);background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-sm,4px);padding:0.25rem 0.5rem';
 
 /**
  * Members screen (settings spec — the RBAC surface). When the real content
@@ -71,6 +89,9 @@ export class ScreenMembers extends LitElement {
       font-size: 0.85rem;
       color: var(--color-text-secondary);
     }
+    .note.error {
+      color: var(--color-danger, #c0392b);
+    }
   `;
 
   /** Collaborators read from the repo; empty until loaded (or if scope is missing). */
@@ -78,6 +99,16 @@ export class ScreenMembers extends LitElement {
 
   /** Whether the real read has completed. */
   @state() private loaded = false;
+
+  /** The signed-in person: their own role is shown, never offered for change,
+   * so an owner cannot demote themselves out of this screen by a misclick. */
+  @state() private viewer = '';
+
+  /** The member whose role is being written, while the request runs. */
+  @state() private busyLogin = '';
+
+  @state() private message = '';
+  @state() private error = '';
 
   /** Unsubscribes the engine-ready listener on disconnect. */
   private disposeReady: () => void = () => {};
@@ -95,9 +126,26 @@ export class ScreenMembers extends LitElement {
   }
 
   private async load(): Promise<void> {
-    const members = await listMembers();
+    const [members, viewer] = await Promise.all([listMembers(), getViewerLogin()]);
     this.members = members;
+    this.viewer = viewer ?? '';
     this.loaded = true;
+  }
+
+  private readonly changeAccess = async (login: string, access: Access): Promise<void> => {
+    this.busyLogin = login;
+    this.message = '';
+    this.error = '';
+    const result = await setMemberAccess(login, access);
+    if (result.ok) this.message = `${login} теперь: ${ROLE_LABELS[access]}.`;
+    else this.error = `Роль ${login} не изменена: ${result.error ?? 'неизвестная ошибка'}`;
+    await this.load();
+    this.busyLogin = '';
+  };
+
+  private onPick(login: string, event: Event): void {
+    const value: unknown = event.target instanceof HTMLSelectElement ? event.target.value : undefined;
+    if (isAccess(value)) void this.changeAccess(login, value);
   }
 
   private static readonly columns: readonly CpTableColumn[] = [
@@ -128,10 +176,27 @@ export class ScreenMembers extends LitElement {
     </span>`;
   }
 
+  private roleCell(member: Member): TemplateResult {
+    const tag = html`<cp-tag tone=${this.roleTone(member.role)}>${member.role}</cp-tag>`;
+    if (this.viewer === '' || member.login.toLowerCase() === this.viewer.toLowerCase()) return tag;
+    return html`<select
+      data-login=${member.login}
+      aria-label=${`Роль ${member.login}`}
+      style=${PICKER_STYLE}
+      ?disabled=${this.busyLogin !== ''}
+      @change=${(e: Event) => this.onPick(member.login, e)}
+    >
+      ${ACCESS_LEVELS.map(
+        (level) =>
+          html`<option value=${level} ?selected=${level === member.access}>${ROLE_LABELS[level]}</option>`,
+      )}
+    </select>`;
+  }
+
   private toRow(member: Member): CpTableRow {
     return {
       login: this.loginCell(member),
-      role: html`<cp-tag tone=${this.roleTone(member.role)}>${member.role}</cp-tag>`,
+      role: this.roleCell(member),
       status: html`<cp-status state="success" label="активен"></cp-status>`,
     };
   }
@@ -155,7 +220,11 @@ export class ScreenMembers extends LitElement {
               .columns=${[...ScreenMembers.columns]}
               .rows=${rows}
             ></cp-table>
-          </div>`
+          </div>
+          <p class="note">
+            Владелец управляет участниками и настройками, редактор публикует материалы,
+            наблюдатель только читает. Роль — это доступ участника к репозиторию контента на GitHub.
+          </p>`
         : html`<p class="note">
             ${classifyEmpty(this.loaded) === 'loading'
               ? 'Загружаем участников…'
@@ -163,6 +232,8 @@ export class ScreenMembers extends LitElement {
                 ? 'Войдите через GitHub токеном с доступом к коллабораторам репозитория, чтобы увидеть участников.'
                 : 'Участники не найдены: нужен токен с доступом к коллабораторам репозитория.'}
           </p>`}
+      ${this.message === '' ? nothing : html`<p class="note" role="status">${this.message}</p>`}
+      ${this.error === '' ? nothing : html`<p class="note error" role="alert">${this.error}</p>`}
     `;
   }
 }
