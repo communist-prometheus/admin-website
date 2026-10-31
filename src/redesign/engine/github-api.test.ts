@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ensureFreshToken } from '@/composables/useAuth/ensure-fresh-token';
-import { listMembers, listPushes, listTickets, createTicket, listDeployRunSteps } from './github-api.ts';
+import {
+  listMembers,
+  listPushes,
+  listTickets,
+  createTicket,
+  listDeployRunSteps,
+  setMemberAccess,
+} from './github-api.ts';
 
 vi.mock('@/composables/useAuth/ensure-fresh-token', () => ({
   ensureFreshToken: vi.fn(),
@@ -164,5 +171,66 @@ describe('listDeployRunSteps (deploy board steps)', () => {
   it('returns [] when the run has no jobs', async () => {
     stubFetch({ jobs: [] });
     expect(await listDeployRunSteps(1)).toEqual([]);
+  });
+});
+
+/*
+ * Reported 2026-10-31: settings had no way to change a member's role. In the
+ * rebuilt admin a role IS the member's GitHub permission on the content repo
+ * (admin → owner, push → editor, pull → viewer), so changing it means
+ * rewriting that permission.
+ */
+describe('setMemberAccess', () => {
+  interface Put {
+    readonly url: string;
+    readonly method?: string;
+    readonly body: unknown;
+  }
+
+  const stubPut = (status: number, payload: unknown = {}): Put[] => {
+    const calls: Put[] = [];
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      calls.push({
+        url,
+        method: init?.method,
+        body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined,
+      });
+      return new Response(status === 204 ? undefined : JSON.stringify(payload), { status });
+    });
+    return calls;
+  };
+
+  it('makes a member an owner by granting admin on the content repo', async () => {
+    const calls = stubPut(204);
+    expect(await setMemberAccess('andswew', 'admin')).toEqual({ ok: true });
+    expect(calls).toEqual([
+      {
+        url: 'https://api.github.com/repos/communist-prometheus/public-website-content/collaborators/andswew',
+        method: 'PUT',
+        body: { permission: 'admin' },
+      },
+    ]);
+  });
+
+  it('surfaces GitHub refusal instead of pretending the role changed', async () => {
+    stubPut(403, { message: 'Must have admin rights to Repository.' });
+    expect(await setMemberAccess('andswew', 'push')).toEqual({
+      ok: false,
+      error: 'Must have admin rights to Repository.',
+    });
+  });
+
+  it('reads each member access level from GitHub permissions', async () => {
+    stubFetch([
+      { login: 'boss', permissions: { admin: true, push: true } },
+      { login: 'ed', permissions: { admin: false, push: true } },
+      { login: 'guest', permissions: { admin: false, push: false, pull: true } },
+    ]);
+    const members = await listMembers();
+    expect(members.map((m) => [m.login, m.access, m.role])).toEqual([
+      ['boss', 'admin', 'Владелец'],
+      ['ed', 'push', 'Редактор'],
+      ['guest', 'pull', 'Наблюдатель'],
+    ]);
   });
 });
