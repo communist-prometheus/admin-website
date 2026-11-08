@@ -8,6 +8,7 @@ import {
   readFileViaApi,
   articleLangsViaApi,
   publishFileViaApi,
+  readContentFile,
   upsertFrontmatterField,
   readFrontmatterField,
   upsertFrontmatterBlock,
@@ -381,12 +382,17 @@ export class ScreenEditor extends LitElement {
       display: none;
     }
 
-    .toolbar .acts {
+    .toolbar .acts,
+    .issue-acts {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
       gap: 0.35rem;
       margin-left: auto;
+    }
+    .issue-acts {
+      justify-content: flex-end;
+      margin-top: var(--spacing-md);
     }
     .toolbar .t {
       width: 2.2rem;
@@ -505,7 +511,8 @@ export class ScreenEditor extends LitElement {
         min-height: 2.75rem;
       }
 
-      .toolbar .acts cp-button::part(button) {
+      .toolbar .acts cp-button::part(button),
+      .issue-acts cp-button::part(button) {
         min-height: 2.75rem;
       }
     }
@@ -1146,7 +1153,12 @@ export class ScreenEditor extends LitElement {
    * a publish actually persists them instead of silently discarding them.
    */
   private get editedMarkdown(): string {
-    let fm = this.frontmatter;
+    return this.composeMarkdown(this.frontmatter, this.body);
+  }
+
+  /** The properties-panel edits laid over a given frontmatter + body (see editedMarkdown). */
+  private composeMarkdown(frontmatter: string, source: string): string {
+    let fm = frontmatter;
     if (fm !== '') {
       // Each property is written back ONLY when it differs from what was
       // loaded, so opening an article and publishing it changes nothing.
@@ -1175,7 +1187,7 @@ export class ScreenEditor extends LitElement {
       if (String(this.published) !== this.seeds.published)
         fm = upsertFrontmatterField(fm, 'published', String(this.published));
     }
-    const body = this.body.trimEnd();
+    const body = source.trimEnd();
     return fm === '' ? `${body}\n` : `${fm}\n\n${body}\n`;
   }
 
@@ -1529,22 +1541,54 @@ export class ScreenEditor extends LitElement {
       this.collection === 'blog' ? `#/editor/${this.slug}` : `#/editor/${this.collection}/${this.slug}`;
   }
 
+  /**
+   * What a publish writes, and the repo text it replaces. An issue's index is
+   * also written by its files and articles panels (cover, table of contents),
+   * so the issue's own edits are laid over the CURRENT repo file rather than
+   * over the copy loaded at open — which would silently undo those panels.
+   */
+  private async publishPlan(): Promise<
+    { readonly markdown: string; readonly current: string } | { readonly error: string }
+  > {
+    if (this.collection !== 'magazine' || this.isNewMaterial)
+      return { markdown: this.editedMarkdown, current: this.appliedMarkdown };
+    const read = await readContentFile(this.articlePath);
+    switch (read.kind) {
+      case 'error':
+        return { error: read.error };
+      case 'missing':
+        return { markdown: this.editedMarkdown, current: '' };
+      case 'ok': {
+        const fresh = parseArticle(read.text);
+        return { markdown: this.composeMarkdown(fresh.frontmatter, fresh.body), current: read.text };
+      }
+    }
+  }
+
   /** Publishes the ONE edited file via the GitHub API — a single-file commit,
    *  no clone and no whole-repo push. */
   private async runRealPublish(): Promise<void> {
     const creating = this.isNewMaterial;
-    const markdown = this.editedMarkdown;
+    this.publishBusy = true;
+    this.stageStates = ['running'];
+    const plan = await this.publishPlan();
+    if ('error' in plan) {
+      this.stageStates = ['failed'];
+      this.publishError = plan.error;
+      this.publishBusy = false;
+      return;
+    }
+    const { markdown } = plan;
     /* Writing a byte-identical file back is not a no-op: GitHub records an
      * EMPTY commit, and the content sync rebuilds the public site for it.
      * Opening a material to read it must cost the repository nothing. */
-    if (!creating && markdown === this.appliedMarkdown) {
+    if (!creating && markdown === plan.current) {
       this.stageStates = ['done'];
       this.publishNote = 'Материал без изменений — публиковать нечего.';
       this.dirty = false;
+      this.publishBusy = false;
       return;
     }
-    this.publishBusy = true;
-    this.stageStates = ['running'];
     const path = this.targetPath();
     const name = this.articleTitle === '' ? 'Материал' : this.articleTitle;
     const message = `${name}: ${creating ? 'новый материал из редактора' : 'правка из редактора'}`;
@@ -1798,28 +1842,36 @@ export class ScreenEditor extends LitElement {
             <cp-icon name="book" size="18"></cp-icon>
             <span class="import-label">${this.importBusy ? 'Импорт…' : 'Импорт'}</span>
           </label>
-          ${this.isNewMaterial
-            ? nothing
-            : html`<cp-button
-                size="sm"
-                variant="ghost"
-                data-testid=${TESTID.deleteMaterial}
-                title="Удалить материал"
-                @cp-click=${this.openDelete}
-                >Удалить</cp-button
-              >`}
-          <cp-button
-            size="sm"
-            arrow
-            data-testid=${TESTID.publish}
-            title="Опубликовать на ${publishTarget().site}"
-            @cp-click=${this.startPublish}
-          >
-            <span class="on-wide">Опубликовать на ${publishTarget().site}</span>
-            <span class="on-narrow">Опубликовать</span>
-          </cp-button>
+          ${this.renderPublishActions()}
         </div>
       </div>
+    `;
+  }
+
+  /** Delete + publish — shared by the article toolbar and the issue panel, so
+   *  every material, an issue with no markdown body included, can be saved. */
+  private renderPublishActions(): TemplateResult {
+    return html`
+      ${this.isNewMaterial
+        ? nothing
+        : html`<cp-button
+            size="sm"
+            variant="ghost"
+            data-testid=${TESTID.deleteMaterial}
+            title="Удалить материал"
+            @cp-click=${this.openDelete}
+            >Удалить</cp-button
+          >`}
+      <cp-button
+        size="sm"
+        arrow
+        data-testid=${TESTID.publish}
+        title="Опубликовать на ${publishTarget().site}"
+        @cp-click=${this.startPublish}
+      >
+        <span class="on-wide">Опубликовать на ${publishTarget().site}</span>
+        <span class="on-narrow">Опубликовать</span>
+      </cp-button>
     `;
   }
 
@@ -1831,6 +1883,7 @@ export class ScreenEditor extends LitElement {
    */
   private renderMagazineBody(): TemplateResult {
     return html`
+      <div class="acts issue-acts">${this.renderPublishActions()}</div>
       <div class="issue-panel">
         <issue-files
           .dir=${`magazine/${this.slug}/assets`}
