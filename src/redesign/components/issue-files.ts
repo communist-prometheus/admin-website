@@ -8,6 +8,7 @@ import {
   rawContentUrl,
   type RepoFile,
 } from '../engine/content.js';
+import { issueCoverImage, syncIssueCoverViaApi } from '../engine/issue-cover.js';
 
 /** Reads a File as base64 (without the data-URL prefix) for the Contents API. */
 const fileToBase64 = (file: File): Promise<string> =>
@@ -346,6 +347,13 @@ export class IssueFiles extends LitElement {
     this.loading = false;
   }
 
+  /** Points the issue index's `image:` at the cover now on disk (the site reads
+   *  only that field), throwing when the index could not be updated. */
+  private async syncCover(): Promise<void> {
+    const r = await syncIssueCoverViaApi(this.slug, this.lang, issueCoverImage(this.files, this.lang));
+    if (!r.ok) throw new Error(`Обложка загружена, но не привязана к номеру: ${r.error ?? 'unknown error'}`);
+  }
+
   /** Commits one derived File to the assets dir, throwing on API failure. */
   private async commit(path: string, file: File, message: string): Promise<void> {
     const base64 = await fileToBase64(file);
@@ -413,6 +421,7 @@ export class IssueFiles extends LitElement {
       }
       this.stagedPaper = undefined;
       await this.load();
+      await this.syncCover();
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
     } finally {
@@ -452,8 +461,9 @@ export class IssueFiles extends LitElement {
         `assets: cover ${this.slug}.${this.lang}`,
       );
       this.clearStagedCover();
-      this.message = `Обложка обновлена: cover.${this.lang}.png`;
       await this.load();
+      await this.syncCover();
+      this.message = `Обложка обновлена: cover.${this.lang}.png`;
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
     } finally {
@@ -471,6 +481,9 @@ export class IssueFiles extends LitElement {
     if (result.ok) {
       this.message = `Удалён файл «${file.name}».`;
       await this.load();
+      await this.syncCover().catch((e: unknown) => {
+        this.error = e instanceof Error ? e.message : String(e);
+      });
     } else {
       this.error = result.error ?? 'Удаление не удалось.';
     }
