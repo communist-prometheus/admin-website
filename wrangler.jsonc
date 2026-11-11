@@ -19,7 +19,7 @@
   // take effect immediately without a content commit + clone. Org admins
   // are always `admin` regardless of this map (derived from GitHub).
   "kv_namespaces": [
-    { "binding": "ROLES_KV", "id": "ad749a5a22304573a21fa5e76e20c41e" }
+    { "binding": "ROLES_KV", "id": "07c124901679483da5c6673e2894ae57" }
   ],
   "env": {
     // Develop environment — deploys from the `develop` branch into a
@@ -36,7 +36,7 @@
         "GITHUB_CLIENT_ID": "Ov23liXRu1WNCvOCce7s"
       },
       "kv_namespaces": [
-        { "binding": "ROLES_KV", "id": "7f41b8d0c2964092b49a127ee8bf08f3" }
+        { "binding": "ROLES_KV", "id": "5bd1d46118304454b5e0e1a31311f42c" }
       ]
     },
     // v2 environment — the redesigned admin (new UI), deployed from the
@@ -55,7 +55,7 @@
         "GITHUB_CLIENT_ID": "Ov23liSvu5qVdCI01BmZ"
       },
       "kv_namespaces": [
-        { "binding": "ROLES_KV", "id": "7f41b8d0c2964092b49a127ee8bf08f3" }
+        { "binding": "ROLES_KV", "id": "5bd1d46118304454b5e0e1a31311f42c" }
       ]
     }
   }
