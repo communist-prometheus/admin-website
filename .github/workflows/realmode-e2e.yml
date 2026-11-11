@@ -20,7 +20,9 @@ permissions:
 
 jobs:
   realmode:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, where `playwright install --with-deps`
+    # fails ("Playwright does not support chromium on ubuntu26.04-x64").
+    runs-on: ubuntu-24.04
     # Deny the sandbox PAT to fork PRs: GitHub already withholds
     # secrets from fork-PR runs, but this guard keeps the job from
     # running attacker-edited test code next to the secret even if
