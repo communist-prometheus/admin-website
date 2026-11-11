@@ -80,12 +80,12 @@ jobs:
       - name: HTTP probe admin prod
         run: |
           curl -sS -o /dev/null -w "status=%{http_code} ttfb=%{time_starttransfer}s\n" \
-            https://admin-website.igor-ganov.workers.dev
+            https://admin-website.comprom.workers.dev
       - name: HTTP probe public-website prod (homepage EN)
         run: |
           curl -sS -o /dev/null -w "status=%{http_code} ttfb=%{time_starttransfer}s\n" \
-            https://public-website.igor-ganov.workers.dev/en
+            https://public-website.comprom.workers.dev/en
       - name: HTTP probe Test Article 47 detail
         run: |
           curl -sS -o /dev/null -w "status=%{http_code} ttfb=%{time_starttransfer}s\n" \
-            https://public-website.igor-ganov.workers.dev/en/blog/test-article
+            https://public-website.comprom.workers.dev/en/blog/test-article
