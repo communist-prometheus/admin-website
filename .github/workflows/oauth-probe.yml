@@ -10,7 +10,7 @@ on:
         required: false
         default: >-
           https://admin.comprom.org/auth/github/callback,
-          https://admin-website.igor-ganov.workers.dev/auth/github/callback,
+          https://admin-website.comprom.workers.dev/auth/github/callback,
           http://localhost:5173/auth/github/callback
   push:
     branches: [master]
@@ -46,7 +46,7 @@ jobs:
           fi
           INPUT="${{ inputs.uris }}"
           if [ -z "$INPUT" ]; then
-            INPUT="https://admin.comprom.org/auth/github/callback,https://admin-website.igor-ganov.workers.dev/auth/github/callback,http://localhost:5173/auth/github/callback"
+            INPUT="https://admin.comprom.org/auth/github/callback,https://admin-website.comprom.workers.dev/auth/github/callback,http://localhost:5173/auth/github/callback"
           fi
           STATUS=0
           echo "$INPUT" | tr ',' '\n' | while read -r uri; do

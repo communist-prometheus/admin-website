@@ -11,7 +11,7 @@
 export const TRUSTED_ORIGINS: readonly string[] = [
   'https://admin.comprom.org',
   'https://dev-admin.comprom.org',
-  'https://admin-website.igor-ganov.workers.dev',
+  'https://admin-website.comprom.workers.dev',
   'http://localhost:5173',
   'http://localhost:4173',
 ]
