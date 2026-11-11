@@ -19,7 +19,9 @@ permissions:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, where `playwright install --with-deps`
+    # fails ("Playwright does not support chromium on ubuntu26.04-x64").
+    runs-on: ubuntu-24.04
     # Per-branch values come from repo Variables suffixed by branch:
     #   OAUTH_REDIRECT_URI_{MASTER,DEVELOP}
     #   VITE_GITHUB_CLIENT_ID_{MASTER,DEVELOP}
