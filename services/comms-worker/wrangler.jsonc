@@ -30,7 +30,7 @@
     {
       "binding": "DB",
       "database_name": "comms-prod",
-      "database_id": "f8f17df0-5b92-4a9c-babb-96b826d2aab9"
+      "database_id": "716a86b8-b3ae-4d03-b3a4-dd595b2df4e9"
     }
   ],
   "env": {
@@ -54,7 +54,7 @@
         {
           "binding": "DB",
           "database_name": "comms-develop",
-          "database_id": "2f0dfe61-df6e-4eb1-acca-6b36fe66d7d6"
+          "database_id": "0c81e1d6-8355-4791-a454-508f62a7cc1a"
         }
       ]
     }
